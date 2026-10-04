@@ -61,49 +61,63 @@ class DatosDeEjemplo
     }
 
     /**
-     * @return list<array{cuando: string, rival: string, bot: bool, vos: int, ellos: int, manos: int, minutos: int}>
+     * Partidas jugadas, de la más nueva a la más vieja, agrupables por día.
+     *
+     * @return list<array{dia: string, hora: string, rival: string, bot: bool, vos: int, ellos: int, manos: int, minutos: int}>
      */
     public static function partidas(): array
     {
         return [
-            ['cuando' => 'Hoy, 21:40', 'rival' => 'Bot, nivel 2', 'bot' => true, 'vos' => 30, 'ellos' => 21, 'manos' => 14, 'minutos' => 11],
-            ['cuando' => 'Hoy, 21:15', 'rival' => 'Bot, nivel 3', 'bot' => true, 'vos' => 24, 'ellos' => 30, 'manos' => 17, 'minutos' => 14],
-            ['cuando' => 'Ayer, 23:02', 'rival' => 'Maru', 'bot' => false, 'vos' => 30, 'ellos' => 28, 'manos' => 21, 'minutos' => 19],
-            ['cuando' => 'Ayer, 22:30', 'rival' => 'Bot, nivel 1', 'bot' => true, 'vos' => 30, 'ellos' => 9, 'manos' => 10, 'minutos' => 7],
-            ['cuando' => '2 de octubre, 19:48', 'rival' => 'Maru', 'bot' => false, 'vos' => 17, 'ellos' => 30, 'manos' => 16, 'minutos' => 15],
+            ['dia' => 'Hoy', 'hora' => '21:40', 'rival' => 'Bot, nivel 2', 'bot' => true, 'vos' => 30, 'ellos' => 21, 'manos' => 14, 'minutos' => 11],
+            ['dia' => 'Hoy', 'hora' => '21:15', 'rival' => 'Bot, nivel 3', 'bot' => true, 'vos' => 24, 'ellos' => 30, 'manos' => 17, 'minutos' => 14],
+            ['dia' => 'Ayer', 'hora' => '23:02', 'rival' => 'Maru', 'bot' => false, 'vos' => 30, 'ellos' => 28, 'manos' => 21, 'minutos' => 19],
+            ['dia' => 'Ayer', 'hora' => '22:30', 'rival' => 'Bot, nivel 1', 'bot' => true, 'vos' => 30, 'ellos' => 9, 'manos' => 10, 'minutos' => 7],
+            ['dia' => '2 de octubre', 'hora' => '19:48', 'rival' => 'Maru', 'bot' => false, 'vos' => 17, 'ellos' => 30, 'manos' => 16, 'minutos' => 15],
         ];
     }
 
     /**
-     * Tres manos de una partida, tal como se verían en la repetición.
-     * Cada baza es [carta tuya, carta del rival, quién la ganó].
+     * Las tres últimas manos de una partida, jugada por jugada, para la repetición.
+     * Es la forma que van a tener los eventos guardados de M3 y M7: una lista en
+     * orden, de la que se puede reconstruir la mesa en cualquier punto.
      *
      * @return list<array<string, mixed>>
      */
-    public static function repeticion(): array
+    public static function pasosDeRepeticion(): array
     {
+        $canto = fn (string $quien, string $texto, string $tono) => ['tipo' => 'canto', 'quien' => $quien, 'texto' => $texto, 'tono' => $tono];
+        $carta = fn (string $quien, string $carta, int $baza) => ['tipo' => 'carta', 'quien' => $quien, 'carta' => $carta, 'baza' => $baza];
+        $puntos = fn (string $quien, int $cantidad, string $texto) => ['tipo' => 'puntos', 'quien' => $quien, 'cantidad' => $cantidad, 'texto' => $texto];
+
         return [
-            [
-                'numero' => 12,
-                'tanteo' => [24, 20],
-                'cantos' => [['Vos', 'Envido', 'oro'], ['Bot', 'Quiero', 'basto'], ['Vos', 'Truco', 'copa'], ['Bot', 'Quiero', 'basto']],
-                'bazas' => [['7-oro', '3-basto', 'rival'], ['1-espada', '12-copa', 'vos'], ['6-oro', '5-copa', 'vos']],
-                'resumen' => 'Ganaste el envido 33 a 25 y el truco. Sumaste 4.',
-            ],
-            [
-                'numero' => 13,
-                'tanteo' => [28, 20],
-                'cantos' => [['Bot', 'Truco', 'copa'], ['Vos', 'No quiero', 'copa']],
-                'bazas' => [['4-copa', '7-espada', 'rival']],
-                'resumen' => 'No quisiste el truco. El bot sumó 1.',
-            ],
-            [
-                'numero' => 14,
-                'tanteo' => [28, 21],
-                'cantos' => [['Vos', 'Truco', 'copa'], ['Bot', 'Quiero', 'basto']],
-                'bazas' => [['1-basto', '1-oro', 'vos'], ['12-espada', '6-basto', 'vos']],
-                'resumen' => 'Ganaste las dos primeras bazas. Sumaste 2 y cerraste la partida 30 a 21.',
-            ],
+            ['tipo' => 'reparto', 'mano' => 12, 'tanteo' => [24, 20], 'vos' => ['7-oro', '6-oro', '1-espada']],
+            $canto('vos', 'Envido', 'oro'),
+            $canto('rival', 'Quiero', 'basto'),
+            $puntos('vos', 2, 'Envido: 33 a 25. Sumaste 2.'),
+            $carta('vos', '6-oro', 0),
+            $carta('rival', '3-basto', 0),
+            $carta('rival', '12-copa', 1),
+            $canto('vos', 'Truco', 'copa'),
+            $canto('rival', 'Quiero', 'basto'),
+            $carta('vos', '7-oro', 1),
+            $carta('vos', '1-espada', 2),
+            $carta('rival', '5-copa', 2),
+            $puntos('vos', 2, 'Ganaste dos bazas con el truco querido. Sumaste 2.'),
+
+            ['tipo' => 'reparto', 'mano' => 13, 'tanteo' => [28, 20], 'vos' => ['4-copa', '11-basto', '3-espada']],
+            $carta('vos', '4-copa', 0),
+            $canto('rival', 'Truco', 'copa'),
+            $canto('vos', 'No quiero', 'copa'),
+            $puntos('rival', 1, 'No quisiste el truco. El bot sumó 1.'),
+
+            ['tipo' => 'reparto', 'mano' => 14, 'tanteo' => [28, 21], 'vos' => ['1-basto', '12-espada', '2-copa']],
+            $canto('vos', 'Truco', 'copa'),
+            $canto('rival', 'Quiero', 'basto'),
+            $carta('vos', '1-basto', 0),
+            $carta('rival', '1-oro', 0),
+            $carta('vos', '12-espada', 1),
+            $carta('rival', '6-basto', 1),
+            $puntos('vos', 2, 'Ganaste las dos primeras bazas. Sumaste 2 y cerraste la partida 30 a 21.'),
         ];
     }
 }

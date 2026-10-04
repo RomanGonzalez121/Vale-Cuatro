@@ -36,7 +36,7 @@ class PaginaController extends Controller
     {
         return view('paginas.historial', [
             'partidas' => DatosDeEjemplo::partidas(),
-            'manos' => DatosDeEjemplo::repeticion(),
+            'pasos' => DatosDeEjemplo::pasosDeRepeticion(),
         ]);
     }
 
