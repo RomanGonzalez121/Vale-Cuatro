@@ -19,14 +19,16 @@
                 Jugá una mano contra el bot ahora mismo, sin registrarte.
                 O mandale un link a alguien y jueguen en vivo.
             </p>
-            <div class="mt-8 flex flex-wrap gap-3">
-                <a href="{{ route('mesa') }}" class="boton boton-naipe min-h-14 px-6 text-lg">
+            {{-- Sin campos: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
+            <form method="POST" action="{{ route('jugar') }}" class="mt-8 flex flex-wrap gap-3">
+                @csrf
+                <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
                     <x-icono nombre="bot" /> Jugar contra el bot
-                </a>
-                <a href="{{ route('mesa') }}" class="boton boton-linea min-h-14 px-6 text-lg">
+                </button>
+                <button type="submit" class="boton boton-linea min-h-14 px-6 text-lg">
                     <x-icono nombre="invitar" /> Invitar a alguien
-                </a>
-            </div>
+                </button>
+            </form>
             <p class="mt-5 text-[0.95rem]">
                 A 30 puntos y con flor. ¿Nunca jugaste?
                 <a href="{{ route('como-se-juega') }}" class="font-semibold underline underline-offset-4">Mirá cómo se juega</a>.

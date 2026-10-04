@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Jugador;
 use App\View\Components\Carta;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -15,7 +16,6 @@ class PaginasTest extends TestCase
     {
         return [
             'portada' => ['/'],
-            'mesa' => ['/mesa'],
             'ranking' => ['/ranking'],
             'historial' => ['/historial'],
             'cómo se juega' => ['/como-se-juega'],
@@ -49,7 +49,9 @@ class PaginasTest extends TestCase
 
     public function test_la_mesa_lleva_las_cuarenta_plantillas_y_el_dorso(): void
     {
-        $html = $this->get('/mesa')->assertOk()->getContent();
+        // A la mesa se llega con un jugador: acá, un invitado.
+        $html = $this->actingAs(Jugador::factory()->invitado()->make(['id' => 1]))
+            ->get('/mesa')->assertOk()->assertSee('Vale Cuatro')->getContent();
 
         $this->assertSame(41, substr_count($html, '<template data-plantilla='));
     }

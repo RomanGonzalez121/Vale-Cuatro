@@ -74,7 +74,10 @@
                     Cada regla tiene una mesa para probarla.
                 </p>
             </div>
-            <a href="{{ route('mesa') }}" class="boton boton-tinta justify-self-start"><x-icono nombre="bot" /> Jugar contra el bot</a>
+            <form method="POST" action="{{ route('jugar') }}" class="justify-self-start">
+                @csrf
+                <button type="submit" class="boton boton-tinta"><x-icono nombre="bot" /> Jugar contra el bot</button>
+            </form>
         </header>
 
         <nav aria-label="En esta página" class="border-y-2 border-texto py-4">

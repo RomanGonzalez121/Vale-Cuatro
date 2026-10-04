@@ -1,8 +1,7 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Models\Jugador;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// Limpieza diaria: borra los invitados que no volvieron a jugar (ver Jugador::prunable).
+Schedule::command('model:prune', ['--model' => [Jugador::class]])->daily();

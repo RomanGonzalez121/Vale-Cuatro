@@ -92,7 +92,10 @@
                 <strong class="font-black">{{ $vos['ganadas'] }}</strong> ganadas de {{ $vos['jugadas'] }}.
                 Te faltan <strong class="font-black">{{ $deArriba['ganadas'] - $vos['ganadas'] }}</strong> para alcanzar a {{ $deArriba['apodo'] }}.
             </p>
-            <a href="{{ route('mesa') }}" class="boton boton-linea min-h-11 py-2 sm:ml-auto"><x-icono nombre="repartir" /> Jugar una partida</a>
+            <form method="POST" action="{{ route('jugar') }}" class="sm:ml-auto">
+                @csrf
+                <button type="submit" class="boton boton-linea min-h-11 py-2"><x-icono nombre="repartir" /> Jugar una partida</button>
+            </form>
         </aside>
     </div>
 </x-layouts.base>

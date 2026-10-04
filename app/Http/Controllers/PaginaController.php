@@ -8,8 +8,8 @@ use App\View\Components\Carta;
 use Illuminate\Contracts\View\View;
 
 /**
- * Las pantallas del sitio. En M0 muestran datos de ejemplo fijos;
- * cada una pasa a datos reales cuando llega su módulo.
+ * Las pantallas del sitio que todavía muestran datos de ejemplo fijos.
+ * Cada una pasa a datos reales cuando llega su módulo.
  */
 class PaginaController extends Controller
 {

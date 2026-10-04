@@ -108,7 +108,10 @@
                     <span x-text="puntos.vos"></span> a <span x-text="puntos.rival"></span>
                 </p>
                 <div class="mt-6 flex flex-col gap-2.5">
-                    <a href="{{ route('mesa') }}" class="boton boton-tinta">Jugar otra partida</a>
+                    <form method="POST" action="{{ route('jugar') }}" class="flex flex-col">
+                        @csrf
+                        <button type="submit" class="boton boton-tinta">Jugar otra partida</button>
+                    </form>
                     <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
                 </div>
             </div>
