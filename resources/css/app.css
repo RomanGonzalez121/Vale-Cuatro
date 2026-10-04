@@ -25,11 +25,55 @@
     --color-fosforo: #e8c98a;
     --color-sombra: #0e2b21;
 
+    /* Colores que cambian entre el modo de día y el de noche. */
+    --color-fondo: #fbfaf5;
+    --color-texto: #161a18;
+    --color-enlace: #2a5caa;
+    --color-gana: #2a7d4f;
+    --color-pierde: #c93327;
+
     --font-*: initial;
     --font-sans: 'Chivo Variable', ui-sans-serif, system-ui, sans-serif;
     --font-canto: 'Piazzolla', Georgia, serif;
 
     --ease-llegada: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/*
+ | El club de noche. Las páginas de lectura pasan de naipe a tinta y la mesa se
+ | oscurece un paso: el paño toma el tono del paño hondo. Las cartas no cambian,
+ | porque usan --color-naipe y --color-tinta, que son fijos. Copa, Espada y
+ | Basto se aclaran como texto para llegar a 4,5 a 1 sobre tinta.
+ */
+:root {
+    color-scheme: light;
+}
+
+:root[data-modo='noche'] {
+    color-scheme: dark;
+    --color-fondo: #161a18;
+    --color-texto: #fbfaf5;
+    --color-pano: #153f32;
+    --color-pano-hondo: #0e2b21;
+    --color-sombra: #07180f;
+    --color-enlace: #6fa0e8;
+    --color-gana: #57b983;
+    --color-pierde: #f0685c;
+}
+
+/* Cambio de modo: la página nueva se abre en círculo desde la carta que se dio vuelta. */
+@media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+        mix-blend-mode: normal;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(root) {
+        animation-duration: 150ms;
+    }
 }
 
 @layer base {
@@ -50,12 +94,12 @@
     }
 
     .superficie-naipe {
-        background-color: var(--color-naipe);
-        color: var(--color-tinta);
+        background-color: var(--color-fondo);
+        color: var(--color-texto);
     }
 
     :focus-visible {
-        outline: 3px solid var(--color-tinta);
+        outline: 3px solid var(--color-texto);
         outline-offset: 3px;
         border-radius: 4px;
     }
@@ -122,8 +166,50 @@
     }
 
     .boton-tinta {
-        background-color: var(--color-tinta);
-        color: var(--color-naipe);
+        background-color: var(--color-texto);
+        color: var(--color-fondo);
+    }
+
+    /* Botón de modo: una carta que se da vuelta. Cara arriba de día, dorso de noche. */
+    .modo-boton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        perspective: 10rem;
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    .modo-boton:active {
+        transform: scale(0.94);
+    }
+
+    .modo-carta {
+        position: relative;
+        display: block;
+        width: 1.5rem;
+        aspect-ratio: 100 / 156;
+        transform-style: preserve-3d;
+        transition: transform 320ms var(--ease-llegada);
+    }
+
+    .modo-carta svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+    }
+
+    .modo-dorso {
+        transform: rotateY(180deg);
+    }
+
+    :root[data-modo='noche'] .modo-carta {
+        transform: rotateY(180deg);
     }
 
     .boton-linea {
@@ -277,8 +363,8 @@
     }
 
     .superficie-naipe .menu-movil {
-        border-bottom: 2px solid var(--color-tinta);
-        background-color: var(--color-naipe);
+        border-bottom: 2px solid var(--color-texto);
+        background-color: var(--color-fondo);
     }
 
     .menu-movil li + li {
@@ -449,9 +535,9 @@
     }
 
     .pestana[aria-pressed='true'] {
-        border-color: var(--color-tinta);
-        background-color: var(--color-tinta);
-        color: var(--color-naipe);
+        border-color: var(--color-texto);
+        background-color: var(--color-texto);
+        color: var(--color-fondo);
     }
 
     .boton .icono {
@@ -475,7 +561,7 @@
     }
 
     .enlace {
-        color: var(--color-espada);
+        color: var(--color-enlace);
         font-weight: 600;
         text-decoration: underline;
         text-decoration-thickness: 2px;
@@ -719,7 +805,7 @@
 
     .tabla th {
         padding: 0.625rem 0.75rem 0.625rem 0;
-        border-bottom: 2px solid var(--color-tinta);
+        border-bottom: 2px solid var(--color-texto);
         font-size: 0.875rem;
         font-weight: 700;
         text-align: left;
@@ -728,7 +814,7 @@
 
     .tabla td {
         padding: 0.75rem 0.75rem 0.75rem 0;
-        border-bottom: 1px solid color-mix(in srgb, var(--color-tinta) 16%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
         vertical-align: middle;
     }
 
@@ -780,6 +866,14 @@
 
     .boton:not([disabled]):active {
         transform: scale(0.97);
+    }
+
+    .modo-boton:hover {
+        transform: translateY(-2px) rotate(-7deg);
+    }
+
+    .modo-boton:active {
+        transform: scale(0.94);
     }
 
     .enlace-menu:hover {
@@ -872,7 +966,14 @@
         animation-duration: 150ms;
     }
 
-    .menu-icono span {
+    .menu-icono span,
+    .modo-carta {
+        transition: none;
+    }
+
+    .modo-boton,
+    .modo-boton:hover {
+        transform: none;
         transition: none;
     }
 

@@ -77,7 +77,7 @@
             <a href="{{ route('mesa') }}" class="boton boton-tinta justify-self-start"><x-icono nombre="bot" /> Jugar contra el bot</a>
         </header>
 
-        <nav aria-label="En esta página" class="border-y-2 border-tinta py-4">
+        <nav aria-label="En esta página" class="border-y-2 border-texto py-4">
             <ul class="flex flex-wrap gap-x-7 gap-y-1">
                 @foreach ($secciones as $ancla => $nombre)
                     <li><a href="#{{ $ancla }}" class="enlace-nav">{{ $nombre }}</a></li>
@@ -109,7 +109,7 @@
             </div>
         </section>
 
-        <section id="cartas" class="scroll-mt-6 border-t-2 border-tinta py-14">
+        <section id="cartas" class="scroll-mt-6 border-t-2 border-texto py-14">
             <h2 class="text-4xl font-black tracking-tight sm:text-5xl">El orden de las cartas</h2>
             <p class="mt-5 max-w-[56ch] text-lg leading-relaxed">
                 Las cartas no valen por su número. Hay catorce escalones: del 1 de espada, que le gana a todas, a los 4.
@@ -130,7 +130,7 @@
 
             <ol start="5" class="mt-8 grid gap-x-12 lg:grid-cols-2">
                 @foreach ($resto as $i => [$nombre, $cartas])
-                    <li class="grid grid-cols-[2.5rem_1fr] items-center gap-x-3 gap-y-2 border-b border-tinta/15 py-3.5 sm:grid-cols-[2.5rem_11rem_1fr]">
+                    <li class="grid grid-cols-[2.5rem_1fr] items-center gap-x-3 gap-y-2 border-b border-texto/15 py-3.5 sm:grid-cols-[2.5rem_11rem_1fr]">
                         <span class="text-2xl font-black tabular-nums">{{ $i + 5 }}</span>
                         <span class="text-lg font-bold leading-tight">{{ $nombre }}</span>
                         <span class="col-start-2 flex gap-1.5 sm:col-start-3">
@@ -166,7 +166,7 @@
             </div>
         </section>
 
-        <section id="pardas" class="scroll-mt-6 border-t-2 border-tinta py-14" x-data="{ caso: 0 }">
+        <section id="pardas" class="scroll-mt-6 border-t-2 border-texto py-14" x-data="{ caso: 0 }">
             <h2 class="text-4xl font-black tracking-tight sm:text-5xl">Las pardas</h2>
             <p class="mt-5 max-w-[56ch] text-lg leading-relaxed">
                 Una baza es parda cuando las dos cartas empatan. Después de una parda sale el mano.
@@ -202,7 +202,7 @@
             @endforeach
         </section>
 
-        <section id="envido" class="scroll-mt-6 border-t-2 border-tinta py-14">
+        <section id="envido" class="scroll-mt-6 border-t-2 border-texto py-14">
             <div class="grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
                 <div>
                     <h2 class="text-4xl font-black tracking-tight sm:text-5xl">El envido</h2>
@@ -255,7 +255,7 @@
             </div>
         </section>
 
-        <section id="flor" class="grid scroll-mt-6 items-center gap-10 border-t-2 border-tinta py-14 lg:grid-cols-2 lg:gap-16">
+        <section id="flor" class="grid scroll-mt-6 items-center gap-10 border-t-2 border-texto py-14 lg:grid-cols-2 lg:gap-16">
             <div>
                 <h2 class="text-4xl font-black tracking-tight sm:text-5xl">La flor</h2>
                 <div class="mt-5 max-w-[52ch] space-y-4 text-lg leading-relaxed">
@@ -278,7 +278,7 @@
             </div>
         </section>
 
-        <section id="truco" class="grid scroll-mt-6 items-center gap-10 border-t-2 border-tinta py-14 lg:grid-cols-2 lg:gap-16" x-data="{ nivel: 0 }">
+        <section id="truco" class="grid scroll-mt-6 items-center gap-10 border-t-2 border-texto py-14 lg:grid-cols-2 lg:gap-16" x-data="{ nivel: 0 }">
             <div>
                 <h2 class="text-4xl font-black tracking-tight sm:text-5xl">El truco</h2>
                 <div class="mt-5 max-w-[52ch] space-y-4 text-lg leading-relaxed">
@@ -307,7 +307,7 @@
             </div>
         </section>
 
-        <section id="mazo" class="scroll-mt-6 border-t-2 border-tinta py-14">
+        <section id="mazo" class="scroll-mt-6 border-t-2 border-texto py-14">
             <h2 class="text-4xl font-black tracking-tight sm:text-5xl">Irse al mazo</h2>
             <div class="mt-5 max-w-[56ch] space-y-4 text-lg leading-relaxed">
                 <p>Podés irte al mazo en cualquier momento. El rival suma lo que valía la mano.</p>
@@ -315,7 +315,7 @@
             </div>
         </section>
 
-        <section id="tanteo" class="grid scroll-mt-6 items-center gap-10 border-t-2 border-tinta py-14 lg:grid-cols-2 lg:gap-16" x-data="{ puntos: 12 }">
+        <section id="tanteo" class="grid scroll-mt-6 items-center gap-10 border-t-2 border-texto py-14 lg:grid-cols-2 lg:gap-16" x-data="{ puntos: 12 }">
             <div>
                 <h2 class="text-4xl font-black tracking-tight sm:text-5xl">El tanteo</h2>
                 <div class="mt-5 max-w-[52ch] space-y-4 text-lg leading-relaxed">

@@ -54,9 +54,46 @@ class Paleta
         ];
     }
 
+    /**
+     * Los tonos que cambian en el modo de noche. No son colores nuevos: la mesa
+     * baja un paso y Espada, Basto y Copa se aclaran para leerse sobre Tinta.
+     */
+    public const DE_NOCHE = [
+        'mesa' => ['nombre' => 'Mesa de noche', 'hex' => '#153F32', 'uso' => 'El paño toma el tono del paño hondo.'],
+        'barras' => ['nombre' => 'Barras de noche', 'hex' => '#0E2B21', 'uso' => 'Tanteador y barras, un paso más abajo.'],
+        'enlace' => ['nombre' => 'Espada clara', 'hex' => '#6FA0E8', 'uso' => 'Links sobre Tinta.'],
+        'gana' => ['nombre' => 'Basto claro', 'hex' => '#57B983', 'uso' => 'Victorias sobre Tinta.'],
+        'pierde' => ['nombre' => 'Copa clara', 'hex' => '#F0685C', 'uso' => 'Derrotas y alertas sobre Tinta.'],
+    ];
+
+    /**
+     * Las combinaciones de texto y fondo que solo existen de noche.
+     *
+     * @return list<array{texto: string, fondo: string, minimo: float, donde: string}>
+     */
+    public static function combinacionesDeNoche(): array
+    {
+        return [
+            ['texto' => 'naipe', 'fondo' => 'tinta', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Texto de las páginas de lectura'],
+            ['texto' => 'naipe', 'fondo' => 'mesa', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Texto sobre la mesa'],
+            ['texto' => 'naipe', 'fondo' => 'barras', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Texto del tanteador y las barras'],
+            ['texto' => 'oro', 'fondo' => 'mesa', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Cantos de envido'],
+            ['texto' => 'oro', 'fondo' => 'barras', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Puntos del tanteador'],
+            ['texto' => 'fosforo', 'fondo' => 'barras', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Fósforos del tanteador (gráfico)'],
+            ['texto' => 'enlace', 'fondo' => 'tinta', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Links'],
+            ['texto' => 'gana', 'fondo' => 'tinta', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Victorias'],
+            ['texto' => 'pierde', 'fondo' => 'tinta', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Derrotas y alertas'],
+        ];
+    }
+
+    public static function nombre(string $color): string
+    {
+        return (self::COLORES[$color] ?? self::DE_NOCHE[$color])['nombre'];
+    }
+
     public static function hex(string $color): string
     {
-        return self::COLORES[$color]['hex'];
+        return (self::COLORES[$color] ?? self::DE_NOCHE[$color])['hex'];
     }
 
     /**

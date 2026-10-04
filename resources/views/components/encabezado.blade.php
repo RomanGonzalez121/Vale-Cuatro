@@ -14,21 +14,25 @@
             <x-logo />
         </a>
 
-        <nav aria-label="Principal" class="hidden md:block">
-            <ul class="flex items-center gap-8">
-                @foreach ($enlaces as $ruta => [$texto])
-                    <li>
-                        <a href="{{ route($ruta) }}" class="enlace-nav" @if (request()->routeIs($ruta)) aria-current="page" @endif>{{ $texto }}</a>
-                    </li>
-                @endforeach
-            </ul>
-        </nav>
+        <div class="flex items-center gap-3 md:gap-7">
+            <nav aria-label="Principal" class="hidden md:block">
+                <ul class="flex items-center gap-8">
+                    @foreach ($enlaces as $ruta => [$texto])
+                        <li>
+                            <a href="{{ route($ruta) }}" class="enlace-nav" @if (request()->routeIs($ruta)) aria-current="page" @endif>{{ $texto }}</a>
+                        </li>
+                    @endforeach
+                </ul>
+            </nav>
 
-        <button type="button" class="menu-boton md:hidden" @click="abierto = ! abierto"
-            :aria-expanded="abierto.toString()" aria-expanded="false" aria-controls="menu-movil">
-            <span class="menu-icono" aria-hidden="true"><span></span><span></span><span></span></span>
-            <span x-text="abierto ? 'Cerrar' : 'Menú'">Menú</span>
-        </button>
+            <x-modo />
+
+            <button type="button" class="menu-boton md:hidden" @click="abierto = ! abierto"
+                :aria-expanded="abierto.toString()" aria-expanded="false" aria-controls="menu-movil">
+                <span class="menu-icono" aria-hidden="true"><span></span><span></span><span></span></span>
+                <span x-text="abierto ? 'Cerrar' : 'Menú'">Menú</span>
+            </button>
+        </div>
     </div>
 
     <nav id="menu-movil" aria-label="Principal, celular" x-show="abierto" x-cloak

@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { prepararLogos } from './logo';
 import mesa from './mesa';
+import { prepararModo } from './modo';
 import { duelo, tantoDeEnvido } from './reglas';
 
 Alpine.data('mesa', mesa);
@@ -11,3 +12,4 @@ window.Alpine = Alpine;
 Alpine.start();
 
 prepararLogos();
+prepararModo();

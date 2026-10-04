@@ -14,6 +14,17 @@
     <meta name="description" content="{{ $descripcion }}">
     <meta name="theme-color" content="{{ $superficie === 'pano' ? '#1f5a46' : '#fbfaf5' }}">
     <title>{{ $titulo ? "{$titulo} | Vale Cuatro" : 'Vale Cuatro, truco argentino online' }}</title>
+    {{-- El modo se decide antes de pintar: lo que eligió el visitante o, si no eligió, lo que pide su sistema. --}}
+    <script>
+        (function () {
+            var modo = null;
+            try { modo = localStorage.getItem('vale-cuatro:modo'); } catch (e) {}
+            if (modo !== 'dia' && modo !== 'noche') {
+                modo = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'noche' : 'dia';
+            }
+            document.documentElement.dataset.modo = modo;
+        })();
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="alternate icon" href="/favicon.ico" sizes="32x32">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

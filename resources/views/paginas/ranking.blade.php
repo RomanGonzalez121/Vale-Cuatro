@@ -29,7 +29,7 @@
                             <span class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                                 <span @class(['font-bold', 'text-xl' => $jugador['puesto'] <= 3, 'text-lg' => $jugador['puesto'] > 3])>{{ $jugador['apodo'] }}</span>
                                 @if ($jugador['bot'])
-                                    <span class="inline-flex items-center gap-1 rounded-md bg-tinta px-1.5 py-0.5 text-xs font-bold text-naipe">
+                                    <span class="inline-flex items-center gap-1 rounded-md bg-texto px-1.5 py-0.5 text-xs font-bold text-fondo">
                                         <x-icono nombre="bot" class="size-4" /> bot
                                     </span>
                                 @else

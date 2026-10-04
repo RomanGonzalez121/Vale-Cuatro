@@ -25,7 +25,7 @@
             </p>
         </header>
 
-        <section aria-labelledby="titulo-logo" class="border-t-2 border-tinta py-12">
+        <section aria-labelledby="titulo-logo" class="border-t-2 border-texto py-12">
             <h2 id="titulo-logo" class="text-3xl font-extrabold tracking-tight">Logo</h2>
             <p class="mt-3 max-w-[62ch] leading-relaxed">
                 El isotipo son cuatro fósforos en cuadrado: el grupo de cuatro del tanteador.
@@ -36,7 +36,7 @@
                 <div class="superficie-pano flex min-h-44 items-center justify-center rounded-xl p-5 sm:min-h-56 sm:p-8">
                     <x-logo class="text-[2rem] sm:text-6xl" />
                 </div>
-                <div class="flex min-h-44 items-center justify-center rounded-xl border-2 border-tinta p-5 sm:min-h-56 sm:p-8">
+                <div class="flex min-h-44 items-center justify-center rounded-xl border-2 border-texto p-5 sm:min-h-56 sm:p-8">
                     <x-logo class="text-[2rem] sm:text-6xl" />
                 </div>
             </div>
@@ -65,22 +65,39 @@
             </div>
         </section>
 
-        <section aria-labelledby="titulo-colores" class="border-t-2 border-tinta py-12">
+        <section aria-labelledby="titulo-colores" class="border-t-2 border-texto py-12">
             <h2 id="titulo-colores" class="text-3xl font-extrabold tracking-tight">Colores</h2>
             <p class="mt-3 max-w-[62ch] leading-relaxed">
                 Nueve tintas. Las cuatro de los palos tienen una función cada una y no se usan como decoración.
                 Hay dos superficies y no dos temas: la mesa, en paño, y las páginas de lectura, en naipe.
             </p>
 
-            <ul class="mt-8 overflow-hidden rounded-xl border-2 border-tinta">
+            <ul class="mt-8 overflow-hidden rounded-xl border-2 border-texto">
                 @foreach ($colores as $token => $color)
                     <li class="grid gap-x-6 gap-y-1 px-5 py-4 sm:grid-cols-[13rem_1fr] sm:items-baseline {{ in_array($token, $claros) ? 'text-tinta' : 'text-naipe' }}"
-                        style="background-color: var(--color-{{ $token }})">
+                        style="background-color: {{ $color['hex'] }}">
                         <p class="text-xl font-extrabold">
                             {{ $color['nombre'] }}
                             <span class="ml-2 text-base font-normal tabular-nums">{{ $color['hex'] }}</span>
                         </p>
                         <p class="leading-snug">{{ $color['uso'] }}</p>
+                    </li>
+                @endforeach
+            </ul>
+
+            <h3 class="mt-12 text-xl font-extrabold">De día y de noche</h3>
+            <p class="mt-2 max-w-[62ch] leading-relaxed">
+                El sitio tiene modo claro y oscuro: el club de día y de noche. Se cambia con la carta del encabezado,
+                que se da vuelta. De noche las páginas de lectura pasan a Tinta, la mesa baja un paso y Espada, Basto y Copa
+                se aclaran para leerse como texto. Las cartas no cambian nunca.
+            </p>
+            <ul class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                @foreach (Paleta::DE_NOCHE as $tono)
+                    <li class="rounded-xl border-2 border-texto p-4" style="background-color: #161A18; color: #FBFAF5">
+                        <span class="block h-10 rounded-md" style="background-color: {{ $tono['hex'] }}"></span>
+                        <span class="mt-3 block font-extrabold leading-tight">{{ $tono['nombre'] }}</span>
+                        <span class="block text-sm tabular-nums">{{ $tono['hex'] }}</span>
+                        <span class="mt-1 block text-sm leading-snug">{{ $tono['uso'] }}</span>
                     </li>
                 @endforeach
             </ul>
@@ -104,13 +121,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($combinaciones as $c)
+                        @foreach ([...$combinaciones, ...Paleta::combinacionesDeNoche()] as $c)
                             <tr>
                                 <td>
                                     <span class="inline-block rounded-md px-3 py-1.5 text-lg font-bold"
-                                        style="color: var(--color-{{ $c['texto'] }}); background-color: var(--color-{{ $c['fondo'] }}); border: 1px solid var(--color-tinta)">Truco</span>
+                                        style="color: {{ Paleta::hex($c['texto']) }}; background-color: {{ Paleta::hex($c['fondo']) }}; border: 1px solid currentColor">Truco</span>
                                 </td>
-                                <td>{{ $colores[$c['texto']]['nombre'] }} sobre {{ $colores[$c['fondo']]['nombre'] }}</td>
+                                <td>{{ Paleta::nombre($c['texto']) }} sobre {{ Paleta::nombre($c['fondo']) }}</td>
                                 <td>{{ $c['donde'] }}</td>
                                 <td class="numero font-bold">{{ number_format(Paleta::contraste($c['texto'], $c['fondo']), 1, ',') }} a 1</td>
                                 <td class="numero">{{ number_format($c['minimo'], 1, ',') }} a 1</td>
@@ -121,7 +138,7 @@
             </div>
         </section>
 
-        <section aria-labelledby="titulo-tipografia" class="border-t-2 border-tinta py-12">
+        <section aria-labelledby="titulo-tipografia" class="border-t-2 border-texto py-12">
             <h2 id="titulo-tipografia" class="text-3xl font-extrabold tracking-tight">Tipografía</h2>
             <p class="mt-3 max-w-[62ch] leading-relaxed">
                 Dos familias, las dos de fundidoras argentinas. Chivo, de Omnibus-Type, hace toda la interfaz.
@@ -133,7 +150,7 @@
                     <h3 class="text-xl font-extrabold">Chivo</h3>
                     <ul class="mt-4">
                         @foreach ($pesos as $peso => $nombre)
-                            <li class="flex items-baseline justify-between gap-4 border-b border-tinta/15 py-2.5">
+                            <li class="flex items-baseline justify-between gap-4 border-b border-texto/15 py-2.5">
                                 <span class="text-2xl sm:text-3xl" style="font-weight: {{ $peso }}">Mano a mano</span>
                                 <span class="text-sm tabular-nums">{{ $nombre }}, {{ $peso }}</span>
                             </li>
@@ -163,7 +180,7 @@
             </div>
         </section>
 
-        <section aria-labelledby="titulo-tanteador" class="border-t-2 border-tinta py-12">
+        <section aria-labelledby="titulo-tanteador" class="border-t-2 border-texto py-12">
             <h2 id="titulo-tanteador" class="text-3xl font-extrabold tracking-tight">Tanteador de fósforos</h2>
             <p class="mt-3 max-w-[62ch] leading-relaxed">
                 Los puntos se anotan como en el club: grupos de cinco, con cuatro fósforos en cuadrado y uno cruzado.
@@ -177,7 +194,7 @@
             </div>
         </section>
 
-        <section aria-labelledby="titulo-mazo" class="border-t-2 border-tinta py-12">
+        <section aria-labelledby="titulo-mazo" class="border-t-2 border-texto py-12">
             <h2 id="titulo-mazo" class="text-3xl font-extrabold tracking-tight">Mazo</h2>
             <p class="mt-3 max-w-[62ch] leading-relaxed">
                 Las 40 cartas, dibujadas para este proyecto. Cada palo tiene su tinta y su pinta:
@@ -209,7 +226,7 @@
             </div>
         </section>
 
-        <section aria-labelledby="titulo-iconos" class="border-t-2 border-tinta py-12">
+        <section aria-labelledby="titulo-iconos" class="border-t-2 border-texto py-12">
             <h2 id="titulo-iconos" class="text-3xl font-extrabold tracking-tight">Íconos</h2>
             <p class="mt-3 max-w-[62ch] leading-relaxed">
                 Dibujados sobre una grilla de 24 px con el trazo de los fósforos:

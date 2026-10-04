@@ -12,12 +12,12 @@
             </p>
         </header>
 
-        <ul class="border-t-2 border-tinta">
+        <ul class="border-t-2 border-texto">
             @foreach ($partidas as $partida)
                 @php($gano = $partida['vos'] > $partida['ellos'])
-                <li class="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 border-b border-tinta/15 py-5 sm:grid-cols-[11rem_1fr_auto]">
+                <li class="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 border-b border-texto/15 py-5 sm:grid-cols-[11rem_1fr_auto]">
                     <p class="leading-none">
-                        <span @class(['block text-sm font-bold', 'text-basto' => $gano, 'text-copa' => ! $gano])>{{ $gano ? 'Ganaste' : 'Perdiste' }}</span>
+                        <span @class(['block text-sm font-bold', 'text-gana' => $gano, 'text-pierde' => ! $gano])>{{ $gano ? 'Ganaste' : 'Perdiste' }}</span>
                         <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</span>
                     </p>
                     <p class="col-span-2 row-start-2 leading-snug sm:col-span-1 sm:row-start-auto">

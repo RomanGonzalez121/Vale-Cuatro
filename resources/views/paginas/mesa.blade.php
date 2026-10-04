@@ -4,7 +4,10 @@
     <div x-data="mesa(@js($manos))" class="mesa relative mx-auto flex min-h-dvh max-w-3xl flex-col">
         <div class="flex items-center justify-between gap-3 px-4 py-2.5">
             <a href="{{ route('portada') }}" class="rounded text-lg no-underline" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
-            <a href="{{ route('portada') }}" class="text-sm font-semibold underline underline-offset-4">Salir de la mesa</a>
+            <div class="flex items-center gap-2">
+                <x-modo />
+                <a href="{{ route('portada') }}" class="text-sm font-semibold underline underline-offset-4">Salir de la mesa</a>
+            </div>
         </div>
 
         <h1 class="sr-only">Mesa contra el bot</h1>
