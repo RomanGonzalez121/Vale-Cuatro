@@ -8,7 +8,7 @@
         'espada' => 'Espada', 'basto' => 'Basto', 'oro' => 'Oro', 'copa' => 'Copa',
         'envido' => 'Envido', 'truco' => 'Truco', 'mazo' => 'Irse al mazo', 'mano' => 'Quién es mano',
         'repartir' => 'Repartir', 'quiero' => 'Quiero', 'no-quiero' => 'No quiero', 'tiempo' => 'Tiempo',
-        'bot' => 'Bot', 'invitar' => 'Invitar', 'ranking' => 'Ranking', 'repetir' => 'Repetir partida', 'sonido' => 'Sonido',
+        'bot' => 'Bot', 'invitar' => 'Invitar', 'ranking' => 'Ranking', 'repetir' => 'Repetir partida', 'sonido' => 'Sonido', 'salir' => 'Salir',
     ];
 
     $pesos = [300 => 'Liviana', 400 => 'Normal', 600 => 'Seminegra', 800 => 'Extranegra', 900 => 'Negra'];

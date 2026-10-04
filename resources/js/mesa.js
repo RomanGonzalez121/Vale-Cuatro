@@ -66,7 +66,7 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
 
     get tamanoDeVoz() {
         // 0.56 em es el ancho medio de una letra de Piazzolla Black Italic; 0.6 em, el relleno de la ficha.
-        return `min(8.5rem, calc(88cqw / ${Math.max(this.voz.texto.length, 4) * 0.56 + 0.6}))`;
+        return `min(11rem, 24dvh, calc(88cqw / ${Math.max(this.voz.texto.length, 4) * 0.56 + 0.6}))`;
     },
 
     resultadoDeBaza(numero) {

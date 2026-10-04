@@ -61,6 +61,58 @@
     --color-pierde: #f0685c;
 }
 
+/*
+ | Barra de scroll propia: fina y sobria. Una píldora del color del texto, a
+ | media tinta, sobre un carril invisible; al pasar el mouse toma el color
+ | pleno y engorda apenas. Sigue sola al modo de día y de noche, porque usa
+ | --color-texto. Sobre el paño va en Naipe.
+ */
+html {
+    --barra: color-mix(in srgb, var(--color-texto) 36%, transparent);
+    --barra-activa: var(--color-texto);
+}
+
+html:has(body.superficie-pano) {
+    --barra: color-mix(in srgb, var(--color-naipe) 42%, transparent);
+    --barra-activa: var(--color-naipe);
+}
+
+::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    min-height: 3rem;
+    border: 5px solid transparent;
+    border-radius: 999px;
+    background-color: var(--barra);
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+    min-width: 3rem;
+}
+
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+    border-width: 3px;
+    background-color: var(--barra-activa);
+}
+
+/* Firefox: mismo color, en su versión fina. */
+@supports not selector(::-webkit-scrollbar) {
+    html {
+        scrollbar-color: var(--barra) transparent;
+        scrollbar-width: thin;
+    }
+}
+
 /* Cambio de modo: la página nueva se abre en círculo desde la carta que se dio vuelta. */
 @media (prefers-reduced-motion: no-preference) {
     ::view-transition-old(root),
@@ -654,26 +706,103 @@
     }
 
     /* La mesa mide sus piezas contra su propio ancho, no contra el de la ventana. */
-    /* Las cartas también se achican con el alto, para que la mesa entre sin scroll. */
+    /*
+     | Todas las cartas de la mesa salen de una sola medida, --b, el ancho de una
+     | carta jugada. Se calcula con el alto de la ventana: lo que queda después de
+     | las barras se reparte entre las tres filas de cartas (5,6 veces --b en
+     | total). Así la mesa entra siempre entera, sin scroll, y en pantallas
+     | grandes las cartas crecen hasta un tope.
+     */
     .mesa {
         container-type: inline-size;
-        --ancho-baza: min(18cqw, 9.5dvh, 6.25rem);
-        --ancho-rival: min(13cqw, 7dvh, 4.75rem);
+        --b: max(2.75rem, min(calc((100dvh - 21.5rem) / 5.7), 18cqw, 7.5rem));
+        --ancho-baza: var(--b);
+        --ancho-rival: calc(var(--b) * 0.7);
     }
 
-    /* El rival tiene las cartas en el borde de la mesa: asoman debajo del tanteador. */
+    @media (min-width: 64rem) {
+        .mesa {
+            --b: max(2.75rem, min(calc((100dvh - 17rem) / 5.7), 20cqw, 8rem));
+        }
+    }
+
     .mesa-rival {
-        height: calc(var(--ancho-rival) * 1.06);
-        overflow: hidden;
+        min-height: calc(var(--ancho-rival) * 1.56);
     }
 
     .mesa-rival > * {
         width: var(--ancho-rival);
-        margin-top: calc(var(--ancho-rival) * -0.5);
     }
 
     .mesa-mano {
-        --ancho-carta: min(26cqw, 14dvh, 8.5rem);
+        --ancho-carta: calc(var(--b) * 1.4);
+    }
+
+    /* La mesa de juego ocupa la pantalla completa: barra, campo y cantos. */
+    .mesa-completa {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .mesa-barra {
+        display: grid;
+        grid-template-areas: 'logo acciones' 'tanteo tanteo';
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 0.125rem 1rem;
+        padding: 0.375rem 1rem 0.75rem;
+        background-color: var(--color-pano-hondo);
+    }
+
+    @media (min-width: 64rem) {
+        .mesa-barra {
+            grid-template-areas: 'logo tanteo acciones';
+            grid-template-columns: 1fr minmax(0, 42rem) 1fr;
+            gap: 2rem;
+            padding: 0.625rem 1.5rem;
+        }
+    }
+
+    /* El campo de juego, con una línea que marca el borde de la mesa. */
+    .mesa-campo {
+        position: relative;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-height: 0;
+        padding: 1.125rem 1rem 0.5rem;
+    }
+
+    .mesa-campo::before {
+        content: '';
+        position: absolute;
+        inset: 0.5rem;
+        border: 1.5px solid color-mix(in srgb, var(--color-naipe) 14%, transparent);
+        border-radius: 1.5rem;
+        pointer-events: none;
+    }
+
+    /* El mazo, apilado al lado del rival: de ahí salen las cartas al repartir. */
+    .mesa-mazo {
+        position: relative;
+        width: var(--ancho-rival);
+        aspect-ratio: 100 / 156;
+        transform: rotate(7deg);
+    }
+
+    .mesa-mazo > * {
+        position: absolute;
+        inset: 0;
+    }
+
+    .mesa-mazo > :nth-child(2) {
+        transform: translate(-2px, -2px);
+    }
+
+    .mesa-mazo > :nth-child(3) {
+        transform: translate(-4px, -4px);
     }
 
     .hueco-baza {
@@ -702,14 +831,14 @@
 
     /* Las dos cartas de una baza se pisan en diagonal: la del rival asoma arriba a la izquierda. */
     .hueco-rival {
-        transform: translateX(-20%) rotate(-3deg);
+        transform: translateX(-27%) rotate(-3deg);
     }
 
     .hueco-propio {
         position: relative;
         z-index: 1;
-        margin-top: calc(var(--ancho-baza) * -0.95);
-        transform: translateX(20%) rotate(2deg);
+        margin-top: calc(var(--ancho-baza) * -0.85);
+        transform: translateX(27%) rotate(2deg);
     }
 
     /* Cantos: la voz de los jugadores. El único gesto fuerte de la pantalla. */
