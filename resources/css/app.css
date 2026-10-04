@@ -1,0 +1,882 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/chivo/wght.css';
+@import '@fontsource-variable/chivo/wght-italic.css';
+@import '@fontsource/piazzolla/latin-900-italic.css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/*
+ | Tokens de Vale Cuatro. Se borra la paleta y las fuentes que trae Tailwind
+ | para que ninguna vista pueda usar un color o una tipografía fuera de estos.
+ */
+@theme {
+    --color-*: initial;
+    --color-pano: #1f5a46;
+    --color-pano-hondo: #153f32;
+    --color-naipe: #fbfaf5;
+    --color-tinta: #161a18;
+    --color-oro: #f0b429;
+    --color-copa: #c93327;
+    --color-espada: #2a5caa;
+    --color-basto: #2a7d4f;
+    --color-fosforo: #e8c98a;
+    --color-sombra: #0e2b21;
+
+    --font-*: initial;
+    --font-sans: 'Chivo Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-canto: 'Piazzolla', Georgia, serif;
+
+    --ease-llegada: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
+    body {
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Dos superficies, no dos temas: la mesa (paño) y las páginas de lectura (naipe). */
+    .superficie-pano {
+        background-color: var(--color-pano);
+        color: var(--color-naipe);
+    }
+
+    .superficie-naipe {
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+    }
+
+    :focus-visible {
+        outline: 3px solid var(--color-tinta);
+        outline-offset: 3px;
+        border-radius: 4px;
+    }
+
+    .superficie-pano :focus-visible,
+    .sobre-pano :focus-visible {
+        outline-color: var(--color-oro);
+    }
+
+    ::selection {
+        background-color: var(--color-oro);
+        color: var(--color-tinta);
+    }
+}
+
+@layer components {
+    .saltar {
+        position: absolute;
+        left: 1rem;
+        top: -4rem;
+        z-index: 50;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+        font-weight: 700;
+    }
+
+    .saltar:focus {
+        top: 1rem;
+    }
+
+    /* Botones: fichas llenas. Cada color cumple su función de palo. */
+    .boton {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 3rem;
+        padding: 0.625rem 1.25rem;
+        border: 2px solid transparent;
+        border-radius: 0.625rem;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 140ms var(--ease-llegada);
+    }
+
+    .boton:active {
+        transform: scale(0.97);
+    }
+
+    .boton[disabled] {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .boton-naipe {
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+    }
+
+    .boton-tinta {
+        background-color: var(--color-tinta);
+        color: var(--color-naipe);
+    }
+
+    .boton-linea {
+        border-color: currentColor;
+        background-color: transparent;
+    }
+
+    .boton-oro {
+        background-color: var(--color-oro);
+        color: var(--color-tinta);
+    }
+
+    .boton-copa {
+        background-color: var(--color-copa);
+        color: var(--color-naipe);
+    }
+
+    .boton-basto {
+        background-color: var(--color-basto);
+        color: var(--color-naipe);
+    }
+
+    /*
+     | Link de navegación: el subrayado es un fósforo. El palito se dibuja de
+     | izquierda a derecha y al final se enciende la cabeza.
+     */
+    .enlace-nav {
+        position: relative;
+        display: inline-block;
+        padding: 0.5rem 0;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .enlace-nav::before,
+    .enlace-nav::after {
+        content: '';
+        position: absolute;
+        bottom: 0.2rem;
+    }
+
+    .enlace-nav::before {
+        left: 0;
+        right: 0.5rem;
+        height: 2px;
+        background-color: currentColor;
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition: transform 220ms var(--ease-llegada);
+    }
+
+    .enlace-nav::after {
+        right: 0;
+        width: 0.4375rem;
+        height: 0.4375rem;
+        margin-bottom: -0.15625rem;
+        border-radius: 50%;
+        background-color: var(--color-copa);
+        opacity: 0;
+        transform: scale(0.5);
+        transition:
+            opacity 120ms var(--ease-llegada),
+            transform 160ms var(--ease-llegada);
+    }
+
+    .superficie-pano .enlace-nav::after {
+        background-color: var(--color-oro);
+    }
+
+    .enlace-nav[aria-current='page']::before,
+    .enlace-nav:focus-visible::before {
+        transform: scaleX(1);
+    }
+
+    .enlace-nav[aria-current='page']::after,
+    .enlace-nav:focus-visible::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /*
+     | Menú del celular. El botón son tres fósforos que se cruzan al abrir, y el
+     | panel se despliega sobre la página con los links entrando de a uno.
+     */
+    .menu-boton {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.7rem;
+        min-height: 2.75rem;
+        padding: 0 0.25rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .menu-icono {
+        position: relative;
+        display: block;
+        width: 1.5rem;
+        height: 1rem;
+    }
+
+    .menu-icono span {
+        position: absolute;
+        left: 0;
+        width: 1.1rem;
+        height: 2px;
+        background-color: currentColor;
+        transition:
+            transform 220ms var(--ease-llegada),
+            opacity 140ms var(--ease-llegada);
+    }
+
+    .menu-icono span::after {
+        content: '';
+        position: absolute;
+        top: -0.125rem;
+        right: -0.4rem;
+        width: 0.375rem;
+        height: 0.375rem;
+        border-radius: 50%;
+        background-color: currentColor;
+    }
+
+    .menu-icono span:nth-child(1) {
+        top: 0;
+    }
+
+    .menu-icono span:nth-child(2) {
+        top: 0.4375rem;
+    }
+
+    .menu-icono span:nth-child(3) {
+        top: 0.875rem;
+    }
+
+    .menu-boton[aria-expanded='true'] .menu-icono span:nth-child(1) {
+        transform: translate(0.1rem, 0.4375rem) rotate(45deg);
+    }
+
+    .menu-boton[aria-expanded='true'] .menu-icono span:nth-child(2) {
+        opacity: 0;
+        transform: scaleX(0.6);
+    }
+
+    .menu-boton[aria-expanded='true'] .menu-icono span:nth-child(3) {
+        transform: translate(0.1rem, -0.4375rem) rotate(-45deg);
+    }
+
+    .superficie-pano .menu-movil {
+        background-color: var(--color-pano-hondo);
+    }
+
+    .superficie-naipe .menu-movil {
+        border-bottom: 2px solid var(--color-tinta);
+        background-color: var(--color-naipe);
+    }
+
+    .menu-movil li + li {
+        border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    }
+
+    .menu-movil li {
+        animation: entrar-item 240ms var(--ease-llegada) both;
+        animation-delay: calc(var(--i, 0) * 40ms + 30ms);
+    }
+
+    /*
+     | Link del menú del celular: al apretarlo (o al pasar el mouse) se corre
+     | hacia la derecha, el ícono se inclina y entra un fósforo desde el borde.
+     */
+    .enlace-menu {
+        position: relative;
+        transition: transform 180ms var(--ease-llegada);
+    }
+
+    .enlace-menu .icono {
+        transition: transform 200ms var(--ease-llegada);
+    }
+
+    .enlace-menu::before,
+    .enlace-menu::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        opacity: 0;
+    }
+
+    .enlace-menu::before {
+        right: 1.1rem;
+        width: 1.6rem;
+        height: 2px;
+        margin-top: -1px;
+        background-color: currentColor;
+        transform: translateX(-0.75rem);
+        transition:
+            opacity 140ms var(--ease-llegada),
+            transform 200ms var(--ease-llegada);
+    }
+
+    .enlace-menu::after {
+        right: 0.5rem;
+        width: 0.5rem;
+        height: 0.5rem;
+        margin-top: -0.25rem;
+        border-radius: 50%;
+        background-color: var(--color-copa);
+        transform: scale(0.5);
+        transition:
+            opacity 120ms var(--ease-llegada),
+            transform 160ms var(--ease-llegada);
+    }
+
+    .superficie-pano .enlace-menu::after {
+        background-color: var(--color-oro);
+    }
+
+    .enlace-menu:active,
+    .enlace-menu:focus-visible {
+        transform: translateX(0.4rem);
+    }
+
+    .enlace-menu:active .icono,
+    .enlace-menu:focus-visible .icono {
+        transform: rotate(-12deg) scale(1.12);
+    }
+
+    .enlace-menu:active::before,
+    .enlace-menu:focus-visible::before {
+        opacity: 1;
+        transform: none;
+    }
+
+    .enlace-menu:active::after,
+    .enlace-menu:focus-visible::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .menu-movil [aria-current='page'] {
+        text-decoration: underline;
+        text-decoration-thickness: 3px;
+        text-underline-offset: 6px;
+    }
+
+    .menu-entra {
+        transition:
+            opacity 200ms var(--ease-llegada),
+            transform 200ms var(--ease-llegada);
+    }
+
+    .menu-sale {
+        transition:
+            opacity 130ms var(--ease-llegada),
+            transform 130ms var(--ease-llegada);
+    }
+
+    .menu-fuera {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+
+    /*
+     | Logo. La animación (contar hasta cuatro) está en resources/js/logo.js.
+     | Acá solo se prepara cada fósforo para girar sobre sí mismo y la llama
+     | que enciende la cabeza: Oro sobre el paño, Copa sobre el naipe.
+     */
+    .iso-fosforo,
+    .iso-llama {
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .iso-llama {
+        fill: var(--color-copa);
+        opacity: 0;
+    }
+
+    .superficie-pano .iso-llama,
+    .sobre-pano .iso-llama {
+        fill: var(--color-oro);
+    }
+
+    /* Cómo se juega: piezas de las mesitas para probar cada regla. */
+    .carta-duelo {
+        transition:
+            transform 220ms var(--ease-llegada),
+            opacity 220ms var(--ease-llegada);
+    }
+
+    .carta-duelo.gana {
+        transform: translateY(-9%);
+    }
+
+    .carta-duelo.pierde {
+        opacity: 0.45;
+    }
+
+    .aparece {
+        transition:
+            opacity 240ms var(--ease-llegada),
+            transform 240ms var(--ease-llegada);
+    }
+
+    .desde-chico {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+
+    .pestana {
+        min-height: 2.75rem;
+        padding: 0.5rem 0.875rem;
+        border: 2px solid currentColor;
+        border-radius: 0.625rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.2;
+        cursor: pointer;
+        transition: transform 140ms var(--ease-llegada);
+    }
+
+    .pestana:active {
+        transform: scale(0.97);
+    }
+
+    .pestana[aria-pressed='true'] {
+        border-color: var(--color-tinta);
+        background-color: var(--color-tinta);
+        color: var(--color-naipe);
+    }
+
+    .boton .icono {
+        transition: transform 200ms var(--ease-llegada);
+    }
+
+    .boton-linea {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .boton-linea::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: 0.5rem;
+        background-color: currentColor;
+        opacity: 0;
+        transition: opacity 160ms ease;
+    }
+
+    .enlace {
+        color: var(--color-espada);
+        font-weight: 600;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+    }
+
+    /* Naipes. Las proporciones del borde salen del viewBox 100 x 156 del SVG. */
+    .carta {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 8% / 5.13%;
+    }
+
+    /* La única sombra del sitio: corta y dura, de un objeto apoyado en la mesa. */
+    .superficie-pano .carta,
+    .sobre-pano .carta {
+        box-shadow: 2px 3px 0 var(--color-sombra);
+    }
+
+    .carta-indice {
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        fill: var(--color-tinta);
+    }
+
+    .tinta-oro {
+        color: var(--color-oro);
+    }
+
+    .tinta-copa {
+        color: var(--color-copa);
+    }
+
+    .tinta-espada {
+        color: var(--color-espada);
+    }
+
+    .tinta-basto {
+        color: var(--color-basto);
+    }
+
+    /* Mano en abanico: tres huecos fijos, la carta se anima adentro. */
+    .abanico {
+        display: flex;
+        justify-content: center;
+    }
+
+    .abanico > * {
+        width: var(--ancho-carta, 6rem);
+        flex: none;
+    }
+
+    .abanico > * + * {
+        margin-left: calc(var(--ancho-carta, 6rem) * -0.12);
+    }
+
+    .abanico > :nth-child(1) {
+        transform: rotate(-7deg) translateY(5%);
+    }
+
+    .abanico > :nth-child(2) {
+        transform: translateY(-2%);
+        z-index: 1;
+    }
+
+    .abanico > :nth-child(3) {
+        transform: rotate(7deg) translateY(5%);
+    }
+
+    .naipe-jugable {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        border-radius: 8% / 5.13%;
+        background: none;
+        cursor: pointer;
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    .naipe-jugable:active {
+        transform: scale(0.97);
+    }
+
+    .naipe-jugable[disabled] {
+        cursor: default;
+    }
+
+    /* La mesa mide sus piezas contra su propio ancho, no contra el de la ventana. */
+    /* Las cartas también se achican con el alto, para que la mesa entre sin scroll. */
+    .mesa {
+        container-type: inline-size;
+        --ancho-baza: min(18cqw, 9.5dvh, 6.25rem);
+        --ancho-rival: min(13cqw, 7dvh, 4.75rem);
+    }
+
+    /* El rival tiene las cartas en el borde de la mesa: asoman debajo del tanteador. */
+    .mesa-rival {
+        height: calc(var(--ancho-rival) * 1.06);
+        overflow: hidden;
+    }
+
+    .mesa-rival > * {
+        width: var(--ancho-rival);
+        margin-top: calc(var(--ancho-rival) * -0.5);
+    }
+
+    .mesa-mano {
+        --ancho-carta: min(26cqw, 14dvh, 8.5rem);
+    }
+
+    .hueco-baza {
+        width: var(--ancho-baza);
+        aspect-ratio: 100 / 156;
+        border: 1.5px dashed color-mix(in srgb, var(--color-naipe) 14%, transparent);
+        border-radius: 8% / 5.13%;
+    }
+
+    .baza-actual .hueco-baza {
+        border-color: color-mix(in srgb, var(--color-naipe) 45%, transparent);
+    }
+
+    .hueco-baza:not(:empty) {
+        border-color: transparent;
+    }
+
+    .mesa-acciones .boton {
+        flex: 1 1 0;
+        min-width: 0;
+        gap: 0.35rem;
+        padding-inline: 0.375rem;
+        font-size: 0.95rem;
+        white-space: nowrap;
+    }
+
+    /* Las dos cartas de una baza se pisan en diagonal: la del rival asoma arriba a la izquierda. */
+    .hueco-rival {
+        transform: translateX(-20%) rotate(-3deg);
+    }
+
+    .hueco-propio {
+        position: relative;
+        z-index: 1;
+        margin-top: calc(var(--ancho-baza) * -0.95);
+        transform: translateX(20%) rotate(2deg);
+    }
+
+    /* Cantos: la voz de los jugadores. El único gesto fuerte de la pantalla. */
+    .canto {
+        font-family: var(--font-canto);
+        font-style: italic;
+        font-weight: 900;
+        line-height: 0.9;
+        letter-spacing: -0.01em;
+    }
+
+    .canto-ficha {
+        display: inline-block;
+        padding: 0.06em 0.3em 0.16em;
+        border-radius: 0.07em;
+        white-space: nowrap;
+    }
+
+    .canto-oro {
+        color: var(--color-oro);
+    }
+
+    .canto-copa {
+        background-color: var(--color-copa);
+        color: var(--color-naipe);
+    }
+
+    .canto-basto {
+        background-color: var(--color-basto);
+        color: var(--color-naipe);
+    }
+
+    .canto-naipe {
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+    }
+
+    .voz {
+        --giro: -3deg;
+        opacity: 0;
+        transform: scale(0.94) rotate(var(--giro));
+        transition:
+            opacity 140ms var(--ease-llegada),
+            transform 140ms var(--ease-llegada);
+        pointer-events: none;
+    }
+
+    .voz[data-quien='rival'] {
+        --giro: 2.5deg;
+    }
+
+    .voz[data-visible='true'] {
+        opacity: 1;
+        transform: scale(1) rotate(var(--giro));
+        transition-duration: 240ms;
+    }
+
+    /* Tanteador: cada punto es un fósforo que cae en su lugar. */
+    .fosforo {
+        opacity: 0;
+        transform: translateY(-9px) rotate(-14deg);
+        transform-box: fill-box;
+        transform-origin: center;
+        transition:
+            opacity 120ms var(--ease-llegada),
+            transform 120ms var(--ease-llegada);
+    }
+
+    .fosforo.puesto {
+        opacity: 1;
+        transform: none;
+        transition-duration: 260ms;
+    }
+
+    /* Reparto de la portada: predeterminado, corre en CSS para no trabarse al cargar. */
+    .se-reparte {
+        animation: repartir 300ms var(--ease-llegada) both;
+        animation-delay: calc(var(--orden, 0) * 70ms + 120ms);
+    }
+
+    .se-canta {
+        --giro: 2.5deg;
+        transform: rotate(var(--giro));
+        animation: cantar 260ms var(--ease-llegada) both;
+        animation-delay: 760ms;
+    }
+
+    .tabla {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tabla th {
+        padding: 0.625rem 0.75rem 0.625rem 0;
+        border-bottom: 2px solid var(--color-tinta);
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-align: left;
+        vertical-align: bottom;
+    }
+
+    .tabla td {
+        padding: 0.75rem 0.75rem 0.75rem 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--color-tinta) 16%, transparent);
+        vertical-align: middle;
+    }
+
+    .tabla .numero {
+        text-align: right;
+    }
+}
+
+@keyframes repartir {
+    from {
+        opacity: 0;
+        transform: translate(45%, -130%) rotate(16deg);
+    }
+}
+
+@keyframes cantar {
+    from {
+        opacity: 0;
+        transform: scale(0.94) rotate(var(--giro));
+    }
+}
+
+@keyframes entrar-item {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+}
+
+@keyframes fundido {
+    from {
+        opacity: 0;
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    /* El botón se levanta como una carta que se agarra de la mesa y el ícono acompaña. */
+    .boton:not([disabled]):hover {
+        transform: translateY(-2px) rotate(-1deg);
+    }
+
+    .boton:not([disabled]):hover .icono {
+        transform: rotate(-12deg) scale(1.12);
+    }
+
+    .boton-linea:not([disabled]):hover::before {
+        opacity: 0.14;
+    }
+
+    .boton:not([disabled]):active {
+        transform: scale(0.97);
+    }
+
+    .enlace-menu:hover {
+        transform: translateX(0.4rem);
+    }
+
+    .enlace-menu:hover .icono {
+        transform: rotate(-12deg) scale(1.12);
+    }
+
+    .enlace-menu:hover::before {
+        opacity: 1;
+        transform: none;
+    }
+
+    .enlace-menu:hover::after {
+        opacity: 1;
+        transform: scale(1);
+        transition-delay: 90ms;
+    }
+
+    .enlace-nav:hover::before {
+        transform: scaleX(1);
+    }
+
+    .enlace-nav:hover::after {
+        opacity: 1;
+        transform: scale(1);
+        transition-delay: 110ms;
+    }
+
+
+    .naipe-jugable:not([disabled]):hover {
+        transform: translateY(-6%);
+    }
+
+    .naipe-jugable:not([disabled]):active {
+        transform: translateY(-6%) scale(0.97);
+    }
+}
+
+/* Con movimiento reducido todo pasa a un fundido corto: se quedan la opacidad y el color. */
+@media (prefers-reduced-motion: reduce) {
+    .boton,
+    .boton:not([disabled]):hover,
+    .boton:not([disabled]):hover .icono,
+    .naipe-jugable,
+    .naipe-jugable:not([disabled]):hover {
+        transform: none;
+        transition: none;
+    }
+
+    .enlace-nav::before {
+        transition: none;
+    }
+
+    .enlace-nav::after,
+    .enlace-menu::before,
+    .enlace-menu::after {
+        transform: none;
+        transition: opacity 150ms ease;
+    }
+
+    .enlace-menu,
+    .enlace-menu:hover,
+    .enlace-menu:active,
+    .enlace-menu:focus-visible,
+    .enlace-menu .icono,
+    .enlace-menu:hover .icono {
+        transform: none;
+        transition: none;
+    }
+
+    .voz,
+    .voz[data-visible='true'] {
+        transform: rotate(var(--giro));
+        transition: opacity 150ms ease;
+    }
+
+    .fosforo,
+    .fosforo.puesto {
+        transform: none;
+        transition: opacity 150ms ease;
+    }
+
+    .se-reparte,
+    .se-canta,
+    .menu-movil li {
+        animation-name: fundido;
+        animation-duration: 150ms;
+    }
+
+    .menu-icono span {
+        transition: none;
+    }
+
+    .menu-fuera {
+        transform: none;
+    }
+}
