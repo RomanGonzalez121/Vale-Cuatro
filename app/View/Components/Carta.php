@@ -21,6 +21,16 @@ class Carta extends Component
     private const FIGURAS = [10 => 'sota', 11 => 'caballo', 12 => 'rey'];
 
     /**
+     * Dónde va el palo que cada figura lleva en la mano, como [x, y, ancho, alto].
+     * Es grande a propósito: el palo tiene que leerse con la carta en chico.
+     */
+    private const PALO_EN_MANO = [
+        'sota' => [61, 34, 28, 42],
+        'caballo' => [58, 12, 26, 39],
+        'rey' => [62, 37, 27, 40.5],
+    ];
+
+    /**
      * La pinta: los cortes en el marco que identifican al palo en la baraja
      * española. Oro sin cortes, copa uno, espada dos, basto tres.
      */
@@ -96,7 +106,7 @@ class Carta extends Component
     public function pintas(): array
     {
         if ($this->figura() !== null) {
-            return [[69, 16, 16, 24]];
+            return [self::PALO_EN_MANO[$this->figura()]];
         }
 
         $ancho = self::DISPOSICION[$this->numero]['ancho'];

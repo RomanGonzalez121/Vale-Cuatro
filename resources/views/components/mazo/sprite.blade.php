@@ -55,43 +55,66 @@
         </g>
     </symbol>
 
-    {{-- Las figuras usan currentColor: la tinta del palo llega desde la carta. --}}
-    <symbol id="figura-sota" viewBox="0 0 60 90">
+    {{--
+        Las figuras, de cuerpo entero y paradas sobre el marco de abajo. Se dibujan
+        sobre el lienzo completo de la carta (100 x 156). Usan currentColor: la
+        tinta del palo llega desde la carta. El palo va aparte, en la mano.
+        Cada una tiene una silueta distinta para reconocerse en chico: la sota es
+        flaca y de pie, el caballo es ancho, el rey tiene túnica hasta el piso.
+    --}}
+    <symbol id="figura-sota" viewBox="0 0 100 156">
         <g stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
-            <path d="M10 89V64Q10 47 30 47 50 47 50 64V89Z" fill="currentColor" />
-            <path d="M10 72H50" fill="none" />
-            <circle cx="30" cy="31" r="12" fill="var(--color-naipe)" />
-            <path d="M17 27Q30 8 43 27Z" fill="currentColor" />
-            <path d="M41 22 49 9" fill="none" />
+            <path d="M31 112H39V141H31ZM42 112H50V141H42Z" fill="var(--color-naipe)" />
+            <path d="M28 141H40V147H28ZM41 141H54V147H41Z" fill="var(--color-tinta)" />
+            <path d="M27 67Q40 59 53 67L58 114H22Z" fill="currentColor" />
+            <path d="M24.5 93H55.5" fill="none" />
+            <path d="M51 67 71 72 70 80 51 78Z" fill="currentColor" />
+            <circle cx="73" cy="76.5" r="3.4" fill="var(--color-naipe)" />
+            <circle cx="40" cy="49" r="10.5" fill="var(--color-naipe)" />
+            <path d="M28.5 46Q40 27 51.5 46Z" fill="currentColor" />
+            <path d="M49 39 58 27" fill="none" />
         </g>
         <g fill="var(--color-tinta)">
-            <circle cx="26" cy="34" r="1.4" />
-            <circle cx="34" cy="34" r="1.4" />
+            <circle cx="36.5" cy="51" r="1.3" />
+            <circle cx="43.5" cy="51" r="1.3" />
         </g>
     </symbol>
 
-    <symbol id="figura-caballo" viewBox="0 0 60 90">
+    <symbol id="figura-caballo" viewBox="0 0 100 156">
         <g stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
-            <path d="M10 89 15 58Q17 42 24 33L22 17 32 27Q43 32 48 45L54 58Q55 66 48 67L40 66 34 56Q35 73 47 89Z" fill="currentColor" />
-            <path d="M16 54 9 52M14.5 64 7.5 63M13 75 6 75" fill="none" />
+            <path d="M21 96Q8 99 11 122 16 108 21 106Z" fill="var(--color-naipe)" />
+            <path d="M22 114H28.5V147H22ZM32 114H38.5V147H32ZM48 114H54.5V147H48ZM58 114H64.5V147H58Z" fill="var(--color-naipe)" />
+            <path d="M22 142H28.5V147H22ZM32 142H38.5V147H32ZM48 142H54.5V147H48ZM58 142H64.5V147H58Z" fill="var(--color-tinta)" />
+            <path d="M20 104Q20 92 32 92H56Q65 92 65 104V117H20Z" fill="var(--color-naipe)" />
+            <path d="M51 94 58 70 57 60 63 66Q76 70 80 82L78 88 70 87 65 80V100Z" fill="var(--color-naipe)" />
+            <path d="M57 72 52 70M58 79 52.5 78M58.5 86 53 86" fill="none" />
+            <path d="M37 90 35 110H43L45 90Z" fill="currentColor" />
+            <path d="M32 93 34 67Q41 61 48 67L50 93Z" fill="currentColor" />
+            <path d="M46 68 64 54 68 60 49 77Z" fill="currentColor" />
+            <circle cx="67.5" cy="56" r="3.2" fill="var(--color-naipe)" />
+            <circle cx="41" cy="52" r="9" fill="var(--color-naipe)" />
+            <path d="M31 50Q41 34 51 50Z" fill="currentColor" />
         </g>
         <g fill="var(--color-tinta)">
-            <circle cx="37" cy="42" r="1.8" />
-            <circle cx="50" cy="60" r="1.2" />
+            <circle cx="44.5" cy="53.5" r="1.3" />
+            <circle cx="70" cy="75" r="1.4" />
         </g>
     </symbol>
 
-    <symbol id="figura-rey" viewBox="0 0 60 90">
-        <g stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
-            <path d="M6 89V66Q6 47 30 47 54 47 54 66V89Z" fill="currentColor" />
-            <path d="M30 47V89" fill="none" />
-            <circle cx="30" cy="32" r="12" fill="var(--color-naipe)" />
-            <path d="M17 25V7L23.5 15 30 5 36.5 15 43 7V25Z" fill="currentColor" />
-            <path d="M23 39Q30 46 37 39" fill="none" />
+    <symbol id="figura-rey" viewBox="0 0 100 156">
+        <g transform="translate(2 0)" stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M15 147 27 68Q40 60 53 68L65 147Z" fill="currentColor" />
+            <path d="M40 78V147M16.5 137H63.5" fill="none" />
+            <path d="M27 68Q40 83 53 68 40 60 27 68Z" fill="var(--color-naipe)" />
+            <path d="M51 70 71 74 70 82 52 81Z" fill="currentColor" />
+            <circle cx="73" cy="78.5" r="3.4" fill="var(--color-naipe)" />
+            <circle cx="40" cy="50" r="10.5" fill="var(--color-naipe)" />
+            <path d="M32 55Q40 70 48 55Z" fill="var(--color-tinta)" />
+            <path d="M28.5 45V27L34.5 35 40 24 45.5 35 51.5 27V45Z" fill="currentColor" />
         </g>
-        <g fill="var(--color-tinta)">
-            <circle cx="26" cy="33" r="1.4" />
-            <circle cx="34" cy="33" r="1.4" />
+        <g transform="translate(2 0)" fill="var(--color-tinta)">
+            <circle cx="36.5" cy="50" r="1.3" />
+            <circle cx="43.5" cy="50" r="1.3" />
         </g>
     </symbol>
 
