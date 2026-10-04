@@ -9,11 +9,10 @@
  | sola. Solo anima transform y opacity. Si ya está corriendo, no se reinicia.
  */
 
-const LLEGADA = 'cubic-bezier(0.23, 1, 0.32, 1)';
+import { LLEGADA, movimientoReducido } from './cartas';
+
 const ENTRE_FOSFOROS = 75;
 const CAIDA = 280;
-
-const movimientoReducido = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 export function contarCuatro(logo) {
     if (movimientoReducido.matches || logo.dataset.contando) {

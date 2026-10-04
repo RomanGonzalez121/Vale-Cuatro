@@ -180,7 +180,7 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
 
             boton.type = 'button';
             boton.className = 'naipe-jugable';
-            boton.setAttribute('aria-label', `Jugar el ${nombreDe(carta)}`);
+            boton.setAttribute('aria-label', `${nombreDe(carta)}, jugar esta carta`);
             boton.append(plantilla(carta));
             boton.addEventListener('click', () => this.jugar(carta, boton));
             this.$refs.mano.children[i].replaceChildren(boton);
@@ -360,7 +360,11 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         this.aviso = `Cantaste ${canto.toLowerCase()}.`;
 
         this.despues(1300, () => {
-            if (Math.max(...this.manoRival.map(fuerza)) < 8) {
+            // El bot decide con lo que le queda en la mano más la carta que ya tiró en esta baza.
+            // Sin ese cuidado, con la mano vacía siempre decía "no quiero".
+            const cartasDelBot = [...this.manoRival, this.jugadas[this.baza].rival].filter(Boolean);
+
+            if (Math.max(...cartasDelBot.map(fuerza)) < 8) {
                 this.cantar('No quiero', 'copa', 'rival');
                 this.cerrarMano('vos', this.truco.valor, `El bot no quiso. Sumás ${this.truco.valor}.`);
 

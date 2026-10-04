@@ -5,6 +5,16 @@ La idea es que cualquiera que entre pueda jugar una mano contra el bot en menos 
 
 Proyecto de portfolio de Román Gonzalez.
 
+![La mesa de juego, con el canto "Truco" sobre el paño](docs/capturas/mesa.jpeg)
+
+| Portada | Mazo propio |
+|---|---|
+| ![Portada](docs/capturas/portada.jpeg) | ![Las cartas del mazo](docs/capturas/mazo.jpeg) |
+
+| Ranking | Repetición de una partida |
+|---|---|
+| ![Ranking](docs/capturas/ranking.jpeg) | ![Repetición jugada por jugada](docs/capturas/repeticion.jpeg) |
+
 ## Qué es real y qué es simulado
 
 - **Simulado, y dicho abiertamente en el sitio:** los rivales bot y los jugadores de ejemplo del ranking, que aparecen marcados como bots.
@@ -40,6 +50,7 @@ Todo sale del mundo del truco: la baraja española en tintas planas, el paño de
 - **Tanteador de fósforos:** los puntos se anotan en grupos de cinco, separando malas y buenas.
 - **Cantos tipográficos:** cuando alguien canta, la palabra aparece enorme sobre la mesa.
 - **Íconos propios:** dibujados con el mismo trazo que los fósforos. No se usa ninguna librería de íconos.
+- **Modo claro y oscuro:** el club de día y de noche. Se cambia con una carta que se da vuelta, y las cartas no cambian nunca.
 
 La página `/identidad` muestra logo, colores con su contraste medido, tipografías, mazo e íconos en uso.
 
