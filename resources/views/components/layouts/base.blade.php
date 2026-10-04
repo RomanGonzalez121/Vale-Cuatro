@@ -38,6 +38,10 @@
     @endif
 
     <main id="contenido">
+        @if ($encabezado)
+            <x-aviso />
+        @endif
+
         {{ $slot }}
     </main>
 

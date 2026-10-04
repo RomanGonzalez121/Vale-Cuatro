@@ -620,6 +620,244 @@ html:has(body.superficie-pano) {
         text-underline-offset: 3px;
     }
 
+    /*
+     | Campo de formulario. No lleva caja: lo subraya un fósforo, el mismo gesto
+     | que los links. En reposo es una línea a media tinta; al entrar al campo el
+     | palito se dibuja de izquierda a derecha y se enciende la cabeza.
+     */
+    .campo-linea {
+        position: relative;
+        display: block;
+    }
+
+    .campo {
+        display: block;
+        width: 100%;
+        min-height: 3rem;
+        padding: 0.375rem 1rem 0.375rem 0;
+        border: 0;
+        border-bottom: 2px solid color-mix(in srgb, var(--color-texto) 60%, transparent);
+        border-radius: 0;
+        background-color: transparent;
+        color: inherit;
+        font-size: 1.1875rem;
+        font-weight: 600;
+    }
+
+    /* El foco lo marca el fósforo, que engrosa la línea y suma la cabeza. */
+    .campo:focus-visible {
+        outline: none;
+    }
+
+    .campo[aria-invalid='true'] {
+        border-bottom-color: var(--color-pierde);
+    }
+
+    /* El relleno que pone el navegador al autocompletar se tapa con el color del fondo. */
+    .campo:-webkit-autofill {
+        box-shadow: 0 0 0 4rem var(--color-fondo) inset;
+        -webkit-text-fill-color: var(--color-texto);
+    }
+
+    .campo-linea::before,
+    .campo-linea::after {
+        content: '';
+        position: absolute;
+        pointer-events: none;
+    }
+
+    .campo-linea::before {
+        left: 0;
+        right: 0.5rem;
+        bottom: -0.5px;
+        height: 3px;
+        background-color: var(--color-texto);
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition: transform 240ms var(--ease-llegada);
+    }
+
+    .campo-linea::after {
+        right: 0;
+        bottom: -0.25rem;
+        width: 0.625rem;
+        height: 0.625rem;
+        border-radius: 50%;
+        background-color: var(--color-copa);
+        opacity: 0;
+        transform: scale(0.5);
+        transition:
+            opacity 120ms var(--ease-llegada),
+            transform 160ms var(--ease-llegada);
+    }
+
+    .campo-linea:focus-within::before {
+        transform: scaleX(1);
+    }
+
+    .campo-linea:focus-within::after {
+        opacity: 1;
+        transform: scale(1);
+        transition-delay: 120ms;
+    }
+
+    /*
+     | Casilla propia, con el trazo del sitio: un cuadro de línea y, al marcarla,
+     | el tilde del ícono "quiero". El control de verdad sigue ahí (oculto a la
+     | vista, no al teclado ni al lector de pantalla).
+     */
+    .casilla-caja {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.625rem;
+        height: 1.625rem;
+        flex: none;
+        border: 2px solid currentColor;
+        border-radius: 0.4375rem;
+        transition: transform 140ms var(--ease-llegada);
+    }
+
+    .casilla-caja .icono {
+        width: 1.25rem;
+        height: 1.25rem;
+        opacity: 0;
+        transform: scale(0.8) rotate(-10deg);
+        transition:
+            opacity 120ms var(--ease-llegada),
+            transform 160ms var(--ease-llegada);
+    }
+
+    .casilla:checked + .casilla-caja .icono {
+        opacity: 1;
+        transform: none;
+    }
+
+    .casilla:focus-visible + .casilla-caja {
+        outline: 3px solid var(--color-texto);
+        outline-offset: 3px;
+    }
+
+    label:active > .casilla-caja {
+        transform: scale(0.94);
+    }
+
+    /*
+     | Pantallas de cuenta. En el celular es una sola columna y la mesa va de
+     | borde a borde. En pantallas anchas son dos mitades: el formulario, alineado
+     | con el resto del sitio, y la mesa hasta el borde derecho y a toda la altura.
+     */
+    .cuenta {
+        display: grid;
+    }
+
+    .cuenta-columna {
+        padding-inline: 1.25rem;
+    }
+
+    .cuenta-mesa {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* La misma línea que marca el borde del campo en la mesa de juego. */
+    .cuenta-mesa::before {
+        content: '';
+        position: absolute;
+        inset: 0.625rem;
+        border: 1.5px solid color-mix(in srgb, var(--color-naipe) 14%, transparent);
+        border-radius: 1.5rem;
+        pointer-events: none;
+    }
+
+    @media (min-width: 40rem) {
+        .cuenta-columna {
+            padding-inline: 2rem;
+        }
+    }
+
+    @media (min-width: 64rem) {
+        .cuenta {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-template-rows: auto 1fr;
+            min-height: calc(100dvh - 5.5rem);
+        }
+
+        /* El borde izquierdo coincide con el del encabezado (72rem de ancho, 2rem de margen). */
+        .cuenta-columna {
+            grid-column: 1;
+            padding-left: max(2rem, calc(100% - 34rem));
+            padding-right: 4rem;
+        }
+
+        .cuenta-mesa {
+            grid-column: 2;
+            grid-row: 1 / -1;
+        }
+    }
+
+    /*
+     | Carta que se da vuelta: el dorso de un lado y la cara del otro. Es una
+     | transición y no una animación con keyframes, así que si la condición
+     | cambia a mitad de camino la carta vuelve desde donde esté.
+     */
+    .giro {
+        position: relative;
+        transform: perspective(48rem) rotateY(0deg);
+        transform-style: preserve-3d;
+        transition: transform 300ms var(--ease-llegada);
+    }
+
+    .giro > * {
+        backface-visibility: hidden;
+    }
+
+    .giro-cara {
+        position: absolute;
+        inset: 0;
+        transform: rotateY(180deg);
+    }
+
+    .giro[data-vuelta='true'] {
+        transform: perspective(48rem) rotateY(180deg);
+    }
+
+    /*
+     | Ver la contraseña: una carta chica al final del campo. Boca abajo, la
+     | contraseña está oculta; boca arriba, con un ojo, se ve.
+     */
+    .ver-clave {
+        position: absolute;
+        right: 0.75rem;
+        bottom: 0.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    .ver-clave:active {
+        transform: scale(0.94);
+    }
+
+    .ver-clave-carta {
+        display: block;
+        width: 1.375rem;
+        aspect-ratio: 100 / 156;
+    }
+
+    .ver-clave-carta svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
     /* Naipes. Las proporciones del borde salen del viewBox 100 x 156 del SVG. */
     .carta {
         display: block;
@@ -684,6 +922,11 @@ html:has(body.superficie-pano) {
 
     .abanico > :nth-child(3) {
         transform: rotate(7deg) translateY(5%);
+    }
+
+    /* La mano que asoma por el borde de abajo: se ve cada carta hasta pasar el sello del dorso. */
+    .mano-asoma {
+        margin-bottom: calc(var(--ancho-carta, 6rem) * -0.4);
     }
 
     .naipe-jugable {
@@ -997,11 +1240,13 @@ html:has(body.superficie-pano) {
         transform: scale(0.97);
     }
 
-    .modo-boton:hover {
+    .modo-boton:hover,
+    .ver-clave:hover {
         transform: translateY(-2px) rotate(-7deg);
     }
 
-    .modo-boton:active {
+    .modo-boton:active,
+    .ver-clave:active {
         transform: scale(0.94);
     }
 
@@ -1061,9 +1306,42 @@ html:has(body.superficie-pano) {
 
     .enlace-nav::after,
     .enlace-menu::before,
-    .enlace-menu::after {
+    .enlace-menu::after,
+    .campo-linea::after {
         transform: none;
         transition: opacity 150ms ease;
+    }
+
+    .campo-linea::before {
+        transition: none;
+    }
+
+    .casilla-caja,
+    label:active > .casilla-caja {
+        transform: none;
+        transition: none;
+    }
+
+    .casilla-caja .icono {
+        transform: none;
+        transition: opacity 150ms ease;
+    }
+
+    /* La carta no gira: la cara aparece sobre el dorso con un fundido. */
+    .giro,
+    .giro[data-vuelta='true'] {
+        transform: none;
+        transition: none;
+    }
+
+    .giro-cara {
+        opacity: 0;
+        transform: none;
+        transition: opacity 150ms ease;
+    }
+
+    .giro[data-vuelta='true'] .giro-cara {
+        opacity: 1;
     }
 
     .enlace-menu,
@@ -1101,7 +1379,9 @@ html:has(body.superficie-pano) {
     }
 
     .modo-boton,
-    .modo-boton:hover {
+    .modo-boton:hover,
+    .ver-clave,
+    .ver-clave:hover {
         transform: none;
         transition: none;
     }
