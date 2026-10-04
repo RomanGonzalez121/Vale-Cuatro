@@ -2,44 +2,45 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
+use App\Models\Jugador;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<User>
+ * @extends Factory<Jugador>
  */
-class UserFactory extends Factory
+class JugadorFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
+     * La contraseña se calcula una sola vez para todos los jugadores de prueba.
      */
     protected static ?string $password;
 
     /**
-     * Define the model's default state.
+     * Un jugador con cuenta.
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'apodo' => 'Jugador '.fake()->unique()->numberBetween(1000, 999999),
             'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Un invitado: sin email ni contraseña.
      */
-    public function unverified(): static
+    public function invitado(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+        return $this->state(fn (array $atributos) => [
+            'apodo' => 'Invitado '.fake()->unique()->numberBetween(10000, 99999),
+            'email' => null,
+            'password' => null,
         ]);
     }
 }
