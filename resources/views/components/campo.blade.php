@@ -5,10 +5,9 @@
      | Un campo de formulario: rótulo, ayuda, el control y su error. La ayuda y
      | el error quedan atados al control para que el lector de pantalla los lea.
      |
-     | La contraseña suma dos cosas. Una carta para verla, porque se escribe una
-     | sola vez: boca abajo está oculta y boca arriba, con un ojo, se ve. Y la
-     | cuenta de caracteres en fósforos, de a cinco por grupo como en el
-     | tanteador: cada tecla hace caer uno.
+     | La contraseña suma una carta para verla, porque se escribe una sola vez:
+     | de un lado tiene un ojo cerrado (oculta) y del otro el ojo abierto (se
+     | ve); al tocarla se da vuelta.
      */
     $id = "campo-{$nombre}";
     $esClave = $tipo === 'password';
@@ -18,7 +17,7 @@
     ]));
 @endphp
 
-<div @if ($esClave) x-data="{ visible: false, largo: 0 }" @endif>
+<div @if ($esClave) x-data="{ visible: false }" @endif>
     <label for="{{ $id }}" class="block font-bold">{{ $rotulo }}</label>
 
     @if ($ayuda)
@@ -27,7 +26,7 @@
 
     <span class="campo-linea mt-1">
         <input id="{{ $id }}" name="{{ $nombre }}" type="{{ $tipo }}" @class(['campo', 'pr-14' => $esClave])
-            @if ($esClave) :type="visible ? 'text' : 'password'" @input="largo = $event.target.value.length" @else value="{{ old($nombre, $valor) }}" @endif
+            @if ($esClave) :type="visible ? 'text' : 'password'" @else value="{{ old($nombre, $valor) }}" @endif
             @if ($describe) aria-describedby="{{ $describe }}" @endif
             @error($nombre) aria-invalid="true" @enderror
             {{ $attributes }}>
@@ -38,10 +37,13 @@
                 aria-label="Mostrar la contraseña" aria-pressed="false" :aria-pressed="visible.toString()"
                 title="Mostrar la contraseña" :title="visible ? 'Ocultar la contraseña' : 'Mostrar la contraseña'">
                 <span class="giro ver-clave-carta" data-vuelta="false" :data-vuelta="visible.toString()" aria-hidden="true">
+                    {{-- Oculta: el ojo cerrado. El párpado es la mitad de abajo del ojo abierto, con tres pestañas. --}}
                     <svg viewBox="0 0 100 156">
                         <rect x="4" y="4" width="92" height="148" rx="14" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="8" />
-                        <rect x="22" y="22" width="56" height="112" rx="5" fill="var(--color-tinta)" />
-                        <circle cx="50" cy="78" r="13" fill="var(--color-naipe)" />
+                        <path d="M17 60 50 86 83 60M50 86V101M32 72 23 88M68 72 77 88" fill="none" stroke="var(--color-tinta)" stroke-width="8" stroke-linejoin="miter" />
+                        <circle cx="50" cy="105" r="6.5" fill="var(--color-tinta)" />
+                        <circle cx="21" cy="92" r="6.5" fill="var(--color-tinta)" />
+                        <circle cx="79" cy="92" r="6.5" fill="var(--color-tinta)" />
                     </svg>
                     <svg class="giro-cara" viewBox="0 0 100 156">
                         <rect x="4" y="4" width="92" height="148" rx="14" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="8" />
@@ -52,14 +54,6 @@
             </button>
         @endif
     </span>
-
-    @if ($esClave)
-        <div class="-mb-2 mt-3 flex h-7 gap-2" aria-hidden="true">
-            @for ($g = 0; $g < 6; $g++)
-                <x-fosforos :grupo="$g" modelo="largo" palito="currentColor" class="size-7" />
-            @endfor
-        </div>
-    @endif
 
     @error($nombre)
         <p id="{{ $id }}-error" class="mt-2 text-sm font-semibold text-pierde">{{ $message }}</p>

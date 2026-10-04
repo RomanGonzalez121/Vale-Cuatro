@@ -1,4 +1,4 @@
-@props(['grupo' => 0, 'puntos' => 0, 'modelo' => null, 'palito' => 'var(--color-fosforo)'])
+@props(['grupo' => 0, 'puntos' => 0, 'modelo' => null])
 
 @php
     /*
@@ -20,7 +20,7 @@
     @foreach ($fosforos as $i => [$trazo, $cx, $cy])
         @php($numero = $grupo * 5 + $i + 1)
         <g @class(['fosforo', 'puesto' => $puntos >= $numero]) @if ($modelo) :class="{ puesto: {{ $modelo }} >= {{ $numero }} }" @endif>
-            <path d="{{ $trazo }}" fill="none" stroke="{{ $palito }}" stroke-width="2.4" stroke-linecap="round" />
+            <path d="{{ $trazo }}" fill="none" stroke="var(--color-fosforo)" stroke-width="2.4" stroke-linecap="round" />
             <circle cx="{{ $cx }}" cy="{{ $cy }}" r="2.6" fill="var(--color-copa)" />
         </g>
     @endforeach
