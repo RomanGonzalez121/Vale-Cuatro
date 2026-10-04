@@ -51,7 +51,7 @@ La mesa, el ranking y el historial todavía muestran datos de ejemplo fijos: la 
 - **Un solo botón para jugar.** "Jugar contra el bot" crea un jugador invitado en el momento ("Invitado 48213") y lleva a la mesa.
 - **El invitado es un jugador de verdad.** Vive en la misma tabla que las cuentas, y si se registra conserva su fila y lo que jugó. Los invitados que no vuelven en 30 días se borran solos con una tarea programada.
 - **Ingreso escrito a mano,** sin kits: contraseña cifrada, sesión renovada al entrar, límite de intentos y el mismo error para un email desconocido que para una contraseña errada.
-- **Formularios con las piezas del sitio.** Los campos se subrayan con un fósforo, la contraseña se cuenta en fósforos y la mano de cartas se da vuelta a medida que se completa el ingreso.
+- **Formularios con las piezas del sitio.** Los campos se subrayan con un fósforo, la contraseña se muestra con una carta que se da vuelta y la mano de cartas se va dando vuelta a medida que se completa el ingreso.
 
 ## Identidad
 
@@ -97,6 +97,8 @@ npm run dev
 ```
 
 El sitio queda en `http://127.0.0.1:8000`.
+
+Para entrar sin registrarse cada vez, `php artisan db:seed` crea tres cuentas de prueba (por ejemplo `roman@valecuatro.test`, contraseña `valecuatro`). Solo existen fuera de producción.
 
 ## Tests y estilo
 
