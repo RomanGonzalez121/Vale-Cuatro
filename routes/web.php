@@ -17,7 +17,7 @@ Route::get('/modos', [PaginaController::class, 'modos'])->name('modos');
 
 // Entrar a jugar: con cuenta, o como invitado creado en el momento.
 Route::post('/jugar', JugarController::class)->middleware('throttle:10,1')->name('jugar');
-Route::get('/mesa', [PaginaController::class, 'mesa'])->middleware('auth')->name('mesa');
+Route::get('/mesa', [MesaController::class, 'ver'])->middleware('auth')->name('mesa');
 
 // Lo que se hace desde la mesa: siempre sobre la partida en curso de quien hace el pedido.
 Route::middleware(['auth', 'throttle:240,1'])->group(function () {

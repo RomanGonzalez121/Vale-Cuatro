@@ -1244,6 +1244,21 @@ html:has(body.superficie-pano) {
         white-space: nowrap;
     }
 
+    /*
+     | Con cuatro botones o más en el celular no hay lugar para los íconos, y cada
+     | botón toma el ancho de su texto en vez de repartirse en partes iguales.
+     */
+    @media (max-width: 39.99rem) {
+        .mesa-acciones[data-muchos] .boton {
+            flex: 1 1 auto;
+            font-size: 0.9rem;
+        }
+
+        .mesa-acciones[data-muchos] .icono {
+            display: none;
+        }
+    }
+
     /* Las dos cartas de una baza se pisan en diagonal: la del rival asoma arriba a la izquierda. */
     .hueco-rival {
         transform: translateX(-27%) rotate(-3deg);

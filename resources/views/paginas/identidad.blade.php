@@ -6,7 +6,7 @@
 
     $iconos = [
         'espada' => 'Espada', 'basto' => 'Basto', 'oro' => 'Oro', 'copa' => 'Copa',
-        'envido' => 'Envido', 'truco' => 'Truco', 'mazo' => 'Irse al mazo', 'mano' => 'Quién es mano',
+        'envido' => 'Envido', 'flor' => 'Flor', 'truco' => 'Truco', 'mazo' => 'Irse al mazo', 'mano' => 'Quién es mano',
         'repartir' => 'Repartir', 'quiero' => 'Quiero', 'no-quiero' => 'No quiero', 'tiempo' => 'Tiempo',
         'bot' => 'Bot', 'invitar' => 'Invitar', 'ranking' => 'Ranking', 'repetir' => 'Repetir partida', 'sonido' => 'Sonido', 'salir' => 'Salir', 'jugador' => 'Jugador',
         'mano-a-mano' => 'Mano a mano', 'de-a-cuatro' => 'De a cuatro', 'torneo' => 'Torneo', 'desafio' => 'Desafío', 'escalera' => 'Escalera',

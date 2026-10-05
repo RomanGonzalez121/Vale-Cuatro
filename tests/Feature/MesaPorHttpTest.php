@@ -35,6 +35,55 @@ class MesaPorHttpTest extends TestCase
         $this->assertSame(1, Partida::count());
     }
 
+    public function test_la_mesa_muestra_la_partida_en_curso_con_las_plantillas_de_las_cartas(): void
+    {
+        $jugador = $this->sentado();
+
+        $html = $this->actingAs($jugador)->get('/mesa')->assertOk()->assertSee('Vale Cuatro')->getContent();
+
+        // Las 40 cartas y el dorso, para dibujar cualquier jugada sin volver al servidor.
+        $this->assertSame(41, substr_count($html, '<template data-plantilla='));
+    }
+
+    public function test_recargar_la_mesa_vuelve_a_la_misma_partida_en_el_mismo_punto(): void
+    {
+        $jugador = $this->sentado();
+        $partida = Partida::sole();
+
+        $this->actingAs($jugador)->postJson('/mesa/accion', $this->unaAccionValida($partida))->assertOk();
+
+        $vista = $this->app->make(Mesa::class)->vista($partida);
+        $primera = $this->actingAs($jugador)->get('/mesa')->assertOk()->viewData('vista');
+        $segunda = $this->actingAs($jugador)->get('/mesa')->assertOk()->viewData('vista');
+
+        $this->assertSame($vista, $primera);
+        $this->assertSame($primera, $segunda);
+        $this->assertSame(1, Partida::count());
+    }
+
+    public function test_la_pagina_de_la_mesa_no_trae_las_cartas_del_bot(): void
+    {
+        $jugador = Jugador::factory()->invitado()->create();
+        $this->partidaArmada($jugador, [['4-copa', '5-copa', '6-basto'], ['1-espada', '3-oro', '10-basto']]);
+
+        $html = $this->actingAs($jugador)->get('/mesa')->assertOk()->getContent();
+
+        // Lo que la página le pasa a la mesa es la vista del jugador: está en el atributo x-data.
+        preg_match('/x-data="mesa\((.*?)\)"/s', $html, $datos);
+        $datos = html_entity_decode($datos[1]);
+
+        $this->assertStringContainsString('4-copa', $datos);
+
+        foreach (['1-espada', '3-oro', '10-basto'] as $delBot) {
+            $this->assertStringNotContainsString($delBot, $datos, "La página trae el {$delBot} del bot.");
+        }
+    }
+
+    public function test_sin_partida_en_curso_la_mesa_manda_a_elegir_el_modo(): void
+    {
+        $this->actingAs(Jugador::factory()->invitado()->create())->get('/mesa')->assertRedirect('/modos');
+    }
+
     public function test_una_accion_valida_devuelve_los_pasos_y_queda_guardada(): void
     {
         $jugador = $this->sentado();

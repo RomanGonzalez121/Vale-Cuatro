@@ -6,26 +6,11 @@ namespace App\Maqueta;
  * Datos fijos para la maqueta visual de M0.
  *
  * Nada de esto sale de la base de datos. Cada pantalla pasa a leer datos reales
- * cuando llega su módulo (M3 la mesa, M7 el historial, M8 el ranking) y entonces
- * este archivo se borra.
+ * cuando llega su módulo (M7 el historial, M8 el ranking) y entonces este archivo
+ * se borra. La mesa ya no lo usa: desde M3 juega con el motor de reglas.
  */
 class DatosDeEjemplo
 {
-    /**
-     * Las manos que recorre la mesa de la maqueta, en orden.
-     *
-     * @return list<array{vos: list<string>, rival: list<string>, rivalCantaTruco: bool}>
-     */
-    public static function manos(): array
-    {
-        return [
-            ['vos' => ['7-oro', '6-oro', '1-espada'], 'rival' => ['3-basto', '12-copa', '5-copa'], 'rivalCantaTruco' => false],
-            ['vos' => ['3-espada', '11-basto', '4-copa'], 'rival' => ['7-espada', '2-oro', '10-oro'], 'rivalCantaTruco' => true],
-            // En esta el bot tiene mejor envido: sirve para ver el "son mejores" y sus cartas al cerrar la mano.
-            ['vos' => ['1-basto', '6-copa', '5-copa'], 'rival' => ['7-oro', '6-oro', '4-espada'], 'rivalCantaTruco' => false],
-        ];
-    }
-
     /**
      * @return list<array{puesto: int, apodo: string, bot: bool, ganadas: int, jugadas: int, racha: int, envidos: int}>
      */

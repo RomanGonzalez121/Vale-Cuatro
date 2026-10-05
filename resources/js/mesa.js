@@ -1,83 +1,98 @@
 /*
  | Mesa de juego.
  |
- | En M0 esto es una maqueta: las manos vienen fijas desde el servidor y el rival
- | sigue un guion mínimo, solo para poder ver el movimiento. Las reglas de acá
- | abajo (fuerza de las cartas, tanto, pardas) existen para que la muestra sea
- | coherente; el motor real es de M2 y vive en el servidor. Lo que queda para
- | siempre es la parte visual: repartir, mover una carta, cantar, cantar los
- | tantos, cerrar la mano y anotar. Esas piezas reciben los datos ya resueltos,
- | así en M3 solo cambia de dónde vienen.
+ | Acá no hay reglas. El motor vive en el servidor: esta pantalla le manda lo
+ | que hace el jugador y recibe "pasos", que son la vista de su asiento después
+ | de cada jugada (la propia y las del bot). Cada paso trae los hechos que
+ | ocurrieron, y este archivo los cuenta de a uno con las piezas visuales:
+ | repartir, mover una carta, cantar, cantar los tantos, anotar y cerrar la mano.
+ |
+ | Las cartas del bot no llegan nunca: de su mano solo se sabe cuántas le quedan.
  */
 
-import { LLEGADA, cartasDelTanto, fuerza, movimientoReducido, nombreDe, plantilla, tanto } from './cartas';
+import { LLEGADA, cartasDelTanto, movimientoReducido, nombreDe, plantilla } from './cartas';
 
-const CANTOS_DE_TRUCO = { 1: 'Truco', 2: 'Retruco', 3: 'Vale cuatro' };
+const VOS = 0;
+const RIVAL = 1;
+const QUIEN = ['vos', 'rival'];
+
+const CANTOS = {
+    envido: 'Envido',
+    real_envido: 'Real envido',
+    falta_envido: 'Falta envido',
+    flor: 'Flor',
+    contraflor: 'Contraflor',
+    contraflor_al_resto: 'Contraflor al resto',
+    truco: 'Truco',
+    retruco: 'Retruco',
+    vale_cuatro: 'Vale cuatro',
+};
+
+const ENVIDOS = ['envido', 'real_envido', 'falta_envido'];
+const FLORES = ['flor', 'contraflor', 'contraflor_al_resto'];
+const TRUCOS = ['truco', 'retruco', 'vale_cuatro'];
+const NIVEL_DE_TRUCO = ['', 'Truco', 'Retruco', 'Vale cuatro'];
+
+const CONCEPTOS = {
+    envido: 'Envido',
+    envido_no_querido: 'Envido no querido',
+    envido_no_jugado: 'Envido sin jugar',
+    flor: 'Flor',
+    contraflor: 'Contraflor',
+    contraflor_no_querida: 'Contraflor no querida',
+    mano: 'Mano',
+};
+
 const DE_QUIEN = { vos: 'tuya', rival: 'del bot', parda: 'parda' };
 const CALLADO = { numero: '', frase: '', visible: false };
 
-export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
-    manos,
-    indice: 0,
-    puntos: { ...puntosIniciales },
-    baza: 0,
-    jugadas: [{}, {}, {}],
+export default (inicial, pedidos) => ({
+    vista: inicial,
+    pedidos,
+    puntos: { vos: inicial.tanteo[VOS], rival: inicial.tanteo[RIVAL] },
+    // Mientras se cuenta lo que pasó o se espera al servidor, no se puede hacer nada.
+    ocupada: true,
+    // Cuando la barra está desplegada (los niveles del envido, por ejemplo), acá van sus botones.
+    menu: null,
     ganadas: [],
-    manoVos: [],
-    manoRival: [],
-    turno: 'espera',
-    envidoCantado: false,
-    envidoGanadoPor: null,
-    truco: { valor: 1, quiero: null },
-    pendiente: false,
+    repartidas: [],
+    adelantada: null,
     voz: { texto: '', tono: 'copa', quien: 'vos', visible: false },
     tantos: { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false },
-    desglose: [],
     cierre: null,
     aviso: 'Repartiendo.',
-    cerrada: false,
-    juntando: false,
     fin: null,
+    saliendo: false,
+    prisa: false,
     reducido: movimientoReducido.matches,
-    relojes: [],
     relojDeVoz: null,
-    relojDePasos: null,
-    pasos: [],
 
     init() {
-        this.repartir();
+        this.pintar(this.vista);
     },
 
-    // Estado que lee la barra de acciones
+    // Lo que lee la pantalla
 
-    get hayEnvido() {
-        return ! this.envidoCantado && this.baza === 0 && ! this.jugadas[0].vos && ! this.cerrada;
+    get enJuego() {
+        return this.vista.fase === 'jugando';
     },
 
-    get puedeEnvido() {
-        return this.hayEnvido && this.turno === 'vos' && ! this.pendiente;
+    get cerrada() {
+        return ! this.enJuego;
     },
 
-    get cantoDeTruco() {
-        return CANTOS_DE_TRUCO[this.truco.valor] ?? null;
+    get esMano() {
+        return this.vista.mano === VOS;
     },
 
-    // Solo sube el truco quien tiene el quiero.
-    get hayTruco() {
-        return this.cantoDeTruco !== null && this.truco.quiero !== 'rival' && ! this.cerrada;
-    },
-
-    get puedeTruco() {
-        return this.hayTruco && this.turno === 'vos' && ! this.pendiente;
+    get baza() {
+        return Math.max(0, this.vista.bazas.length - 1);
     },
 
     get estadoDelTruco() {
-        return this.truco.valor > 1 ? `${CANTOS_DE_TRUCO[this.truco.valor - 1]} querido, vale ${this.truco.valor}` : '';
-    },
+        const querido = this.vista.truco.querido;
 
-    // Lo que vale la mano se anota con el nombre del último canto querido.
-    get conceptoDeLaMano() {
-        return this.truco.valor > 1 ? CANTOS_DE_TRUCO[this.truco.valor - 1] : 'Mano';
+        return querido > 0 ? `${NIVEL_DE_TRUCO[querido]} querido, vale ${querido + 1}` : '';
     },
 
     get tamanoDeVoz() {
@@ -89,64 +104,312 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         return DE_QUIEN[this.ganadas[numero]] ?? '';
     },
 
-    // Piezas visuales
+    // La barra de cantos: muestra, en una sola fila, lo que el motor declara válido ahora.
 
-    despues(milisegundos, accion) {
-        this.relojes.push(setTimeout(accion, milisegundos));
-    },
-
-    frenarRelojes() {
-        this.relojes.forEach(clearTimeout);
-        this.relojes = [];
-        clearTimeout(this.relojDePasos);
-        this.pasos = [];
+    puede(tipo) {
+        return this.vista.acciones.some((accion) => accion.tipo === tipo);
     },
 
     /**
-     * Corre una serie de pasos, cada uno con su espera: [milisegundos, acción].
+     * Todos los botones que corresponden a este momento, en orden. Si los niveles
+     * del envido son más de uno, van juntos detrás de un solo botón que se despliega.
      */
-    secuencia(pasos) {
-        this.pasos = [...pasos];
-        this.proximoPaso();
+    botones() {
+        const envidos = ENVIDOS.filter((canto) => this.puede(canto));
+        const flores = FLORES.filter((canto) => this.puede(canto));
+        const truco = TRUCOS.filter((canto) => this.puede(canto));
+        const pendiente = this.vista.pendiente?.canto;
+
+        if (this.puede('quiero')) {
+            // Contestando: querer, subir lo mismo que te cantaron, no querer y, si el envido está primero, el envido.
+            const subirEnvido = envidos.length > 1 ? ['grupo-subir'] : envidos;
+            const envidoPrimero = envidos.length > 1 ? ['grupo-envido'] : envidos;
+
+            return [
+                'quiero',
+                ...(pendiente === 'truco' ? truco : []),
+                ...(pendiente === 'envido' ? subirEnvido : []),
+                ...(pendiente === 'contraflor' ? flores : []),
+                'no_quiero',
+                ...(pendiente === 'truco' ? envidoPrimero : []),
+                ...(pendiente !== 'contraflor' ? flores : []),
+            ];
+        }
+
+        return [
+            ...flores,
+            ...(envidos.length > 1 ? ['grupo-envido'] : envidos),
+            ...truco,
+            ...(this.puede('mazo') ? ['mazo'] : []),
+        ];
     },
 
-    proximoPaso() {
-        if (! this.pasos.length) {
+    get barra() {
+        if (this.fin) {
+            return [];
+        }
+
+        if (this.vista.fase === 'por_repartir') {
+            return ['repartir'];
+        }
+
+        if (this.menu) {
+            return [...this.menu, 'volver'];
+        }
+
+        const botones = this.botones();
+
+        // Más de cuatro no entran en una fila del celular: los que sobran van detrás de "Más".
+        return botones.length > 4 ? [...botones.slice(0, 3), 'mas'] : botones;
+    },
+
+    /**
+     * Si un botón de la barra se ve y en qué lugar va.
+     */
+    estiloDe(clave) {
+        const lugar = this.barra.indexOf(clave);
+
+        return { display: lugar === -1 ? 'none' : null, order: Math.max(lugar, 0) };
+    },
+
+    tocar(clave) {
+        if (this.ocupada) {
             return;
         }
 
-        this.relojDePasos = setTimeout(() => {
-            this.pasos.shift()[1]();
-            this.proximoPaso();
-        }, this.pasos[0][0]);
+        const envidos = ENVIDOS.filter((canto) => this.puede(canto));
+
+        if (clave === 'volver') {
+            this.abrirMenu(null);
+        } else if (clave === 'grupo-envido' || clave === 'grupo-subir') {
+            this.abrirMenu(envidos);
+        } else if (clave === 'mas') {
+            this.abrirMenu(this.botones().slice(3).flatMap((boton) => (boton.startsWith('grupo-') ? envidos : [boton])));
+        } else if (clave === 'repartir') {
+            this.pedirReparto();
+        } else {
+            this.enviar({ tipo: clave });
+        }
     },
 
     /**
-     * Tocar la mesa apura lo que se está mostrando: se cumplen de una los pasos
-     * que faltan y el último, que es el que limpia, llega enseguida.
+     * Cambia lo que muestra la barra y deja el foco en su primer botón, para quien juega con teclado.
+     */
+    abrirMenu(botones) {
+        this.menu = botones;
+        this.$nextTick(() => this.$refs.barra.querySelector(`[data-boton="${this.barra[0]}"]`)?.focus({ preventScroll: true }));
+    },
+
+    // Hablar con el servidor
+
+    async enviar(accion) {
+        if (this.ocupada || this.fin) {
+            return;
+        }
+
+        this.ocupada = true;
+        this.menu = null;
+
+        await this.pedir(this.pedidos.accion, accion);
+    },
+
+    async pedirReparto() {
+        if (this.ocupada || this.fin) {
+            return;
+        }
+
+        const conTeclado = document.activeElement === this.$refs.repartir;
+
+        this.ocupada = true;
+        await this.juntar();
+        await this.pedir(this.pedidos.repartir, {});
+
+        // Quien llegó con el teclado al botón de repartir sigue en sus cartas.
+        if (conTeclado) {
+            this.$refs.mano.querySelector('button')?.focus({ preventScroll: true });
+        }
+    },
+
+    async pedir(url, cuerpo) {
+        let respuesta;
+
+        try {
+            respuesta = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                body: JSON.stringify(cuerpo),
+                credentials: 'same-origin',
+            });
+        } catch {
+            this.deshacer('No se pudo conectar con la mesa. Probá de nuevo.');
+
+            return;
+        }
+
+        if (respuesta.status === 422) {
+            this.deshacer((await respuesta.json()).motivo);
+
+            return;
+        }
+
+        // Sesión vencida o partida que ya no está en curso: la página se vuelve a cargar y el servidor decide.
+        if (! respuesta.ok) {
+            window.location.reload();
+
+            return;
+        }
+
+        for (const paso of (await respuesta.json()).pasos) {
+            await this.mostrar(paso);
+        }
+
+        this.prisa = false;
+        this.ocupada = false;
+        this.aviso = this.indicacion() || this.aviso;
+    },
+
+    /**
+     * El servidor no aceptó la jugada: se dice por qué y la mesa vuelve a lo último que se sabía.
+     */
+    deshacer(motivo) {
+        this.adelantada = null;
+        this.pintar(this.vista, false, motivo);
+    },
+
+    /**
+     * Qué puede hacer el jugador ahora, dicho en una línea.
+     */
+    indicacion() {
+        if (this.fin || ! this.enJuego || ! this.vista.acciones.length) {
+            return '';
+        }
+
+        if (this.puede('quiero')) {
+            return `El bot cantó ${this.cantoPendiente().toLowerCase()}. ¿Qué hacés?`;
+        }
+
+        return 'Jugá una carta o cantá.';
+    },
+
+    cantoPendiente() {
+        const canto = this.vista.pendiente?.canto;
+
+        if (canto === 'truco') {
+            return NIVEL_DE_TRUCO[this.vista.truco.nivel];
+        }
+
+        return CANTOS[canto === 'envido' ? this.vista.envido.cadena.at(-1) : this.vista.flor.contra];
+    },
+
+    // Contar lo que pasó
+
+    esperar(milisegundos) {
+        return new Promise((listo) => setTimeout(listo, this.prisa ? Math.min(milisegundos, 80) : milisegundos));
+    },
+
+    /**
+     * Tocar la mesa apura lo que se está mostrando.
      */
     apurar() {
-        if (this.pasos.length < 2) {
-            return;
+        if (this.ocupada) {
+            this.prisa = true;
         }
-
-        clearTimeout(this.relojDePasos);
-
-        while (this.pasos.length > 1) {
-            this.pasos.shift()[1]();
-        }
-
-        this.pasos[0][0] = 700;
-        this.proximoPaso();
     },
+
+    async mostrar(paso) {
+        // El bot se toma un momento antes de jugar, para que se lea lo anterior.
+        if (paso.hechos[0]?.asiento === RIVAL) {
+            await this.esperar(650);
+        }
+
+        for (const hecho of paso.hechos) {
+            await this.contar(hecho, paso);
+        }
+
+        if (this.tantos.vos.visible || this.tantos.rival.visible) {
+            await this.esperar(1300);
+            this.tantos.vos.visible = false;
+            this.tantos.rival.visible = false;
+            this.levantarTanto([]);
+        }
+
+        this.vista = paso;
+    },
+
+    async contar(hecho, paso) {
+        const quien = QUIEN[hecho.asiento ?? hecho.equipo ?? hecho.ganador];
+
+        switch (hecho.tipo) {
+            case 'reparto':
+                this.repartir(paso, true);
+                await this.esperar(this.reducido ? 200 : 650);
+                break;
+
+            case 'carta':
+                this.aviso = quien === 'vos' ? `Jugaste el ${nombreDe(hecho.carta)}.` : `El bot jugó el ${nombreDe(hecho.carta)}.`;
+
+                if (quien === 'vos' && this.adelantada === hecho.carta) {
+                    // Esta carta ya se movió al tocarla: no se vuelve a animar.
+                    this.adelantada = null;
+                } else {
+                    this.jugarCarta(quien, hecho.carta, this.bazaDe(paso, hecho));
+                    await this.esperar(520);
+                }
+                break;
+
+            case 'baza':
+                this.resolverBaza(hecho, paso);
+                await this.esperar(700);
+                break;
+
+            case 'canto':
+                this.cantar(CANTOS[hecho.canto], TRUCOS.includes(hecho.canto) ? 'copa' : 'oro', quien);
+                this.aviso = `${quien === 'vos' ? 'Cantaste' : 'El bot cantó'} ${CANTOS[hecho.canto].toLowerCase()}.`;
+                await this.esperar(1250);
+                break;
+
+            case 'respuesta':
+                this.cantar(hecho.quiere ? 'Quiero' : 'No quiero', hecho.quiere ? 'basto' : 'copa', quien);
+                this.aviso = `${quien === 'vos' ? (hecho.quiere ? 'Quisiste' : 'No quisiste') : (hecho.quiere ? 'El bot quiso' : 'El bot no quiso')}.`;
+                await this.esperar(1100);
+                break;
+
+            case 'tantos':
+                await this.cantarTantos(hecho);
+                break;
+
+            case 'puntos':
+                this.aviso = `${quien === 'vos' ? 'Sumás' : 'El bot suma'} ${hecho.puntos}: ${this.conceptoDe(hecho.concepto, paso).toLowerCase()}.`;
+                await this.sumar(quien, hecho.tanteo[hecho.equipo]);
+                await this.esperar(350);
+                break;
+
+            case 'mazo':
+                this.aviso = quien === 'vos' ? 'Te fuiste al mazo.' : 'El bot se fue al mazo.';
+                await this.esperar(400);
+                break;
+
+            case 'mano_cerrada':
+                this.vista = paso;
+                this.cerrarMano(paso);
+                await this.esperar(300);
+                break;
+
+            case 'partida_terminada':
+                this.fin = quien;
+                break;
+        }
+    },
+
+    // Piezas visuales
 
     hueco(numero, quien) {
         return this.$refs.bazas.children[numero].querySelector(`[data-hueco="${quien}"]`);
     },
 
     /**
-     * Reparto: el único momento coreografiado. Seis cartas salen del mazo del
-     * rival, una para cada uno, con 70 ms entre carta y carta.
+     * Reparto: el único momento coreografiado. Las cartas salen del mazo, una
+     * para cada uno, con 70 ms entre carta y carta.
      */
     llegar(elemento, orden) {
         const origen = this.$refs.origen.getBoundingClientRect();
@@ -238,118 +501,124 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
     },
 
     /**
-     * Los tantos se cantan como en la mesa. Primero el mano, que dice su número;
-     * el otro contesta con uno mayor ("31 son mejores") o con "Son buenas", sin
-     * mostrar el suyo. Después el que pierde queda a media tinta y recién ahí
-     * caen los puntos. Si empatan, gana el mano.
+     * Los tantos se cantan como en la mesa, en el orden en que los dijo el
+     * motor. El primero dice su número; el que sigue contesta con uno mayor
+     * ("31 son mejores") o con "Son buenas", y ese tanto nunca llegó al
+     * navegador. Después el que pierde queda a media tinta.
      */
-    cantarTantos({ mano, tantos, concepto, puntos, alTerminar }) {
-        const otro = mano === 'vos' ? 'rival' : 'vos';
-        const gana = tantos[otro] > tantos[mano] ? otro : mano;
+    async cantarTantos(hecho) {
+        const gana = QUIEN[hecho.ganador];
+        // En la contraflor el tanto son las tres cartas; en el envido, las que lo arman.
+        const mias = hecho.canto === 'contraflor' ? this.repartidas : cartasDelTanto(this.repartidas);
 
         clearTimeout(this.relojDeVoz);
         this.voz.visible = false;
         this.tantos = { vos: { ...CALLADO }, rival: { ...CALLADO }, gana, resuelto: false };
-        this.envidoGanadoPor = gana;
 
-        this.secuencia([
-            [160, () => {
-                this.tantos[mano] = { numero: tantos[mano], frase: '', visible: true };
-                this.aviso = mano === 'vos' ? `Cantás ${tantos.vos}.` : `El bot canta ${tantos.rival}.`;
-                this.levantarTanto(mano === 'vos');
-            }],
-            [800, () => {
-                this.tantos[otro] = gana === otro
-                    ? { numero: tantos[otro], frase: 'son mejores', visible: true }
-                    : { numero: '', frase: 'Son buenas', visible: true };
-                this.levantarTanto(gana === 'vos');
-            }],
-            [650, () => {
-                // Corto, para que entre en un renglón del celular.
-                const respuesta = gana === otro ? `${tantos[otro]} son mejores.` : 'Son buenas.';
+        await this.esperar(160);
 
-                this.tantos.resuelto = true;
-                this.aviso = `${respuesta} ${gana === 'vos' ? `Ganás el envido: sumás ${puntos}.` : `El bot suma ${puntos}.`}`;
-                this.anotar(concepto, gana, puntos);
-            }],
-            [1500, () => {
-                this.tantos.vos.visible = false;
-                this.tantos.rival.visible = false;
-                this.levantarTanto(false);
-                alTerminar?.();
-            }],
-        ]);
+        for (const [orden, dicho] of hecho.tantos.entries()) {
+            const quien = QUIEN[dicho.asiento];
+
+            if (orden > 0) {
+                await this.esperar(800);
+            }
+
+            if (dicho.tanto === null) {
+                this.tantos[quien] = { numero: '', frase: 'Son buenas', visible: true };
+                this.aviso = quien === 'vos' ? 'Decís: son buenas.' : 'El bot dice: son buenas.';
+            } else {
+                this.tantos[quien] = { numero: dicho.tanto, frase: orden === 0 ? '' : 'son mejores', visible: true };
+                this.aviso = `${quien === 'vos' ? 'Cantás' : 'El bot canta'} ${dicho.tanto}${orden === 0 ? '' : ', son mejores'}.`;
+                // Mientras se canta tu tanto se levantan las cartas que lo arman.
+                this.levantarTanto(quien === 'vos' ? mias : []);
+            }
+        }
+
+        await this.esperar(650);
+        this.tantos.resuelto = true;
+        this.levantarTanto(gana === 'vos' ? mias : []);
     },
 
     /**
-     * Levanta de tu mano las cartas que arman tu tanto y apaga la que no cuenta.
+     * Levanta de tu mano las cartas que se indican y apaga las demás. Sin cartas, las suelta todas.
      */
-    levantarTanto(levantar) {
-        const delTanto = cartasDelTanto(this.manos[this.indice % this.manos.length].vos);
-
-        this.$refs.mano.toggleAttribute('data-tanto', levantar);
+    levantarTanto(cartas) {
+        this.$refs.mano.toggleAttribute('data-tanto', cartas.length > 0);
         this.$refs.mano.querySelectorAll('button').forEach((boton) => {
-            boton.classList.toggle('del-tanto', levantar && delTanto.includes(boton.dataset.carta));
+            boton.classList.toggle('del-tanto', cartas.includes(boton.dataset.carta));
         });
     },
 
-    sumar(quien, cantidad) {
-        for (let i = 0; i < cantidad; i++) {
-            setTimeout(() => {
-                this.puntos[quien] = Math.min(30, this.puntos[quien] + 1);
+    /**
+     * Anota los puntos de a uno, como fósforos que caen, hasta llegar al tanteo que dijo el motor.
+     */
+    sumar(quien, hasta) {
+        return new Promise((listo) => {
+            const caer = () => {
+                if (this.puntos[quien] >= hasta) {
+                    listo();
 
-                if (this.puntos[quien] === 30) {
-                    this.frenarRelojes();
-                    this.fin = quien;
+                    return;
                 }
-            }, i * 150);
-        }
+
+                this.puntos[quien]++;
+                setTimeout(caer, this.prisa ? 40 : 150);
+            };
+
+            caer();
+        });
     },
 
-    /**
-     * Suma puntos y deja anotado por qué, para el desglose del cierre de la mano.
-     */
-    anotar(concepto, quien, cantidad) {
-        this.desglose.push({ concepto, puntos: cantidad, texto: `${concepto}, para ${quien === 'vos' ? 'vos' : 'el bot'}` });
-        this.sumar(quien, cantidad);
+    conceptoDe(concepto, vista) {
+        if (concepto !== 'truco') {
+            return CONCEPTOS[concepto];
+        }
+
+        // Lo que vale la mano lleva el nombre del último canto querido; si nadie lo quiso, el del canto que se rechazó.
+        const { nivel, querido } = vista.truco;
+
+        return querido === nivel ? NIVEL_DE_TRUCO[querido] : `${NIVEL_DE_TRUCO[nivel]} no querido`;
     },
 
     // La mano
 
-    repartir(enfocar = false) {
-        const mano = this.manos[this.indice % this.manos.length];
-
-        this.frenarRelojes();
-        this.baza = 0;
-        this.jugadas = [{}, {}, {}];
-        this.ganadas = [];
-        this.manoVos = [...mano.vos];
-        this.manoRival = [...mano.rival];
-        this.envidoCantado = false;
-        this.envidoGanadoPor = null;
-        this.truco = { valor: 1, quiero: null };
-        this.tantos = { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false };
-        this.desglose = [];
+    /**
+     * Pone sobre la mesa lo que dice una vista: tu mano, los dorsos del bot y lo ya jugado.
+     * Es lo que se usa al cargar la página y al repartir; con "animar", las cartas llegan desde el mazo.
+     */
+    repartir(vista, animar) {
+        this.vista = vista;
+        this.menu = null;
         this.cierre = null;
-        this.pendiente = false;
-        this.cerrada = false;
-        this.juntando = false;
-        this.turno = 'espera';
-        this.aviso = 'Repartiendo.';
+        this.tantos = { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false };
+        this.ganadas = vista.bazas.filter((baza) => baza.cerrada).map((baza) => (baza.ganador === null ? 'parda' : QUIEN[baza.ganador]));
+        this.repartidas = [
+            ...vista.misCartas,
+            ...vista.bazas.flatMap((baza) => baza.jugadas.filter(([asiento]) => asiento === VOS).map(([, carta]) => carta)),
+        ];
 
         [0, 1, 2].forEach((numero) => {
-            ['vos', 'rival'].forEach((quien) => {
+            QUIEN.forEach((quien, asiento) => {
                 const hueco = this.hueco(numero, quien);
+                const baza = vista.bazas[numero];
+                const jugada = baza?.jugadas.find(([otro]) => otro === asiento);
 
-                hueco.replaceChildren();
+                hueco.replaceChildren(...(jugada ? [plantilla(jugada[1])] : []));
                 delete hueco.dataset.gana;
                 delete hueco.dataset.pierde;
+
+                if (baza?.cerrada && baza.ganador !== null) {
+                    hueco.dataset[baza.ganador === asiento ? 'gana' : 'pierde'] = '';
+                }
             });
         });
+
         this.$refs.rival.replaceChildren();
         this.$refs.mano.removeAttribute('data-tanto');
+        [...this.$refs.mano.children].forEach((lugar) => lugar.replaceChildren());
 
-        mano.vos.forEach((carta, i) => {
+        vista.misCartas.forEach((carta, i) => {
             const boton = document.createElement('button');
 
             boton.type = 'button';
@@ -357,324 +626,208 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
             boton.dataset.carta = carta;
             boton.setAttribute('aria-label', `${nombreDe(carta)}, jugar esta carta`);
             boton.append(plantilla(carta));
-            boton.addEventListener('click', () => this.jugar(carta, boton));
+            boton.addEventListener('click', (evento) => {
+                // El toque no sube hasta la mesa: ahí apuraría lo que conteste el bot.
+                evento.stopPropagation();
+                this.jugar(carta, boton);
+            });
             this.$refs.mano.children[i].replaceChildren(boton);
-            this.llegar(boton, i * 2);
 
+            if (animar) {
+                this.llegar(boton, i * 2);
+            }
+        });
+
+        for (let i = 0; i < vista.cartasEnMano[RIVAL]; i++) {
             const dorso = document.createElement('div');
 
             dorso.append(plantilla('dorso'));
             this.$refs.rival.append(dorso);
-            this.llegar(dorso, i * 2 + 1);
-        });
 
-        this.despues(this.reducido ? 200 : 650, () => {
-            this.turno = 'vos';
-            this.aviso = 'Jugá una carta o cantá.';
-
-            // Quien llegó con el teclado al botón de repartir sigue en sus cartas.
-            if (enfocar) {
-                this.$refs.mano.querySelector('button')?.focus({ preventScroll: true });
+            if (animar) {
+                this.llegar(dorso, i * 2 + 1);
             }
-        });
-    },
-
-    jugar(carta, boton) {
-        if (this.turno !== 'vos' || this.pendiente || this.cerrada) {
-            return;
         }
 
-        const desde = boton.getBoundingClientRect();
-        const naipe = boton.firstElementChild;
-
-        this.manoVos = this.manoVos.filter((otra) => otra !== carta);
-        this.jugadas[this.baza].vos = carta;
-        this.turno = 'espera';
-        this.aviso = `Jugaste el ${nombreDe(carta)}.`;
-        this.apoyar(naipe, this.hueco(this.baza, 'vos'), desde);
-        boton.remove();
-
-        if (this.jugadas[this.baza].rival) {
-            this.despues(600, () => this.resolverBaza());
-        } else if (this.manos[this.indice % this.manos.length].rivalCantaTruco && this.baza === 0 && this.truco.valor === 1) {
-            this.despues(700, () => {
-                this.cantar('Truco', 'copa', 'rival');
-                this.pendiente = true;
-                this.aviso = 'El bot cantó truco. ¿Qué hacés?';
-            });
-        } else {
-            this.despues(750, () => this.juegaElRival());
-        }
-    },
-
-    juegaElRival() {
-        const tuya = this.jugadas[this.baza].vos;
-        const deMenorAMayor = [...this.manoRival].sort((a, b) => fuerza(a) - fuerza(b));
-        const carta = (tuya && deMenorAMayor.find((otra) => fuerza(otra) > fuerza(tuya))) || deMenorAMayor[0];
-        const dorso = this.$refs.rival.lastElementChild;
-        const desde = dorso.getBoundingClientRect();
-
-        dorso.remove();
-        this.manoRival = this.manoRival.filter((otra) => otra !== carta);
-        this.jugadas[this.baza].rival = carta;
-        this.aviso = `El bot jugó el ${nombreDe(carta)}.`;
-        this.apoyar(plantilla(carta), this.hueco(this.baza, 'rival'), desde);
-
-        if (tuya) {
-            this.despues(600, () => this.resolverBaza());
-        } else {
-            this.turno = 'vos';
-        }
-    },
-
-    resolverBaza() {
-        const { vos, rival } = this.jugadas[this.baza];
-        const diferencia = fuerza(vos) - fuerza(rival);
-        const resultado = diferencia === 0 ? 'parda' : diferencia > 0 ? 'vos' : 'rival';
-
-        this.ganadas.push(resultado);
-        this.aviso = {
-            vos: `Ganaste la baza con el ${nombreDe(vos)}.`,
-            rival: `El bot ganó la baza con el ${nombreDe(rival)}.`,
-            parda: 'Parda. Sale el mano.',
-        }[resultado];
-
-        // La carta que gana queda arriba y la que pierde se apaga: la baza se lee de un vistazo.
-        if (resultado !== 'parda') {
-            this.hueco(this.baza, resultado).dataset.gana = '';
-            this.hueco(this.baza, resultado === 'vos' ? 'rival' : 'vos').dataset.pierde = '';
-        }
-
-        const ganador = this.ganadorDeLaMano();
-
-        if (ganador) {
-            this.despues(700, () => this.cerrarMano(ganador, this.truco.valor));
-
-            return;
-        }
-
-        this.baza++;
-
-        if (resultado === 'rival') {
-            this.despues(900, () => this.juegaElRival());
-        } else {
-            this.turno = 'vos';
-        }
+        this.aviso = animar ? 'Repartiendo.' : this.aviso;
     },
 
     /**
-     * Las pardas del reglamento, con vos como mano.
+     * Deja la mesa tal como la describe una vista, sin contar nada: al cargar la página o al deshacer.
      */
-    ganadorDeLaMano() {
-        const [primera, segunda, tercera] = this.ganadas;
+    pintar(vista, animar = true, aviso = null) {
+        const enJuego = vista.fase === 'jugando';
 
-        if (this.ganadas.length < 2) {
-            return null;
+        this.puntos = { vos: vista.tanteo[VOS], rival: vista.tanteo[RIVAL] };
+        this.repartir(vista, animar && enJuego);
+
+        if (enJuego) {
+            setTimeout(() => {
+                this.ocupada = false;
+                this.aviso = aviso ?? this.indicacion();
+            }, animar && ! this.reducido ? 650 : 0);
+
+            return;
         }
 
-        if (primera === 'parda') {
-            if (segunda !== 'parda') {
-                return segunda;
-            }
+        // Entre dos manos: queda a la vista el cierre de la que terminó.
+        this.cerrarMano(vista, false);
+        this.fin = vista.ganador === null ? null : QUIEN[vista.ganador];
+        this.ocupada = false;
+    },
 
-            return tercera ? (tercera === 'parda' ? 'vos' : tercera) : null;
+    /**
+     * Tocar una carta propia la mueve en el momento, sin esperar al servidor: la jugada
+     * ya figura entre las válidas. Si igual volviera rechazada, la mesa se deshace sola.
+     */
+    jugar(carta, boton) {
+        if (this.ocupada || ! this.vista.acciones.some((accion) => accion.tipo === 'jugar' && accion.carta === carta)) {
+            return;
         }
 
-        if (segunda === 'parda' || primera === segunda) {
-            return primera;
+        this.adelantada = carta;
+        this.aviso = `Jugaste el ${nombreDe(carta)}.`;
+        this.jugarCarta('vos', carta, this.baza, boton);
+        this.enviar({ tipo: 'jugar', carta });
+    },
+
+    /**
+     * La carta sale de la mano (o de los dorsos del bot) y cae en su lugar de la baza.
+     */
+    jugarCarta(quien, carta, baza, boton = null) {
+        if (quien === 'rival') {
+            const dorso = this.$refs.rival.lastElementChild;
+            const desde = dorso.getBoundingClientRect();
+
+            dorso.remove();
+            this.apoyar(plantilla(carta), this.hueco(baza, 'rival'), desde);
+
+            return;
         }
 
-        return tercera ? (tercera === 'parda' ? primera : tercera) : null;
+        const origen = boton ?? this.$refs.mano.querySelector(`button[data-carta="${carta}"]`);
+        const desde = origen.getBoundingClientRect();
+
+        this.apoyar(origen.firstElementChild, this.hueco(baza, 'vos'), desde);
+        origen.remove();
+    },
+
+    /**
+     * En qué baza se jugó una carta, según la vista que la trae.
+     */
+    bazaDe(vista, hecho) {
+        return vista.bazas.findIndex((baza) => baza.jugadas.some(([asiento, carta]) => asiento === hecho.asiento && carta === hecho.carta));
+    },
+
+    resolverBaza(hecho, vista) {
+        const numero = hecho.numero - 1;
+        const resultado = hecho.ganador === null ? 'parda' : QUIEN[hecho.ganador];
+        const jugadas = vista.bazas[numero].jugadas;
+
+        this.ganadas = [...this.ganadas.slice(0, numero), resultado];
+
+        if (resultado === 'parda') {
+            this.aviso = 'Parda. Sale el mano.';
+
+            return;
+        }
+
+        const carta = jugadas.find(([asiento]) => asiento === hecho.ganador)[1];
+
+        this.aviso = resultado === 'vos' ? `Ganaste la baza con el ${nombreDe(carta)}.` : `El bot ganó la baza con el ${nombreDe(carta)}.`;
+
+        // La carta que gana queda arriba y la que pierde se apaga: la baza se lee de un vistazo.
+        this.hueco(numero, resultado).dataset.gana = '';
+        this.hueco(numero, resultado === 'vos' ? 'rival' : 'vos').dataset.pierde = '';
     },
 
     /**
      * El cierre de la mano: quién la ganó, por qué y cuánto sumó cada cosa.
      * Queda a la vista hasta que el jugador reparte. Lo que no se jugó vuelve
-     * al mazo boca abajo, salvo las cartas con las que el bot ganó el envido,
-     * que tiene que mostrar.
+     * al mazo boca abajo, salvo las cartas que el bot tiene que mostrar porque
+     * ganó el envido o sumó por una flor.
      */
-    cerrarMano(ganador, puntos, { motivo = null, concepto = null } = {}) {
-        const titulo = ganador === 'vos' ? 'Ganaste la mano' : 'La mano es del bot';
-        const razon = motivo ?? `Bazas: ${this.ganadas.map((baza) => DE_QUIEN[baza]).join(', ')}.`;
+    cerrarMano(vista, animar = true) {
+        const { ganador, motivo, anotado, mostradas } = vista.cierre;
+        const titulo = motivo === 'partida'
+            ? 'Se terminó la partida'
+            : (ganador === VOS ? 'Ganaste la mano' : 'La mano es del bot');
+        const razon = this.razonDelCierre(vista);
+        const lineas = anotado.map((linea) => ({
+            puntos: linea.puntos,
+            texto: `${this.conceptoDe(linea.concepto, vista)}, para ${linea.equipo === VOS ? 'vos' : 'el bot'}`,
+        }));
+        const delBot = (mostradas[RIVAL] ?? []).filter((carta) => ! vista.bazas.some((baza) => baza.jugadas.some(([, otra]) => otra === carta)));
+        const dorsos = [...this.$refs.rival.children];
 
-        this.frenarRelojes();
-        this.cerrada = true;
-        this.pendiente = false;
-        this.turno = 'espera';
         this.tantos.vos.visible = false;
         this.tantos.rival.visible = false;
-        this.anotar(concepto ?? this.conceptoDeLaMano, ganador, puntos);
-
-        const mostradas = this.recogerSobrantes();
-
-        this.cierre = { titulo, motivo: razon, lineas: [...this.desglose] };
-        this.aviso = [
-            `${titulo}. ${razon}`,
-            ...this.desglose.map((linea) => `${linea.puntos} por ${linea.texto}.`),
-            mostradas.length ? `El bot muestra ${mostradas.map((carta) => `el ${nombreDe(carta)}`).join(' y ')}.` : '',
-            'Apretá Repartir para seguir.',
-        ].filter(Boolean).join(' ');
-
-        this.$nextTick(() => this.$refs.repartir.focus({ preventScroll: true }));
-    },
-
-    /**
-     * Devuelve las cartas del bot que quedaron a la vista.
-     */
-    recogerSobrantes() {
-        const dorsos = [...this.$refs.rival.children];
-        const delTanto = cartasDelTanto(this.manos[this.indice % this.manos.length].rival);
-        const mostradas = this.envidoGanadoPor === 'rival' ? this.manoRival.filter((carta) => delTanto.includes(carta)) : [];
-
         this.$refs.mano.removeAttribute('data-tanto');
         this.$refs.mano.querySelectorAll('button').forEach((boton, i) => {
             boton.disabled = true;
-            this.guardar(boton, i).finished.then(() => boton.remove());
+
+            if (animar) {
+                this.guardar(boton, i).finished.then(() => boton.remove());
+            } else {
+                boton.remove();
+            }
         });
 
-        mostradas.forEach((carta, i) => this.darVuelta(dorsos[i], carta));
-        dorsos.slice(mostradas.length).forEach((dorso, i) => this.guardar(dorso, i));
+        // Al cargar la página con la mano ya cerrada no quedan dorsos: se dibujan los que hay que mostrar.
+        while (dorsos.length < delBot.length) {
+            const dorso = document.createElement('div');
 
-        return mostradas;
+            dorso.append(plantilla('dorso'));
+            this.$refs.rival.append(dorso);
+            dorsos.push(dorso);
+        }
+
+        delBot.forEach((carta, i) => this.darVuelta(dorsos[i], carta));
+        dorsos.slice(delBot.length).forEach((dorso, i) => (animar ? this.guardar(dorso, i) : dorso.remove()));
+
+        this.cierre = { titulo, motivo: razon, lineas };
+        this.aviso = [
+            `${titulo}. ${razon}`,
+            ...lineas.map((linea) => `${linea.puntos} por ${linea.texto}.`),
+            delBot.length ? `El bot muestra ${delBot.map((carta) => `el ${nombreDe(carta)}`).join(' y ')}.` : '',
+            vista.fase === 'por_repartir' ? 'Apretá Repartir para seguir.' : '',
+        ].filter(Boolean).join(' ');
+
+        if (vista.fase === 'por_repartir') {
+            this.$nextTick(() => this.$refs.repartir.focus({ preventScroll: true }));
+        }
+    },
+
+    razonDelCierre(vista) {
+        const { ganador, motivo } = vista.cierre;
+
+        if (motivo === 'bazas') {
+            return `Bazas: ${this.ganadas.map((baza) => DE_QUIEN[baza]).join(', ')}.`;
+        }
+
+        if (motivo === 'mazo') {
+            return ganador === VOS ? 'El bot se fue al mazo.' : 'Te fuiste al mazo.';
+        }
+
+        if (motivo === 'no_quiero') {
+            const canto = NIVEL_DE_TRUCO[vista.truco.nivel].toLowerCase();
+
+            return ganador === VOS ? `El bot no quiso el ${canto}.` : `No quisiste el ${canto}.`;
+        }
+
+        return `${ganador === VOS ? 'Llegaste' : 'El bot llegó'} a ${vista.puntosParaGanar}.`;
     },
 
     /**
-     * Junta lo que quedó en la mesa y reparte la mano siguiente.
+     * Junta lo que quedó en la mesa antes de pedir el reparto de la mano siguiente.
      */
-    siguienteMano() {
-        if (! this.cerrada || this.fin || this.juntando) {
-            return;
-        }
-
-        const conTeclado = document.activeElement === this.$refs.repartir;
+    juntar() {
         const cartas = [...this.$refs.bazas.querySelectorAll('[data-hueco] > *'), ...this.$refs.rival.querySelectorAll('.giro')];
 
-        this.juntando = true;
         this.cierre = null;
         this.aviso = 'Repartiendo.';
         cartas.forEach((carta, i) => this.guardar(carta, i));
 
-        this.despues(this.reducido ? 130 : 210 + cartas.length * 30, () => {
-            this.indice++;
-            this.repartir(conTeclado);
-        });
-    },
-
-    // Los cantos
-
-    cantarEnvido() {
-        if (! this.puedeEnvido) {
-            return;
-        }
-
-        const mano = this.manos[this.indice % this.manos.length];
-        const tantos = { vos: tanto(mano.vos), rival: tanto(mano.rival) };
-
-        this.envidoCantado = true;
-        this.turno = 'espera';
-        this.cantar('Envido', 'oro', 'vos');
-        this.aviso = 'Cantaste envido.';
-
-        this.despues(1300, () => {
-            if (tantos.rival < 23) {
-                this.cantar('No quiero', 'copa', 'rival');
-                this.aviso = 'El bot no quiso el envido. Sumás 1.';
-                // Primero se lee el canto y después cae el punto.
-                this.despues(450, () => this.anotar('Envido no querido', 'vos', 1));
-                this.despues(1000, () => (this.turno = 'vos'));
-
-                return;
-            }
-
-            this.cantar('Quiero', 'basto', 'rival');
-            this.aviso = 'El bot quiso el envido.';
-            this.despues(950, () => this.cantarTantos({
-                mano: 'vos',
-                tantos,
-                concepto: 'Envido',
-                puntos: 2,
-                alTerminar: () => (this.turno = 'vos'),
-            }));
-        });
-    },
-
-    cantarTruco() {
-        if (! this.puedeTruco) {
-            return;
-        }
-
-        const canto = this.cantoDeTruco;
-
-        this.turno = 'espera';
-        this.cantar(canto, 'copa', 'vos');
-        this.aviso = `Cantaste ${canto.toLowerCase()}.`;
-
-        this.despues(1300, () => {
-            // El bot decide con lo que le queda en la mano más la carta que ya tiró en esta baza.
-            // Sin ese cuidado, con la mano vacía siempre decía "no quiero".
-            const cartasDelBot = [...this.manoRival, this.jugadas[this.baza].rival].filter(Boolean);
-
-            if (Math.max(...cartasDelBot.map(fuerza)) < 8) {
-                this.cantar('No quiero', 'copa', 'rival');
-                this.cerrarMano('vos', this.truco.valor, {
-                    motivo: `El bot no quiso el ${canto.toLowerCase()}.`,
-                    concepto: `${canto} no querido`,
-                });
-
-                return;
-            }
-
-            this.cantar('Quiero', 'basto', 'rival');
-            this.truco = { valor: this.truco.valor + 1, quiero: 'rival' };
-            this.aviso = `El bot quiso. ${this.estadoDelTruco}.`;
-            this.turno = 'vos';
-        });
-    },
-
-    responder(respuesta) {
-        if (! this.pendiente) {
-            return;
-        }
-
-        this.pendiente = false;
-
-        if (respuesta === 'no-quiero') {
-            this.cantar('No quiero', 'copa', 'vos');
-            this.cerrarMano('rival', this.truco.valor, { motivo: 'No quisiste el truco.', concepto: 'Truco no querido' });
-
-            return;
-        }
-
-        if (respuesta === 'quiero') {
-            this.cantar('Quiero', 'basto', 'vos');
-            this.truco = { valor: 2, quiero: 'vos' };
-            this.aviso = 'Quisiste. Truco querido, vale 2.';
-            this.despues(1300, () => this.juegaElRival());
-
-            return;
-        }
-
-        this.cantar('Retruco', 'copa', 'vos');
-        this.aviso = 'Cantaste retruco.';
-        this.despues(1300, () => {
-            this.cantar('Quiero', 'basto', 'rival');
-            this.truco = { valor: 3, quiero: 'rival' };
-            this.aviso = 'El bot quiso. Retruco querido, vale 3.';
-            this.despues(1300, () => this.juegaElRival());
-        });
-    },
-
-    irseAlMazo() {
-        if (this.cerrada || (this.turno !== 'vos' && ! this.pendiente)) {
-            return;
-        }
-
-        // Mazo en la primera baza sin envido ni flor cantados: 2 para el rival.
-        const sinEnvido = this.baza === 0 && ! this.envidoCantado && this.truco.valor === 1 && ! this.pendiente;
-
-        this.cerrarMano('rival', sinEnvido ? 2 : this.truco.valor, {
-            motivo: 'Te fuiste al mazo.',
-            concepto: sinEnvido ? 'Mano y envido sin jugar' : this.conceptoDeLaMano,
-        });
+        return this.esperar(this.reducido ? 130 : 210 + cartas.length * 30);
     },
 });

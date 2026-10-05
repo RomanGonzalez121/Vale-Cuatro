@@ -9,6 +9,7 @@ use App\Motor\AccionInvalida;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use InvalidArgumentException;
 
 /**
@@ -23,6 +24,21 @@ use InvalidArgumentException;
 class MesaController extends Controller
 {
     public function __construct(private readonly Mesa $mesa) {}
+
+    /**
+     * La mesa con la partida en curso. Recargar la página vuelve a la misma partida, en el mismo punto.
+     * No crea nada: sin partida en curso, manda a elegir el modo.
+     */
+    public function ver(Request $request): View|RedirectResponse
+    {
+        $partida = $this->mesa->enCursoDe($request->user());
+
+        if ($partida === null) {
+            return redirect()->route('modos');
+        }
+
+        return view('paginas.mesa', ['vista' => $this->mesa->vista($partida)]);
+    }
 
     public function accion(Request $request): JsonResponse
     {

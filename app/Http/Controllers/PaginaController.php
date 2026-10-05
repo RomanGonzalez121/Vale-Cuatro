@@ -26,13 +26,6 @@ class PaginaController extends Controller
         ]);
     }
 
-    public function mesa(): View
-    {
-        return view('paginas.mesa', [
-            'manos' => DatosDeEjemplo::manos(),
-        ]);
-    }
-
     public function ranking(): View
     {
         return view('paginas.ranking', [

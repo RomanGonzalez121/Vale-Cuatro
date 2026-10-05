@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Jugador;
 use App\View\Components\Carta;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -46,15 +45,6 @@ class PaginasTest extends TestCase
         foreach (['Espada', 'Basto', 'Oro', 'Copa', 'Envido', 'Truco', 'Irse al mazo', 'Quién es mano', 'Repartir', 'Quiero', 'No quiero', 'Tiempo', 'Bot', 'Invitar', 'Ranking', 'Repetir partida', 'Sonido'] as $icono) {
             $respuesta->assertSee($icono);
         }
-    }
-
-    public function test_la_mesa_lleva_las_cuarenta_plantillas_y_el_dorso(): void
-    {
-        // A la mesa se llega con un jugador: acá, un invitado.
-        $html = $this->actingAs(Jugador::factory()->invitado()->make(['id' => 1]))
-            ->get('/mesa')->assertOk()->assertSee('Vale Cuatro')->getContent();
-
-        $this->assertSame(41, substr_count($html, '<template data-plantilla='));
     }
 
     public function test_el_ranking_marca_a_los_jugadores_de_ejemplo_como_bots(): void
