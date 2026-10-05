@@ -15,6 +15,10 @@ Proyecto de portfolio de Román Gonzalez.
 |---|---|
 | ![Ranking](docs/capturas/ranking.jpeg) | ![Repetición jugada por jugada](docs/capturas/repeticion.jpeg) |
 
+| El envido se canta | Cierre de la mano |
+|---|---|
+| ![El bot canta 33, son mejores, y tu 31 queda a media tinta](docs/capturas/envido-cantado.png) | ![Quién ganó la mano, por qué y cuánto sumó cada cosa](docs/capturas/cierre-de-mano.png) |
+
 | Ingreso | Registro |
 |---|---|
 | ![Ingreso, con la mano que se da vuelta al completar cada paso](docs/capturas/ingresar.jpeg) | ![Registro, con el apodo en el tanteador](docs/capturas/registro.jpeg) |
