@@ -19,6 +19,19 @@ final class Partida
 
     private const SIN_ENVIDO = ['cadena' => [], 'estado' => null, 'canto' => null, 'tantos' => [], 'ganador' => null];
 
+    private const SIN_FLOR = [
+        'cantadas' => [], 'sinAnotar' => [], 'estado' => null,
+        'contra' => null, 'contraPor' => null, 'canto' => null, 'tantos' => [], 'ganador' => null,
+    ];
+
+    private const FLOR = 3;
+
+    private const CONTRAFLOR_QUERIDA = 6;
+
+    private const CONTRAFLOR_NO_QUERIDA = 4;
+
+    private const CONTRAFLOR_AL_RESTO_NO_QUERIDA = 6;
+
     /** @var array{0: int, 1: int} Los puntos de cada equipo. */
     private array $tanteo = [0, 0];
 
@@ -61,6 +74,16 @@ final class Partida
      * @var array{cadena: list<string>, estado: string|null, canto: int|null, tantos: list<array{asiento: int, tanto: int|null}>, ganador: int|null}
      */
     private array $envido = self::SIN_ENVIDO;
+
+    /**
+     * La flor de esta mano. "cantadas" son los asientos que cantaron flor (siempre de un mismo equipo) y
+     * "sinAnotar" las que todavía no sumaron. "contra" es la contraflor que se cantó, "contraPor" el asiento
+     * que la cantó y "canto" el equipo que dijo lo último. "estado" va de null a "abierta" (hay flor y el
+     * rival todavía puede contestarla), "pendiente" (hay una contraflor sin contestar) o "cerrada".
+     *
+     * @var array{cantadas: list<int>, sinAnotar: list<int>, estado: string|null, contra: string|null, contraPor: int|null, canto: int|null, tantos: list<array{asiento: int, tanto: int|null}>, ganador: int|null}
+     */
+    private array $flor = self::SIN_FLOR;
 
     /** @var list<array{equipo: int, puntos: int, concepto: string}> Lo que se anotó en esta mano, en orden. */
     private array $anotado = [];
@@ -160,6 +183,7 @@ final class Partida
         $nueva->enMazo = [];
         $nueva->truco = self::SIN_TRUCO;
         $nueva->envido = self::SIN_ENVIDO;
+        $nueva->flor = self::SIN_FLOR;
         $nueva->anotado = [];
         $nueva->cierre = null;
         $nueva->hechos = [['tipo' => 'reparto', 'numero' => $nueva->numeroDeMano, 'mano' => $this->mano]];
@@ -220,6 +244,7 @@ final class Partida
         return match ($accion->tipo) {
             TipoDeAccion::Jugar => $this->motivoParaJugar($asiento, $accion->carta, $pendiente),
             TipoDeAccion::Envido, TipoDeAccion::RealEnvido, TipoDeAccion::FaltaEnvido => $this->motivoParaElEnvido($asiento, $accion->tipo, $pendiente),
+            TipoDeAccion::Flor, TipoDeAccion::Contraflor, TipoDeAccion::ContraflorAlResto => $this->motivoParaLaFlor($asiento, $accion->tipo, $pendiente),
             TipoDeAccion::Truco, TipoDeAccion::Retruco, TipoDeAccion::ValeCuatro => $this->motivoParaElTruco($asiento, $accion->tipo, $pendiente),
             TipoDeAccion::Quiero, TipoDeAccion::NoQuiero => $pendiente === null ? 'No hay ningún canto para contestar.' : null,
             TipoDeAccion::Mazo => null,
@@ -250,6 +275,10 @@ final class Partida
                 : 'El envido siempre sube: eso ya no se puede cantar.';
         }
 
+        if ($this->flor['estado'] !== null) {
+            return 'Con flor cantada no hay envido en esta mano.';
+        }
+
         if ($this->envido['estado'] !== null) {
             return 'El envido ya se cantó en esta mano.';
         }
@@ -264,6 +293,53 @@ final class Partida
         }
 
         return null;
+    }
+
+    /**
+     * @param  array{canto: string, responde: int}|null  $pendiente
+     */
+    private function motivoParaLaFlor(int $asiento, TipoDeAccion $tipo, ?array $pendiente): ?string
+    {
+        // A una contraflor solo se la puede subir al resto.
+        if ($pendiente !== null && $pendiente['canto'] === 'contraflor') {
+            return $tipo === TipoDeAccion::ContraflorAlResto && $this->flor['contra'] === 'contraflor'
+                ? null
+                : 'Hay una contraflor sin contestar: se quiere, no se quiere o se sube al resto.';
+        }
+
+        if (! Tanto::tieneFlor($this->repartidas[$asiento])) {
+            return 'No tenés flor: hacen falta tres cartas del mismo palo.';
+        }
+
+        if ($this->yaJugo($asiento)) {
+            return 'La flor se canta antes de jugar tu primera carta.';
+        }
+
+        if (in_array($asiento, $this->flor['cantadas'], true) || $this->flor['contraPor'] === $asiento) {
+            return 'Ya cantaste tu flor.';
+        }
+
+        if ($this->flor['estado'] === 'cerrada') {
+            return 'La flor de esta mano ya se resolvió.';
+        }
+
+        if (in_array($this->envido['estado'], ['querido', 'no_querido'], true)) {
+            return 'El envido ya se jugó: la flor se canta antes.';
+        }
+
+        // Igual que el envido: la flor va primero que el truco, pero solo mientras nadie lo quiso.
+        if ($this->truco['querido'] > 0 || $this->truco['nivel'] > 1) {
+            return 'Querido el truco, ya no se canta flor en esta mano.';
+        }
+
+        $hayFlorDelRival = $this->flor['cantadas'] !== []
+            && $this->mesa->equipoDe($this->flor['cantadas'][0]) !== $this->mesa->equipoDe($asiento);
+
+        if ($tipo === TipoDeAccion::Flor) {
+            return $hayFlorDelRival ? 'Contestar solo "Flor" no existe: se canta contraflor o se calla.' : null;
+        }
+
+        return $hayFlorDelRival ? null : 'La contraflor contesta una flor del rival, y nadie la cantó.';
     }
 
     /**
@@ -300,7 +376,11 @@ final class Partida
      */
     private function pendiente(): ?array
     {
-        // El envido va primero: mientras no se conteste, el truco queda en suspenso.
+        // La flor y el envido van primero: mientras no se contesten, el truco queda en suspenso.
+        if ($this->flor['estado'] === 'pendiente') {
+            return ['canto' => 'contraflor', 'responde' => $this->mesa->rivalDe($this->flor['canto'])];
+        }
+
         if ($this->envido['estado'] === 'pendiente') {
             return ['canto' => 'envido', 'responde' => $this->mesa->rivalDe($this->envido['canto'])];
         }
@@ -329,11 +409,17 @@ final class Partida
         match ($accion->tipo) {
             TipoDeAccion::Jugar => $nueva->jugarCarta($asiento, $accion->carta),
             TipoDeAccion::Envido, TipoDeAccion::RealEnvido, TipoDeAccion::FaltaEnvido => $nueva->cantarEnvido($asiento, $accion->tipo),
+            TipoDeAccion::Flor => $nueva->cantarFlor($asiento),
+            TipoDeAccion::Contraflor, TipoDeAccion::ContraflorAlResto => $nueva->cantarContraflor($asiento, $accion->tipo),
             TipoDeAccion::Truco, TipoDeAccion::Retruco, TipoDeAccion::ValeCuatro => $nueva->cantarTruco($asiento, $accion->tipo),
             TipoDeAccion::Quiero => $nueva->contestar($asiento, quiere: true),
             TipoDeAccion::NoQuiero => $nueva->contestar($asiento, quiere: false),
             TipoDeAccion::Mazo => $nueva->irseAlMazo($asiento),
         };
+
+        if ($nueva->fase === Fase::Jugando) {
+            $nueva->anotarFlores();
+        }
 
         // Si la partida se terminó en la mitad de una mano, la mano queda cerrada ahí.
         if ($nueva->fase === Fase::Terminada && $nueva->cierre === null) {
@@ -417,6 +503,7 @@ final class Partida
             'enMazo' => $this->enMazo,
             'truco' => $this->truco,
             'envido' => $this->envido,
+            'flor' => $this->flor,
             'anotado' => $this->anotado,
             'cierre' => $this->cierre,
             'hechos' => $this->hechos,
@@ -549,6 +636,100 @@ final class Partida
         return [$dichos, $mejor];
     }
 
+    private function cantarFlor(int $asiento): void
+    {
+        $this->flor['cantadas'][] = $asiento;
+        $this->flor['sinAnotar'][] = $asiento;
+        $this->flor['estado'] = 'abierta';
+        $this->hechos[] = ['tipo' => 'canto', 'asiento' => $asiento, 'canto' => 'flor'];
+
+        // La flor anula el envido de la mano, también el que estaba cantado y sin contestar.
+        if ($this->envido['estado'] === 'pendiente') {
+            $this->envido['estado'] = 'anulado';
+        }
+    }
+
+    private function cantarContraflor(int $asiento, TipoDeAccion $tipo): void
+    {
+        // Si es una subida al resto, la contraflor sigue siendo de quien la cantó primero.
+        $this->flor['contraPor'] ??= $asiento;
+        $this->flor['contra'] = $tipo->value;
+        $this->flor['canto'] = $this->mesa->equipoDe($asiento);
+        $this->flor['estado'] = 'pendiente';
+        $this->hechos[] = ['tipo' => 'canto', 'asiento' => $asiento, 'canto' => $tipo->value];
+    }
+
+    private function contestarLaContraflor(bool $quiere): void
+    {
+        $alResto = $this->flor['contra'] === 'contraflor_al_resto';
+
+        // Con contraflor, las flores dejan de valer 3 cada una: se juega todo en la contraflor.
+        $this->flor['sinAnotar'] = [];
+        $this->flor['estado'] = 'cerrada';
+
+        if (! $quiere) {
+            $puntos = $alResto ? self::CONTRAFLOR_AL_RESTO_NO_QUERIDA : self::CONTRAFLOR_NO_QUERIDA;
+            $this->anotar($this->flor['canto'], $puntos, 'contraflor_no_querida');
+
+            return;
+        }
+
+        $compiten = [...$this->flor['cantadas'], $this->flor['contraPor']];
+        $tantos = [];
+
+        foreach ($this->mesa->rondaDesde($this->mano) as $asiento) {
+            if (in_array($asiento, $compiten, true) && $this->estaActivo($asiento)) {
+                $tantos[$asiento] = Tanto::deFlor($this->repartidas[$asiento]);
+            }
+        }
+
+        $puntos = $alResto ? Envido::falta($this->tanteo, $this->puntosParaGanar) : self::CONTRAFLOR_QUERIDA;
+        [$dichos, $ganador] = $this->cantarTantos($tantos);
+
+        $this->flor['tantos'] = $dichos;
+        $this->flor['ganador'] = $ganador;
+        $this->hechos[] = ['tipo' => 'tantos', 'canto' => 'contraflor', 'tantos' => $dichos, 'ganador' => $ganador];
+
+        $this->anotar($this->mesa->equipoDe($ganador), $puntos, 'contraflor');
+    }
+
+    /**
+     * Anota las flores que nadie contestó: 3 por cada una.
+     *
+     * Se anotan cuando al rival ya no le queda nadie que pueda contestarlas (todos jugaron su primera
+     * carta o se fueron), tenga flor o no. Si dependiera de que la tenga, el momento en que caen los
+     * puntos le avisaría a quien cantó que el rival calló una flor.
+     */
+    private function anotarFlores(bool $seCierraLaMano = false): void
+    {
+        if ($this->flor['sinAnotar'] === [] || $this->flor['estado'] === 'pendiente') {
+            return;
+        }
+
+        if (! $seCierraLaMano && $this->elRivalTodaviaPuedeContestarLaFlor()) {
+            return;
+        }
+
+        foreach ($this->flor['sinAnotar'] as $asiento) {
+            $this->anotar($this->mesa->equipoDe($asiento), self::FLOR, 'flor');
+        }
+
+        $this->flor['sinAnotar'] = [];
+    }
+
+    private function elRivalTodaviaPuedeContestarLaFlor(): bool
+    {
+        $rival = $this->mesa->rivalDe($this->mesa->equipoDe($this->flor['cantadas'][0]));
+
+        foreach ($this->mesa->asientosDe($rival) as $asiento) {
+            if ($this->estaActivo($asiento) && ! $this->yaJugo($asiento)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function cantarTruco(int $asiento, TipoDeAccion $tipo): void
     {
         // Subir al contestar ("quiero retruco") acepta el canto anterior.
@@ -564,6 +745,7 @@ final class Partida
         $this->hechos[] = ['tipo' => 'respuesta', 'asiento' => $asiento, 'canto' => $canto, 'quiere' => $quiere];
 
         match ($canto) {
+            'contraflor' => $this->contestarLaContraflor($quiere),
             'envido' => $this->contestarElEnvido($quiere),
             'truco' => $this->contestarElTruco($asiento, $quiere),
         };
@@ -584,8 +766,11 @@ final class Partida
 
     private function irseAlMazo(int $asiento): void
     {
-        // El punto del envido que no se jugó se suma solo si no hubo envido ni truco: querer el truco es dejar pasar el envido.
-        $sinEnvido = ! $this->bazas[0]['cerrada'] && $this->truco['nivel'] === 0 && $this->envido['estado'] === null;
+        // El punto del envido que no se jugó se suma solo si no hubo envido, flor ni truco: querer el truco es dejar pasar el envido.
+        $sinEnvido = ! $this->bazas[0]['cerrada']
+            && $this->truco['nivel'] === 0
+            && $this->envido['estado'] === null
+            && $this->flor['estado'] === null;
         $equipo = $this->mesa->equipoDe($asiento);
 
         $this->enMazo[] = $asiento;
@@ -602,16 +787,17 @@ final class Partida
         }
 
         // Irse con un canto sin contestar vale como no quererlo, además de perder la mano.
-        if (($this->pendiente()['canto'] ?? null) === 'envido') {
-            $this->contestarElEnvido(quiere: false);
-        }
+        match ($this->pendiente()['canto'] ?? null) {
+            'contraflor' => $this->contestarLaContraflor(quiere: false),
+            'envido' => $this->contestarElEnvido(quiere: false),
+            default => null,
+        };
 
         $this->cerrarMano($this->mesa->rivalDe($equipo), 'mazo', sumaElEnvidoNoJugado: $sinEnvido);
     }
 
     /**
-     * Anota lo que vale la mano y la cierra. El punto del envido que no se jugó va primero,
-     * como todo lo del envido.
+     * Anota lo que vale la mano y la cierra. Lo del envido y la flor se anota antes que lo del truco.
      */
     private function cerrarMano(int $equipo, string $motivo, bool $sumaElEnvidoNoJugado = false): void
     {
@@ -619,6 +805,7 @@ final class Partida
             $this->anotar($equipo, 1, 'envido_no_jugado');
         }
 
+        $this->anotarFlores(seCierraLaMano: true);
         $this->anotar($equipo, $this->valorDeLaMano(), $this->truco['nivel'] > 0 ? 'truco' : 'mano');
         $this->terminarMano($equipo, $motivo);
     }
@@ -670,8 +857,8 @@ final class Partida
     }
 
     /**
-     * Quien gana el envido muestra al cerrar la mano las cartas que respaldan su tanto.
-     * Las demás cartas sin jugar vuelven al mazo boca abajo.
+     * Quien gana el envido muestra al cerrar la mano las cartas que respaldan su tanto, y lo mismo
+     * quien suma por una flor. Las demás cartas sin jugar vuelven al mazo boca abajo.
      *
      * @return array<int, list<string>>
      */
@@ -682,6 +869,17 @@ final class Partida
         if ($this->envido['estado'] === 'querido') {
             $ganador = $this->envido['ganador'];
             $mostradas[$ganador] = self::ids(Tanto::cartasDelEnvido($this->repartidas[$ganador]));
+        }
+
+        // Una contraflor querida la muestra quien la ganó; las flores que nadie contestó, quienes las cantaron.
+        $conFlor = match (true) {
+            $this->flor['ganador'] !== null => [$this->flor['ganador']],
+            $this->flor['contra'] === null => $this->flor['cantadas'],
+            default => [],
+        };
+
+        foreach ($conFlor as $asiento) {
+            $mostradas[$asiento] = self::ids($this->repartidas[$asiento]);
         }
 
         return $mostradas;

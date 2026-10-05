@@ -11,6 +11,9 @@ enum TipoDeAccion: string
     case Envido = 'envido';
     case RealEnvido = 'real_envido';
     case FaltaEnvido = 'falta_envido';
+    case Flor = 'flor';
+    case Contraflor = 'contraflor';
+    case ContraflorAlResto = 'contraflor_al_resto';
     case Truco = 'truco';
     case Retruco = 'retruco';
     case ValeCuatro = 'vale_cuatro';
