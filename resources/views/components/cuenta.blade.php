@@ -1,4 +1,4 @@
-@props(['titulo', 'frase' => null, 'ladoPrimero' => false, 'mesaSoloEscritorio' => false])
+@props(['titulo', 'frase' => null, 'ladoPrimero' => false, 'mesaSoloEscritorio' => false, 'franjaAlta' => false])
 
 {{--
     Las pantallas de cuenta: de un lado el formulario sobre naipe, del otro la
@@ -7,8 +7,9 @@
     mientras se escribe (ladoPrimero). El orden en el HTML no cambia: título,
     formulario, mesa. "frase" es el título grande; si no viene, es el de la pestaña.
     Si lo que muestra la mesa tiene que verse mientras se escribe en el celular, va
-    en "franja": una tira angosta que queda pegada arriba. Con "mesaSoloEscritorio"
-    la mesa entera no aparece en el celular, porque la franja ya la reemplaza.
+    en "franja": una tira angosta fija arriba de todo, que no se mueve al bajar.
+    Con "mesaSoloEscritorio" la mesa entera no aparece en el celular, porque la
+    franja ya la reemplaza. "franjaAlta" es para la que lleva dos renglones.
 --}}
 <x-layouts.base :titulo="$titulo">
     <div {{ $attributes->class('cuenta') }}>
@@ -20,9 +21,9 @@
             @endisset
         </div>
 
-        {{-- Solo en el celular: algo de la mesa que tiene que verse mientras se escribe. Queda pegada arriba al bajar. --}}
+        {{-- Solo en el celular: algo de la mesa que tiene que verse mientras se escribe. Va fija arriba de todo. --}}
         @isset($franja)
-            <div class="cuenta-franja sobre-pano order-2 mb-7 bg-pano-hondo text-naipe lg:hidden">
+            <div @class(['cuenta-franja sobre-pano bg-pano-hondo text-naipe lg:hidden', 'cuenta-franja-alta' => $franjaAlta])>
                 {{ $franja }}
             </div>
         @endisset

@@ -763,13 +763,15 @@ html:has(body.superficie-pano) {
     }
 
     /*
-     | La franja del celular: una tira de paño entre el título y el formulario que se
-     | queda pegada arriba al bajar. Lo que lleva adentro asoma desde su borde de abajo.
+     | La franja del celular: una tira de paño fija arriba de todo, que no se mueve al
+     | bajar. Tiene alto fijo porque la página le deja ese mismo lugar (ver más abajo,
+     | fuera de las capas). Lo que lleva adentro asoma desde su borde de abajo.
      */
     .cuenta-franja {
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 30;
+        height: var(--alto-franja);
         overflow: hidden;
         padding-top: 0.625rem;
     }
@@ -1361,6 +1363,21 @@ html:has(body.superficie-pano) {
 @keyframes fundido {
     from {
         opacity: 0;
+    }
+}
+
+/*
+ | Pantallas de cuenta en el celular: la franja fija ocupa el borde de arriba, así
+ | que la página entera arranca debajo de ella.
+ */
+@media (max-width: 63.99rem) {
+    body:has(.cuenta-franja) {
+        --alto-franja: 5rem;
+        padding-top: var(--alto-franja);
+    }
+
+    body:has(.cuenta-franja-alta) {
+        --alto-franja: 7.75rem;
     }
 }
 

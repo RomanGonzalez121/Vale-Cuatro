@@ -8,7 +8,7 @@
     ];
 @endphp
 
-<x-cuenta titulo="Ingresar" frase="Sentate a la mesa."
+<x-cuenta titulo="Ingresar" frase="Sentate a la mesa." mesa-solo-escritorio
     x-data="{
         email: {{ Js::from(old('email', '')) }},
         clave: '',
@@ -37,13 +37,13 @@
         </div>
     </form>
 
-    {{-- En el celular la mesa queda debajo del formulario y la mano no se vería: va en una franja pegada arriba. --}}
+    {{-- En el celular no hay mesa: la mano va en una franja fija arriba, a la vista mientras se escribe. --}}
     <x-slot:franja>
         <x-cuenta.mano :mano="$mano" style="--ancho-carta: 3.75rem" />
     </x-slot:franja>
 
     <x-slot:lado>
-        <div class="cuenta-mesa-texto relative px-7 pb-10 pt-10 sm:px-12 sm:pb-12 sm:pt-12 lg:px-16 lg:pb-0">
+        <div class="cuenta-mesa-texto relative px-7 pt-10 sm:px-12 sm:pt-12 lg:px-16">
             <h2 class="max-w-[14ch] text-3xl font-black leading-[1.02] tracking-tight sm:text-4xl lg:text-[2.75rem]">¿Sin cuenta? Jugá igual.</h2>
             <p class="mt-3 max-w-[34ch] leading-relaxed lg:text-lg">
                 Contra el bot no hace falta registrarse: entrás como invitado, ahora mismo.
@@ -57,6 +57,6 @@
         </div>
 
         {{-- En escritorio la mano asoma desde el borde de abajo de la mesa. El ancho de la carta también mira el alto de la ventana. --}}
-        <x-cuenta.mano :mano="$mano" class="cuenta-mano mt-auto hidden pt-12 lg:flex" style="--ancho-carta: clamp(6rem, min(15vw, 24dvh), 13.5rem)" />
+        <x-cuenta.mano :mano="$mano" class="cuenta-mano mt-auto pt-12" style="--ancho-carta: clamp(6rem, min(15vw, 24dvh), 13.5rem)" />
     </x-slot:lado>
 </x-cuenta>
