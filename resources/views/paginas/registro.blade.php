@@ -1,6 +1,6 @@
 @php($invitado = auth()->user())
 
-<x-cuenta titulo="Crear cuenta" frase="Creá tu cuenta" lado-primero x-data="{ apodo: {{ Js::from(old('apodo', '')) }} }">
+<x-cuenta titulo="Crear cuenta" frase="Creá tu cuenta" mesa-solo-escritorio x-data="{ apodo: {{ Js::from(old('apodo', '')) }} }">
     <x-slot:bajada>
         @if ($invitado)
             Venís jugando como {{ $invitado->apodo }}. Al crear la cuenta seguís siendo el mismo jugador, con el apodo que elijas.
@@ -25,6 +25,15 @@
             <p>¿Ya tenés cuenta? <a href="{{ route('ingresar') }}" class="enlace-nav text-enlace">Ingresar</a></p>
         </div>
     </form>
+
+    {{-- En el celular, el apodo en el tanteador va en una franja pegada arriba: se ve cambiar mientras se escribe. --}}
+    <x-slot:franja>
+        <div class="px-5 pb-3.5 pt-1">
+            <p class="text-sm font-semibold">Así queda tu apodo en el tanteador.</p>
+            <x-tanteador class="mt-2.5 text-[1.05rem]" nombre="Tu apodo" nombre-vivo="apodo.trim() || 'Tu apodo'" :puntos="12"
+                clase-nombre="break-all text-[1.0625rem] font-extrabold tracking-tight" />
+        </div>
+    </x-slot:franja>
 
     <x-slot:lado>
         <x-cuenta.tanteo />

@@ -762,6 +762,18 @@ html:has(body.superficie-pano) {
         overflow: hidden;
     }
 
+    /*
+     | La franja del celular: una tira de paño entre el título y el formulario que se
+     | queda pegada arriba al bajar. Lo que lleva adentro asoma desde su borde de abajo.
+     */
+    .cuenta-franja {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        overflow: hidden;
+        padding-top: 0.625rem;
+    }
+
     /* La misma línea que marca el borde del campo en la mesa de juego. */
     .cuenta-mesa::before {
         content: '';
