@@ -143,4 +143,16 @@ class InvitadoTest extends TestCase
             ->assertRedirect('/')
             ->assertSessionHas('aviso', 'La página había vencido. Probá de nuevo.');
     }
+
+    public function test_el_aviso_de_pagina_vencida_llega_a_la_portada_aunque_venga_de_la_mesa(): void
+    {
+        Route::post('/vencida', fn () => abort(419))->middleware('web');
+
+        // La mesa quedó abierta hasta vencer la sesión: el formulario vuelve a la
+        // mesa, la mesa ya no reconoce al jugador y lo manda a la portada.
+        $this->from('/mesa')->post('/vencida')->assertRedirect('/mesa');
+        $this->get('/mesa')->assertRedirect('/');
+
+        $this->get('/')->assertSee('La página había vencido. Probá de nuevo.');
+    }
 }

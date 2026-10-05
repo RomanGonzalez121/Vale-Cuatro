@@ -5,6 +5,7 @@ use App\Http\Middleware\SinCuenta;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,7 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Quien abre la mesa sin haber entrado vuelve a la portada, donde está el botón de jugar.
-        $middleware->redirectGuestsTo(fn () => route('portada'));
+        // Si traía un aviso (por ejemplo, que la página había vencido) se conserva
+        // un pedido más, para que lo llegue a ver en la portada.
+        $middleware->redirectGuestsTo(function (Request $request) {
+            $request->session()->reflash();
+
+            return route('portada');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Un formulario enviado desde una página que quedó abierta hasta vencer
