@@ -1181,19 +1181,45 @@ html:has(body.superficie-pano) {
         transform: translate(-4px, -4px);
     }
 
+    /* Donde cae cada carta. El borde no se ve: solo guarda la medida. */
     .hueco-baza {
         width: var(--ancho-baza);
         aspect-ratio: 100 / 156;
-        border: 1.5px dashed color-mix(in srgb, var(--color-naipe) 14%, transparent);
+        border: 1.5px solid transparent;
         border-radius: 8% / 5.13%;
     }
 
-    .baza-actual .hueco-baza {
-        border-color: color-mix(in srgb, var(--color-naipe) 45%, transparent);
+    /*
+     | Cada baza tiene un solo lugar marcado, en el centro de donde se pisan las
+     | dos cartas. El de la baza en juego se nota más, y la marca se va cuando
+     | llega la primera carta.
+     */
+    .baza-lugar {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
-    .hueco-baza:not(:empty) {
-        border-color: transparent;
+    .baza-lugar::before {
+        content: '';
+        position: absolute;
+        top: calc(var(--ancho-baza) * 0.355);
+        left: 50%;
+        width: var(--ancho-baza);
+        aspect-ratio: 100 / 156;
+        margin-left: calc(var(--ancho-baza) / -2);
+        border: 1.5px solid color-mix(in srgb, var(--color-naipe) 12%, transparent);
+        border-radius: 8% / 5.13%;
+        transition: opacity 200ms var(--ease-llegada);
+    }
+
+    .baza-actual .baza-lugar::before {
+        border-color: color-mix(in srgb, var(--color-naipe) 42%, transparent);
+    }
+
+    .baza-lugar:has(.hueco-baza:not(:empty))::before {
+        opacity: 0;
     }
 
     /* Baza resuelta: la carta que gana queda arriba y la que pierde se apaga. */
@@ -1288,6 +1314,11 @@ html:has(body.superficie-pano) {
     /* El tanto que pierde el envido queda a media tinta. */
     .voz[data-visible='true'][data-pierde='true'] {
         opacity: 0.38;
+    }
+
+    /* Tanteador: la marca de cada fósforo que falta, apenas visible sobre el paño hondo. */
+    .fosforo-lugar {
+        stroke: color-mix(in srgb, var(--color-naipe) 13%, transparent);
     }
 
     /* Tanteador: cada punto es un fósforo que cae en su lugar. */

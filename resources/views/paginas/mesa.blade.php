@@ -29,8 +29,8 @@
                     Bot, nivel 2
                 </p>
                 <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
-                {{-- El mazo: de acá salen las cartas al repartir. --}}
-                <div x-ref="origen" class="mesa-mazo justify-self-start" aria-hidden="true">
+                {{-- El mazo, contra el borde del campo para que no parezca una carta más del rival. De acá sale el reparto. --}}
+                <div x-ref="origen" class="mesa-mazo mr-1 justify-self-end sm:mr-5" aria-hidden="true">
                     <x-dorso />
                     <x-dorso />
                     <x-dorso />
@@ -44,8 +44,11 @@
                             <p class="mb-2 text-xs font-semibold sm:text-sm">
                                 {{ $numero + 1 }}ª baza<span x-show="resultadoDeBaza({{ $numero }})" x-cloak>, <span x-text="resultadoDeBaza({{ $numero }})"></span></span>
                             </p>
-                            <div data-hueco="rival" class="hueco-baza hueco-rival"></div>
-                            <div data-hueco="vos" class="hueco-baza hueco-propio"></div>
+                            {{-- Un solo lugar marcado por baza; las dos cartas caen adentro, pisándose en diagonal. --}}
+                            <div class="baza-lugar">
+                                <div data-hueco="rival" class="hueco-baza hueco-rival"></div>
+                                <div data-hueco="vos" class="hueco-baza hueco-propio"></div>
+                            </div>
                         </li>
                     @endforeach
                 </ol>

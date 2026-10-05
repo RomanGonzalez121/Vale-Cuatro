@@ -6,6 +6,8 @@
      | cruzado. Cada fósforo es [palito, cabeza x, cabeza y]. "grupo" dice cuál
      | es (el primero cuenta del 1 al 5, el segundo del 6 al 10). Con "modelo"
      | (una expresión de Alpine) los fósforos nuevos caen solos al sumar.
+     | Debajo va la marca de los que faltan, muy tenue: así se leen los grupos
+     | de cinco y dónde se separan las malas de las buenas.
      */
     $fosforos = [
         ['M4 19.5V8', 4, 4.6],
@@ -17,6 +19,12 @@
 @endphp
 
 <svg {{ $attributes->class('flex-none') }} viewBox="0 0 28 28">
+    <g class="fosforo-lugar" fill="none" stroke-width="2" stroke-linecap="round">
+        @foreach ($fosforos as [$trazo])
+            <path d="{{ $trazo }}" />
+        @endforeach
+    </g>
+
     @foreach ($fosforos as $i => [$trazo, $cx, $cy])
         @php($numero = $grupo * 5 + $i + 1)
         <g @class(['fosforo', 'puesto' => $puntos >= $numero]) @if ($modelo) :class="{ puesto: {{ $modelo }} >= {{ $numero }} }" @endif>

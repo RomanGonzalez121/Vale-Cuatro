@@ -370,7 +370,7 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
 
         this.despues(this.reducido ? 200 : 650, () => {
             this.turno = 'vos';
-            this.aviso = 'Sos mano. Jugá una carta o cantá.';
+            this.aviso = 'Jugá una carta o cantá.';
 
             // Quien llegó con el teclado al botón de repartir sigue en sus cartas.
             if (enfocar) {

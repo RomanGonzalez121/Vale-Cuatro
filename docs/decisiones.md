@@ -148,6 +148,12 @@ Cada entrada dice qué problema había, qué se eligió y qué se descartó.
 - **Problema:** el resultado de la baza solo se leía en un rótulo chico ("1ª baza, tuya").
 - **Se eligió:** la carta que gana queda arriba y la que pierde baja su opacidad, el mismo criterio de las mesitas de "Cómo se juega".
 
+### La mesa vacía tiene que verse calma
+
+- **Problema:** antes de jugar la primera carta, lo que más se veía eran seis rectángulos punteados (dos por baza, encimados), "Sos mano" dicho dos veces, una raya suelta en el tanteador y el mazo pegado a las cartas del bot, como si fuera una cuarta.
+- **Se eligió:** un solo lugar marcado por baza, con línea llena y tenue, y más visible el de la baza en juego; la marca se va cuando llega la primera carta. "Sos mano" queda solo en la marca que va junto a las cartas, y el aviso dice qué hacer. El tanteador dibuja muy tenues los fósforos que faltan, así se leen los grupos de cinco y la raya entre malas y buenas tiene sentido. El mazo va contra el borde del campo.
+- **Queda pendiente:** en pantallas anchas el juego ocupa una columna angosta en el centro. Se reacomoda después de M3, cuando se sepa cuánto lugar piden la flor y las subidas del envido.
+
 ### La mesa no se corre cuando faltan cartas
 
 - **Problema:** cuando tu mano o la del rival quedaban vacías, esas filas se achicaban y todo lo demás saltaba.
