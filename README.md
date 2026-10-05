@@ -30,25 +30,52 @@ Proyecto de portfolio de Román Gonzalez.
 
 ## Estado
 
-El proyecto se construye por módulos. Hoy están terminados los dos primeros.
+El proyecto se construye por módulos. Hoy están terminados los dos primeros y hay un adelanto del sexto.
+
+**El juego mano a mano**
 
 | Módulo | Qué es | Estado |
 |---|---|---|
 | M0 | Identidad visual y maqueta de las pantallas | Listo |
 | M1 | Cuentas y modo invitado | Listo |
-| M2 | Motor de reglas en PHP puro | Pendiente |
-| M3 | Mesa contra el bot | Pendiente |
+| M2 | Motor de reglas en PHP puro, pensado por asientos y equipos | Pendiente |
+| M3 | Mesa contra el bot, con la partida guardada como eventos | Pendiente |
 | M4 | Bot con tres niveles | Pendiente |
 | M5 | Dos personas en tiempo real | Pendiente |
-| M6 | Tanteador, cantos y movimiento | Pendiente |
+| M6 | Tanteador, cantos y movimiento | En curso: el envido se canta y la mano tiene su cierre |
 | M7 | Historial y repetición | Pendiente |
 | M8 | Ranking y estadísticas | Pendiente |
 | M9 | API pública | Pendiente |
 | M10 | Cómo se juega | Pendiente |
 | M11 | Calidad y publicación | En curso desde el primer commit |
 
+**Lo que se suma después**
+
+| Módulo | Qué es | Estado |
+|---|---|---|
+| M12 | Revancha y series al mejor de tres | Pendiente |
+| M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo | Pendiente |
+| M14 | Sonido de cartas, fósforos y cantos | Pendiente |
+| M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
+| M16 | Panel de administración | Pendiente |
+| M17 | Modos de juego, desafíos y una escalera de niveles | Pendiente |
+| M18 | Perfil con categorías ganadas jugando | Pendiente |
+| M19 | Truco de a cuatro con señas | Pendiente |
+| M20 | Mazos y mesas para elegir | Pendiente |
+
 Las pantallas ya son las definitivas. Las cuentas son reales: se puede registrarse, ingresar, cambiar el apodo o entrar a la mesa como invitado con un solo botón, sin llenar nada.
 La mesa, el ranking y el historial todavía muestran datos de ejemplo fijos: la mesa se puede tocar para ver el movimiento, y no tiene el motor de reglas detrás.
+
+## Lo que viene
+
+El plan no es solo terminar el mano a mano: el proyecto crece en cuatro direcciones, y el motor se escribe desde el principio para aguantarlas.
+
+- **Más formas de jugar.** Revancha y series al mejor de tres, torneos relámpago por link, desafíos (manos armadas con un objetivo, como "hacé que el bot no quiera"), una escalera de niveles para ir pasando y, al final, truco de a cuatro con señas entre compañeros por un canal privado.
+- **Un motor preparado para eso.** Piensa en asientos y equipos, así el mano a mano y el dos contra dos usan las mismas reglas. Reparte con una semilla, para que un desafío o una repetición den siempre las mismas cartas. Puede arrancar desde una situación armada. Y dice qué puede ver cada asiento: de ahí salen el test de que las cartas ajenas nunca llegan al navegador, el bot que no hace trampa y los espectadores del torneo.
+- **Jugar mucho se nota.** Categorías ganadas jugando, calculadas desde las partidas igual que el ranking. Destraban cosas solo estéticas: la carta de tu perfil, dorsos (que es lo que ve tu rival), otros mazos y mesas de otro color. Nada da ventaja en el juego, y la identidad se respeta: tintas planas y contraste medido, sin brillos ni degradados.
+- **Calidad y publicación.** Pruebas automáticas en un navegador real dentro de la integración continua (jugar una mano, registrarse, entrar como invitado), manejo completo de la cuenta (cambiar la contraseña, recuperarla y borrarla), sonido opcional, instalación en el celular con aviso de turno y un panel de administración.
+
+La publicación está pensada para un plan gratuito: todo el sitio en un solo contenedor (la web, el tiempo real, las colas y las tareas programadas) y la base MySQL en un servicio aparte. Las razones están en [docs/decisiones.md](docs/decisiones.md).
 
 ## Cuentas e invitados
 
@@ -77,7 +104,7 @@ La página `/identidad` muestra logo, colores con su contraste medido, tipograf�
 - PHPUnit y Laravel Pint, corridos por GitHub Actions en cada subida
 - Tipografías Chivo y Piazzolla, alojadas en el proyecto
 
-Más adelante se suman Laravel Reverb y Echo para el tiempo real, colas, y Sanctum con OpenAPI para la API.
+Más adelante se suman Laravel Reverb y Echo para el tiempo real, colas, Sanctum con OpenAPI para la API, Laravel Dusk para las pruebas de navegador y Web Push para los avisos.
 
 ## Cómo correrlo
 
