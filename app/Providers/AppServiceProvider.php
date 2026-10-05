@@ -2,21 +2,18 @@
 
 namespace App\Providers;
 
+use App\Juego\Bot;
+use App\Juego\BotProvisional;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        // El rival de la mesa. M4 cambia esta línea por el bot con niveles.
+        $this->app->bind(Bot::class, BotProvisional::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         //
