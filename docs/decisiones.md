@@ -312,14 +312,15 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 ### La portada entra en la primera pantalla
 
 - **Problema:** en el celular la mano de cartas y el canto quedaban abajo de todo el texto: al abrir el sitio se veían un título y dos botones, y lo propio del sitio recién aparecía deslizando.
-- **Se eligió:** en el celular la mano va entre el título y el botón, más chica y sin los dorsos del rival. A 360 por 640 entran el título, las cartas, "Jugar contra el bot" y las dos salidas. El escritorio no cambió.
+- **Se eligió:** en el celular la mano va entre el título y el botón, sin los dorsos del rival. La primera pantalla mide justo lo que queda entre el encabezado y la barra de abajo: el título arriba, las cartas al centro y "Jugar contra el bot" apoyado sobre la barra. El escritorio no cambió.
 - **Cómo:** el bloque de texto se desarma en el celular (`display: contents`) y cada pieza toma su orden. No hay dos copias de la mano.
+- **Se mide contra el alto de la ventana:** un celular con las barras del navegador a la vista deja unos 550 px de alto, y uno grande pasa de 800. El título, el ancho de las cartas y el canto salen de una cuenta sobre ese alto (`.portada-inicio` en `app.css`), así el botón no queda tapado en la pantalla baja ni flotando en la alta. Si la pantalla es muy baja, la frase de abajo del título le deja su lugar a las cartas. Probado a 360 por 520, 360 por 640, 390 por 760 y 412 por 860.
 - **"Invitar a alguien" mentía:** era un segundo botón del mismo formulario y entraba a la mesa contra el bot. Ahora es un link a `/modos`, donde se elige el rival. Hay un test que cuenta un solo botón que entra a la mesa.
 
 ### Nada acompaña el scroll
 
 - **Problema:** en el ranking, "Tu puesto" iba pegado al borde de abajo y tapaba la tabla mientras se recorría.
-- **Se eligió (decidido por Román):** queda quieto al final de la tabla, en el celular y en el escritorio. Un test revisa que ninguna página de lectura tenga algo pegado o fijo.
+- **Se eligió (decidido por Román):** queda quieto al final de la tabla, en el celular y en el escritorio. Un test revisa que ninguna página de lectura tenga algo pegado o fijo. La única excepción es la barra de abajo del celular, que también decidió él.
 
 ### Las listas, compactas
 
@@ -327,4 +328,13 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Historial:** en el celular cada partida son dos renglones (resultado y "Ver de nuevo"; contra quién y cuándo). El tanteo en fósforos repetía el resultado y entra recién desde el ancho de tablet.
 - **Repetición:** los tres controles van en un renglón, de igual ancho, para que no salten cuando el del medio cambia de texto.
 - **Tabla del envido:** tenía un ancho mínimo y en el celular obligaba a deslizar de costado para ver cuánto vale cada canto. Ahora entra: el canto largo baja de renglón.
-- **El menú de arriba** pasa a ser el desplegable hasta 1024 px: a 768 los links no entraban y "Cómo se juega" se partía en tres renglones.
+
+### El menú del celular es una barra abajo
+
+- **Problema:** el menú era un botón arriba a la derecha que desplegaba la lista. Costaba un toque más para moverse, quedaba lejos del pulgar y no mostraba dónde estabas hasta abrirlo. Además, a 768 px el menú de escritorio no entraba y "Cómo se juega" se partía en tres renglones.
+- **Se eligió (decidido por Román):** una barra fija abajo con cuatro lugares (Jugar, Reglas, Ranking e Historial), cada uno con su ícono propio. El lugar actual lleva el fósforo que subraya, igual que el menú de escritorio. Va hasta 1024 px; desde ahí manda el menú de arriba.
+- **La cuenta queda arriba,** junto al modo de día y de noche, donde estaba el botón "Menú": con cinco lugares a 360 px un apodo largo no entraba.
+- **Dónde no aparece:** en la mesa (ocupa toda la pantalla y no hace scroll) y en ingreso y registro, donde se escribe.
+- **Lo que se sacó:** el botón de tres fósforos, el panel desplegable y sus estilos. En la portada del celular también salieron los dos links debajo del botón, porque repetían "Jugar" y "Reglas" de la barra.
+- **La barra quedaba corta en el celular:** en el reparto de la portada las cartas llegan volando desde la derecha, y eso ensanchaba la página (472 px en una pantalla de 390). El celular achicaba todo para mostrarla entera y la barra, que mide el ancho real de la pantalla, no llegaba al borde. Ahora el contenido recorta lo que se sale por los costados (`overflow-x: clip` en `main`).
+- **Un detalle de las ventanas angostas de escritorio:** ahí la barra de scroll de la página ocupa lugar y bajaba hasta el fondo, cortándole el borde derecho a la barra. Ahora el último tramo del carril del scroll toma el alto y el color de la barra, así que el scroll termina donde ella empieza. En los celulares el scroll va encima de la página y no hacía falta. En Firefox de escritorio ese ajuste no existe y el corte se sigue viendo.
