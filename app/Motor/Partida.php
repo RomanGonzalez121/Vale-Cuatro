@@ -510,6 +510,44 @@ final class Partida
         ];
     }
 
+    /**
+     * Lo que ve un asiento: el estado sin las cartas ajenas que no se jugaron ni se mostraron.
+     * De los demás solo sabe cuántas cartas les quedan. Sin asiento es la vista de un espectador,
+     * que no ve la mano de nadie. Esto es lo único que se le manda a un navegador.
+     *
+     * @return array<string, mixed>
+     */
+    public function vistaPara(?int $asiento = null): array
+    {
+        if ($asiento !== null && ! $this->mesa->existe($asiento)) {
+            throw new InvalidArgumentException("El asiento {$asiento} no existe en esta mesa.");
+        }
+
+        return [
+            'asiento' => $asiento,
+            'asientos' => $this->mesa->asientos,
+            'puntosParaGanar' => $this->puntosParaGanar,
+            'fase' => $this->fase->value,
+            'tanteo' => $this->tanteo,
+            'ganador' => $this->ganador,
+            'numeroDeMano' => $this->numeroDeMano,
+            'mano' => $this->mano,
+            'turno' => $this->turno,
+            'misCartas' => $asiento === null ? [] : self::ids($this->cartas[$asiento] ?? []),
+            'cartasEnMano' => array_map(count(...), $this->cartas),
+            'bazas' => array_map(self::bazaComoArray(...), $this->bazas),
+            'enMazo' => $this->enMazo,
+            'truco' => $this->truco,
+            'envido' => $this->envido,
+            'flor' => $this->flor,
+            'pendiente' => $this->fase === Fase::Jugando ? $this->pendiente() : null,
+            'anotado' => $this->anotado,
+            'cierre' => $this->cierre,
+            'hechos' => $this->hechos,
+            'acciones' => $asiento === null ? [] : array_map(fn (Accion $accion) => $accion->aArray(), $this->accionesPara($asiento)),
+        ];
+    }
+
     private function jugarCarta(int $asiento, Carta $carta): void
     {
         $this->cartas[$asiento] = array_values(array_filter($this->cartas[$asiento], fn (Carta $otra) => ! $otra->es($carta)));
