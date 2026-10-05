@@ -190,13 +190,13 @@
             @keydown.escape.window="saliendo = false" role="dialog" aria-modal="true" aria-labelledby="titulo-salir">
             <div class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
                 <h2 id="titulo-salir" class="text-3xl font-black tracking-tight">¿Salir de la mesa?</h2>
-                <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste.</p>
+                <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés.</p>
                 <div class="mt-6 flex flex-col gap-2.5">
                     <button type="button" class="boton boton-tinta" @click="saliendo = false">Seguir jugando</button>
                     <a href="{{ route('portada') }}" class="boton boton-linea">Salir y seguir después</a>
                     <form method="POST" action="{{ route('mesa.abandonar') }}" class="flex flex-col">
                         @csrf
-                        <button type="submit" class="boton boton-linea">Abandonar la partida (la perdés)</button>
+                        <button type="submit" class="boton boton-linea">Abandonar la partida</button>
                     </form>
                 </div>
             </div>

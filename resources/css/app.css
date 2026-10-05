@@ -1235,6 +1235,11 @@ html:has(body.superficie-pano) {
         opacity: 0.45;
     }
 
+    /* Mientras juega el bot no hay nada para tocar: la barra guarda su alto para que la mesa no salte. */
+    .mesa-acciones {
+        min-height: 3rem;
+    }
+
     .mesa-acciones .boton {
         flex: 1 1 0;
         min-width: 0;

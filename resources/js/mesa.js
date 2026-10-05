@@ -266,6 +266,21 @@ export default (inicial, pedidos) => ({
         this.prisa = false;
         this.ocupada = false;
         this.aviso = this.indicacion() || this.aviso;
+        this.enfocarLoQueSigue();
+    },
+
+    /**
+     * Con la mano cerrada, el foco va a "Repartir"; con la partida terminada, al cartel del final.
+     * Se hace recién acá, cuando los botones ya se pueden usar.
+     */
+    enfocarLoQueSigue() {
+        this.$nextTick(() => {
+            if (this.fin) {
+                this.$refs.fin.focus({ preventScroll: true });
+            } else if (this.vista.fase === 'por_repartir') {
+                this.$refs.repartir.focus({ preventScroll: true });
+            }
+        });
     },
 
     /**
@@ -792,10 +807,6 @@ export default (inicial, pedidos) => ({
             delBot.length ? `El bot muestra ${delBot.map((carta) => `el ${nombreDe(carta)}`).join(' y ')}.` : '',
             vista.fase === 'por_repartir' ? 'Apretá Repartir para seguir.' : '',
         ].filter(Boolean).join(' ');
-
-        if (vista.fase === 'por_repartir') {
-            this.$nextTick(() => this.$refs.repartir.focus({ preventScroll: true }));
-        }
     },
 
     razonDelCierre(vista) {
