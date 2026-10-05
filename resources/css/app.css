@@ -1443,6 +1443,57 @@ html:has(body.superficie-pano) {
     }
 }
 
+/*
+ | Portada en escritorio, en una ventana baja: la primera pantalla necesita 811 px
+ | de alto y una notebook de 1366 x 768 deja unos 640. Por debajo de 820 px los
+ | márgenes, el título y la mano se miden contra el alto de la ventana, así el
+ | botón y las cartas entran enteros sin bajar. Desde 820 px no cambia nada.
+ | --libre es lo que queda debajo del encabezado (4.75rem) sin los márgenes.
+ | La columna de texto mide 15.75rem más los tres renglones del título, que acá
+ | no se parte en cuatro. La mano con sus dorsos y su canto mide unas 3.46 veces
+ | el ancho de una carta, más 0.75rem.
+ | En cualquier alto el bloque ocupa la primera pantalla entera, así la sección
+ | que sigue no asoma como una franja al pie. El tope es para los monitores muy
+ | altos, donde quedaría un paño vacío.
+ */
+@media (min-width: 64rem) {
+    .portada-inicio {
+        min-height: min(calc(100dvh - 4.75rem), 60rem);
+    }
+}
+
+@media (min-width: 64rem) and (height < 51.25rem) {
+    .portada-inicio {
+        --arriba: clamp(1rem, 20dvh - 6.75rem, 3.5rem);
+        --abajo: clamp(1.5rem, 37dvh - 13rem, 6rem);
+        --libre: calc(100dvh - 4.75rem - var(--arriba) - var(--abajo));
+        --carta: clamp(5rem, calc((var(--libre) - 0.75rem) / 3.46), 10.5rem);
+
+        padding-top: var(--arriba);
+        padding-bottom: var(--abajo);
+    }
+
+    .portada-inicio h1 {
+        font-size: clamp(3.25rem, min(7.4vw, calc((var(--libre) - 15.75rem) / 2.82)), 5.25rem);
+    }
+
+    .portada-inicio h1 span {
+        white-space: nowrap;
+    }
+
+    .portada-mano {
+        max-width: calc(var(--carta) * 2.667);
+    }
+
+    .portada-mano .abanico {
+        --ancho-carta: var(--carta);
+    }
+
+    .portada-canto {
+        font-size: calc(var(--carta) * 0.833);
+    }
+}
+
 @media (hover: hover) and (pointer: fine) {
     /* El botón se levanta como una carta que se agarra de la mesa y el ícono acompaña. */
     .boton:not([disabled]):hover {
