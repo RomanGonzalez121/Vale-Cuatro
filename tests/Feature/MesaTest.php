@@ -16,7 +16,9 @@ use App\Motor\Carta;
 use App\Motor\Fase;
 use App\Motor\TipoDeAccion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -368,6 +370,46 @@ class MesaTest extends TestCase
         // Despertarlo cuando no le toca no cambia nada.
         $mesa->despertarAlBot($partida);
         $this->assertSame($vista, $mesa->vista($partida));
+    }
+
+    public function test_si_el_bot_falla_la_partida_no_se_traba_juega_algo_valido_y_el_error_queda_anotado(): void
+    {
+        Queue::fake();
+        Exceptions::fake();
+
+        // Un bot roto: una vez tira un error y otra devuelve una jugada que el reglamento no permite.
+        $roto = new class implements Bot
+        {
+            public int $veces = 0;
+
+            public function decidir(array $vista): Accion
+            {
+                return $this->veces++ % 2 === 0 ? throw new RuntimeException('El bot se rompió.') : Accion::de(TipoDeAccion::ValeCuatro);
+            }
+        };
+
+        $mesa = new Mesa($roto);
+        $partida = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '6-oro', '10-basto']]);
+
+        // Le toca jugar una carta: tira una de las suyas.
+        $mesa->actuar($partida, Accion::jugar(Carta::de('4-copa')));
+        $this->assertTrue($mesa->turnoDelBot($partida->id));
+
+        $jugada = $partida->eventos()->get()->last();
+
+        $this->assertSame(Mesa::BOT, $jugada->asiento);
+        $this->assertSame('jugar', $jugada->datos['tipo']);
+        $this->assertContains($jugada->datos['carta'], ['1-espada', '6-oro', '10-basto']);
+
+        // Le cantan truco: no lo quiere, y la mano se cierra.
+        $otra = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '6-oro', '10-basto']]);
+        $mesa->actuar($otra, Accion::de(TipoDeAccion::Truco));
+        $this->assertTrue($mesa->turnoDelBot($otra->id));
+
+        $this->assertSame(['tipo' => 'no_quiero'], $otra->eventos()->get()->last()->datos);
+
+        Exceptions::assertReported(RuntimeException::class);
+        Exceptions::assertReported(AccionInvalida::class);
     }
 
     public function test_los_pasos_desde_un_evento_son_la_vista_del_jugador_despues_de_cada_evento_posterior(): void

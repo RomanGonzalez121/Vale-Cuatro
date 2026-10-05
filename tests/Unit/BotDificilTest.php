@@ -7,7 +7,9 @@ use App\Juego\Lectura;
 use App\Juego\Probabilidades;
 use App\Motor\Accion;
 use App\Motor\Azar;
+use App\Motor\Mazo;
 use App\Motor\Partida;
+use App\Motor\Tanto;
 use App\Motor\TipoDeAccion;
 use PHPUnit\Framework\TestCase;
 use Tests\Motor\Jugando;
@@ -30,6 +32,37 @@ class BotDificilTest extends TestCase
 
         $this->assertSame(1.0, Probabilidades::deGanarElEnvido($this->lectura($con33)));
         $this->assertSame(0.0, Probabilidades::deGanarElEnvido($this->lectura($conCero)), 'Empatando en cero gana el mano.');
+    }
+
+    /**
+     * Probabilidades cuenta los tantos con números sueltos, para ir rápido. Acá se hace la misma cuenta
+     * despacio, mano por mano y con Tanto::deEnvido() del motor: las dos tienen que dar lo mismo.
+     */
+    public function test_la_cuenta_del_envido_coincide_con_la_del_motor(): void
+    {
+        foreach ([3, 11, 27] as $semilla) {
+            $mazo = Mazo::mezclado($semilla);
+            $delBot = array_slice($mazo, 0, 3);
+            $sinVer = array_slice($mazo, 3);
+            $mio = Tanto::deEnvido($delBot);
+            $gano = 0;
+            $total = 0;
+
+            foreach ($sinVer as $a => $una) {
+                foreach (array_slice($sinVer, $a + 1, null, true) as $b => $otra) {
+                    foreach (array_slice($sinVer, $b + 1) as $tercera) {
+                        $total++;
+                        // El bot es mano: con el mismo tanto gana él.
+                        $gano += (int) ($mio >= Tanto::deEnvido([$una, $otra, $tercera]));
+                    }
+                }
+            }
+
+            $partida = Partida::armada([array_slice($mazo, 3, 3), $delBot], mano: self::BOT);
+
+            $this->assertSame(7770, $total);
+            $this->assertEqualsWithDelta($gano / $total, Probabilidades::deGanarElEnvido($this->lectura($partida)), 0.0000001, "Semilla {$semilla}.");
+        }
     }
 
     public function test_si_el_rival_canto_envido_se_le_cree_y_la_probabilidad_baja(): void

@@ -6,6 +6,7 @@ use App\Motor\Accion;
 use App\Motor\Azar;
 use App\Motor\Carta;
 use App\Motor\Envido;
+use App\Motor\Partida;
 use App\Motor\TipoDeAccion;
 
 /**
@@ -45,9 +46,6 @@ final class BotDificil implements Bot
     private const MIENTE_UNA_DE = 6;
 
     private const APURADO_UNA_DE = 3;
-
-    /** Lo que vale la contraflor en el reglamento. */
-    private const CONTRAFLOR = ['querida' => 6, 'no_querida' => 4, 'al_resto_no_querida' => 6];
 
     private const CANTA_CONTRAFLOR = 0.30;
 
@@ -110,8 +108,9 @@ final class BotDificil implements Bot
             return Accion::de(TipoDeAccion::ContraflorAlResto);
         }
 
-        $querida = $alResto ? Envido::falta($lectura->vista['tanteo'], $lectura->paraGanar()) : self::CONTRAFLOR['querida'];
-        $noQuerida = self::CONTRAFLOR[$alResto ? 'al_resto_no_querida' : 'no_querida'];
+        // Lo que vale cada contraflor lo dice el motor: acá no se copia ningún número del reglamento.
+        $querida = $alResto ? Envido::falta($lectura->vista['tanteo'], $lectura->paraGanar()) : Partida::CONTRAFLOR_QUERIDA;
+        $noQuerida = $alResto ? Partida::CONTRAFLOR_AL_RESTO_NO_QUERIDA : Partida::CONTRAFLOR_NO_QUERIDA;
 
         return $this->quiereONo($lectura, $gana, $querida, $noQuerida);
     }

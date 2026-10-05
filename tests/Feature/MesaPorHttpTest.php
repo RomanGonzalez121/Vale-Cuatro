@@ -8,6 +8,7 @@ use App\Juego\Nivel;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
+use App\Motor\Accion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -156,7 +157,7 @@ class MesaPorHttpTest extends TestCase
 
         // En los tests la cola corre en el momento: cuando vuelve la respuesta, el bot ya jugó.
         $propio = $this->actingAs($jugador)->postJson('/mesa/accion', ['tipo' => 'jugar', 'carta' => '4-copa'])->json('pasos.0.evento');
-        $pasos = $this->actingAs($jugador)->getJson("/mesa/estado?desde={$propio}")->assertOk()->json('pasos');
+        $pasos = $this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde={$propio}")->assertOk()->json('pasos');
 
         $this->assertNotEmpty($pasos);
         $this->assertSame(range($propio + 1, $partida->eventos()->count()), array_column($pasos, 'evento'));
@@ -169,18 +170,67 @@ class MesaPorHttpTest extends TestCase
 
         // Al día, no hay nada nuevo.
         $ultimo = $partida->eventos()->count();
-        $this->actingAs($jugador)->getJson("/mesa/estado?desde={$ultimo}")->assertOk()->assertExactJson(['pasos' => []]);
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde={$ultimo}")->assertOk()->assertExactJson(['pasos' => []]);
     }
 
     public function test_la_consulta_corta_sigue_contestando_si_la_partida_ya_se_cerro(): void
     {
         $jugador = $this->sentado();
-        $this->app->make(Mesa::class)->abandonar(Partida::sole());
+        $partida = Partida::sole();
+        $this->app->make(Mesa::class)->abandonar($partida);
 
         // La última jugada del bot puede ser la que cierra la partida: la mesa tiene que poder enterarse.
-        $this->actingAs($jugador)->getJson('/mesa/estado?desde=0')->assertOk()->assertJsonStructure(['pasos' => [['fase', 'evento']]]);
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde=0")
+            ->assertOk()
+            ->assertJsonStructure(['pasos' => [['fase', 'evento', 'partida']]]);
+
+        // Cerrada y sin nada nuevo que contar: ya no hay bot al que esperar, y la mesa se recarga.
+        $ultimo = $partida->eventos()->count();
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde={$ultimo}")->assertStatus(409);
+
         $this->actingAs($jugador)->getJson('/mesa/estado')->assertStatus(409);
-        $this->actingAs($jugador)->getJson('/mesa/estado?desde=ayer')->assertStatus(422);
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde=ayer")->assertStatus(422);
+        $this->actingAs($jugador)->getJson('/mesa/estado?desde=0')->assertStatus(422);
+    }
+
+    public function test_una_pestana_que_quedo_con_una_partida_vieja_no_recibe_pasos_de_la_nueva(): void
+    {
+        $jugador = $this->sentado();
+        $vieja = Partida::sole();
+
+        // Desde otra pestaña abandona y empieza otra partida.
+        $this->app->make(Mesa::class)->abandonar($vieja);
+        $nueva = $this->app->make(Mesa::class)->abrir($jugador);
+
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$vieja->id}&desde=0")->assertStatus(409);
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$nueva->id}&desde=0")->assertOk();
+    }
+
+    public function test_si_la_partida_termino_mientras_no_miraba_al_volver_a_la_mesa_se_le_cuenta_como_termino(): void
+    {
+        $jugador = $this->sentado();
+        $partida = Partida::sole();
+        $mesa = $this->app->make(Mesa::class);
+
+        // Se juega hasta el final, irse al mazo en cada mano: gana el bot.
+        for ($pedidos = 0; $partida->fresh()->enCurso(); $pedidos++) {
+            $this->assertLessThan(400, $pedidos, 'La partida no termina.');
+
+            $vista = $mesa->vista($partida);
+            $vista['fase'] === 'por_repartir' ? $mesa->repartir($partida) : $mesa->actuar($partida, Accion::desdeArray($this->salida($vista['acciones'])));
+        }
+
+        $this->actingAs($jugador)->get('/mesa')
+            ->assertRedirect('/modos')
+            ->assertSessionHas('aviso', fn (string $aviso) => preg_match('/^Tu última partida terminó \d+ a 30: ganó el bot\.$/u', $aviso) === 1);
+    }
+
+    public function test_sin_partida_o_con_la_ultima_abandonada_la_mesa_no_avisa_nada(): void
+    {
+        $jugador = $this->sentado();
+        $this->app->make(Mesa::class)->abandonar(Partida::sole());
+
+        $this->actingAs($jugador)->get('/mesa')->assertRedirect('/modos')->assertSessionMissing('aviso');
     }
 
     public function test_el_turno_del_bot_va_a_la_cola_y_la_red_de_seguridad_lo_hace_jugar_si_la_cola_no_corre(): void
@@ -195,11 +245,11 @@ class MesaPorHttpTest extends TestCase
         Queue::assertPushed(TurnoDelBot::class, fn (TurnoDelBot $turno) => $turno->partidaId === $partida->id);
 
         // Nadie atiende la cola: el bot no jugó.
-        $this->actingAs($jugador)->getJson("/mesa/estado?desde={$propio}")->assertExactJson(['pasos' => []]);
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde={$propio}")->assertExactJson(['pasos' => []]);
 
         $this->actingAs($jugador)->postJson('/mesa/bot')->assertOk();
 
-        $pasos = $this->actingAs($jugador)->getJson("/mesa/estado?desde={$propio}")->json('pasos');
+        $pasos = $this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde={$propio}")->json('pasos');
 
         $this->assertNotEmpty($pasos);
         $this->assertNotSame([], $pasos[count($pasos) - 1]['acciones'], 'El bot jugó lo suyo y le toca al jugador.');
@@ -245,7 +295,7 @@ class MesaPorHttpTest extends TestCase
         $this->postJson('/mesa/accion', ['tipo' => 'mazo'])->assertUnauthorized();
         $this->postJson('/mesa/repartir')->assertUnauthorized();
         $this->postJson('/mesa/bot')->assertUnauthorized();
-        $this->getJson('/mesa/estado?desde=0')->assertUnauthorized();
+        $this->getJson('/mesa/estado?partida=1&desde=0')->assertUnauthorized();
         $this->post('/mesa/abandonar')->assertRedirect('/');
     }
 
@@ -301,7 +351,7 @@ class MesaPorHttpTest extends TestCase
         $respuesta = $this->actingAs($jugador)->postJson('/mesa/accion', $this->unaAccionValida($partida))->assertOk();
 
         // La respuesta a la jugada propia y todo lo que devuelve la consulta corta, con las jugadas del bot.
-        $pasos = [...$respuesta->json('pasos'), ...$this->actingAs($jugador)->getJson('/mesa/estado?desde=0')->assertOk()->json('pasos')];
+        $pasos = [...$respuesta->json('pasos'), ...$this->actingAs($jugador)->getJson("/mesa/estado?partida={$partida->id}&desde=0")->assertOk()->json('pasos')];
 
         foreach ($pasos as $paso) {
             $jugadas = array_merge(...array_map(fn (array $baza) => array_column($baza['jugadas'], 1), $paso['bazas']));
@@ -399,6 +449,19 @@ class MesaPorHttpTest extends TestCase
     private function unaAccionValida(Partida $partida): array
     {
         return $this->app->make(Mesa::class)->vista($partida)['acciones'][0];
+    }
+
+    /**
+     * La forma más corta de perder una mano: no querer lo que le canten y, si le toca, irse al mazo.
+     *
+     * @param  list<array{tipo: string, carta?: string}>  $acciones
+     * @return array{tipo: string}
+     */
+    private function salida(array $acciones): array
+    {
+        $tipos = array_column($acciones, 'tipo');
+
+        return ['tipo' => in_array('no_quiero', $tipos, true) ? 'no_quiero' : 'mazo'];
     }
 
     private function irseAlMazo(Jugador $jugador, Partida $partida): void

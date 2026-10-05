@@ -329,7 +329,7 @@ export default (inicial, pedidos) => ({
      */
     async consultar() {
         try {
-            const respuesta = await fetch(`${this.pedidos.estado}?desde=${this.vista.evento}`, {
+            const respuesta = await fetch(`${this.pedidos.estado}?partida=${this.vista.partida}&desde=${this.vista.evento}`, {
                 headers: { Accept: 'application/json' },
                 credentials: 'same-origin',
             });
@@ -786,6 +786,7 @@ export default (inicial, pedidos) => ({
 
                 await this.esperarAlBot();
 
+                this.prisa = false;
                 this.ocupada = false;
                 this.aviso = jugabaElBot ? (this.indicacion() || this.aviso) : (aviso ?? this.indicacion());
                 this.enfocarLoQueSigue();

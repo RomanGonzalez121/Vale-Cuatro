@@ -34,7 +34,7 @@ class MesaController extends Controller
         $partida = $this->mesa->enCursoDe($request->user());
 
         if ($partida === null) {
-            return redirect()->route('modos');
+            return redirect()->route('modos')->with('aviso', $this->comoTermino($request));
         }
 
         return view('paginas.mesa', ['vista' => $this->mesa->vista($partida), 'nivel' => $partida->nivel_bot]);
@@ -47,16 +47,30 @@ class MesaController extends Controller
      */
     public function estado(Request $request): JsonResponse
     {
-        $datos = $request->validate(['desde' => ['sometimes', 'integer', 'min:0']]);
+        $datos = $request->validate([
+            'desde' => ['sometimes', 'integer', 'min:0'],
+            'partida' => ['required_with:desde', 'integer'],
+        ]);
         $partida = $this->mesa->ultimaDe($request->user());
+        $sinPartida = response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
 
-        if ($partida === null || (! isset($datos['desde']) && ! $partida->enCurso())) {
-            return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
+        if ($partida === null) {
+            return $sinPartida;
         }
 
-        return isset($datos['desde'])
-            ? response()->json(['pasos' => $this->mesa->pasosDesde($partida, (int) $datos['desde'])])
-            : response()->json(['vista' => $this->mesa->vista($partida)]);
+        if (! isset($datos['desde'])) {
+            return $partida->enCurso() ? response()->json(['vista' => $this->mesa->vista($partida)]) : $sinPartida;
+        }
+
+        // La pestaña que pregunta puede haber quedado con una partida vieja (se abandonó desde otra y se empezó una nueva).
+        if ($partida->id !== (int) $datos['partida']) {
+            return $sinPartida;
+        }
+
+        $pasos = $this->mesa->pasosDesde($partida, (int) $datos['desde']);
+
+        // Cerrada y sin nada nuevo que contar: no hay bot al que esperar. La mesa se recarga y el servidor decide.
+        return $pasos === [] && ! $partida->enCurso() ? $sinPartida : response()->json(['pasos' => $pasos]);
     }
 
     /**
@@ -105,6 +119,23 @@ class MesaController extends Controller
         }
 
         return redirect()->route('modos')->with('aviso', 'Abandonaste la partida.');
+    }
+
+    /**
+     * El bot juega aparte, así que puede cerrar la partida mientras el jugador no está mirando
+     * (salió para seguir después, o recargó justo). Al volver a la mesa se le cuenta cómo terminó.
+     */
+    private function comoTermino(Request $request): ?string
+    {
+        $ultima = $this->mesa->ultimaDe($request->user());
+
+        if ($ultima?->estado !== Partida::TERMINADA) {
+            return null;
+        }
+
+        [$propios, $delBot] = $this->mesa->reconstruir($ultima)->tanteo();
+
+        return "Tu última partida terminó {$propios} a {$delBot}: ".($ultima->ganador === Mesa::JUGADOR ? 'ganaste.' : 'ganó el bot.');
     }
 
     /**

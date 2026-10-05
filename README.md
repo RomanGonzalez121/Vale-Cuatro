@@ -128,12 +128,15 @@ php artisan migrate
 
 El `.env.example` trae los datos de un MySQL local sin contraseña; si el tuyo es distinto, cambiá las líneas `DB_` del `.env` antes de migrar.
 
-Después, en dos terminales:
+Después, en tres terminales:
 
 ```bash
 php artisan serve
 npm run dev
+php artisan queue:work --sleep=0.2
 ```
+
+El tercero atiende la cola: de ahí sale el turno del bot. Sin él la mesa igual avanza, pero el bot tarda unos cinco segundos por jugada, porque recién ahí la mesa le pide que juegue.
 
 El sitio queda en `http://127.0.0.1:8000`.
 

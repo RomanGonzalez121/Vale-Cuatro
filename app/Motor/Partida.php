@@ -24,13 +24,13 @@ final class Partida
         'contra' => null, 'contraPor' => null, 'canto' => null, 'tantos' => [], 'ganador' => null,
     ];
 
-    private const FLOR = 3;
+    public const FLOR = 3;
 
-    private const CONTRAFLOR_QUERIDA = 6;
+    public const CONTRAFLOR_QUERIDA = 6;
 
-    private const CONTRAFLOR_NO_QUERIDA = 4;
+    public const CONTRAFLOR_NO_QUERIDA = 4;
 
-    private const CONTRAFLOR_AL_RESTO_NO_QUERIDA = 6;
+    public const CONTRAFLOR_AL_RESTO_NO_QUERIDA = 6;
 
     /** @var array{0: int, 1: int} Los puntos de cada equipo. */
     private array $tanteo = [0, 0];

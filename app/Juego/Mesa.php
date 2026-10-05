@@ -13,8 +13,10 @@ use App\Motor\Carta;
 use App\Motor\Fase;
 use App\Motor\Mazo;
 use App\Motor\Partida as Motor;
+use App\Motor\TipoDeAccion;
 use Closure;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * La mesa contra el bot: une la partida guardada con el motor de reglas.
@@ -111,7 +113,16 @@ final class Mesa
      */
     public function vista(Partida $partida): array
     {
-        return $this->paso($this->reconstruir($partida), (int) $partida->eventos()->max('numero'));
+        $motor = $this->sinJugar($partida);
+        $ultimo = 0;
+
+        // El estado y el número salen de la misma lectura: si el bot juega justo ahora, no pueden quedar desparejos.
+        foreach ($partida->eventos()->get() as $evento) {
+            $motor = $this->aplicarEvento($motor, $evento);
+            $ultimo = $evento->numero;
+        }
+
+        return $this->paso($partida, $motor, $ultimo);
     }
 
     /**
@@ -122,6 +133,11 @@ final class Mesa
      */
     public function pasosDesde(Partida $partida, int $desde): array
     {
+        // Casi todas las consultas llegan antes de que el bot juegue: ahí no hace falta reconstruir nada.
+        if ((int) $partida->eventos()->max('numero') <= $desde) {
+            return [];
+        }
+
         $motor = $this->sinJugar($partida);
         $pasos = [];
 
@@ -130,7 +146,7 @@ final class Mesa
 
             // Un abandono no cambia lo que hay en la mesa: no es un paso para mostrar.
             if ($evento->numero > $desde && $evento->tipo !== EventoDePartida::ABANDONO) {
-                $pasos[] = $this->paso($motor, $evento->numero);
+                $pasos[] = $this->paso($partida, $motor, $evento->numero);
             }
         }
 
@@ -152,7 +168,7 @@ final class Mesa
             $evento = $this->guardar($partida, EventoDePartida::ACCION, self::JUGADOR, $accion->aArray());
             $this->despuesDeJugar($partida, $motor);
 
-            return [$this->paso($motor, $evento)];
+            return [$this->paso($partida, $motor, $evento)];
         });
     }
 
@@ -202,9 +218,7 @@ final class Mesa
                 return false;
             }
 
-            $bot = $this->botFijo ?? $partida->nivel_bot->bot(Azar::seguro());
-            $accion = $bot->decidir($motor->vistaPara(self::BOT));
-            $motor = $motor->aplicar(self::BOT, $accion);
+            [$accion, $motor] = $this->jugadaDelBot($partida, $motor);
 
             $this->guardar($partida, EventoDePartida::ACCION, self::BOT, $accion->aArray());
             $this->despuesDeJugar($partida, $motor);
@@ -238,7 +252,7 @@ final class Mesa
         $evento = $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => $motor->aArray()['cartas']]);
         $this->despuesDeJugar($partida, $motor);
 
-        return [$this->paso($motor, $evento)];
+        return [$this->paso($partida, $motor, $evento)];
     }
 
     /**
@@ -285,14 +299,40 @@ final class Mesa
     }
 
     /**
-     * Un paso es la vista del jugador después de un evento, con el número de ese evento.
-     * Con ese número la mesa pregunta qué pasó después.
+     * Un paso es la vista del jugador después de un evento, con el número de ese evento y el de
+     * la partida. Con esos dos números la mesa pregunta qué pasó después, y el servidor sabe si
+     * la pestaña que pregunta sigue mostrando la última partida.
      *
      * @return array<string, mixed>
      */
-    private function paso(Motor $motor, int $evento): array
+    private function paso(Partida $partida, Motor $motor, int $evento): array
     {
-        return [...$motor->vistaPara(self::JUGADOR), 'evento' => $evento];
+        return [...$motor->vistaPara(self::JUGADOR), 'partida' => $partida->getKey(), 'evento' => $evento];
+    }
+
+    /**
+     * Lo que juega el bot. Si alguna vez fallara (un error suyo, o una jugada que el motor no acepta),
+     * la partida no puede quedar trabada: se anota el error y juega algo válido y sin riesgo.
+     *
+     * @return array{0: Accion, 1: Motor}
+     */
+    private function jugadaDelBot(Partida $partida, Motor $motor): array
+    {
+        try {
+            $bot = $this->botFijo ?? $partida->nivel_bot->bot(Azar::seguro());
+            $accion = $bot->decidir($motor->vistaPara(self::BOT));
+
+            return [$accion, $motor->aplicar(self::BOT, $accion)];
+        } catch (Throwable $falla) {
+            report($falla);
+        }
+
+        // Una carta si le toca jugar; si le cantaron, no quiere.
+        $validas = $motor->accionesPara(self::BOT);
+        $cartas = array_values(array_filter($validas, fn (Accion $valida) => $valida->tipo === TipoDeAccion::Jugar));
+        $accion = $cartas[0] ?? Accion::de(TipoDeAccion::NoQuiero);
+
+        return [$accion, $motor->aplicar(self::BOT, $accion)];
     }
 
     /**

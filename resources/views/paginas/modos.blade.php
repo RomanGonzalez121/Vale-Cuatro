@@ -102,11 +102,14 @@
                                             @endif
 
                                             @if ($niveles !== [])
-                                                {{-- El nivel del bot, con el mismo gesto que el rival. Con una partida sin terminar queda apagado. --}}
+                                                {{--
+                                                    El nivel del bot, con el mismo gesto que el rival. Con una partida sin terminar queda apagado:
+                                                    Naipe al 70 % sobre Paño da 4,7:1, que todavía se lee.
+                                                --}}
                                                 <div class="mt-2 flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Nivel del bot">
                                                     @foreach ($niveles as $opcion)
                                                         <button type="button" @disabled($sigue)
-                                                            class="enlace-nav cursor-pointer text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-45"
+                                                            class="enlace-nav cursor-pointer text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
                                                             aria-pressed="{{ $opcion === $nivelElegido ? 'true' : 'false' }}"
                                                             :aria-pressed="(nivel === {{ $opcion->value }}).toString()"
                                                             @click="nivel = {{ $opcion->value }}">{{ $opcion->nombre() }}</button>

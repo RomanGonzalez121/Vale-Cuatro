@@ -21,7 +21,7 @@ class JugarController extends Controller
     {
         // El nivel del bot llega desde la pantalla de modos. El botón de la portada no lo manda: va el de siempre.
         $request->validate(['nivel' => ['nullable', Rule::enum(Nivel::class)]]);
-        $nivel = Nivel::tryFrom((int) $request->input('nivel')) ?? Nivel::porDefecto();
+        $nivel = $request->enum('nivel', Nivel::class) ?? Nivel::porDefecto();
 
         $jugador = $request->user();
 

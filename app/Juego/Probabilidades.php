@@ -204,6 +204,9 @@ final class Probabilidades
     /**
      * Cuántas manos posibles del rival dan cada tanto.
      *
+     * La cuenta del tanto está escrita acá con números sueltos, y no con Tanto::deEnvido(), porque
+     * se hace miles de veces por decisión. Un test compara las dos para que no se separen.
+     *
      * @return array<int, int>
      */
     private static function tantosDelRival(Lectura $lectura): array

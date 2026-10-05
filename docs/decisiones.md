@@ -346,3 +346,67 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **El bloque ocupa la primera pantalla entera (pedido de Román):** al entrar justo, la sección de los fósforos asomaba al pie como una franja de 25 px. Ahora el bloque mide lo que queda debajo del encabezado, con un tope de 960 px para que en un monitor muy alto no quede un paño vacío.
 - **Se descartó:** achicar todo con un `transform: scale`, porque deja el texto borroso y los botones más chicos que el mínimo cómodo; y sacar el renglón de "Mirá cómo se juega", porque no hacía falta.
 - **Medido** en un Chromium real, de 1024 x 700 a 2560 x 1300: hasta 1036 px de alto el bloque termina en el borde de abajo. Con menos de 600 px de alto hay que bajar un poco. Captura en `docs/capturas/portada-ventana-baja.jpeg`.
+
+## M4. Bot
+
+### Tres niveles que se distinguen jugando
+
+- **Problema:** el bot de M3 era uno solo y muy callado. M4 pide tres rivales que se sientan distintos, y que el de arriba le gane al de abajo.
+- **Se eligió:** tres clases que cumplen la misma interfaz, `Bot` (recibe la vista de su asiento y devuelve una acción). El enum `App\Juego\Nivel` dice cuál es cada una, cómo se llama y cómo se arma.
+  - **Fácil** juega al azar con dos límites: no se va al mazo por su cuenta y siete de cada diez veces juega una carta en vez de cantar.
+  - **Intermedio** juega bien y de frente (decidido por Román). Usa toda la escala cuando tiene con qué: envido con 27 o más, real envido con 31, truco con una brava bien acompañada, retruco y vale cuatro con cartas mejores. Nunca miente.
+  - **Difícil** calcula probabilidades y miente cada tanto.
+- **Sumar un nivel es un agregado:** un caso más en `Nivel` y su clase. Así va a entrar el nivel 4.
+- **Se descartó:** un solo bot con un número de "habilidad" que mueve umbrales. Los tres no se diferencian por cuánto arriesgan sino por cómo deciden, y eso se explica mejor con tres clases cortas.
+
+### Cómo saca las cuentas el Difícil
+
+- **Problema:** no ve las cartas del rival, pero tiene que estimar si le conviene querer, cantar o guardar una carta.
+- **Se eligió:** recorrer las manos que el rival puede tener. Las cartas que no vio son las 40 menos las suyas y las que el rival ya tiró; con esas se arman todas las manos posibles (7.770 al empezar) y se cuenta en cuántas gana. De ahí salen la probabilidad de ganar el envido y la de ganar la mano (`App\Juego\Probabilidades`).
+- **La mano se juega hasta el final en cada caso:** para cada mano posible del rival, se juega lo que queda con las cartas a la vista y cada lado eligiendo su mejor carta. La carta que el bot tira es la que gana en más casos; si dos dan lo mismo, la más baja.
+- **Un atajo que lo hace rápido:** para saber quién gana una baza solo importa si la carta del rival es más alta, igual o más baja que cada una de las propias. Con tres cartas propias hay siete lugares donde puede caer, así que las miles de manos se agrupan en unas ochenta, cada una con su cantidad. Además, una situación ya resuelta se guarda y no se vuelve a jugar. Una decisión tarda milisegundos.
+- **Le cree al que canta:** si el rival cantó envido, las manos con buen tanto pesan más que las otras; si cantó truco, pesan más las manos en las que viene ganando. Sin eso querría cualquier canto con cartas medianas.
+- **Decide por puntos esperados:** quiere cuando lo que espera ganar queriendo es más que lo que pierde seguro no queriendo. Si no querer ya le da la partida al rival, quiere siempre; si perder la mano ya es perder la partida, canta siempre.
+- **Miente en dos lugares:** canta envido con poco tanto y canta truco con cartas flojas. Una de cada seis veces que podría, y una de cada tres cuando al rival le faltan cinco puntos o menos y va ganando. La frecuencia sale del `Azar`, así que con semilla se puede repetir.
+- **La flor (decidido por Román):** Fácil e Intermedio la cantan siempre. Difícil la calla en un solo caso: le cantaron un envido que querido vale más de 3 y con sus dos mejores cartas tiene 32 o 33.
+- **Se descartó:** tablas de fuerza hechas a mano (no se pueden defender con números) y mirar el estado completo de la partida (sería trampa: ver el punto siguiente).
+
+### Ningún bot ve las cartas del rival
+
+- **Problema:** un bot que corre en el servidor podría leer el estado entero. Tiene que jugar limpio y hay que poder demostrarlo.
+- **Se eligió:** el bot recibe solo `vistaPara` de su asiento, lo mismo que recibe un jugador, y sus clases no importan nada de Laravel ni de la base.
+- **Cómo se prueba:** se arman dos mesas iguales en todo lo que el bot puede ver y distintas en las cartas que el rival no mostró. Con la misma semilla, cada nivel decide lo mismo en las dos. Si alguno mirara esas cartas, en alguna decidiría otra cosa.
+
+### Cuánto le gana cada nivel al de abajo
+
+- **Medido el 5 de octubre de 2026,** bot contra bot sobre el motor, 400 partidas por cruce con semilla fija: Difícil le gana a Fácil el 92 %, Intermedio a Fácil el 74 % y Difícil a Intermedio el 82 %.
+- **En los tests** se juegan 60 partidas por cruce (57, 47 y 53 ganadas) y los pisos son 48, 36 y 40: dejan margen para ajustar a los bots sin que el test se rompa por una partida.
+- **Ninguna jugada inválida:** en cada partida simulada, cada decisión se compara contra las acciones que el motor declara válidas. Se cruzan todos los niveles, también cada uno contra sí mismo.
+
+### El turno del bot sale de una cola
+
+- **Problema:** en M3 el bot contestaba dentro del pedido del jugador. M4 pide que su turno salga de un job, con una demora corta para que parezca que piensa.
+- **Se eligió:** cuando una jugada guardada deja el turno del lado del bot, la mesa encola `TurnoDelBot` con un segundo de demora, y recién después de confirmar la transacción. El job lleva solo el número de la partida. Al correr bloquea la fila, reconstruye la partida, comprueba que siga en curso y que le toque al bot, juega una sola acción y la guarda. Si le sigue tocando, se encola otro.
+- **Un job repetido o tardío no hace nada:** como vuelve a mirar la partida antes de jugar, no importa si llega dos veces o después de tiempo.
+- **La demora es de un segundo** porque la cola en base de datos cuenta segundos enteros. El proceso que la atiende corre con `--sleep=0.2` para no sumarle espera.
+- **Se descartó:** dormir dentro del pedido (ocupa un proceso de PHP por cada jugador que espera) y encolar todas las jugadas del bot en un solo job (la mesa las recibiría de golpe).
+- **En local hace falta un cuarto proceso:** `php artisan queue:work --sleep=0.2`, además de MySQL, `php artisan serve` y `npm run dev`.
+
+### La mesa pregunta qué jugó el bot
+
+- **Problema:** el bot ya no juega dentro del pedido, así que la respuesta a una jugada no trae las suyas. El tiempo real (Reverb) llega recién en M5.
+- **Se eligió (decidido por Román):** una consulta corta. Cada paso lleva el número de su evento; mientras le toca al bot, la mesa pide cada 600 ms `GET /mesa/estado?desde=N` y recibe los pasos posteriores, que son la vista del jugador después de cada evento. Los cuenta con las mismas piezas de siempre: sigue sin haber reglas en el navegador.
+- **La consulta mira la última partida, no solo la que está en curso:** la última jugada del bot puede ser la que cierra la partida, y la mesa tiene que enterarse.
+- **Cuando llegue Reverb,** la consulta queda como plan B para cuando el WebSocket se corte.
+
+### Una red de seguridad por si la cola no anda
+
+- **Problema:** si el proceso que atiende la cola se cae, el bot no juega nunca y la mesa queda esperando. En Render va todo en un solo contenedor justo de memoria, así que puede pasar.
+- **Se eligió (decidido por Román):** si pasan cinco segundos sin jugada, la mesa manda `POST /mesa/bot` y el servidor hace jugar al bot en el momento todo lo que le toque. Usa el mismo método que el job, así que si el job llega después no encuentra nada que hacer.
+- **El camino normal sigue siendo la cola.** La red solo se nota como una espera más larga.
+
+### El nivel se guarda en la partida y se elige en los modos
+
+- **Se eligió (decidido por Román):** `partidas` tiene una columna `nivel_bot`. Se elige en `/modos`, con el mismo gesto que el rival; el botón de la portada no cambia y entra contra Intermedio. `POST /jugar` valida el nivel y rechaza uno que no existe sin crear nada.
+- **Con una partida sin terminar** se retoma esa, con su nivel, aunque se pida otro. `/modos` lo avisa, apaga los niveles y el botón pasa a "Seguir la partida". Para cambiar de nivel hay que abandonarla desde la mesa.
+- **En la mesa,** el nivel va escrito junto al rival ("Bot difícil") y mientras piensa aparece un reloj quieto al lado, que entra y sale con un fundido. No agrega una fila, así que la mesa sigue sin scroll.
