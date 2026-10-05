@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\JugarController;
+use App\Http\Controllers\MesaController;
 use App\Http\Controllers\PaginaController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\RegistroController;
@@ -17,6 +18,13 @@ Route::get('/modos', [PaginaController::class, 'modos'])->name('modos');
 // Entrar a jugar: con cuenta, o como invitado creado en el momento.
 Route::post('/jugar', JugarController::class)->middleware('throttle:10,1')->name('jugar');
 Route::get('/mesa', [PaginaController::class, 'mesa'])->middleware('auth')->name('mesa');
+
+// Lo que se hace desde la mesa: siempre sobre la partida en curso de quien hace el pedido.
+Route::middleware(['auth', 'throttle:240,1'])->group(function () {
+    Route::post('/mesa/accion', [MesaController::class, 'accion'])->name('mesa.accion');
+    Route::post('/mesa/repartir', [MesaController::class, 'repartir'])->name('mesa.repartir');
+    Route::post('/mesa/abandonar', [MesaController::class, 'abandonar'])->name('mesa.abandonar');
+});
 
 Route::middleware('sin-cuenta')->group(function () {
     Route::get('/registro', [RegistroController::class, 'formulario'])->name('registro');

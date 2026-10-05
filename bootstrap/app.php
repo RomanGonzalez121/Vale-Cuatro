@@ -32,8 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Un formulario enviado desde una página que quedó abierta hasta vencer
         // la sesión: en vez del error 419, se vuelve atrás con un aviso.
+        // Los pedidos de la mesa esperan JSON: a esos se les deja el 419, y la mesa avisa.
         $exceptions->respond(function (Response $response) {
-            if ($response->getStatusCode() === 419) {
+            if ($response->getStatusCode() === 419 && ! request()->expectsJson()) {
                 return back()->with('aviso', 'La página había vencido. Probá de nuevo.');
             }
 
