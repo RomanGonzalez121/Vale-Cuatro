@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Identidad\Paleta;
+use App\Juego\Modos;
 use App\Maqueta\DatosDeEjemplo;
 use App\View\Components\Carta;
 use Illuminate\Contracts\View\View;
@@ -16,6 +17,13 @@ class PaginaController extends Controller
     public function portada(): View
     {
         return view('paginas.portada');
+    }
+
+    public function modos(): View
+    {
+        return view('paginas.modos', [
+            'modos' => Modos::todos(),
+        ]);
     }
 
     public function mesa(): View

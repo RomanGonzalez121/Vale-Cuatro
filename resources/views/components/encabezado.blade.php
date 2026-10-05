@@ -21,12 +21,9 @@
         <div class="flex items-center gap-3 md:gap-7">
             <nav aria-label="Principal" class="hidden md:block">
                 <ul class="flex items-center gap-8">
-                    {{-- "Jugar" es un botón y no un link: entrar a la mesa puede crear un jugador. --}}
+                    {{-- "Jugar" lleva a elegir el modo. A la mesa se entra desde ahí o desde el botón de la portada. --}}
                     <li>
-                        <form method="POST" action="{{ route('jugar') }}">
-                            @csrf
-                            <button type="submit" class="enlace-nav cursor-pointer">Jugar</button>
-                        </form>
+                        <a href="{{ route('modos') }}" class="enlace-nav" @if (request()->routeIs('modos')) aria-current="page" @endif>Jugar</a>
                     </li>
                     @foreach ($enlaces as $ruta => [$texto])
                         <li>
@@ -52,13 +49,11 @@
         class="menu-movil absolute inset-x-0 top-full px-5 pb-6 pt-1 md:hidden">
         <ul>
             <li style="--i: 0">
-                <form method="POST" action="{{ route('jugar') }}">
-                    @csrf
-                    <button type="submit" class="enlace-menu flex w-full cursor-pointer items-center gap-4 py-3.5 text-2xl font-extrabold tracking-tight">
-                        <x-icono nombre="repartir" class="size-7" />
-                        Jugar
-                    </button>
-                </form>
+                <a href="{{ route('modos') }}" class="enlace-menu flex items-center gap-4 py-3.5 text-2xl font-extrabold tracking-tight no-underline"
+                    @if (request()->routeIs('modos')) aria-current="page" @endif>
+                    <x-icono nombre="repartir" class="size-7" />
+                    Jugar
+                </a>
             </li>
             @foreach ($enlaces as $ruta => [$texto, $icono])
                 <li style="--i: {{ $loop->iteration }}">

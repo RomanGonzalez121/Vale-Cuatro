@@ -228,3 +228,24 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 
 - **Hecho:** asientos intercalados, ronda desde el mano, tantos en ronda, cualquiera del equipo contesta y vale la primera respuesta, el quiero es del equipo, cada flor suma para su equipo, la contraflor compara la mejor flor cantada de cada equipo, y el mazo es de un jugador (la baza puede cerrarse con tres cartas). Hay una mano jugada de punta a punta y un test por cada una de esas reglas.
 - **Lecturas provisorias, para M19:** quien se fue al mazo no canta tanto en el envido; las cartas que jugó antes de irse siguen valiendo en la baza; una flor ya cantada sigue compitiendo en la contraflor aunque su dueño se haya ido; y una contraflor vale lo mismo (6, 4 o la falta) aunque un equipo haya cantado dos flores.
+
+## M17. Modos de juego (adelanto de la pantalla)
+
+### Elegir el modo es sacar una carta de la mano
+
+- **Problema:** el sitio va a tener seis modos (contra el bot, invitar, de a cuatro, torneo, desafíos y escalera) y solo uno se juega hoy. Hacía falta un lugar para elegir que no fuera una grilla de tarjetas iguales ni una ventana encima de la portada.
+- **Se eligió:** una página propia, `/modos`, donde los modos son una mano de seis cartas en abanico. El modo que se juega está cara arriba; los que faltan, boca abajo. Elegir uno saca su carta de la mano. Los nombres están en una lista al lado, que es la que se usa con teclado y con lector de pantalla; la mano es su espejo para el mouse y el dedo.
+- **Se descartó:** un cartel emergente (es lo más genérico, y en el celular queda apretado), no mostrar los modos que faltan (la pantalla quedaría con una sola opción) y mostrarlos como botones apagados (un botón apagado no explica nada: la carta boca abajo sí, y cada módulo que se cierre le da vuelta una).
+- **La promesa de los 30 segundos:** el botón grande de la portada sigue entrando directo a la mesa. El que pasó a abrir esta pantalla es "Jugar" del menú, que por eso dejó de ser un formulario y ahora es un link.
+- **Honestidad:** cada fila dice "Se juega ahora" o "Todavía no se juega", y los modos que faltan no tienen botón. "Invitar a alguien" figura como pendiente aunque la portada tenga un botón con ese nombre, que sigue siendo de maqueta hasta M5.
+
+### Los modos son datos
+
+- **Se eligió:** un catálogo, `App\Juego\Modos`, con el nombre, el ícono, la carta, el texto y si el modo se juega. Cuando se termine un módulo alcanza con pasar "disponible" a verdadero: la pantalla le da vuelta la carta y le pone su botón. Los tests leen el mismo catálogo, así que no hay que tocarlos.
+- **Las cartas** no son al azar: el ancho de espada para jugar solo contra el bot, el 2 para dos personas, el 4 para el juego de a cuatro, el rey para el torneo, el siete de espada para los desafíos y el caballo para la escalera.
+
+### El abanico se mide en porcentajes
+
+- **Problema:** seis cartas en abanico tienen que entrar en 360 px sin scroll y verse grandes en escritorio.
+- **Se eligió:** todas las cartas ocupan el mismo lugar y giran sobre un mismo punto, muy por debajo, como en una mano de verdad. El ancho de la carta, el punto de giro y lo que sube la elegida son porcentajes, así que el abanico es el mismo dibujo a cualquier tamaño. Van tan juntas que de cada carta de atrás se ve una franja que no llega al sello del dorso: abierto de más, el sello asomaba cortado.
+- **Movimiento:** el reparto al cargar reutiliza el de la portada y es el único que no responde a una acción; al final, la carta que se juega se da vuelta. Sacar una carta es una transición de 200 ms sobre `transform`, que se puede interrumpir. El detalle del modo cambia con un fundido, sin animar el alto. Con movimiento reducido no hay viaje ni giro.

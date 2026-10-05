@@ -929,6 +929,83 @@ html:has(body.superficie-pano) {
         margin-bottom: calc(var(--ancho-carta, 6rem) * -0.4);
     }
 
+    /*
+     | Los modos de juego: una mano de seis cartas. Todas giran sobre un mismo
+     | punto, muy por debajo, como las cartas que se sostienen con una mano; por
+     | eso las medidas son porcentajes y el abanico entra igual en cualquier ancho.
+     | Va primero la de la izquierda, que es la que se ve entera.
+     */
+    .mano-modos {
+        position: relative;
+        aspect-ratio: 100 / 72;
+    }
+
+    /* Tan juntas que de cada carta de atrás se ve una franja, sin llegar al sello del dorso. */
+    .mano-modos-lugar {
+        position: absolute;
+        top: 13%;
+        left: 33%;
+        z-index: calc(10 - var(--i));
+        width: 34%;
+        transform: rotate(calc((var(--i) - 2.5) * 8deg));
+        transform-origin: 50% 188%;
+    }
+
+    /* Elegir un modo es sacar su carta de la mano: sube sobre su propio eje. */
+    .naipe-modo {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        border-radius: 8% / 5.13%;
+        background: none;
+        cursor: pointer;
+        transition: transform 200ms var(--ease-llegada);
+    }
+
+    .naipe-modo:active {
+        transform: scale(0.97);
+    }
+
+    .naipe-modo[data-elegida='true'] {
+        transform: translateY(-16%);
+    }
+
+    .naipe-modo[data-elegida='true']:active {
+        transform: translateY(-16%) scale(0.97);
+    }
+
+    /* La carta del modo que ya se juega llega boca abajo, como las demás, y se da vuelta al final del reparto. */
+    .se-da-vuelta {
+        position: relative;
+        display: block;
+        transform: perspective(48rem) rotateY(0deg);
+        transform-style: preserve-3d;
+        animation: dar-vuelta 300ms var(--ease-llegada) both;
+        animation-delay: 800ms;
+    }
+
+    .se-da-vuelta > * {
+        backface-visibility: hidden;
+    }
+
+    .se-da-vuelta > .reverso {
+        position: absolute;
+        inset: 0;
+        transform: rotateY(180deg);
+    }
+
+    /* En la lista de modos, el fósforo del link queda puesto en la fila elegida. */
+    .fila-modo[aria-expanded='true']::before {
+        opacity: 1;
+        transform: none;
+    }
+
+    .fila-modo[aria-expanded='true']::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+
     .naipe-jugable {
         display: block;
         width: 100%;
@@ -1255,6 +1332,12 @@ html:has(body.superficie-pano) {
     }
 }
 
+@keyframes dar-vuelta {
+    from {
+        transform: perspective(48rem) rotateY(180deg);
+    }
+}
+
 @keyframes entrar-item {
     from {
         opacity: 0;
@@ -1325,6 +1408,14 @@ html:has(body.superficie-pano) {
         transition-delay: 110ms;
     }
 
+    /* La carta asoma de la mano al pasar; la elegida ya está afuera y no se mueve. */
+    .naipe-modo:not([data-elegida='true']):hover {
+        transform: translateY(-6%);
+    }
+
+    .naipe-modo:not([data-elegida='true']):active {
+        transform: translateY(-6%) scale(0.97);
+    }
 
     .naipe-jugable:not([disabled]):hover {
         transform: translateY(-6%);
@@ -1345,6 +1436,22 @@ html:has(body.superficie-pano) {
     .naipe-jugable.del-tanto {
         transform: none;
         transition: none;
+    }
+
+    /* La carta del modo elegido queda afuera de la mano, pero llega ahí sin viaje. Y la que ya se juega no gira: aparece cara arriba. */
+    .naipe-modo,
+    .naipe-modo:active,
+    .naipe-modo:not([data-elegida='true']):hover {
+        transition: none;
+    }
+
+    .naipe-modo:not([data-elegida='true']):hover,
+    .naipe-modo:not([data-elegida='true']):active {
+        transform: none;
+    }
+
+    .se-da-vuelta {
+        animation: none;
     }
 
     /* Las cartas del tanto no se levantan: alcanza con que la otra se apague. */

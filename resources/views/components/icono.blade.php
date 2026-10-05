@@ -26,6 +26,11 @@
         'jugador' => ['M5.5 20.5 8 13.5H16L18.5 20.5', [[12, 7.6, 2.8]]],
         'salir' => ['M14 3.5H19.5V20.5H14M10 20 8 11.5M8.8 15 5.5 20M8.2 12.6 12.2 13.8', [[7.4, 8.6, 2.4]]],
         'sonido' => ['M4.5 9.5H8L12.5 5.5V18.5L8 14.5H4.5ZM15.5 12H18.3M15.5 9 17.2 7.3M15.5 15 17.2 16.7', [[20.4, 12, 1.8], [18.6, 5.9, 1.8], [18.6, 18.1, 1.8]]],
+        // Los modos de juego: cuatro en la mesa, las llaves del torneo, un fósforo de bandera y los escalones.
+        'de-a-cuatro' => ['M12 6.6V17.4M6.6 12H17.4', [[12, 4.3, 2.2], [12, 19.7, 2.2], [4.3, 12, 2.2], [19.7, 12, 2.2]]],
+        'torneo' => ['M3.5 5H10.5V19H3.5M10.5 12H16.2', [[18.6, 12, 2.4]]],
+        'desafio' => ['M6.5 21V5.8M6.5 7.5H18.5L15.5 11L18.5 14.5H6.5', [[6.5, 3.6, 2.2]]],
+        'escalera' => ['M3.5 19.5H8.5V14.5H13.5V9.5H18.5V7', [[18.5, 4.7, 2.2]]],
     ];
 
     [$trazos, $cabezas] = $iconos[$nombre] ?? throw new InvalidArgumentException("El ícono [{$nombre}] no existe.");

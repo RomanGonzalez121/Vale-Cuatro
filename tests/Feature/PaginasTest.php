@@ -20,6 +20,7 @@ class PaginasTest extends TestCase
             'historial' => ['/historial'],
             'cómo se juega' => ['/como-se-juega'],
             'identidad' => ['/identidad'],
+            'modos de juego' => ['/modos'],
         ];
     }
 

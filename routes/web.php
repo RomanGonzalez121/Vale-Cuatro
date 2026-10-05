@@ -12,6 +12,7 @@ Route::get('/ranking', [PaginaController::class, 'ranking'])->name('ranking');
 Route::get('/historial', [PaginaController::class, 'historial'])->name('historial');
 Route::get('/como-se-juega', [PaginaController::class, 'comoSeJuega'])->name('como-se-juega');
 Route::get('/identidad', [PaginaController::class, 'identidad'])->name('identidad');
+Route::get('/modos', [PaginaController::class, 'modos'])->name('modos');
 
 // Entrar a jugar: con cuenta, o como invitado creado en el momento.
 Route::post('/jugar', JugarController::class)->middleware('throttle:10,1')->name('jugar');

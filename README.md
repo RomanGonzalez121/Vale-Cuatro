@@ -23,6 +23,10 @@ Proyecto de portfolio de Román Gonzalez.
 |---|---|
 | ![Ingreso, con la mano que se da vuelta al completar cada paso](docs/capturas/ingresar.jpeg) | ![Registro, con el apodo en el tanteador](docs/capturas/registro.jpeg) |
 
+| Modos de juego | En el celular |
+|---|---|
+| ![Los modos como una mano de cartas: el que se juega, cara arriba](docs/capturas/modos.jpeg) | ![La misma pantalla a 360 px](docs/capturas/modos-celular.jpeg) |
+
 ## Qué es real y qué es simulado
 
 - **Simulado, y dicho abiertamente en el sitio:** los rivales bot y los jugadores de ejemplo del ranking, que aparecen marcados como bots.
@@ -58,7 +62,7 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 | M14 | Sonido de cartas, fósforos y cantos | Pendiente |
 | M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
 | M16 | Panel de administración | Pendiente |
-| M17 | Modos de juego, desafíos y una escalera de niveles | Pendiente |
+| M17 | Modos de juego, desafíos y una escalera de niveles | Adelantada la pantalla para elegir modo; el resto, pendiente |
 | M18 | Perfil con categorías ganadas jugando | Pendiente |
 | M19 | Truco de a cuatro con señas | Pendiente |
 | M20 | Mazos y mesas para elegir | Pendiente |
