@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Juego\Bot;
-use App\Juego\BotProvisional;
+use App\Juego\BotIntermedio;
 use App\Juego\Mesa;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
@@ -219,7 +219,7 @@ class MesaTest extends TestCase
 
     public function test_el_bot_decide_solo_con_la_vista_de_su_asiento(): void
     {
-        // Un bot que anota todo lo que le muestran y juega como el provisional.
+        // Un bot que anota todo lo que le muestran y juega como el Intermedio.
         $espia = new class implements Bot
         {
             /** @var list<array<string, mixed>> */
@@ -229,7 +229,7 @@ class MesaTest extends TestCase
             {
                 $this->vistas[] = $vista;
 
-                return (new BotProvisional)->decidir($vista);
+                return (new BotIntermedio)->decidir($vista);
             }
         };
 
