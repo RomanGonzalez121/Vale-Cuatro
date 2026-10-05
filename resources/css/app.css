@@ -1294,6 +1294,19 @@ html:has(body.superficie-pano) {
         transition-duration: 260ms;
     }
 
+    /*
+     | El nivel del bot contado con fósforos. Los del nivel elegido caen de a uno,
+     | como los puntos; los de los otros muestran su lugar, más marcado que en el
+     | tanteador porque acá esa marca es lo que dice cuántos tiene cada nivel.
+     */
+    .nivel-fosforos .fosforo-lugar {
+        stroke: color-mix(in srgb, var(--color-naipe) 42%, transparent);
+    }
+
+    .nivel-fosforos .fosforo.puesto {
+        transition-delay: calc(var(--orden, 0) * 70ms);
+    }
+
     /* Reparto de la portada: predeterminado, corre en CSS para no trabarse al cargar. */
     .se-reparte {
         animation: repartir 300ms var(--ease-llegada) both;
@@ -1491,6 +1504,27 @@ html:has(body.superficie-pano) {
 
     .portada-canto {
         font-size: calc(var(--carta) * 0.833);
+    }
+}
+
+/*
+ | Modos en escritorio, en una ventana baja: con los niveles del bot, el botón
+ | de jugar quedaba debajo del borde en una notebook de 1366 x 768 (unos 640 px
+ | libres). Por debajo de 820 px el margen de arriba, el título y el aire sobre
+ | la mano se miden contra el alto de la ventana, así el botón se ve sin bajar.
+ | Desde 820 px no cambia nada.
+ */
+@media (min-width: 64rem) and (height < 51.25rem) {
+    .modos-inicio {
+        padding-top: clamp(1rem, 13dvh - 3.75rem, 3.5rem);
+    }
+
+    .modos-inicio h1 {
+        font-size: clamp(2.75rem, 9dvh, 4.5rem);
+    }
+
+    .modos-mano {
+        margin-top: clamp(1rem, 7dvh - 1.75rem, 2.5rem);
     }
 }
 

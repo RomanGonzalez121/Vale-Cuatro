@@ -56,18 +56,26 @@ class ModosTest extends TestCase
     {
         $html = $this->get('/modos')->assertOk()->getContent();
 
-        preg_match('/<div[^>]*aria-label="Nivel del bot">(.*?)<\/div>/s', $html, $grupo);
+        $botones = $this->botonesDeNivel($html);
 
-        foreach (Nivel::cases() as $nivel) {
-            $elegido = $nivel === Nivel::Intermedio ? 'true' : 'false';
+        $this->assertCount(count(Nivel::cases()), $botones);
 
-            $this->assertMatchesRegularExpression("/aria-pressed=\"{$elegido}\"[^>]*>{$nivel->nombre()}<\/button>/s", $grupo[1]);
+        foreach (Nivel::cases() as $i => $nivel) {
+            $elegido = $nivel === Nivel::Intermedio;
+
+            $this->assertStringContainsString('aria-pressed="'.($elegido ? 'true' : 'false').'"', $botones[$i]);
+            $this->assertStringEndsWith("{$nivel->nombre()}</button>", $botones[$i]);
+            $this->assertStringStartsNotWith('<button type="button" disabled', $botones[$i]);
+
+            // La dificultad se cuenta con fósforos: uno, dos y tres. Solo los del nivel elegido están puestos.
+            $this->assertSame($nivel->value, substr_count($botones[$i], '<svg'), "{$nivel->nombre()} tiene que mostrar {$nivel->value} fósforos.");
+            $this->assertSame($elegido ? $nivel->value : 0, substr_count($botones[$i], 'class="fosforo puesto"'));
+
             $this->assertStringContainsString($nivel->detalle(), $html);
         }
 
         // El nivel viaja en el formulario, y sin tocar nada es el de siempre.
         $this->assertMatchesRegularExpression('/<input type="hidden" name="nivel" value="2"/', $html);
-        $this->assertSame(0, preg_match_all('/<button type="button" disabled/', $grupo[1]));
         $this->assertStringNotContainsString('sin terminar', $html);
     }
 
@@ -82,12 +90,30 @@ class ModosTest extends TestCase
             ->assertDontSee('Jugar contra el bot')
             ->getContent();
 
-        preg_match('/<div[^>]*aria-label="Nivel del bot">(.*?)<\/div>/s', $html, $grupo);
+        $botones = $this->botonesDeNivel($html);
 
         // Los tres niveles están apagados, y el marcado es el de la partida.
-        $this->assertSame(3, preg_match_all('/<button type="button" disabled/', $grupo[1]));
-        $this->assertMatchesRegularExpression('/aria-pressed="true"[^>]*>Difícil<\/button>/s', $grupo[1]);
+        foreach ($botones as $boton) {
+            $this->assertStringStartsWith('<button type="button" disabled', $boton);
+        }
+
+        $this->assertSame(['false', 'false', 'true'], array_map(fn (string $boton) => preg_match('/aria-pressed="(\w+)"/', $boton, $marca) ? $marca[1] : null, $botones));
+        $this->assertStringEndsWith('Difícil</button>', $botones[2]);
+        $this->assertSame(3, substr_count($botones[2], 'class="fosforo puesto"'));
         $this->assertMatchesRegularExpression('/<input type="hidden" name="nivel" value="3"/', $html);
+    }
+
+    /**
+     * Los botones del selector de nivel, en orden.
+     *
+     * @return list<string>
+     */
+    private function botonesDeNivel(string $html): array
+    {
+        preg_match('/<div[^>]*aria-label="Nivel del bot">(.*?)<\/div>/s', $html, $grupo);
+        preg_match_all('/<button.*?<\/button>/s', $grupo[1] ?? '', $botones);
+
+        return $botones[0];
     }
 
     public function test_la_partida_de_otro_no_cambia_lo_que_ve_un_jugador(): void

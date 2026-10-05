@@ -57,6 +57,8 @@
                             <x-icono nombre="tiempo" class="size-4" />
                         </span>
                         <x-icono nombre="bot" class="size-5" />
+                        {{-- El nivel, con los mismos fósforos que se eligieron en los modos. --}}
+                        <x-nivel-fosforos :nivel="$nivel" class="text-[0.8rem]" />
                     </span>
                     Bot {{ mb_strtolower($nivel->nombre()) }}
                 </p>

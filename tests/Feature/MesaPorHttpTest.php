@@ -92,6 +92,22 @@ class MesaPorHttpTest extends TestCase
             ->getContent();
 
         $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/jugar"[^>]*>.*?name="nivel" value="3".*?Jugar otra partida/s', $html);
+
+        // Junto al rival van los fósforos de su nivel: tres para Difícil.
+        preg_match('/<section aria-label="Rival".*?<\/section>/s', $html, $rival);
+        $this->assertSame(3, substr_count($rival[0], 'class="fosforo puesto"'));
+    }
+
+    public function test_los_fosforos_de_la_mesa_cuentan_el_nivel(): void
+    {
+        foreach (Nivel::cases() as $nivel) {
+            $jugador = Jugador::factory()->invitado()->create();
+            $this->app->make(Mesa::class)->abrir($jugador, $nivel);
+
+            preg_match('/<section aria-label="Rival".*?<\/section>/s', $this->actingAs($jugador)->get('/mesa')->getContent(), $rival);
+
+            $this->assertSame($nivel->value, substr_count($rival[0], 'class="fosforo puesto"'), $nivel->nombre());
+        }
     }
 
     public function test_recargar_la_mesa_vuelve_a_la_misma_partida_en_el_mismo_punto(): void

@@ -23,7 +23,7 @@
 <x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
-        <div class="mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:pb-24 lg:pt-14"
+        <div class="modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:pb-24 lg:pt-14"
             x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }} }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
@@ -31,7 +31,7 @@
                 </h1>
 
                 {{-- Con una sola carta, el detalle va al lado. Con varias, la mano ocupa el ancho y el detalle va debajo. --}}
-                <div @class(['mt-7 grid items-start gap-y-5 lg:mt-10', $unaSola ? 'grid-cols-[auto_minmax(0,1fr)] gap-x-5 sm:gap-x-9' : 'grid-cols-1'])>
+                <div @class(['modos-mano mt-7 grid items-start gap-y-5 lg:mt-10', $unaSola ? 'grid-cols-[auto_minmax(0,1fr)] gap-x-5 sm:gap-x-9' : 'grid-cols-1'])>
                     {{-- La mano: una carta por juego que ya se juega. El reparto es el único movimiento que no responde a una acción. --}}
                     <div @class(['mano-juegos', $unaSola ? 'mano-de-una sm:row-span-2' : 'mano-de-varias'])
                         style="--ancho-carta: clamp(6.25rem, 27vw, 13rem); --medio: {{ (count($enLaMano) - 1) / 2 }}">
@@ -106,13 +106,14 @@
                                                     El nivel del bot, con el mismo gesto que el rival. Con una partida sin terminar queda apagado:
                                                     Naipe al 70 % sobre Paño da 4,7:1, que todavía se lee.
                                                 --}}
-                                                <div class="mt-2 flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Nivel del bot">
+                                                <div class="mt-3 flex flex-wrap items-end gap-x-7 gap-y-1" role="group" aria-label="Nivel del bot">
                                                     @foreach ($niveles as $opcion)
+                                                        {{-- La dificultad se cuenta con fósforos, como los puntos: uno, dos y tres. Los del nivel elegido caen de a uno. --}}
                                                         <button type="button" @disabled($sigue)
-                                                            class="enlace-nav cursor-pointer text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
+                                                            class="enlace-nav cursor-pointer text-left text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
                                                             aria-pressed="{{ $opcion === $nivelElegido ? 'true' : 'false' }}"
                                                             :aria-pressed="(nivel === {{ $opcion->value }}).toString()"
-                                                            @click="nivel = {{ $opcion->value }}">{{ $opcion->nombre() }}</button>
+                                                            @click="nivel = {{ $opcion->value }}"><x-nivel-fosforos :nivel="$opcion" :puesto="$opcion === $nivelElegido" modelo="nivel === {{ $opcion->value }}" class="mb-1.5 text-[1.375rem]" />{{ $opcion->nombre() }}</button>
                                                     @endforeach
                                                 </div>
 

@@ -410,3 +410,24 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Se eligió (decidido por Román):** `partidas` tiene una columna `nivel_bot`. Se elige en `/modos`, con el mismo gesto que el rival; el botón de la portada no cambia y entra contra Intermedio. `POST /jugar` valida el nivel y rechaza uno que no existe sin crear nada.
 - **Con una partida sin terminar** se retoma esa, con su nivel, aunque se pida otro. `/modos` lo avisa, apaga los niveles y el botón pasa a "Seguir la partida". Para cambiar de nivel hay que abandonarla desde la mesa.
 - **En la mesa,** el nivel va escrito junto al rival ("Bot difícil") y mientras piensa aparece un reloj quieto al lado, que entra y sale con un fundido. No agrega una fila, así que la mesa sigue sin scroll.
+
+### La dificultad se cuenta con fósforos
+
+- **Problema:** el selector de nivel eran tres palabras, debajo de otras dos filas de texto. Román lo vio monótono.
+- **Se eligió (decidido por Román):** contar la dificultad como se cuentan los puntos. Cada nivel lleva sus fósforos arriba del nombre: uno, dos y tres. Los del nivel elegido están puestos y caen de a uno al elegirlo, con el mismo movimiento que un punto del tanteador; los de los otros muestran solo su lugar. Es un componente, `<x-nivel-fosforos>`, y el mismo va en la mesa junto al nombre del rival.
+- **No hay color ni pieza nueva:** el palito va en Fósforo y la cabeza en Copa, como en el tanteador, y son gruesos como los de la carta de modo. La marca de los que no están puestos es Naipe al 42 %, más visible que en el tanteador porque acá esa marca es la que dice cuántos tiene cada nivel.
+- **Deja lugar para el nivel 4:** el cuarto fósforo cierra el cuadrado del logo.
+- **Se descartó:** tres naipes chicos, uno por nivel (competían con la carta grande del modo y sumaban 70 px de alto) y cambiar solo tamaños de letra (seguía siendo todo texto).
+
+### Los modos en una ventana baja de escritorio
+
+- **Problema:** al sumar los niveles, en una notebook de 1366 x 768 (unos 640 px libres) el botón de jugar quedaba debajo del borde.
+- **Se eligió (decidido por Román):** lo mismo que en la portada. Por debajo de 820 px de alto, el margen de arriba, el título y el aire sobre la mano de `/modos` se miden contra el alto de la ventana. Desde 820 px no cambia nada.
+- **Medido** en un Chromium real: en 1355 x 638 el botón termina a 577 px; en 1440 x 900, a 713; en un celular de 360 x 740, a 660, por encima de la barra de abajo.
+
+### Lo que se vio en el navegador
+
+- **Una partida entera contra cada nivel,** en un Chromium real a 360 x 740, tocando los botones de la mesa y con la cola corriendo: las tres llegaron a 30 (25, 31 y 20 manos; 178, 209 y 144 eventos), sin errores de JavaScript y sin scroll.
+- **Lo que tarda el bot:** desde que el jugador tira una carta hasta que puede volver a jugar pasan unos 2 segundos (mediana de las tres partidas), contando el segundo de demora, la consulta y las cartas que caen.
+- **La red de seguridad, probada:** con el proceso de la cola detenido, el bot igual jugó; la espera fue de unos 5 segundos más.
+- Capturas en `docs/capturas/modos.jpeg`, `modos-celular.jpeg` y `mesa-bot-piensa.jpeg`.
