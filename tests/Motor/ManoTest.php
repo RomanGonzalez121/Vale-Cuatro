@@ -232,11 +232,11 @@ class ManoTest extends TestCase
         $this->assertSame($foto, $partida->aArray());
     }
 
-    public function test_las_acciones_validas_son_las_cartas_propias_y_el_mazo(): void
+    public function test_en_el_turno_se_puede_jugar_una_carta_propia_cantar_o_irse(): void
     {
-        $partida = $this->armada([self::FUERTE, self::DEBIL]);
+        $partida = $this->jugar($this->armada([self::FUERTE, self::DEBIL]), '0 1-espada', '1 4-copa');
 
-        $this->assertSame(['1-espada', '1-basto', '7-espada', 'mazo'], $this->opciones($partida, 0));
+        $this->assertSame(['1-basto', '7-espada', 'truco', 'mazo'], $this->opciones($partida, 0));
     }
 
     public function test_cada_accion_cuenta_lo_que_paso(): void

@@ -13,6 +13,10 @@ use InvalidArgumentException;
  */
 final class Partida
 {
+    private const NIVEL_DE_TRUCO = ['truco' => 1, 'retruco' => 2, 'vale_cuatro' => 3];
+
+    private const SIN_TRUCO = ['nivel' => 0, 'querido' => 0, 'canto' => null, 'quiero' => null];
+
     /** @var array{0: int, 1: int} Los puntos de cada equipo. */
     private array $tanteo = [0, 0];
 
@@ -37,6 +41,15 @@ final class Partida
 
     /** @var list<int> Los asientos que se fueron al mazo en esta mano. */
     private array $enMazo = [];
+
+    /**
+     * El truco de esta mano. "nivel" es lo último que se cantó (1 truco, 2 retruco, 3 vale cuatro) y
+     * "querido" lo último que se aceptó: si el nivel es mayor, hay un canto esperando respuesta.
+     * "canto" es el equipo que cantó último y "quiero" el que aceptó último, que es el único que puede subir.
+     *
+     * @var array{nivel: int, querido: int, canto: int|null, quiero: int|null}
+     */
+    private array $truco = self::SIN_TRUCO;
 
     /** @var list<array{equipo: int, puntos: int, concepto: string}> Lo que se anotó en esta mano, en orden. */
     private array $anotado = [];
@@ -134,6 +147,7 @@ final class Partida
         $nueva->bazas = [self::bazaVacia()];
         $nueva->turno = $this->mano;
         $nueva->enMazo = [];
+        $nueva->truco = self::SIN_TRUCO;
         $nueva->anotado = [];
         $nueva->cierre = null;
         $nueva->hechos = [['tipo' => 'reparto', 'numero' => $nueva->numeroDeMano, 'mano' => $this->mano]];
@@ -180,14 +194,76 @@ final class Partida
             return 'Ya te fuiste al mazo.';
         }
 
-        if ($asiento !== $this->turno) {
+        // Siempre hay un solo lado que puede actuar: el que tiene que contestar un canto o, si no hay ninguno, el del turno.
+        $pendiente = $this->pendiente();
+
+        if ($pendiente === null && $asiento !== $this->turno) {
             return 'No es tu turno.';
         }
 
+        if ($pendiente !== null && $this->mesa->equipoDe($asiento) !== $pendiente['responde']) {
+            return 'Hay un canto sin contestar y le toca al otro equipo.';
+        }
+
         return match ($accion->tipo) {
-            TipoDeAccion::Jugar => $this->tieneEnLaMano($asiento, $accion->carta) ? null : 'Esa carta no está en tu mano.',
+            TipoDeAccion::Jugar => $this->motivoParaJugar($asiento, $accion->carta, $pendiente),
+            TipoDeAccion::Truco, TipoDeAccion::Retruco, TipoDeAccion::ValeCuatro => $this->motivoParaElTruco($asiento, $accion->tipo, $pendiente),
+            TipoDeAccion::Quiero, TipoDeAccion::NoQuiero => $pendiente === null ? 'No hay ningún canto para contestar.' : null,
             TipoDeAccion::Mazo => null,
         };
+    }
+
+    /**
+     * @param  array{canto: string, responde: int}|null  $pendiente
+     */
+    private function motivoParaJugar(int $asiento, ?Carta $carta, ?array $pendiente): ?string
+    {
+        if ($pendiente !== null) {
+            return 'Antes de jugar hay que contestar el canto.';
+        }
+
+        return $this->tieneEnLaMano($asiento, $carta) ? null : 'Esa carta no está en tu mano.';
+    }
+
+    /**
+     * @param  array{canto: string, responde: int}|null  $pendiente
+     */
+    private function motivoParaElTruco(int $asiento, TipoDeAccion $tipo, ?array $pendiente): ?string
+    {
+        $pedido = self::NIVEL_DE_TRUCO[$tipo->value];
+
+        if ($pendiente !== null && $pendiente['canto'] !== 'truco') {
+            return 'Antes hay que contestar el canto que está pendiente.';
+        }
+
+        if ($pedido <= $this->truco['nivel']) {
+            return 'Eso ya se cantó en esta mano.';
+        }
+
+        if ($pedido > $this->truco['nivel'] + 1) {
+            return 'El truco sube de a un paso: truco, retruco y vale cuatro.';
+        }
+
+        // Contestando se puede subir siempre ("quiero retruco"). En el turno propio, solo con el quiero.
+        if ($pendiente === null && $this->truco['nivel'] > 0 && $this->truco['quiero'] !== $this->mesa->equipoDe($asiento)) {
+            return 'Solo puede subir el canto quien tiene el quiero.';
+        }
+
+        return null;
+    }
+
+    /**
+     * El canto que espera respuesta y el equipo que tiene que darla.
+     *
+     * @return array{canto: string, responde: int}|null
+     */
+    private function pendiente(): ?array
+    {
+        if ($this->truco['nivel'] > $this->truco['querido']) {
+            return ['canto' => 'truco', 'responde' => $this->mesa->rivalDe($this->truco['canto'])];
+        }
+
+        return null;
     }
 
     /**
@@ -206,6 +282,9 @@ final class Partida
 
         match ($accion->tipo) {
             TipoDeAccion::Jugar => $nueva->jugarCarta($asiento, $accion->carta),
+            TipoDeAccion::Truco, TipoDeAccion::Retruco, TipoDeAccion::ValeCuatro => $nueva->cantarTruco($asiento, $accion->tipo),
+            TipoDeAccion::Quiero => $nueva->contestar($asiento, quiere: true),
+            TipoDeAccion::NoQuiero => $nueva->contestar($asiento, quiere: false),
             TipoDeAccion::Mazo => $nueva->irseAlMazo($asiento),
         };
 
@@ -289,6 +368,7 @@ final class Partida
             'cartas' => array_map(self::ids(...), $this->cartas),
             'bazas' => array_map(self::bazaComoArray(...), $this->bazas),
             'enMazo' => $this->enMazo,
+            'truco' => $this->truco,
             'anotado' => $this->anotado,
             'cierre' => $this->cierre,
             'hechos' => $this->hechos,
@@ -359,9 +439,42 @@ final class Partida
         $this->turno = $this->primerActivoDesde($ganador ?? $this->mano);
     }
 
+    private function cantarTruco(int $asiento, TipoDeAccion $tipo): void
+    {
+        // Subir al contestar ("quiero retruco") acepta el canto anterior.
+        $this->truco['querido'] = $this->truco['nivel'];
+        $this->truco['nivel'] = self::NIVEL_DE_TRUCO[$tipo->value];
+        $this->truco['canto'] = $this->mesa->equipoDe($asiento);
+        $this->hechos[] = ['tipo' => 'canto', 'asiento' => $asiento, 'canto' => $tipo->value];
+    }
+
+    private function contestar(int $asiento, bool $quiere): void
+    {
+        $canto = $this->pendiente()['canto'];
+        $this->hechos[] = ['tipo' => 'respuesta', 'asiento' => $asiento, 'canto' => $canto, 'quiere' => $quiere];
+
+        match ($canto) {
+            'truco' => $this->contestarElTruco($asiento, $quiere),
+        };
+    }
+
+    private function contestarElTruco(int $asiento, bool $quiere): void
+    {
+        if ($quiere) {
+            $this->truco['querido'] = $this->truco['nivel'];
+            $this->truco['quiero'] = $this->mesa->equipoDe($asiento);
+
+            return;
+        }
+
+        // No querido: quien cantó se lleva lo que valía la mano hasta ese canto (1, 2 o 3).
+        $this->cerrarMano($this->truco['canto'], 'no_quiero');
+    }
+
     private function irseAlMazo(int $asiento): void
     {
-        $enPrimera = ! $this->bazas[0]['cerrada'];
+        // El punto del envido que no se jugó se suma solo si tampoco hubo truco: quererlo es dejar pasar el envido.
+        $enPrimera = ! $this->bazas[0]['cerrada'] && $this->truco['nivel'] === 0;
         $equipo = $this->mesa->equipoDe($asiento);
 
         $this->enMazo[] = $asiento;
@@ -390,13 +503,17 @@ final class Partida
             $this->anotar($equipo, 1, 'envido_no_jugado');
         }
 
-        $this->anotar($equipo, $this->valorDeLaMano(), 'mano');
+        $this->anotar($equipo, $this->valorDeLaMano(), $this->truco['nivel'] > 0 ? 'truco' : 'mano');
         $this->terminarMano($equipo, $motivo);
     }
 
+    /**
+     * Lo que vale la mano con lo que se aceptó hasta ahora: 1 sin truco, 2 con truco, 3 con retruco y 4 con vale cuatro.
+     * Un canto no querido vale lo mismo que la mano antes de ese canto, así que la cuenta sirve para los dos casos.
+     */
     private function valorDeLaMano(): int
     {
-        return 1;
+        return $this->truco['querido'] === 0 ? 1 : $this->truco['querido'] + 1;
     }
 
     private function terminarMano(int $equipo, string $motivo): void
