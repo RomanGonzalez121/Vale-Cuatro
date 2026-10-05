@@ -296,7 +296,11 @@ export default (inicial, pedidos) => ({
         let ultimaNovedad = Date.now();
 
         while (this.juegaElBot) {
-            this.pensando = true;
+            if (! this.pensando) {
+                this.pensando = true;
+                this.aviso = 'Juega el bot.';
+            }
+
             await new Promise((listo) => setTimeout(listo, CONSULTA));
 
             const pasos = await this.consultar();

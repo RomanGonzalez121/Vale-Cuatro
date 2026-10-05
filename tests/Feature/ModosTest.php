@@ -3,7 +3,11 @@
 namespace Tests\Feature;
 
 use App\Identidad\Iconos;
+use App\Juego\Mesa;
 use App\Juego\Modos;
+use App\Juego\Nivel;
+use App\Models\Jugador;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -12,6 +16,8 @@ use Tests\TestCase;
  */
 class ModosTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_la_pantalla_nombra_todos_los_juegos(): void
     {
         $respuesta = $this->get('/modos')->assertOk();
@@ -44,6 +50,54 @@ class ModosTest extends TestCase
         foreach ($botones as $boton) {
             $this->assertStringContainsString($boton, $html);
         }
+    }
+
+    public function test_contra_el_bot_se_elige_el_nivel_y_entra_elegido_intermedio(): void
+    {
+        $html = $this->get('/modos')->assertOk()->getContent();
+
+        preg_match('/<div[^>]*aria-label="Nivel del bot">(.*?)<\/div>/s', $html, $grupo);
+
+        foreach (Nivel::cases() as $nivel) {
+            $elegido = $nivel === Nivel::Intermedio ? 'true' : 'false';
+
+            $this->assertMatchesRegularExpression("/aria-pressed=\"{$elegido}\"[^>]*>{$nivel->nombre()}<\/button>/s", $grupo[1]);
+            $this->assertStringContainsString($nivel->detalle(), $html);
+        }
+
+        // El nivel viaja en el formulario, y sin tocar nada es el de siempre.
+        $this->assertMatchesRegularExpression('/<input type="hidden" name="nivel" value="2"/', $html);
+        $this->assertSame(0, preg_match_all('/<button type="button" disabled/', $grupo[1]));
+        $this->assertStringNotContainsString('sin terminar', $html);
+    }
+
+    public function test_con_una_partida_sin_terminar_lo_avisa_apaga_los_niveles_y_ofrece_seguirla(): void
+    {
+        $jugador = Jugador::factory()->invitado()->create();
+        $this->app->make(Mesa::class)->abrir($jugador, Nivel::Dificil);
+
+        $html = $this->actingAs($jugador)->get('/modos')->assertOk()
+            ->assertSee('Tenés una partida sin terminar contra Difícil.')
+            ->assertSee('Seguir la partida')
+            ->assertDontSee('Jugar contra el bot')
+            ->getContent();
+
+        preg_match('/<div[^>]*aria-label="Nivel del bot">(.*?)<\/div>/s', $html, $grupo);
+
+        // Los tres niveles están apagados, y el marcado es el de la partida.
+        $this->assertSame(3, preg_match_all('/<button type="button" disabled/', $grupo[1]));
+        $this->assertMatchesRegularExpression('/aria-pressed="true"[^>]*>Difícil<\/button>/s', $grupo[1]);
+        $this->assertMatchesRegularExpression('/<input type="hidden" name="nivel" value="3"/', $html);
+    }
+
+    public function test_la_partida_de_otro_no_cambia_lo_que_ve_un_jugador(): void
+    {
+        $this->app->make(Mesa::class)->abrir(Jugador::factory()->invitado()->create(), Nivel::Dificil);
+
+        $this->actingAs(Jugador::factory()->invitado()->create())->get('/modos')
+            ->assertOk()
+            ->assertDontSee('sin terminar')
+            ->assertSee('Jugar contra el bot');
     }
 
     public function test_lo_que_falta_esta_dicho_y_no_se_puede_jugar(): void

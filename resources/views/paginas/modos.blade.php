@@ -14,13 +14,17 @@
 
     $juegoElegido = $enLaMano[0]['clave'] ?? null;
     $unaSola = count($enLaMano) === 1;
+
+    // Con una partida sin terminar no se elige nivel: se sigue esa, contra el bot que ya tenía.
+    $enCurso ??= null;
+    $nivelElegido = $enCurso?->nivel_bot ?? \App\Juego\Nivel::porDefecto();
 @endphp
 
 <x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
         <div class="mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:pb-24 lg:pt-14"
-            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }} }">
+            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }} }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                     ¿Cómo querés jugar?
@@ -88,13 +92,46 @@
                                         </p>
 
                                         @if ($rival['boton'] !== null)
-                                            {{-- Sin campos: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
+                                            @php
+                                                $niveles = $rival['niveles'] ?? [];
+                                                $sigue = $enCurso !== null && $niveles !== [];
+                                            @endphp
+
+                                            @if ($sigue)
+                                                <p class="mt-4 max-w-[36ch] font-bold leading-relaxed">Tenés una partida sin terminar contra {{ $enCurso->nivel_bot->nombre() }}.</p>
+                                            @endif
+
+                                            @if ($niveles !== [])
+                                                {{-- El nivel del bot, con el mismo gesto que el rival. Con una partida sin terminar queda apagado. --}}
+                                                <div class="mt-2 flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Nivel del bot">
+                                                    @foreach ($niveles as $opcion)
+                                                        <button type="button" @disabled($sigue)
+                                                            class="enlace-nav cursor-pointer text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-45"
+                                                            aria-pressed="{{ $opcion === $nivelElegido ? 'true' : 'false' }}"
+                                                            :aria-pressed="(nivel === {{ $opcion->value }}).toString()"
+                                                            @click="nivel = {{ $opcion->value }}">{{ $opcion->nombre() }}</button>
+                                                    @endforeach
+                                                </div>
+
+                                                @foreach ($niveles as $opcion)
+                                                    <p class="mt-1 max-w-[36ch] leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif>{{ $opcion->detalle() }}</p>
+                                                @endforeach
+                                            @endif
+
+                                            {{-- Sin campos a la vista: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
                                             <form method="POST" action="{{ route('jugar') }}" class="mt-4">
                                                 @csrf
+                                                @if ($niveles !== [])
+                                                    <input type="hidden" name="nivel" value="{{ $nivelElegido->value }}" :value="nivel">
+                                                @endif
                                                 <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
-                                                    <x-icono nombre="bot" /> {{ $rival['boton'] }}
+                                                    <x-icono nombre="bot" /> {{ $sigue ? 'Seguir la partida' : $rival['boton'] }}
                                                 </button>
                                             </form>
+
+                                            @if ($sigue)
+                                                <p class="mt-3 max-w-[36ch] text-[0.95rem] leading-relaxed">Para jugar contra otro nivel, primero abandonala desde la mesa.</p>
+                                            @endif
                                         @endif
                                     </div>
                                 @endforeach

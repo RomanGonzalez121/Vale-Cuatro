@@ -80,6 +80,19 @@ class MesaPorHttpTest extends TestCase
         $this->assertSame(41, substr_count($html, '<template data-plantilla='));
     }
 
+    public function test_la_mesa_dice_contra_que_nivel_se_juega_y_la_partida_siguiente_es_contra_el_mismo(): void
+    {
+        $jugador = Jugador::factory()->invitado()->create();
+        $this->app->make(Mesa::class)->abrir($jugador, Nivel::Dificil);
+
+        $html = $this->actingAs($jugador)->get('/mesa')->assertOk()
+            ->assertSee('Mesa contra el bot, nivel Difícil')
+            ->assertSee('Bot difícil')
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/jugar"[^>]*>.*?name="nivel" value="3".*?Jugar otra partida/s', $html);
+    }
+
     public function test_recargar_la_mesa_vuelve_a_la_misma_partida_en_el_mismo_punto(): void
     {
         $jugador = $this->sentado();

@@ -10,11 +10,13 @@ namespace App\Juego;
  * mesa). Un juego está en la mano cuando se juega con al menos un rival; si
  * no, todavía está en el mazo. Cuando se termina un módulo alcanza con ponerle
  * el botón a su rival: la pantalla reparte la carta sola.
+ *
+ * Un rival con "niveles" deja elegir contra qué bot se juega antes de entrar.
  */
 final class Modos
 {
     /**
-     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null}>}>
+     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, niveles?: list<Nivel>}>}>
      */
     public static function juegos(): array
     {
@@ -26,7 +28,7 @@ final class Modos
                 'icono' => 'mano-a-mano',
                 'resumen' => 'Uno contra uno, a 30 puntos y con flor. El truco de siempre.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Entrás sin registrarte y jugás ya.', 'boton' => 'Jugar contra el bot'],
+                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Entrás sin registrarte y jugás ya.', 'boton' => 'Jugar contra el bot', 'niveles' => Nivel::cases()],
                     ['clave' => 'personas', 'nombre' => 'Con otra persona', 'detalle' => 'Le mandás un link a alguien y juegan en vivo.', 'boton' => null],
                 ],
             ],

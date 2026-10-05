@@ -31,6 +31,18 @@ enum Nivel: int
     }
 
     /**
+     * Cómo juega, dicho en una línea para quien elige contra quién jugar.
+     */
+    public function detalle(): string
+    {
+        return match ($this) {
+            self::Facil => 'Tira cualquier cosa. Para aprender.',
+            self::Intermedio => 'Juega de frente: si canta, tiene.',
+            self::Dificil => 'Saca cuentas y cada tanto miente.',
+        };
+    }
+
+    /**
      * El bot de este nivel. El azar llega de afuera: con semilla en los tests, seguro en una partida real.
      */
     public function bot(Azar $azar): Bot

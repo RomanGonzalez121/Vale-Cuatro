@@ -37,7 +37,7 @@ class MesaController extends Controller
             return redirect()->route('modos');
         }
 
-        return view('paginas.mesa', ['vista' => $this->mesa->vista($partida)]);
+        return view('paginas.mesa', ['vista' => $this->mesa->vista($partida), 'nivel' => $partida->nivel_bot]);
     }
 
     /**

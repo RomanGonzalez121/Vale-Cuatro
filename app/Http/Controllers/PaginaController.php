@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Identidad\Paleta;
+use App\Juego\Mesa;
 use App\Juego\Modos;
 use App\Maqueta\DatosDeEjemplo;
 use App\View\Components\Carta;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 /**
  * Las pantallas del sitio que todavía muestran datos de ejemplo fijos.
@@ -19,10 +21,14 @@ class PaginaController extends Controller
         return view('paginas.portada');
     }
 
-    public function modos(): View
+    public function modos(Request $request, Mesa $mesa): View
     {
+        $jugador = $request->user();
+
         return view('paginas.modos', [
             'juegos' => Modos::juegos(),
+            // Con una partida sin terminar, la pantalla lo avisa y no deja elegir otro nivel.
+            'enCurso' => $jugador === null ? null : $mesa->enCursoDe($jugador),
         ]);
     }
 
