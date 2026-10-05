@@ -178,7 +178,7 @@ Cada entrada dice qué problema había, qué se eligió y qué se descartó.
 
 - **Problema:** en la mesa real se puede cantar truco o irse al mazo mientras el otro piensa. En un servidor eso obliga a resolver quién llegó primero y cómo se pausa el tiempo del turno.
 - **Se eligió:** en cada momento actúa un solo lado: el equipo que tiene que contestar un canto o, si no hay ninguno pendiente, el asiento al que le toca jugar. El truco se canta en el turno propio (decidido por Román). Irse al mazo sigue la misma regla.
-- **Costo:** "irse al mazo en cualquier momento" queda como "en cualquier baza, cuando te toca actuar". No se puede abandonar mientras se espera al rival. Queda para confirmar con Román.
+- **Costo:** "irse al mazo en cualquier momento" queda como "en cualquier baza, cuando te toca actuar". No se puede abandonar mientras se espera al rival. Román lo confirmó al cerrar el módulo.
 - **El envido está primero** no necesitó un estado propio. El canto pendiente se calcula mirando la contraflor, el envido y el truco en ese orden: mientras haya un envido sin contestar, el truco no aparece como pendiente, y vuelve solo cuando el envido se resuelve.
 
 ### Semilla para repetir, azar seguro para jugar
@@ -198,7 +198,7 @@ Cada entrada dice qué problema había, qué se eligió y qué se descartó.
 
 - **Problema:** la flor es opcional y se puede callar. Si después de un "Flor" el motor le abriera al rival un momento para contestar solo cuando tiene flor, esa pausa le avisaría a quien cantó que el rival tiene flor aunque la calle. Lo mismo pasaría si los 3 puntos cayeran antes o después según el rival tenga flor o no.
 - **Se eligió:** no hay pausa. La contraflor se canta en el turno propio, antes de la primera carta, igual que la flor. Y los 3 puntos de una flor sin contestar caen cuando al rival ya no le queda nadie que pueda contestarla (todos jugaron su primera carta o se fueron), tenga flor o no. Hay un test que comprueba que el momento es el mismo en los dos casos.
-- **Costo:** quien contesta con contraflor ya vio la primera carta del que cantó flor. Y si la mano se cierra antes de que le vuelva el turno (por ejemplo: cantó truco teniendo flor, le contestaron "flor" y después "no quiero"), no llega a cantar contraflor. Queda para confirmar con Román.
+- **Costo:** quien contesta con contraflor ya vio la primera carta del que cantó flor. Y si la mano se cierra antes de que le vuelva el turno (por ejemplo: cantó truco teniendo flor, le contestaron "flor" y después "no quiero"), no llega a cantar contraflor. Román lo confirmó: la contraflor que no se llegó a cantar se pierde.
 
 ### La vista por asiento es lo único que sale del motor hacia un jugador
 
@@ -215,7 +215,7 @@ Cada entrada dice qué problema había, qué se eligió y qué se descartó.
 
 ### Lecturas del reglamento que hubo que hacer
 
-El reglamento no decía qué pasa en estos casos y el motor necesitaba una respuesta. Están implementadas así y cada una tiene su test; quedan para que Román las confirme o las cambie.
+El reglamento no decía qué pasa en estos casos y el motor necesitaba una respuesta. Cada una tiene su test. Román confirmó al cerrar el módulo las tres primeras; las otras tres son la lectura más directa de reglas que ya estaban fijadas.
 
 - **Irse al mazo:** solo cuando te toca actuar (ver arriba).
 - **Flor después del envido:** si el envido ya se quiso o no se quiso, no se puede cantar flor en esa mano. La flor anula un envido cantado y sin contestar, no uno ya jugado.
