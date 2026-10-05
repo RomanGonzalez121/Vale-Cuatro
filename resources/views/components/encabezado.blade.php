@@ -18,8 +18,8 @@
             <x-logo />
         </a>
 
-        <div class="flex items-center gap-3 md:gap-7">
-            <nav aria-label="Principal" class="hidden md:block">
+        <div class="flex items-center gap-3 lg:gap-7">
+            <nav aria-label="Principal" class="hidden lg:block">
                 <ul class="flex items-center gap-8">
                     {{-- "Jugar" lleva a elegir el modo. A la mesa se entra desde ahí o desde el botón de la portada. --}}
                     <li>
@@ -35,7 +35,7 @@
 
             <x-modo />
 
-            <button type="button" class="menu-boton md:hidden" @click="abierto = ! abierto"
+            <button type="button" class="menu-boton lg:hidden" @click="abierto = ! abierto"
                 :aria-expanded="abierto.toString()" aria-expanded="false" aria-controls="menu-movil">
                 <span class="menu-icono" aria-hidden="true"><span></span><span></span><span></span></span>
                 <span x-text="abierto ? 'Cerrar' : 'Menú'">Menú</span>
@@ -46,7 +46,7 @@
     <nav id="menu-movil" aria-label="Principal, celular" x-show="abierto" x-cloak
         x-transition:enter="menu-entra" x-transition:enter-start="menu-fuera"
         x-transition:leave="menu-sale" x-transition:leave-end="menu-fuera"
-        class="menu-movil absolute inset-x-0 top-full px-5 pb-6 pt-1 md:hidden">
+        class="menu-movil absolute inset-x-0 top-full px-5 pb-6 pt-1 sm:px-8 lg:hidden">
         <ul>
             <li style="--i: 0">
                 <a href="{{ route('modos') }}" class="enlace-menu flex items-center gap-4 py-3.5 text-2xl font-extrabold tracking-tight no-underline"

@@ -34,20 +34,21 @@
                 <ul>
                     @foreach ($delDia as $partida)
                         @php($gano = $partida['vos'] > $partida['ellos'])
-                        <li class="grid items-center gap-x-7 gap-y-3 border-b border-texto/15 py-5 last:border-b-0 sm:grid-cols-[9rem_1fr] lg:grid-cols-[9rem_1fr_auto_auto]">
+                        {{-- En el celular: el resultado y "Ver de nuevo" en un renglón, y debajo contra quién. El tanteo en fósforos entra desde `sm`. --}}
+                        <li class="grid grid-cols-[1fr_auto] items-center gap-x-7 gap-y-3 border-b border-texto/15 py-5 last:border-b-0 max-sm:gap-y-2 max-sm:py-4 sm:grid-cols-[9rem_1fr] lg:grid-cols-[9rem_1fr_auto_auto]">
                             <p class="leading-none">
                                 <span @class(['block text-sm font-bold', 'text-gana' => $gano, 'text-pierde' => ! $gano])>{{ $gano ? 'Ganaste' : 'Perdiste' }}</span>
                                 <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</span>
                             </p>
-                            <p class="leading-snug">
-                                <span class="text-lg font-bold">Contra {{ $partida['rival'] }}</span>
+                            <p class="leading-snug max-sm:order-3 max-sm:col-span-2">
+                                <span class="text-lg font-bold max-sm:text-base">Contra {{ $partida['rival'] }}</span>
                                 <span class="block text-[0.95rem]">{{ $partida['hora'] }}. {{ $partida['manos'] }} manos en {{ $partida['minutos'] }} minutos.</span>
                             </p>
-                            <div class="flex w-fit gap-5 rounded-lg bg-pano-hondo px-3.5 py-2.5 text-[0.66rem] sm:col-span-2 lg:col-span-1">
+                            <div class="flex w-fit gap-5 rounded-lg bg-pano-hondo px-3.5 py-2.5 text-[0.66rem] max-sm:hidden sm:col-span-2 lg:col-span-1">
                                 <x-tanteador nombre="Vos" :puntos="$partida['vos']" />
                                 <x-tanteador nombre="Rival" :puntos="$partida['ellos']" />
                             </div>
-                            <a href="#repeticion" class="boton boton-linea min-h-11 w-fit px-4 py-2 text-[0.95rem] sm:col-span-2 lg:col-span-1">
+                            <a href="#repeticion" class="boton boton-linea min-h-11 w-fit px-4 py-2 text-[0.95rem] max-sm:order-2 sm:col-span-2 lg:col-span-1">
                                 <x-icono nombre="repetir" /> Ver de nuevo
                             </a>
                         </li>
@@ -60,7 +61,7 @@
             <h2 id="titulo-repeticion" class="text-4xl font-black tracking-tight sm:text-5xl">Repetición</h2>
             <p class="mt-3 max-w-[56ch] text-lg leading-relaxed">
                 Hoy, 21:40, contra Bot, nivel 2. Las tres últimas manos, jugada por jugada.
-                También se avanza con las flechas del teclado.
+                <span class="max-sm:hidden">También se avanza con las flechas del teclado.</span>
             </p>
 
             <div x-data="repeticion(@js($pasos))" class="mt-7 max-w-2xl"
@@ -113,14 +114,16 @@
                     <div class="h-full origin-left bg-texto transition-transform duration-200 ease-llegada" :style="{ transform: `scaleX(${(indice + 1) / pasos.length})` }"></div>
                 </div>
 
-                <div class="mt-4 flex flex-wrap items-center gap-3">
-                    <button type="button" class="boton boton-linea" :disabled="indice === 0" @click="anterior()">Anterior</button>
-                    <button type="button" class="boton boton-tinta" @click="reproduciendo ? pausar() : reproducir()">
-                        <x-icono nombre="repetir" />
-                        <span x-text="reproduciendo ? 'Pausar' : (alFinal ? 'Ver desde el principio' : 'Reproducir')">Reproducir</span>
+                {{-- En el celular los tres controles van en un renglón, de igual ancho: no saltan cuando cambia el texto del medio. --}}
+                <div class="mt-4 grid grid-cols-3 items-center gap-2 sm:flex sm:flex-wrap sm:gap-3">
+                    <button type="button" class="boton boton-linea max-sm:px-2 max-sm:text-[0.95rem]" :disabled="indice === 0" @click="anterior()">Anterior</button>
+                    <button type="button" class="boton boton-tinta max-sm:px-2 max-sm:text-[0.95rem]" @click="reproduciendo ? pausar() : reproducir()">
+                        <x-icono nombre="repetir" class="max-sm:hidden" />
+                        <span class="max-sm:hidden" x-text="reproduciendo ? 'Pausar' : (alFinal ? 'Ver desde el principio' : 'Reproducir')">Reproducir</span>
+                        <span class="sm:hidden" x-text="reproduciendo ? 'Pausar' : (alFinal ? 'De nuevo' : 'Reproducir')">Reproducir</span>
                     </button>
-                    <button type="button" class="boton boton-linea" :disabled="alFinal" @click="pausar(); siguiente()">Siguiente</button>
-                    <p class="font-semibold tabular-nums">
+                    <button type="button" class="boton boton-linea max-sm:px-2 max-sm:text-[0.95rem]" :disabled="alFinal" @click="pausar(); siguiente()">Siguiente</button>
+                    <p class="font-semibold tabular-nums max-sm:col-span-3">
                         Mano <span x-text="estado.numero">12</span> de 14, jugada <span x-text="indice + 1">1</span> de {{ count($pasos) }}
                     </p>
                 </div>

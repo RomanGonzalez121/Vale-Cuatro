@@ -8,46 +8,56 @@
 @endphp
 
 <x-layouts.base superficie="pano">
-    <section class="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:gap-8 lg:pb-24 lg:pt-14">
-        <div>
-            <h1 class="text-[clamp(2.75rem,7.4vw,5.5rem)] font-black leading-[0.94] tracking-[-0.035em]">
+    {{--
+        En el celular el bloque de texto se desarma (`contents`) para que la mano de cartas quede entre el
+        título y el botón: todo entra en la primera pantalla. Desde `sm` vuelve a ser un bloque y la mano va después.
+    --}}
+    <section class="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-6 max-sm:gap-0 max-sm:pb-12 max-sm:pt-2 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:gap-8 lg:pb-24 lg:pt-14">
+        <div class="max-sm:contents">
+            <h1 class="text-[clamp(2.75rem,7.4vw,5.5rem)] font-black leading-[0.94] tracking-[-0.035em] max-sm:order-1">
                 <span class="block">Truco</span>
                 <span class="block">argentino,</span>
                 <span class="block">mano a mano.</span>
             </h1>
-            <p class="mt-6 max-w-[44ch] text-lg leading-relaxed sm:text-xl">
+            <p class="mt-6 max-w-[44ch] text-lg leading-relaxed max-sm:order-2 max-sm:mt-4 max-sm:leading-snug sm:text-xl">
                 Jugá una mano contra el bot ahora mismo, sin registrarte.
-                O mandale un link a alguien y jueguen en vivo.
+                <span class="max-sm:hidden">O mandale un link a alguien y jueguen en vivo.</span>
             </p>
             {{-- Sin campos: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
-            <form method="POST" action="{{ route('jugar') }}" class="mt-8 flex flex-wrap gap-3">
+            <form method="POST" action="{{ route('jugar') }}" class="mt-8 flex flex-wrap gap-3 max-sm:order-4 max-sm:mt-6">
                 @csrf
-                <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
+                <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg max-sm:w-full">
                     <x-icono nombre="bot" /> Jugar contra el bot
                 </button>
-                <button type="submit" class="boton boton-linea min-h-14 px-6 text-lg">
-                    <x-icono nombre="invitar" /> Invitar a alguien
-                </button>
+                {{-- Los demás modos se eligen en su pantalla: este botón no entra a ninguna mesa. --}}
+                <a href="{{ route('modos') }}" class="boton boton-linea min-h-14 px-6 text-lg max-sm:hidden">
+                    <x-icono nombre="repartir" /> Elegir otro modo
+                </a>
             </form>
-            <p class="mt-5 text-[0.95rem]">
+            <p class="mt-5 text-[0.95rem] max-sm:hidden">
                 A 30 puntos y con flor. ¿Nunca jugaste?
                 <a href="{{ route('como-se-juega') }}" class="font-semibold underline underline-offset-4">Mirá cómo se juega</a>.
+            </p>
+            {{-- En el celular, las dos salidas van en un renglón debajo del botón. --}}
+            <p class="order-5 mt-4 flex justify-between gap-4 font-semibold sm:hidden">
+                <a href="{{ route('modos') }}" class="enlace-nav">Elegir otro modo</a>
+                <a href="{{ route('como-se-juega') }}" class="enlace-nav">Cómo se juega</a>
             </p>
         </div>
 
         {{-- Una mano en miniatura: el reparto es el único movimiento que no responde a una acción. --}}
-        <div class="relative mx-auto w-full max-w-md" aria-hidden="true">
-            <div class="flex justify-center gap-2.5">
+        <div class="relative mx-auto w-full max-w-md max-sm:order-3 max-sm:mt-5" aria-hidden="true">
+            <div class="flex justify-center gap-2.5 max-sm:hidden">
                 @foreach ([1, 3, 5] as $orden)
                     <div class="se-reparte w-[17%]" style="--orden: {{ $orden }}"><x-dorso /></div>
                 @endforeach
             </div>
 
-            <div class="relative z-10 -mb-4 mt-7 flex justify-center">
-                <p class="canto canto-ficha canto-copa se-canta text-[clamp(4.75rem,23vw,8.75rem)]">Truco</p>
+            <div class="relative z-10 -mb-4 mt-7 flex justify-center max-sm:mt-0">
+                <p class="canto canto-ficha canto-copa se-canta text-[clamp(3.25rem,16vw,4.5rem)] sm:text-[clamp(4.75rem,23vw,8.75rem)]">Truco</p>
             </div>
 
-            <div class="abanico" style="--ancho-carta: clamp(6.25rem, 31vw, 10.5rem)">
+            <div class="abanico [--ancho-carta:clamp(4.75rem,24vw,6.25rem)] sm:[--ancho-carta:clamp(6.25rem,31vw,10.5rem)]">
                 <div><div class="se-reparte" style="--orden: 0"><x-carta palo="oro" :numero="7" /></div></div>
                 <div><div class="se-reparte" style="--orden: 2"><x-carta palo="espada" :numero="1" /></div></div>
                 <div><div class="se-reparte" style="--orden: 4"><x-carta palo="basto" :numero="3" /></div></div>
@@ -86,11 +96,15 @@
             El mazo es propio: las 40 cartas están dibujadas para este sitio.
         </p>
 
-        <ol class="mt-10 grid grid-cols-2 gap-x-5 gap-y-9 sm:grid-cols-4 sm:gap-x-8">
+        {{-- Las cuatro en un solo renglón, también en el celular: el orden se lee de izquierda a derecha. --}}
+        <ol class="mt-10 grid grid-cols-4 gap-x-2.5 max-sm:mt-8 sm:gap-x-8">
             @foreach ($mandan as $i => [$palo, $numero, $apodo])
                 <li>
                     <div class="max-w-44"><x-carta :palo="$palo" :numero="$numero" /></div>
-                    <p class="mt-4 text-lg font-extrabold leading-tight">{{ $i + 1 }}. {{ $apodo }}</p>
+                    <p class="mt-4 text-lg font-extrabold leading-tight max-sm:mt-2.5 max-sm:text-[0.8rem]">
+                        <span class="max-sm:block max-sm:text-xl max-sm:font-black">{{ $i + 1 }}<span class="max-sm:hidden">.</span></span>
+                        {{ $apodo }}
+                    </p>
                 </li>
             @endforeach
         </ol>

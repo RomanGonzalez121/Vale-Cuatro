@@ -55,4 +55,23 @@ class PaginasTest extends TestCase
         $this->assertSame(11, preg_match_all('/<\/svg>\s*bot\s*<\/span>/', $html));
         $this->assertSame(1, substr_count($html, 'invitado'));
     }
+
+    public function test_en_la_portada_un_solo_boton_entra_a_la_mesa_y_los_demas_modos_van_a_su_pantalla(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+
+        // El botón que decía "Invitar a alguien" entraba a la mesa contra el bot: ahora es un link a los modos.
+        $this->assertSame(1, preg_match_all('/<button type="submit"/', $html));
+        $this->assertStringNotContainsString('Invitar a alguien', $html);
+        $this->assertStringContainsString('href="'.route('modos').'"', $html);
+    }
+
+    public function test_ninguna_pagina_de_lectura_deja_algo_pegado_al_scroll(): void
+    {
+        foreach (['/', '/ranking', '/historial', '/como-se-juega', '/modos'] as $ruta) {
+            $html = $this->get($ruta)->assertOk()->getContent();
+
+            $this->assertSame(0, preg_match('/class="[^"]*\b(sticky|fixed)\b/', $html), "En {$ruta} hay algo pegado o fijo.");
+        }
+    }
 }

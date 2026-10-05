@@ -119,13 +119,14 @@
                 Las que comparten escalón empatan.
             </p>
 
-            <div class="superficie-pano mt-8 rounded-xl p-6 sm:p-9">
+            <div class="superficie-pano mt-8 rounded-xl p-5 sm:p-9">
                 <h3 class="text-2xl font-extrabold">Las cuatro que mandan</h3>
-                <ol class="mt-6 grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-4 sm:gap-x-8">
+                {{-- Las cuatro en un renglón, también en el celular: ahí el número va arriba del nombre. --}}
+                <ol class="mt-6 grid grid-cols-4 gap-x-2.5 max-sm:mt-5 sm:gap-x-8">
                     @foreach ($mandan as $i => [$palo, $numero])
                         <li>
                             <div class="max-w-40"><x-carta :palo="$palo" :numero="$numero" /></div>
-                            <p class="mt-3 font-bold leading-tight"><span class="text-2xl font-black text-oro">{{ $i + 1 }}</span> El {{ $numero }} de {{ $palo }}</p>
+                            <p class="mt-3 font-bold leading-tight max-sm:mt-2 max-sm:text-[0.8rem]"><span class="text-2xl font-black text-oro max-sm:block">{{ $i + 1 }}</span> El {{ $numero }} de {{ $palo }}</p>
                         </li>
                     @endforeach
                 </ol>
@@ -237,7 +238,8 @@
                 <p>La falta envido vale lo que le falta al que va ganando para llegar a 30. Decir "no quiero" le da al otro lo que valían los cantos anteriores, o 1 si era el primero.</p>
             </div>
             <div class="mt-6 overflow-x-auto">
-                <table class="tabla min-w-[30rem] max-w-2xl">
+                {{-- En el celular la tabla entra en el ancho: el canto largo baja de renglón y los números quedan a la vista. --}}
+                <table class="tabla max-w-2xl sm:min-w-[30rem]">
                     <thead>
                         <tr>
                             <th scope="col">Lo que se cantó</th>

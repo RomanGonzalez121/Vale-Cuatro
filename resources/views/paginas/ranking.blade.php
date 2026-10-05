@@ -18,27 +18,28 @@
             </p>
         </header>
 
-        <section aria-labelledby="titulo-mandan" class="superficie-pano rounded-xl p-6 sm:p-9">
+        <section aria-labelledby="titulo-mandan" class="superficie-pano rounded-xl p-5 sm:p-9">
             <h2 id="titulo-mandan" class="text-2xl font-extrabold sm:text-3xl">Los cuatro que mandan</h2>
             <p class="mt-2 max-w-[52ch] leading-relaxed">Cada uno de los cuatro primeros tiene una de las cuatro cartas más fuertes del truco.</p>
 
-            <ol class="mt-7 grid grid-cols-2 gap-x-5 gap-y-9 lg:grid-cols-4 lg:gap-x-8">
+            {{-- Los cuatro en un renglón, también en el celular. Ahí cada dato baja a su propia línea. --}}
+            <ol class="mt-7 grid grid-cols-4 gap-x-2.5 max-sm:mt-5 sm:gap-x-5 lg:gap-x-8">
                 @foreach ($primeros as $i => $jugador)
-                    <li>
+                    <li class="min-w-0">
                         <div class="max-w-36"><x-carta :palo="$cartasQueMandan[$i][0]" :numero="$cartasQueMandan[$i][1]" /></div>
-                        <p class="mt-4 flex items-baseline gap-2.5 leading-none">
-                            <span class="text-4xl font-black text-oro">{{ $jugador['puesto'] }}</span>
-                            <span class="text-xl font-extrabold leading-tight">{{ $jugador['apodo'] }}</span>
+                        <p class="mt-4 flex items-baseline gap-2.5 leading-none max-lg:flex-col max-lg:gap-1.5 max-sm:mt-2.5">
+                            <span class="text-4xl font-black text-oro max-sm:text-2xl">{{ $jugador['puesto'] }}</span>
+                            <span class="text-xl font-extrabold leading-tight max-lg:min-h-[2lh] max-sm:text-[0.8rem]">{{ $jugador['apodo'] }}</span>
                         </p>
                         @if ($jugador['bot'])
-                            <span class="mt-2 inline-flex items-center gap-1 rounded-md bg-naipe px-1.5 py-0.5 text-xs font-bold text-tinta">
+                            <span class="mt-2 inline-flex items-center gap-1 rounded-md bg-naipe px-1.5 py-0.5 text-xs font-bold text-tinta max-sm:mt-1.5">
                                 <x-icono nombre="bot" class="size-4" /> bot
                             </span>
                         @endif
-                        <p class="mt-3 text-[0.95rem] leading-snug">
-                            <strong class="text-lg font-black tabular-nums">{{ $jugador['ganadas'] }}</strong> ganadas de {{ $jugador['jugadas'] }}
+                        <p class="mt-3 text-[0.95rem] leading-snug max-sm:mt-2 max-sm:text-xs">
+                            <strong class="text-lg font-black tabular-nums max-sm:block max-sm:leading-tight">{{ $jugador['ganadas'] }}</strong> ganadas <span class="max-lg:block">de {{ $jugador['jugadas'] }}</span>
                         </p>
-                        <p class="mt-1.5"><x-racha :cantidad="$jugador['racha']" /></p>
+                        <p class="mt-1.5 max-sm:text-[0.7rem]"><x-racha :cantidad="$jugador['racha']" /></p>
                     </li>
                 @endforeach
             </ol>
@@ -82,8 +83,8 @@
             </tbody>
         </table>
 
-        {{-- Tu puesto queda siempre a la vista mientras se recorre la tabla. --}}
-        <aside aria-label="Tu puesto" class="sticky bottom-3 z-10 mt-8 flex flex-wrap items-center gap-x-7 gap-y-3 rounded-xl bg-texto px-5 py-4 text-fondo sm:px-7">
+        {{-- Tu puesto cierra la tabla, quieto: nada acompaña el scroll. --}}
+        <aside aria-label="Tu puesto" class="mt-8 flex flex-wrap items-center gap-x-7 gap-y-3 rounded-xl bg-texto px-5 py-4 text-fondo sm:px-7">
             <p class="flex items-baseline gap-2.5 leading-none">
                 <span class="text-sm font-semibold">Tu puesto</span>
                 <span class="text-4xl font-black tabular-nums">{{ $vos['puesto'] }}</span>
