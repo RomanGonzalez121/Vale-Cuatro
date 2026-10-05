@@ -9,15 +9,17 @@
 --}}
 <x-layouts.base :titulo="$titulo">
     <div {{ $attributes->class('cuenta') }}>
-        <div class="cuenta-columna order-1 pb-8 pt-6 lg:pb-9 lg:pt-14">
-            <h1 class="text-[clamp(2.75rem,6vw,4.75rem)] font-black leading-[0.94] tracking-[-0.035em]">{{ $frase ?? $titulo }}</h1>
+        {{-- En escritorio, los márgenes y el tamaño del título se miden contra el alto de la ventana (app.css). --}}
+        <div class="cuenta-columna cuenta-titulo order-1 pb-8 pt-6">
+            <h1 class="cuenta-frase text-[clamp(2.75rem,6vw,4.75rem)] font-black leading-[0.94] tracking-[-0.035em]">{{ $frase ?? $titulo }}</h1>
             @isset($bajada)
                 <p class="mt-5 max-w-[36ch] text-lg leading-relaxed sm:text-xl">{{ $bajada }}</p>
             @endisset
         </div>
 
-        <div class="cuenta-columna order-3 pb-14 lg:pb-20">
-            <div class="max-w-[27rem]">
+        <div class="cuenta-columna cuenta-formulario order-3 pb-14">
+            {{-- Con este ancho, el link de abajo entra al lado del botón y el formulario gana un renglón. --}}
+            <div class="max-w-[29rem]">
                 {{ $slot }}
             </div>
         </div>
