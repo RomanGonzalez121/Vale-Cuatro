@@ -108,6 +108,18 @@ class RepartoTest extends TestCase
         $this->armada([['1-espada', '2-oro'], ['7-oro', '3-copa', '5-basto']]);
     }
 
+    public function test_el_tanteo_de_una_situacion_armada_son_dos_enteros_validos(): void
+    {
+        foreach ([[1], [1, 2, 3], [-1, 0], [1.5, 2], ['a', 2]] as $tanteo) {
+            try {
+                $this->armada([['1-espada', '2-oro', '4-copa'], ['7-oro', '3-copa', '5-basto']], tanteo: $tanteo);
+                $this->fail('Ese tanteo no debería aceptarse.');
+            } catch (InvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
     public function test_la_mesa_es_de_dos_o_de_cuatro(): void
     {
         $this->expectException(InvalidArgumentException::class);

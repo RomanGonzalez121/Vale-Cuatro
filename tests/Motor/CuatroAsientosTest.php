@@ -185,6 +185,19 @@ class CuatroAsientosTest extends TestCase
         $this->assertSame(2, $partida->aArray()['flor']['ganador']);
     }
 
+    public function test_la_flor_cantada_sigue_valiendo_en_la_contraflor_aunque_su_dueno_se_haya_ido(): void
+    {
+        // El 0 canta flor (29), el 1 contraflor (35) y los dos se van al mazo. Sube el 2, que no tiene flor,
+        // y quiere el 3: se comparan igual las dos flores que se cantaron.
+        $partida = $this->armada([self::FLOR_DE_COPA, self::FLOR_DE_ESPADA, ['3-basto', '10-oro', '4-oro'], ['1-basto', '11-basto', '6-basto']]);
+
+        $partida = $this->jugar($partida, '0 flor', '0 5-copa', '1 contraflor', '0 mazo', '2 contraflor_al_resto', '1 mazo', '3 quiero');
+
+        $this->assertSame(1, $partida->aArray()['flor']['ganador']);
+        $this->assertSame(Fase::Terminada, $partida->fase(), 'Al resto desde cero a cero vale la partida.');
+        $this->assertSame(1, $partida->ganador());
+    }
+
     public function test_irse_al_mazo_es_de_un_jugador_y_el_companero_sigue_solo(): void
     {
         $partida = $this->jugar($this->sinCantos(), '0 4-oro', '1 mazo');

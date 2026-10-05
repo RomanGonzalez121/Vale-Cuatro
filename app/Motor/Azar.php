@@ -41,6 +41,11 @@ final class Azar
         }
 
         $rango = $maximo - $minimo + 1;
+
+        if ($rango > 0x100000000) {
+            throw new InvalidArgumentException('El rango es más grande de lo que este azar puede cubrir.');
+        }
+
         $tope = intdiv(0x100000000, $rango) * $rango;
 
         // Se descartan los números del final para que todos los resultados salgan con la misma probabilidad.

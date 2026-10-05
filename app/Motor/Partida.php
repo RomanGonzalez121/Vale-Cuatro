@@ -124,7 +124,7 @@ final class Partida
     {
         $partida = self::nueva(count($manos), $mano, $puntos);
 
-        if (count($tanteo) !== 2 || min($tanteo) < 0 || max($tanteo) >= $puntos) {
+        if (count($tanteo) !== 2 || array_filter($tanteo, is_int(...)) !== $tanteo || min($tanteo) < 0 || max($tanteo) >= $puntos) {
             throw new InvalidArgumentException('El tanteo son dos números, de 0 a menos de los puntos de la partida.');
         }
 
@@ -323,6 +323,18 @@ final class Partida
             return 'La flor de esta mano ya se resolvió.';
         }
 
+        $hayFlorDelRival = $this->flor['cantadas'] !== []
+            && $this->mesa->equipoDe($this->flor['cantadas'][0]) !== $this->mesa->equipoDe($asiento);
+
+        // Una flor del rival se puede contestar mientras no se haya jugado la primera carta, pase lo que pase con el truco.
+        if ($tipo !== TipoDeAccion::Flor) {
+            return $hayFlorDelRival ? null : 'La contraflor contesta una flor del rival, y nadie la cantó.';
+        }
+
+        if ($hayFlorDelRival) {
+            return 'Contestar solo "Flor" no existe: se canta contraflor o se calla.';
+        }
+
         if (in_array($this->envido['estado'], ['querido', 'no_querido'], true)) {
             return 'El envido ya se jugó: la flor se canta antes.';
         }
@@ -332,14 +344,7 @@ final class Partida
             return 'Querido el truco, ya no se canta flor en esta mano.';
         }
 
-        $hayFlorDelRival = $this->flor['cantadas'] !== []
-            && $this->mesa->equipoDe($this->flor['cantadas'][0]) !== $this->mesa->equipoDe($asiento);
-
-        if ($tipo === TipoDeAccion::Flor) {
-            return $hayFlorDelRival ? 'Contestar solo "Flor" no existe: se canta contraflor o se calla.' : null;
-        }
-
-        return $hayFlorDelRival ? null : 'La contraflor contesta una flor del rival, y nadie la cantó.';
+        return null;
     }
 
     /**
@@ -712,11 +717,12 @@ final class Partida
             return;
         }
 
+        // Compiten las flores que se cantaron, aunque su dueño se haya ido al mazo después de cantarla.
         $compiten = [...$this->flor['cantadas'], $this->flor['contraPor']];
         $tantos = [];
 
         foreach ($this->mesa->rondaDesde($this->mano) as $asiento) {
-            if (in_array($asiento, $compiten, true) && $this->estaActivo($asiento)) {
+            if (in_array($asiento, $compiten, true)) {
                 $tantos[$asiento] = Tanto::deFlor($this->repartidas[$asiento]);
             }
         }

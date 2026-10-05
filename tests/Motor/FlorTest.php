@@ -237,6 +237,21 @@ class FlorTest extends TestCase
         $this->assertSame('Querido el truco, ya no se canta flor en esta mano.', $this->rechazo($partida, '1 flor'));
     }
 
+    public function test_la_flor_que_te_cantaron_se_contesta_con_contraflor_aunque_el_truco_ya_este_querido(): void
+    {
+        // El 0 canta truco, el 1 le contesta flor y después quiere el truco. Al 0 le vuelve el turno
+        // sin haber jugado su primera carta: todavía puede contestar esa flor.
+        $partida = $this->jugar($this->mano(self::FLOR_ALTA, self::FLOR_BAJA), '0 truco', '1 flor', '1 quiero');
+
+        $this->assertSame([0, 0], $partida->tanteo(), 'La flor todavía no suma: el 0 puede contestarla.');
+        $this->assertContains('contraflor', $this->opciones($partida, 0));
+        $this->assertNotContains('flor', $this->opciones($partida, 0));
+
+        $partida = $this->jugar($partida, '0 contraflor', '1 quiero');
+
+        $this->assertSame([6, 0], $partida->tanteo());
+    }
+
     public function test_los_puntos_de_la_flor_se_anotan_antes_que_los_del_truco(): void
     {
         $partida = $this->jugar($this->mano(self::FLOR_ALTA, self::SIN_FLOR), '0 flor', '0 truco', '1 no_quiero');
