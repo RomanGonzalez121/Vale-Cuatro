@@ -3,9 +3,12 @@
  |
  | Acá no hay reglas. El motor vive en el servidor: esta pantalla le manda lo
  | que hace el jugador y recibe "pasos", que son la vista de su asiento después
- | de cada jugada (la propia y las del bot). Cada paso trae los hechos que
- | ocurrieron, y este archivo los cuenta de a uno con las piezas visuales:
- | repartir, mover una carta, cantar, cantar los tantos, anotar y cerrar la mano.
+ | de cada jugada. Cada paso trae los hechos que ocurrieron, y este archivo los
+ | cuenta de a uno con las piezas visuales: repartir, mover una carta, cantar,
+ | cantar los tantos, anotar y cerrar la mano.
+ |
+ | El bot juega aparte, desde una cola del servidor. Mientras le toca, la mesa
+ | pregunta cada tanto qué pasó después del último paso que mostró.
  |
  | Las cartas del bot no llegan nunca: de su mano solo se sabe cuántas le quedan.
  */
@@ -46,12 +49,18 @@ const CONCEPTOS = {
 const DE_QUIEN = { vos: 'tuya', rival: 'del bot', parda: 'parda' };
 const CALLADO = { numero: '', frase: '', visible: false };
 
+// Cada cuánto se le pregunta al servidor qué jugó el bot, y cuánto se lo espera antes de pedirle que juegue ya.
+const CONSULTA = 600;
+const RED_DE_SEGURIDAD = 5000;
+
 export default (inicial, pedidos) => ({
     vista: inicial,
     pedidos,
     puntos: { vos: inicial.tanteo[VOS], rival: inicial.tanteo[RIVAL] },
     // Mientras se cuenta lo que pasó o se espera al servidor, no se puede hacer nada.
     ocupada: true,
+    // Le toca al bot y todavía no jugó: la mesa lo marca junto a su nombre.
+    pensando: false,
     // Cuando la barra está desplegada (los niveles del envido, por ejemplo), acá van sus botones.
     menu: null,
     ganadas: [],
@@ -263,10 +272,86 @@ export default (inicial, pedidos) => ({
             await this.mostrar(paso);
         }
 
+        await this.esperarAlBot();
+
         this.prisa = false;
         this.ocupada = false;
         this.aviso = this.indicacion() || this.aviso;
         this.enfocarLoQueSigue();
+    },
+
+    /**
+     * Le toca al bot cuando la mano está en juego y el jugador no tiene nada para hacer.
+     */
+    get juegaElBot() {
+        return ! this.fin && this.enJuego && ! this.vista.acciones.length;
+    },
+
+    /**
+     * El bot juega en el servidor, aparte. Mientras le toque, la mesa pregunta qué pasó después del
+     * último evento que mostró y cuenta los pasos que lleguen. Si pasan unos segundos sin novedades
+     * le pide al servidor que juegue en el momento: es la red de seguridad por si la cola no anda.
+     */
+    async esperarAlBot() {
+        let ultimaNovedad = Date.now();
+
+        while (this.juegaElBot) {
+            this.pensando = true;
+            await new Promise((listo) => setTimeout(listo, CONSULTA));
+
+            const pasos = await this.consultar();
+
+            if (pasos?.length) {
+                this.pensando = false;
+
+                // Entre dos jugadas seguidas del bot hay una pausa; antes de la primera ya se esperó.
+                for (const [numero, paso] of pasos.entries()) {
+                    await this.mostrar(paso, numero > 0);
+                }
+
+                ultimaNovedad = Date.now();
+            } else if (Date.now() - ultimaNovedad > RED_DE_SEGURIDAD) {
+                await this.despertarAlBot();
+                ultimaNovedad = Date.now();
+            }
+        }
+
+        this.pensando = false;
+    },
+
+    /**
+     * Los pasos posteriores al último que se mostró. Devuelve null si no se pudo preguntar:
+     * la mesa vuelve a probar en la consulta siguiente.
+     */
+    async consultar() {
+        try {
+            const respuesta = await fetch(`${this.pedidos.estado}?desde=${this.vista.evento}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            // Sesión vencida o partida que ya no existe: la página se vuelve a cargar y el servidor decide.
+            if ([401, 409, 419].includes(respuesta.status)) {
+                window.location.reload();
+                await new Promise(() => {});
+            }
+
+            return respuesta.ok ? (await respuesta.json()).pasos : null;
+        } catch {
+            return null;
+        }
+    },
+
+    async despertarAlBot() {
+        try {
+            await fetch(this.pedidos.bot, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                credentials: 'same-origin',
+            });
+        } catch {
+            // Sin conexión: la consulta siguiente vuelve a probar.
+        }
     },
 
     /**
@@ -345,9 +430,9 @@ export default (inicial, pedidos) => ({
         }
     },
 
-    async mostrar(paso) {
-        // El bot se toma un momento antes de jugar, para que se lea lo anterior.
-        if (paso.hechos[0]?.asiento === RIVAL) {
+    async mostrar(paso, conPausa = false) {
+        // Entre dos jugadas seguidas del bot hay un momento, para que se lea la anterior.
+        if (conPausa && paso.hechos[0]?.asiento === RIVAL) {
             await this.esperar(650);
         }
 
@@ -691,9 +776,15 @@ export default (inicial, pedidos) => ({
         this.repartir(vista, animar && enJuego);
 
         if (enJuego) {
-            setTimeout(() => {
+            setTimeout(async () => {
+                // Si se cargó la página en el turno del bot, primero se espera lo que juegue.
+                const jugabaElBot = this.juegaElBot;
+
+                await this.esperarAlBot();
+
                 this.ocupada = false;
-                this.aviso = aviso ?? this.indicacion();
+                this.aviso = jugabaElBot ? (this.indicacion() || this.aviso) : (aviso ?? this.indicacion());
+                this.enfocarLoQueSigue();
             }, animar && ! this.reducido ? 650 : 0);
 
             return;
