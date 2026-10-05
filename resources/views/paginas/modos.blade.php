@@ -11,9 +11,10 @@
             <h1 class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                 ¿Cómo querés jugar?
             </h1>
-            <p class="mt-4 max-w-[44ch] text-lg leading-relaxed sm:mt-5">
+            {{-- En el celular no va: cada fila ya dice si se juega, y ese lugar lo necesitan la mano y el botón. --}}
+            <p class="mt-5 hidden max-w-[44ch] text-lg leading-relaxed sm:block">
                 Las cartas boca abajo todavía no se juegan.
-                <span class="hidden sm:inline">Se dan vuelta a medida que se termina cada modo.</span>
+                Se dan vuelta a medida que se termina cada modo.
             </p>
         </div>
 
@@ -21,7 +22,7 @@
             La mano. Es un espejo de la lista de abajo para quien mira y usa el mouse o el dedo:
             el teclado y el lector de pantalla eligen desde la lista, que es la que tiene los nombres.
         --}}
-        <div class="mano-modos mx-auto w-full max-w-[17.5rem] sm:max-w-sm lg:sticky lg:top-10 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-w-lg lg:self-start" aria-hidden="true">
+        <div class="mano-modos mx-auto w-full max-w-[19rem] sm:max-w-sm lg:sticky lg:top-10 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-w-lg lg:self-start" aria-hidden="true">
             @foreach ($modos as $i => $modo)
                 <div class="mano-modos-lugar" style="--i: {{ $i }}">
                     <button type="button" tabindex="-1" class="naipe-modo"
@@ -62,11 +63,11 @@
                     <div id="modo-{{ $modo['clave'] }}" class="pb-6 pl-11"
                         x-show="elegido === '{{ $modo['clave'] }}'" @if ($modo['clave'] !== $elegido) x-cloak @endif
                         x-transition:enter="transition-opacity duration-150 ease-out" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-                        <p class="max-w-[44ch] text-lg leading-relaxed">{{ $modo['resumen'] }}</p>
+                        <p class="max-w-[44ch] leading-relaxed sm:text-lg">{{ $modo['resumen'] }}</p>
 
                         @if ($modo['disponible'])
                             {{-- Sin campos: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
-                            <form method="POST" action="{{ route('jugar') }}" class="mt-5">
+                            <form method="POST" action="{{ route('jugar') }}" class="mt-4 sm:mt-5">
                                 @csrf
                                 <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
                                     <x-icono :nombre="$modo['icono']" /> {{ $modo['boton'] }}
