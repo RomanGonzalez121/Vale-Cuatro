@@ -159,3 +159,72 @@ Cada entrada dice qué problema había, qué se eligió y qué se descartó.
 - **Se eligió:** media pantalla es formulario y la otra media es mesa, de borde a borde. Los campos no llevan caja: los subraya un fósforo que se dibuja al entrar, el mismo gesto que los links. La contraseña se muestra u oculta con una carta chica que se da vuelta: de un lado tiene un ojo abierto y del otro un ojo cerrado, dibujados con el trazo de los fósforos. En el ingreso, la mesa muestra tu mano boca abajo y cada carta se da vuelta al completar un paso: el email, la contraseña y el envío. En registro y perfil, la mesa muestra el apodo en el tanteador mientras se escribe.
 - **Se descartó:** la caja centrada con el logo arriba, y mostrar el error de ingreso como un canto "No quiero": Piazzolla es solo la voz de los jugadores y un error tiene que leerse sin vueltas. También se probó contar los caracteres de la contraseña con fósforos debajo del campo, y se sacó: no hacía falta.
 - **El giro:** es una transición de CSS sobre `transform` (300 ms, la curva del sitio) y no una animación con keyframes, para que se pueda interrumpir: si se borra el email, la carta vuelve desde donde esté. La carta que ya corresponde dada vuelta al cargar la página sale así del servidor, sin animarse. Con movimiento reducido no gira: la cara aparece con un fundido de 150 ms.
+
+## M2. Motor de reglas
+
+### Una partida no se modifica: cada acción devuelve otra
+
+- **Problema:** la partida se va a guardar como una secuencia de eventos (M3), se va a poder repetir mano por mano (M7) y el bot va a necesitar probar jugadas sin romper nada (M4).
+- **Se eligió:** que `Partida` sea inmutable. `repartir()` y `aplicar()` devuelven una partida nueva y dejan intacta la anterior. Reconstruir una partida es volver a aplicar sus repartos y sus acciones en orden; retroceder es aplicar menos. Hay un test que juega una partida entera, guarda los eventos, los pasa por JSON y comprueba que al aplicarlos de nuevo el estado es idéntico.
+- **Se descartó:** un objeto que se va modificando, con un "deshacer" aparte. Son dos caminos que hay que mantener iguales.
+
+### Lo que se puede hacer y lo que se rechaza salen de la misma cuenta
+
+- **Problema:** el motor tiene que decir qué acciones son válidas (para dibujar los botones y para el bot) y además rechazar las que no lo son con un motivo. Si son dos pedazos de código distintos, tarde o temprano no coinciden.
+- **Se eligió:** una sola función, `motivoDeRechazo()`, que devuelve por qué no se puede o `null` si se puede. `accionesPara()` es la lista de acciones cuyo motivo es `null`, y `aplicar()` tira `AccionInvalida` con ese mismo motivo. Un test prueba las 40 cartas y los 12 cantos desde cada asiento, en cada momento de varias partidas: todo lo que no figura como válido se rechaza con un texto y no deja rastro.
+- **Los motivos** están escritos para mostrárselos al jugador ("Solo puede subir el canto quien tiene el quiero.").
+
+### Siempre puede actuar un solo lado
+
+- **Problema:** en la mesa real se puede cantar truco o irse al mazo mientras el otro piensa. En un servidor eso obliga a resolver quién llegó primero y cómo se pausa el tiempo del turno.
+- **Se eligió:** en cada momento actúa un solo lado: el equipo que tiene que contestar un canto o, si no hay ninguno pendiente, el asiento al que le toca jugar. El truco se canta en el turno propio (decidido por Román). Irse al mazo sigue la misma regla.
+- **Costo:** "irse al mazo en cualquier momento" queda como "en cualquier baza, cuando te toca actuar". No se puede abandonar mientras se espera al rival. Queda para confirmar con Román.
+- **El envido está primero** no necesitó un estado propio. El canto pendiente se calcula mirando la contraflor, el envido y el truco en ese orden: mientras haya un envido sin contestar, el truco no aparece como pendiente, y vuelve solo cuando el envido se resuelve.
+
+### Semilla para repetir, azar seguro para jugar
+
+- **Problema:** los tests, los desafíos (M17) y la repetición (M7) necesitan que el mismo reparto salga siempre igual. Pero una semilla de 32 bits se puede adivinar: quien ve sus tres cartas podría probar las cuatro mil millones de semillas hasta encontrar la que las reparte, y con eso conocer las del rival.
+- **Se eligió:** una sola clase, `Azar`, con dos orígenes. `Azar::deSemilla()` usa el generador Mt19937 de PHP y es reproducible. `Azar::seguro()` usa el azar del sistema operativo, y es el que tiene que usar una partida real en M3, que además guarda las cartas repartidas en el evento. El motor no elige: recibe el mazo ya mezclado.
+- **La mezcla está escrita a mano** (Fisher-Yates) y el número al azar también, en vez de usar `shuffle()` o `Randomizer::shuffleArray()`. Así la misma semilla da el mismo mazo en cualquier versión de PHP. Hay un test con un reparto conocido que lo comprueba entre PHP 8.3 (integración continua) y la versión local.
+- **El primer mano** se sortea afuera del motor, con el mismo `Azar`. El motor recibe quién es mano como dato.
+
+### Los tantos los canta el motor
+
+- **Problema:** querido el envido, cada jugador podría elegir qué decir. Eso suma un paso a cada envido y abre la puerta a decir un tanto que no se tiene.
+- **Se eligió (decidido por Román):** el motor canta los tantos solo, en orden desde el mano, con el tanto real. Cada uno dice su número si supera al mejor cantado; si no, "son buenas", y ese tanto no sale del servidor. De a cuatro, si va ganando el compañero no se canta.
+- **Se descartó:** que el jugador pueda entregar el envido teniendo más para no mostrar cartas.
+
+### La flor se contesta en el turno propio y los puntos caen por posición
+
+- **Problema:** la flor es opcional y se puede callar. Si después de un "Flor" el motor le abriera al rival un momento para contestar solo cuando tiene flor, esa pausa le avisaría a quien cantó que el rival tiene flor aunque la calle. Lo mismo pasaría si los 3 puntos cayeran antes o después según el rival tenga flor o no.
+- **Se eligió:** no hay pausa. La contraflor se canta en el turno propio, antes de la primera carta, igual que la flor. Y los 3 puntos de una flor sin contestar caen cuando al rival ya no le queda nadie que pueda contestarla (todos jugaron su primera carta o se fueron), tenga flor o no. Hay un test que comprueba que el momento es el mismo en los dos casos.
+- **Costo:** quien contesta con contraflor ya vio la primera carta del que cantó flor. Y si la mano se cierra antes de que le vuelva el turno (por ejemplo: cantó truco teniendo flor, le contestaron "flor" y después "no quiero"), no llega a cantar contraflor. Queda para confirmar con Román.
+
+### La vista por asiento es lo único que sale del motor hacia un jugador
+
+- **Problema:** "las cartas del rival nunca llegan al navegador" no se puede sostener escondiéndolas en la pantalla: si viajan, se leen.
+- **Se eligió:** `vistaPara($asiento)` arma un arreglo plano con las cartas propias, cuántas le quedan a cada uno, lo jugado, los cantos y las acciones válidas de ese asiento. Sin asiento es la vista de un espectador. `aArray()` es el estado entero y es solo para el servidor y los tests.
+- **Cómo se prueba:** se juegan partidas enteras al azar, de a dos y de a cuatro, y después de cada paso se busca cualquier carta nombrada en la vista de cada asiento y del espectador. Solo pueden aparecer las propias, las jugadas y las que se muestran al cerrar la mano.
+- **Lo que pasó** (`hechos()`) también es público: nunca nombra una carta que no se jugó ni un tanto que no se cantó.
+
+### Partidas simuladas en lugar de una pantalla
+
+- **Problema:** M2 no tiene nada para ver en el navegador, y la regla es no cerrar un módulo sin verlo funcionar.
+- **Se eligió (acordado con Román):** la evidencia de M2 son los tests y un simulador que juega partidas enteras eligiendo al azar entre las acciones válidas, con semilla para poder repetir un fallo. Comprueba que toda partida termina, que gana uno solo y llega justo a los puntos, que el tanteo nunca baja y que siempre puede actuar un solo lado. El mismo simulador le sirve al bot de M4.
+- **Un límite del azar:** la contraflor necesita flor en los dos equipos y repartiendo al azar casi nunca sale. Para cubrirla hay manos armadas con flor en todos los asientos, jugadas al azar.
+
+### Lecturas del reglamento que hubo que hacer
+
+El reglamento no decía qué pasa en estos casos y el motor necesitaba una respuesta. Están implementadas así y cada una tiene su test; quedan para que Román las confirme o las cambie.
+
+- **Irse al mazo:** solo cuando te toca actuar (ver arriba).
+- **Flor después del envido:** si el envido ya se quiso o no se quiso, no se puede cantar flor en esa mano. La flor anula un envido cantado y sin contestar, no uno ya jugado.
+- **Flor y truco:** querido el truco no se canta una flor nueva, igual que el envido. Sí se puede contestar con contraflor una flor que el rival cantó antes.
+- **Quién muestra cartas por la flor:** al cerrar la mano muestra sus tres cartas quien sumó por una flor sin contestar o ganó una contraflor querida. En una contraflor no querida nadie muestra.
+- **Mazo con truco sin contestar en primera:** vale como "no quiero" (1 punto), sin el punto extra del envido.
+- **Partida cerrada en la mitad de una mano:** si el envido o la flor llevan a alguien a los puntos de la partida, la mano se corta ahí y el truco no se anota.
+
+### De a cuatro: lo que quedó hecho y lo que no
+
+- **Hecho:** asientos intercalados, ronda desde el mano, tantos en ronda, cualquiera del equipo contesta y vale la primera respuesta, el quiero es del equipo, cada flor suma para su equipo, la contraflor compara la mejor flor cantada de cada equipo, y el mazo es de un jugador (la baza puede cerrarse con tres cartas). Hay una mano jugada de punta a punta y un test por cada una de esas reglas.
+- **Lecturas provisorias, para M19:** quien se fue al mazo no canta tanto en el envido; las cartas que jugó antes de irse siguen valiendo en la baza; una flor ya cantada sigue compitiendo en la contraflor aunque su dueño se haya ido; y una contraflor vale lo mismo (6, 4 o la falta) aunque un equipo haya cantado dos flores.

@@ -38,7 +38,7 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 |---|---|---|
 | M0 | Identidad visual y maqueta de las pantallas | Listo |
 | M1 | Cuentas y modo invitado | Listo |
-| M2 | Motor de reglas en PHP puro, pensado por asientos y equipos | Pendiente |
+| M2 | Motor de reglas en PHP puro, pensado por asientos y equipos | Listo |
 | M3 | Mesa contra el bot, con la partida guardada como eventos | Pendiente |
 | M4 | Bot con tres niveles | Pendiente |
 | M5 | Dos personas en tiempo real | Pendiente |
@@ -64,7 +64,7 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 | M20 | Mazos y mesas para elegir | Pendiente |
 
 Las pantallas ya son las definitivas. Las cuentas son reales: se puede registrarse, ingresar, cambiar el apodo o entrar a la mesa como invitado con un solo botón, sin llenar nada.
-La mesa, el ranking y el historial todavía muestran datos de ejemplo fijos: la mesa se puede tocar para ver el movimiento, y no tiene el motor de reglas detrás.
+El motor de reglas ya está escrito y testeado, pero la mesa todavía no lo usa: la mesa, el ranking y el historial siguen mostrando datos de ejemplo fijos hasta que llegue M3.
 
 ## Lo que viene
 
@@ -139,6 +139,14 @@ vendor/bin/pint --test
 ```
 
 Los tests corren en SQLite en memoria: no necesitan MySQL prendido.
+
+Los del motor de reglas son una suite aparte, que no arranca Laravel:
+
+```bash
+vendor/bin/phpunit --testsuite Motor
+```
+
+Tienen un test por cada fila de las tablas de pardas y de envido, y partidas enteras jugadas al azar con semilla.
 
 ## Decisiones
 
