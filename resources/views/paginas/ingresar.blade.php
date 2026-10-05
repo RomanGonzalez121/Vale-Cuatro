@@ -8,7 +8,7 @@
     ];
 @endphp
 
-<x-cuenta titulo="Ingresar" frase="Sentate a la mesa." mesa-solo-escritorio
+<x-cuenta titulo="Ingresar" frase="Sentate a la mesa." mesa-solo-escritorio :barra="false"
     x-data="{
         email: {{ Js::from(old('email', '')) }},
         clave: '',

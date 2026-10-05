@@ -1,6 +1,6 @@
 @php($invitado = auth()->user())
 
-<x-cuenta titulo="Crear cuenta" frase="Creá tu cuenta" mesa-solo-escritorio x-data="{ apodo: {{ Js::from(old('apodo', '')) }} }">
+<x-cuenta titulo="Crear cuenta" frase="Creá tu cuenta" mesa-solo-escritorio :barra="false" x-data="{ apodo: {{ Js::from(old('apodo', '')) }} }">
     <x-slot:bajada>
         @if ($invitado)
             Venís jugando como {{ $invitado->apodo }}. Al crear la cuenta seguís siendo el mismo jugador, con el apodo que elijas.

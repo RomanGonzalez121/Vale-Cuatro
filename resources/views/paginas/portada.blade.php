@@ -10,16 +10,18 @@
 <x-layouts.base superficie="pano">
     {{--
         En el celular el bloque de texto se desarma (`contents`) para que la mano de cartas quede entre el
-        título y el botón: todo entra en la primera pantalla. Desde `sm` vuelve a ser un bloque y la mano va después.
+        título y el botón. La primera pantalla mide justo lo que queda entre el encabezado y la barra de abajo,
+        y el título, la mano y el canto se achican con el alto de la ventana (`.portada-inicio` en app.css).
+        Desde `sm` vuelve a ser un bloque y la mano va después.
     --}}
-    <section class="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-6 max-sm:gap-0 max-sm:pb-12 max-sm:pt-2 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:gap-8 lg:pb-24 lg:pt-14">
+    <section class="portada-inicio mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-6 max-sm:gap-0 max-sm:pb-5 max-sm:pt-2 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:gap-8 lg:pb-24 lg:pt-14">
         <div class="max-sm:contents">
             <h1 class="text-[clamp(2.75rem,7.4vw,5.5rem)] font-black leading-[0.94] tracking-[-0.035em] max-sm:order-1">
                 <span class="block">Truco</span>
                 <span class="block">argentino,</span>
                 <span class="block">mano a mano.</span>
             </h1>
-            <p class="mt-6 max-w-[44ch] text-lg leading-relaxed max-sm:order-2 max-sm:mt-4 max-sm:leading-snug sm:text-xl">
+            <p class="portada-bajada mt-6 max-w-[44ch] text-lg leading-relaxed max-sm:order-2 max-sm:mt-4 max-sm:leading-snug sm:text-xl">
                 Jugá una mano contra el bot ahora mismo, sin registrarte.
                 <span class="max-sm:hidden">O mandale un link a alguien y jueguen en vivo.</span>
             </p>
@@ -29,7 +31,7 @@
                 <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg max-sm:w-full">
                     <x-icono nombre="bot" /> Jugar contra el bot
                 </button>
-                {{-- Los demás modos se eligen en su pantalla: este botón no entra a ninguna mesa. --}}
+                {{-- Los demás modos se eligen en su pantalla: este botón no entra a ninguna mesa. En el celular ya está "Jugar" en la barra de abajo. --}}
                 <a href="{{ route('modos') }}" class="boton boton-linea min-h-14 px-6 text-lg max-sm:hidden">
                     <x-icono nombre="repartir" /> Elegir otro modo
                 </a>
@@ -38,15 +40,10 @@
                 A 30 puntos y con flor. ¿Nunca jugaste?
                 <a href="{{ route('como-se-juega') }}" class="font-semibold underline underline-offset-4">Mirá cómo se juega</a>.
             </p>
-            {{-- En el celular, las dos salidas van en un renglón debajo del botón. --}}
-            <p class="order-5 mt-4 flex justify-between gap-4 font-semibold sm:hidden">
-                <a href="{{ route('modos') }}" class="enlace-nav">Elegir otro modo</a>
-                <a href="{{ route('como-se-juega') }}" class="enlace-nav">Cómo se juega</a>
-            </p>
         </div>
 
         {{-- Una mano en miniatura: el reparto es el único movimiento que no responde a una acción. --}}
-        <div class="relative mx-auto w-full max-w-md max-sm:order-3 max-sm:mt-5" aria-hidden="true">
+        <div class="portada-mano relative mx-auto w-full max-w-md max-sm:order-3 max-sm:mt-5" aria-hidden="true">
             <div class="flex justify-center gap-2.5 max-sm:hidden">
                 @foreach ([1, 3, 5] as $orden)
                     <div class="se-reparte w-[17%]" style="--orden: {{ $orden }}"><x-dorso /></div>
@@ -54,10 +51,10 @@
             </div>
 
             <div class="relative z-10 -mb-4 mt-7 flex justify-center max-sm:mt-0">
-                <p class="canto canto-ficha canto-copa se-canta text-[clamp(3.25rem,16vw,4.5rem)] sm:text-[clamp(4.75rem,23vw,8.75rem)]">Truco</p>
+                <p class="canto canto-ficha canto-copa se-canta portada-canto sm:text-[clamp(4.75rem,23vw,8.75rem)]">Truco</p>
             </div>
 
-            <div class="abanico [--ancho-carta:clamp(4.75rem,24vw,6.25rem)] sm:[--ancho-carta:clamp(6.25rem,31vw,10.5rem)]">
+            <div class="abanico sm:[--ancho-carta:clamp(6.25rem,31vw,10.5rem)]">
                 <div><div class="se-reparte" style="--orden: 0"><x-carta palo="oro" :numero="7" /></div></div>
                 <div><div class="se-reparte" style="--orden: 2"><x-carta palo="espada" :numero="1" /></div></div>
                 <div><div class="se-reparte" style="--orden: 4"><x-carta palo="basto" :numero="3" /></div></div>

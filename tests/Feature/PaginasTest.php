@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\Jugador;
 use App\View\Components\Carta;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PaginasTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
      * @return array<string, array{0: string}>
      */
@@ -66,12 +70,38 @@ class PaginasTest extends TestCase
         $this->assertStringContainsString('href="'.route('modos').'"', $html);
     }
 
-    public function test_ninguna_pagina_de_lectura_deja_algo_pegado_al_scroll(): void
+    public function test_lo_unico_que_acompana_el_scroll_es_la_barra_de_abajo(): void
     {
         foreach (['/', '/ranking', '/historial', '/como-se-juega', '/modos'] as $ruta) {
             $html = $this->get($ruta)->assertOk()->getContent();
 
             $this->assertSame(0, preg_match('/class="[^"]*\b(sticky|fixed)\b/', $html), "En {$ruta} hay algo pegado o fijo.");
+            $this->assertSame(1, substr_count($html, 'class="barra-inferior'), "En {$ruta} falta la barra de abajo.");
         }
+    }
+
+    public function test_la_barra_de_abajo_marca_la_pagina_actual_y_no_lleva_la_cuenta(): void
+    {
+        $html = $this->get('/ranking')->assertOk()->getContent();
+        $barra = substr($html, strpos($html, 'class="barra-inferior'));
+        $barra = substr($barra, 0, strpos($barra, '</nav>'));
+
+        $this->assertSame(4, substr_count($barra, 'class="barra-lugar"'));
+        $this->assertSame(1, substr_count($barra, 'aria-current="page"'));
+        $this->assertMatchesRegularExpression('/href="[^"]*\/ranking"[^>]*aria-current="page"/', $barra);
+        $this->assertStringNotContainsString('Ingresar', $barra);
+    }
+
+    public function test_donde_se_escribe_o_se_juega_no_hay_barra_de_abajo(): void
+    {
+        foreach (['/ingresar', '/registro'] as $ruta) {
+            $this->assertStringNotContainsString('barra-inferior', $this->get($ruta)->assertOk()->getContent());
+        }
+
+        $jugador = Jugador::factory()->create();
+        $this->actingAs($jugador)->post('/jugar');
+
+        $this->assertStringNotContainsString('barra-inferior', $this->actingAs($jugador)->get('/mesa')->assertOk()->getContent());
+        $this->assertStringContainsString('barra-inferior', $this->actingAs($jugador)->get('/perfil')->assertOk()->getContent());
     }
 }

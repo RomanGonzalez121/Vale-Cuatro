@@ -105,8 +105,8 @@ class ModosTest extends TestCase
         foreach (['/', '/ranking', '/historial', '/como-se-juega', '/identidad', '/modos'] as $ruta) {
             $html = $this->get($ruta)->assertOk()->getContent();
 
-            // Una vez en el menú de escritorio y otra en el del celular.
-            $this->assertSame(2, preg_match_all('/<a href="[^"]*\/modos"[^>]*>\s*(?:<svg.*?<\/svg>)?\s*Jugar\s*<\/a>/s', $html), "Falta \"Jugar\" en el menú de {$ruta}.");
+            // Una vez en el menú de escritorio y otra en la barra de abajo del celular.
+            $this->assertSame(2, preg_match_all('/<a href="[^"]*\/modos"[^>]*>\s*(?:<svg.*?<\/svg>)?\s*(?:<span class="barra-rotulo">)?Jugar(?:<\/span>)?\s*<\/a>/s', $html), "Falta \"Jugar\" en el menú de {$ruta}.");
         }
     }
 

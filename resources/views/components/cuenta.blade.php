@@ -1,4 +1,4 @@
-@props(['titulo', 'frase' => null, 'ladoPrimero' => false, 'mesaSoloEscritorio' => false])
+@props(['titulo', 'frase' => null, 'ladoPrimero' => false, 'mesaSoloEscritorio' => false, 'barra' => true])
 
 {{--
     Las pantallas de cuenta: de un lado el formulario sobre naipe, del otro la
@@ -10,9 +10,10 @@
     en "franja": una tira angosta de paño entre el título y el formulario. Es un
     bloque más de la página: no queda pegada ni fija (Román lo pidió así). Con
     "mesaSoloEscritorio" la mesa entera no aparece en el celular, porque la franja
-    ya la reemplaza.
+    ya la reemplaza. Con "barra" en falso no va la navegación de abajo del celular:
+    así son ingreso y registro, donde se escribe.
 --}}
-<x-layouts.base :titulo="$titulo">
+<x-layouts.base :titulo="$titulo" :barra="$barra">
     <div {{ $attributes->class('cuenta') }}>
         {{-- En escritorio, los márgenes y el tamaño del título se miden contra el alto de la ventana (app.css). --}}
         <div class="cuenta-columna cuenta-titulo order-1 pb-8 pt-6">

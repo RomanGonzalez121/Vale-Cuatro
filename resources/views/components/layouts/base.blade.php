@@ -4,7 +4,11 @@
     'superficie' => 'naipe',
     'encabezado' => true,
     'pie' => true,
+    // La barra de abajo del celular. Si no se dice nada, acompaña al encabezado.
+    'barra' => null,
 ])
+
+@php($barra ??= $encabezado)
 
 <!DOCTYPE html>
 <html lang="es-AR">
@@ -29,7 +33,8 @@
     <link rel="alternate icon" href="/favicon.ico" sizes="32x32">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="superficie-{{ $superficie }} min-h-dvh">
+{{-- Con la barra, la página deja libre su alto para que el pie no quede tapado. --}}
+<body @class(["superficie-{$superficie} min-h-dvh", 'max-lg:pb-[calc(4rem+env(safe-area-inset-bottom))]' => $barra])>
     <x-mazo.sprite />
     <a href="#contenido" class="saltar">Saltar al contenido</a>
 
@@ -37,7 +42,15 @@
         <x-encabezado />
     @endif
 
-    <main id="contenido">
+    @if ($barra)
+        <x-barra-inferior />
+    @endif
+
+    {{--
+        Lo que se sale por los costados se recorta: una carta que llega volando en el reparto no puede
+        ensanchar la página. En un celular eso achicaba todo y dejaba corta la barra de abajo.
+    --}}
+    <main id="contenido" class="overflow-x-clip">
         @if ($encabezado)
             <x-aviso />
         @endif
