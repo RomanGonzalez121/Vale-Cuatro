@@ -17,9 +17,9 @@ use InvalidArgumentException;
  * sobre la partida en curso de quien hace el pedido: no recibe un número de
  * partida, así que nadie puede tocar la de otro.
  *
- * Cada respuesta trae los pasos que ocurrieron (la jugada propia y las del
- * bot), y cada paso es la vista del asiento del jugador. Las cartas del bot
- * no viajan nunca.
+ * Cada respuesta trae el paso de la jugada propia, y cada paso es la vista del
+ * asiento del jugador. El bot juega aparte, desde la cola: sus pasos se piden
+ * con la consulta corta. Las cartas del bot no viajan nunca.
  */
 class MesaController extends Controller
 {
@@ -41,9 +41,29 @@ class MesaController extends Controller
     }
 
     /**
-     * Cómo está la partida ahora. La mesa lo pide cuando una jugada no entró, para ponerse al día.
+     * La consulta corta de la mesa. Con "desde" (el número del último evento que ya mostró) devuelve
+     * los pasos posteriores: así se entera de lo que jugó el bot, también si esa jugada cerró la partida.
+     * Sin "desde" devuelve cómo está la partida ahora, para ponerse al día cuando una jugada no entró.
      */
     public function estado(Request $request): JsonResponse
+    {
+        $datos = $request->validate(['desde' => ['sometimes', 'integer', 'min:0']]);
+        $partida = $this->mesa->ultimaDe($request->user());
+
+        if ($partida === null || (! isset($datos['desde']) && ! $partida->enCurso())) {
+            return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
+        }
+
+        return isset($datos['desde'])
+            ? response()->json(['pasos' => $this->mesa->pasosDesde($partida, (int) $datos['desde'])])
+            : response()->json(['vista' => $this->mesa->vista($partida)]);
+    }
+
+    /**
+     * La red de seguridad: la mesa lo pide si pasaron unos segundos y el bot no jugó.
+     * El bot juega ahí mismo lo que le toque; lo que jugó llega por la consulta corta.
+     */
+    public function despertarAlBot(Request $request): JsonResponse
     {
         $partida = $this->mesa->enCursoDe($request->user());
 
@@ -51,7 +71,9 @@ class MesaController extends Controller
             return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
         }
 
-        return response()->json(['vista' => $this->mesa->vista($partida)]);
+        $this->mesa->despertarAlBot($partida);
+
+        return response()->json(['listo' => true]);
     }
 
     public function accion(Request $request): JsonResponse

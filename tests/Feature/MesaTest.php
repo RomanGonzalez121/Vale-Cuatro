@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\TurnoDelBot;
 use App\Juego\Bot;
 use App\Juego\BotIntermedio;
 use App\Juego\Mesa;
@@ -15,6 +16,7 @@ use App\Motor\Carta;
 use App\Motor\Fase;
 use App\Motor\TipoDeAccion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -233,7 +235,8 @@ class MesaTest extends TestCase
             }
         };
 
-        $mesa = new Mesa($espia);
+        // El job del bot pide la mesa al contenedor: tiene que recibir esta, la del espía.
+        $this->app->instance(Mesa::class, $mesa = new Mesa($espia));
         $azar = Azar::deSemilla(4);
 
         for ($pedidos = 0; count($espia->vistas) < 40; $pedidos++) {
@@ -254,9 +257,163 @@ class MesaTest extends TestCase
         }
     }
 
+    public function test_cuando_le_toca_al_bot_su_turno_queda_en_la_cola_con_demora(): void
+    {
+        Queue::fake();
+
+        $mesa = $this->mesa();
+        $partida = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '3-oro', '10-basto']]);
+
+        // El jugador es mano y tira una carta: le toca al bot.
+        $pasos = $mesa->actuar($partida, Accion::jugar(Carta::de('4-copa')));
+
+        $this->assertCount(1, $pasos, 'La respuesta trae solo la jugada propia: el bot todavía no jugó.');
+        $this->assertSame(2, $partida->eventos()->count());
+
+        Queue::assertPushed(TurnoDelBot::class, 1);
+        Queue::assertPushed(
+            TurnoDelBot::class,
+            fn (TurnoDelBot $turno) => $turno->partidaId === $partida->id && $turno->delay !== null && $turno->afterCommit === true,
+        );
+    }
+
+    public function test_si_no_le_toca_al_bot_no_se_encola_nada(): void
+    {
+        Queue::fake();
+
+        $mesa = $this->mesa();
+        $partida = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '3-oro', '10-basto']]);
+
+        // Se va al mazo: la mano se cierra y nadie tiene nada que jugar hasta que se reparta.
+        $mesa->actuar($partida, Accion::de(TipoDeAccion::Mazo));
+
+        Queue::assertNothingPushed();
+
+        // En la mano siguiente el mano es el bot: al repartir, su turno va a la cola.
+        $mesa->repartir($partida);
+
+        Queue::assertPushed(TurnoDelBot::class, 1);
+    }
+
+    public function test_el_job_juega_una_sola_accion_y_si_le_sigue_tocando_encola_otro(): void
+    {
+        Queue::fake();
+
+        $mesa = $this->mesa();
+        $partida = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '6-oro', '10-basto']]);
+
+        // El jugador sale con un 4. El bot lo gana con el 6 y le toca salir en la segunda: dos jugadas seguidas.
+        $mesa->actuar($partida, Accion::jugar(Carta::de('4-copa')));
+        $antes = $partida->eventos()->count();
+
+        (new TurnoDelBot($partida->id))->handle($mesa);
+
+        $this->assertSame($antes + 1, $partida->eventos()->count(), 'El job juega una acción, no todas.');
+        $this->assertSame(['tipo' => 'jugar', 'carta' => '6-oro'], $partida->eventos()->get()->last()->datos);
+
+        // Uno por la jugada del jugador y otro que dejó el propio job.
+        Queue::assertPushed(TurnoDelBot::class, 2);
+    }
+
+    public function test_un_job_repetido_o_tardio_no_hace_nada(): void
+    {
+        Queue::fake();
+
+        $mesa = $this->mesa();
+        $partida = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '3-oro', '10-basto']]);
+
+        // Le toca al jugador: un job que llega ahora no tiene nada que jugar.
+        (new TurnoDelBot($partida->id))->handle($mesa);
+        $this->assertSame(1, $partida->eventos()->count());
+
+        // Le toca al bot y llegan dos jobs iguales: juega una sola vez por turno.
+        $mesa->actuar($partida, Accion::jugar(Carta::de('4-copa')));
+        (new TurnoDelBot($partida->id))->handle($mesa);
+        $jugadas = $partida->eventos()->count();
+
+        while ($mesa->turnoDelBot($partida->id)) {
+            $jugadas = $partida->eventos()->count();
+        }
+
+        (new TurnoDelBot($partida->id))->handle($mesa);
+        $this->assertSame($jugadas, $partida->eventos()->count());
+
+        // Con la partida cerrada tampoco, y no falla. Ni con una partida que no existe.
+        $mesa->abandonar($partida);
+        $cerrada = $partida->eventos()->count();
+
+        (new TurnoDelBot($partida->id))->handle($mesa);
+        (new TurnoDelBot($partida->id + 1000))->handle($mesa);
+
+        $this->assertSame($cerrada, $partida->eventos()->count());
+    }
+
+    public function test_la_red_de_seguridad_hace_jugar_al_bot_todo_lo_que_le_toca_sin_pasar_por_la_cola(): void
+    {
+        // La cola no corre: es lo que pasa si el proceso que la atiende está caído.
+        Queue::fake();
+
+        $mesa = $this->mesa();
+        $partida = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '3-oro', '10-basto']]);
+
+        $mesa->actuar($partida, Accion::jugar(Carta::de('4-copa')));
+        $this->assertSame([], $mesa->vista($partida)['acciones'], 'Le toca al bot.');
+
+        $mesa->despertarAlBot($partida);
+        $vista = $mesa->vista($partida);
+
+        $this->assertNotSame([], $vista['acciones'], 'El bot jugó y le devolvió el turno al jugador.');
+        $this->assertGreaterThan(2, $partida->eventos()->count());
+
+        // Despertarlo cuando no le toca no cambia nada.
+        $mesa->despertarAlBot($partida);
+        $this->assertSame($vista, $mesa->vista($partida));
+    }
+
+    public function test_los_pasos_desde_un_evento_son_la_vista_del_jugador_despues_de_cada_evento_posterior(): void
+    {
+        $mesa = $this->mesa();
+        $partida = $this->partidaArmada([['4-copa', '5-copa', '6-basto'], ['1-espada', '3-oro', '10-basto']]);
+
+        $mesa->actuar($partida, Accion::jugar(Carta::de('4-copa')));
+        $eventos = $partida->eventos()->count();
+        $pasos = $mesa->pasosDesde($partida, 1);
+
+        $this->assertSame(range(2, $eventos), array_column($pasos, 'evento'));
+        $this->assertSame($mesa->vista($partida), $pasos[count($pasos) - 1]);
+        $this->assertSame([], $mesa->pasosDesde($partida, $eventos));
+
+        foreach ($pasos as $paso) {
+            $this->assertSame(Mesa::JUGADOR, $paso['asiento']);
+        }
+    }
+
     private function mesa(): Mesa
     {
         return $this->app->make(Mesa::class);
+    }
+
+    /**
+     * Una partida con el jugador de mano y las cartas que se indiquen, guardada como la guardaría la mesa.
+     *
+     * @param  array{0: list<string>, 1: list<string>}  $manos  Las del jugador y las del bot.
+     */
+    private function partidaArmada(array $manos): Partida
+    {
+        $partida = Partida::create([
+            'jugador_id' => Jugador::factory()->invitado()->create()->id,
+            'primer_mano' => Mesa::JUGADOR,
+            'puntos' => 30,
+        ]);
+
+        $partida->eventos()->create([
+            'numero' => 1,
+            'tipo' => EventoDePartida::REPARTO,
+            'datos' => ['manos' => $manos],
+            'creado_en' => now(),
+        ]);
+
+        return $partida;
     }
 
     /**
@@ -270,11 +427,14 @@ class MesaTest extends TestCase
         $vista = $mesa->vista($partida->fresh());
 
         if ($vista['fase'] === Fase::PorRepartir->value) {
-            return $mesa->repartir($partida);
+            $mesa->repartir($partida);
+        } else {
+            $this->assertNotEmpty($vista['acciones'], 'La mano está en juego y al jugador no le toca: el bot tendría que haber jugado.');
+
+            $mesa->actuar($partida, Accion::desdeArray($vista['acciones'][$azar->entero(0, count($vista['acciones']) - 1)]));
         }
 
-        $this->assertNotEmpty($vista['acciones'], 'La mano está en juego y al jugador no le toca: el bot tendría que haber jugado.');
-
-        return $mesa->actuar($partida, Accion::desdeArray($vista['acciones'][$azar->entero(0, count($vista['acciones']) - 1)]));
+        // En los tests la cola corre en el momento: acá ya están la jugada propia y las del bot.
+        return $mesa->pasosDesde($partida, $vista['evento']);
     }
 }

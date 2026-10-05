@@ -2,6 +2,7 @@
 
 namespace App\Juego;
 
+use App\Jobs\TurnoDelBot;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
@@ -14,7 +15,6 @@ use App\Motor\Mazo;
 use App\Motor\Partida as Motor;
 use Closure;
 use Illuminate\Support\Facades\DB;
-use LogicException;
 
 /**
  * La mesa contra el bot: une la partida guardada con el motor de reglas.
@@ -22,14 +22,20 @@ use LogicException;
  * En la base no se guarda el estado de la partida sino su historia: cada
  * reparto con sus cartas y cada acción. El estado se reconstruye aplicando esa
  * historia al motor. Todo lo que cambia una partida pasa por acá, dentro de
- * una transacción que bloquea su fila, para que dos pedidos a la vez no
- * puedan guardar la misma jugada dos veces.
+ * una transacción que bloquea su fila, para que dos pedidos a la vez (o un
+ * pedido y el job del bot) no puedan guardar la misma jugada dos veces.
+ *
+ * El bot no juega dentro del pedido del jugador: su turno sale de un job en
+ * cola (TurnoDelBot), una acción por vez.
  */
 final class Mesa
 {
     public const JUGADOR = 0;
 
     public const BOT = 1;
+
+    /** Los segundos que el bot espera antes de cada jugada. La cola en base de datos cuenta segundos enteros. */
+    public const DEMORA_DEL_BOT = 1;
 
     /**
      * Cada partida juega contra el bot de su nivel. Un bot fijo sirve para los tests, que necesitan mirar qué recibe.
@@ -76,40 +82,64 @@ final class Mesa
     }
 
     /**
+     * La última partida del jugador, esté en curso o no. La mesa la consulta para enterarse de
+     * las jugadas del bot, y la última de todas puede ser la que cerró la partida.
+     */
+    public function ultimaDe(Jugador $jugador): ?Partida
+    {
+        return Partida::query()->where('jugador_id', $jugador->getKey())->latest('id')->first();
+    }
+
+    /**
      * El estado de la partida, armado de cero con sus eventos.
      */
     public function reconstruir(Partida $partida): Motor
     {
-        $motor = Motor::nueva(2, $partida->primer_mano, $partida->puntos);
+        $motor = $this->sinJugar($partida);
 
         foreach ($partida->eventos()->get() as $evento) {
-            $motor = match ($evento->tipo) {
-                EventoDePartida::REPARTO => $motor->conManos(array_map(
-                    fn (array $mano) => array_map(Carta::de(...), $mano),
-                    $evento->datos['manos'],
-                )),
-                EventoDePartida::ACCION => $motor->aplicar($evento->asiento, Accion::desdeArray($evento->datos)),
-                // Un abandono cierra la partida sin cambiar lo que se jugó.
-                default => $motor,
-            };
+            $motor = $this->aplicarEvento($motor, $evento);
         }
 
         return $motor;
     }
 
     /**
-     * Lo que ve el jugador: su vista del motor, que no trae las cartas del bot.
+     * Lo que ve el jugador: su vista del motor, que no trae las cartas del bot, y el número del último evento.
      *
      * @return array<string, mixed>
      */
     public function vista(Partida $partida): array
     {
-        return $this->reconstruir($partida)->vistaPara(self::JUGADOR);
+        return $this->paso($this->reconstruir($partida), (int) $partida->eventos()->max('numero'));
     }
 
     /**
-     * El jugador hace algo. Si el motor lo acepta se guarda, y después juega el bot
-     * todo lo que le toque. Devuelve cada paso con la vista que le quedó al jugador.
+     * Lo que pasó después de un evento: la vista del jugador tras cada evento posterior, en orden.
+     * Así se entera la mesa de las jugadas del bot, que juega aparte.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function pasosDesde(Partida $partida, int $desde): array
+    {
+        $motor = $this->sinJugar($partida);
+        $pasos = [];
+
+        foreach ($partida->eventos()->get() as $evento) {
+            $motor = $this->aplicarEvento($motor, $evento);
+
+            // Un abandono no cambia lo que hay en la mesa: no es un paso para mostrar.
+            if ($evento->numero > $desde && $evento->tipo !== EventoDePartida::ABANDONO) {
+                $pasos[] = $this->paso($motor, $evento->numero);
+            }
+        }
+
+        return $pasos;
+    }
+
+    /**
+     * El jugador hace algo. Si el motor lo acepta se guarda, y si después le toca al bot se le
+     * deja el turno en la cola. Devuelve el paso de esa jugada: las del bot llegan por pasosDesde().
      *
      * @return list<array<string, mixed>>
      *
@@ -119,9 +149,10 @@ final class Mesa
     {
         return $this->conLaPartida($partida, function (Partida $partida, Motor $motor) use ($accion) {
             $motor = $motor->aplicar(self::JUGADOR, $accion);
-            $this->guardar($partida, EventoDePartida::ACCION, self::JUGADOR, $accion->aArray());
+            $evento = $this->guardar($partida, EventoDePartida::ACCION, self::JUGADOR, $accion->aArray());
+            $this->despuesDeJugar($partida, $motor);
 
-            return $this->seguir($partida, $motor, [$motor->vistaPara(self::JUGADOR)]);
+            return [$this->paso($motor, $evento)];
         });
     }
 
@@ -151,45 +182,117 @@ final class Mesa
     }
 
     /**
+     * El bot juega una sola acción, si le toca. Lo llama el job de la cola.
+     *
+     * Antes de jugar vuelve a mirar la partida con la fila bloqueada. Si el job llega repetido o
+     * tarde (la partida terminó, el bot ya jugó, le toca al jugador) no hace nada. Devuelve si jugó.
+     */
+    public function turnoDelBot(int $partidaId): bool
+    {
+        return DB::transaction(function () use ($partidaId) {
+            $partida = Partida::query()->whereKey($partidaId)->lockForUpdate()->first();
+
+            if ($partida === null || ! $partida->enCurso()) {
+                return false;
+            }
+
+            $motor = $this->reconstruir($partida);
+
+            if (! $this->leTocaAlBot($motor)) {
+                return false;
+            }
+
+            $bot = $this->botFijo ?? $partida->nivel_bot->bot(Azar::seguro());
+            $accion = $bot->decidir($motor->vistaPara(self::BOT));
+            $motor = $motor->aplicar(self::BOT, $accion);
+
+            $this->guardar($partida, EventoDePartida::ACCION, self::BOT, $accion->aArray());
+            $this->despuesDeJugar($partida, $motor);
+
+            return true;
+        });
+    }
+
+    /**
+     * La red de seguridad: si el turno del bot no salió de la cola (el proceso que la atiende está
+     * caído o atrasado), la mesa lo pide y el bot juega en el momento todo lo que le toque.
+     * Usa el mismo camino que el job, así que si el job llega después no encuentra nada que hacer.
+     */
+    public function despertarAlBot(Partida $partida): void
+    {
+        // Ninguna mano necesita tantas jugadas seguidas de un mismo lado: es solo un tope.
+        for ($jugadas = 0; $jugadas < 20; $jugadas++) {
+            if (! $this->turnoDelBot($partida->getKey())) {
+                return;
+            }
+        }
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     private function repartirEn(Partida $partida, Motor $motor): array
     {
         // El mazo se mezcla con el azar seguro y las cartas repartidas quedan en el evento.
         $motor = $motor->repartir(Mazo::mezcladoCon(Azar::seguro()));
-        $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => $motor->aArray()['cartas']]);
+        $evento = $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => $motor->aArray()['cartas']]);
+        $this->despuesDeJugar($partida, $motor);
 
-        return $this->seguir($partida, $motor, [$motor->vistaPara(self::JUGADOR)]);
+        return [$this->paso($motor, $evento)];
     }
 
     /**
-     * Juega el bot mientras le toque, y cierra la partida si alguien llegó a los puntos.
-     *
-     * @param  list<array<string, mixed>>  $pasos
-     * @return list<array<string, mixed>>
+     * Lo que sigue a cualquier jugada guardada: cerrar la partida si alguien llegó a los puntos,
+     * o dejarle el turno al bot si ahora le toca a él.
      */
-    private function seguir(Partida $partida, Motor $motor, array $pasos): array
+    private function despuesDeJugar(Partida $partida, Motor $motor): void
     {
-        $bot = $this->botFijo ?? $partida->nivel_bot->bot(Azar::seguro());
-
-        // Ninguna mano necesita tantas jugadas seguidas de un mismo lado: si pasa, es un error y se corta.
-        for ($jugadas = 0; $motor->fase() === Fase::Jugando && $motor->accionesPara(self::BOT) !== []; $jugadas++) {
-            if ($jugadas === 20) {
-                throw new LogicException('El bot no termina de jugar.');
-            }
-
-            $accion = $bot->decidir($motor->vistaPara(self::BOT));
-            $motor = $motor->aplicar(self::BOT, $accion);
-
-            $this->guardar($partida, EventoDePartida::ACCION, self::BOT, $accion->aArray());
-            $pasos[] = $motor->vistaPara(self::JUGADOR);
-        }
-
         if ($motor->fase() === Fase::Terminada) {
             $this->cerrar($partida, Partida::TERMINADA, $motor->ganador());
+
+            return;
         }
 
-        return $pasos;
+        if ($this->leTocaAlBot($motor)) {
+            // El job sale recién cuando la jugada quedó guardada, y con una demora para que parezca que piensa.
+            TurnoDelBot::dispatch($partida->getKey())
+                ->delay(now()->addSeconds(self::DEMORA_DEL_BOT))
+                ->afterCommit();
+        }
+    }
+
+    private function leTocaAlBot(Motor $motor): bool
+    {
+        return $motor->fase() === Fase::Jugando && $motor->accionesPara(self::BOT) !== [];
+    }
+
+    private function sinJugar(Partida $partida): Motor
+    {
+        return Motor::nueva(2, $partida->primer_mano, $partida->puntos);
+    }
+
+    private function aplicarEvento(Motor $motor, EventoDePartida $evento): Motor
+    {
+        return match ($evento->tipo) {
+            EventoDePartida::REPARTO => $motor->conManos(array_map(
+                fn (array $mano) => array_map(Carta::de(...), $mano),
+                $evento->datos['manos'],
+            )),
+            EventoDePartida::ACCION => $motor->aplicar($evento->asiento, Accion::desdeArray($evento->datos)),
+            // Un abandono cierra la partida sin cambiar lo que se jugó.
+            default => $motor,
+        };
+    }
+
+    /**
+     * Un paso es la vista del jugador después de un evento, con el número de ese evento.
+     * Con ese número la mesa pregunta qué pasó después.
+     *
+     * @return array<string, mixed>
+     */
+    private function paso(Motor $motor, int $evento): array
+    {
+        return [...$motor->vistaPara(self::JUGADOR), 'evento' => $evento];
     }
 
     /**
@@ -212,17 +315,23 @@ final class Mesa
     }
 
     /**
+     * Guarda un evento y devuelve su número.
+     *
      * @param  array<string, mixed>  $datos
      */
-    private function guardar(Partida $partida, string $tipo, ?int $asiento, array $datos): void
+    private function guardar(Partida $partida, string $tipo, ?int $asiento, array $datos): int
     {
+        $numero = (int) $partida->eventos()->max('numero') + 1;
+
         $partida->eventos()->create([
-            'numero' => (int) $partida->eventos()->max('numero') + 1,
+            'numero' => $numero,
             'tipo' => $tipo,
             'asiento' => $asiento,
             'datos' => $datos,
             'creado_en' => now(),
         ]);
+
+        return $numero;
     }
 
     private function cerrar(Partida $partida, string $estado, ?int $ganador): void

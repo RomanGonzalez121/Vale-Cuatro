@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\TurnoDelBot;
 use App\Juego\Mesa;
 use App\Juego\Nivel;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -117,7 +119,7 @@ class MesaPorHttpTest extends TestCase
         $this->actingAs(Jugador::factory()->invitado()->create())->get('/mesa')->assertRedirect('/modos');
     }
 
-    public function test_una_accion_valida_devuelve_los_pasos_y_queda_guardada(): void
+    public function test_una_accion_valida_devuelve_su_paso_y_queda_guardada(): void
     {
         $jugador = $this->sentado();
         $partida = Partida::sole();
@@ -125,12 +127,72 @@ class MesaPorHttpTest extends TestCase
 
         $pasos = $this->actingAs($jugador)->postJson('/mesa/accion', $this->unaAccionValida($partida))
             ->assertOk()
-            ->assertJsonStructure(['pasos' => [['fase', 'tanteo', 'misCartas', 'bazas', 'acciones', 'hechos']]])
+            ->assertJsonStructure(['pasos' => [['fase', 'tanteo', 'misCartas', 'bazas', 'acciones', 'hechos', 'evento']]])
             ->json('pasos');
 
-        // Un paso por la jugada propia y uno por cada jugada del bot: tantos como eventos nuevos.
-        $this->assertCount($partida->eventos()->count() - $antes, $pasos);
+        // La respuesta trae la jugada propia y nada más: el bot juega aparte.
+        $this->assertCount(1, $pasos);
         $this->assertSame(Mesa::JUGADOR, $pasos[0]['asiento']);
+        $this->assertSame($antes + 1, $pasos[0]['evento']);
+    }
+
+    public function test_la_consulta_corta_trae_lo_que_jugo_el_bot_despues_de_un_evento(): void
+    {
+        $jugador = Jugador::factory()->invitado()->create();
+        $partida = $this->partidaArmada($jugador, [['4-copa', '5-copa', '6-basto'], ['1-espada', '6-oro', '10-basto']]);
+
+        // En los tests la cola corre en el momento: cuando vuelve la respuesta, el bot ya jugó.
+        $propio = $this->actingAs($jugador)->postJson('/mesa/accion', ['tipo' => 'jugar', 'carta' => '4-copa'])->json('pasos.0.evento');
+        $pasos = $this->actingAs($jugador)->getJson("/mesa/estado?desde={$propio}")->assertOk()->json('pasos');
+
+        $this->assertNotEmpty($pasos);
+        $this->assertSame(range($propio + 1, $partida->eventos()->count()), array_column($pasos, 'evento'));
+        $this->assertSame('6-oro', $pasos[0]['hechos'][0]['carta'], 'El primer paso es la carta con la que el bot ganó la baza.');
+
+        // Lo que no se jugó no viaja: ni el ancho ni el 10 del bot.
+        foreach (['1-espada', '10-basto'] as $oculta) {
+            $this->assertStringNotContainsString($oculta, json_encode($pasos));
+        }
+
+        // Al día, no hay nada nuevo.
+        $ultimo = $partida->eventos()->count();
+        $this->actingAs($jugador)->getJson("/mesa/estado?desde={$ultimo}")->assertOk()->assertExactJson(['pasos' => []]);
+    }
+
+    public function test_la_consulta_corta_sigue_contestando_si_la_partida_ya_se_cerro(): void
+    {
+        $jugador = $this->sentado();
+        $this->app->make(Mesa::class)->abandonar(Partida::sole());
+
+        // La última jugada del bot puede ser la que cierra la partida: la mesa tiene que poder enterarse.
+        $this->actingAs($jugador)->getJson('/mesa/estado?desde=0')->assertOk()->assertJsonStructure(['pasos' => [['fase', 'evento']]]);
+        $this->actingAs($jugador)->getJson('/mesa/estado')->assertStatus(409);
+        $this->actingAs($jugador)->getJson('/mesa/estado?desde=ayer')->assertStatus(422);
+    }
+
+    public function test_el_turno_del_bot_va_a_la_cola_y_la_red_de_seguridad_lo_hace_jugar_si_la_cola_no_corre(): void
+    {
+        Queue::fake();
+
+        $jugador = Jugador::factory()->invitado()->create();
+        $partida = $this->partidaArmada($jugador, [['4-copa', '5-copa', '6-basto'], ['1-espada', '6-oro', '10-basto']]);
+
+        $propio = $this->actingAs($jugador)->postJson('/mesa/accion', ['tipo' => 'jugar', 'carta' => '4-copa'])->json('pasos.0.evento');
+
+        Queue::assertPushed(TurnoDelBot::class, fn (TurnoDelBot $turno) => $turno->partidaId === $partida->id);
+
+        // Nadie atiende la cola: el bot no jugó.
+        $this->actingAs($jugador)->getJson("/mesa/estado?desde={$propio}")->assertExactJson(['pasos' => []]);
+
+        $this->actingAs($jugador)->postJson('/mesa/bot')->assertOk();
+
+        $pasos = $this->actingAs($jugador)->getJson("/mesa/estado?desde={$propio}")->json('pasos');
+
+        $this->assertNotEmpty($pasos);
+        $this->assertNotSame([], $pasos[count($pasos) - 1]['acciones'], 'El bot jugó lo suyo y le toca al jugador.');
+
+        // Sin partida en curso no hay a quién despertar.
+        $this->actingAs(Jugador::factory()->invitado()->create())->postJson('/mesa/bot')->assertStatus(409);
     }
 
     public function test_una_accion_invalida_mandada_a_mano_se_rechaza_con_el_motivo_y_no_genera_evento(): void
@@ -169,6 +231,8 @@ class MesaPorHttpTest extends TestCase
     {
         $this->postJson('/mesa/accion', ['tipo' => 'mazo'])->assertUnauthorized();
         $this->postJson('/mesa/repartir')->assertUnauthorized();
+        $this->postJson('/mesa/bot')->assertUnauthorized();
+        $this->getJson('/mesa/estado?desde=0')->assertUnauthorized();
         $this->post('/mesa/abandonar')->assertRedirect('/');
     }
 
@@ -223,7 +287,10 @@ class MesaPorHttpTest extends TestCase
 
         $respuesta = $this->actingAs($jugador)->postJson('/mesa/accion', $this->unaAccionValida($partida))->assertOk();
 
-        foreach ($respuesta->json('pasos') as $paso) {
+        // La respuesta a la jugada propia y todo lo que devuelve la consulta corta, con las jugadas del bot.
+        $pasos = [...$respuesta->json('pasos'), ...$this->actingAs($jugador)->getJson('/mesa/estado?desde=0')->assertOk()->json('pasos')];
+
+        foreach ($pasos as $paso) {
             $jugadas = array_merge(...array_map(fn (array $baza) => array_column($baza['jugadas'], 1), $paso['bazas']));
             $mostradas = array_merge([], ...array_values($paso['cierre']['mostradas'] ?? []));
 
