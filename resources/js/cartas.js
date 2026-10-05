@@ -55,6 +55,21 @@ export function tanto(cartas) {
     return mejor;
 }
 
+/** Las cartas que arman el tanto: las dos del mismo palo que más suman o, si no hay, la más alta. */
+export function cartasDelTanto(cartas) {
+    let mejores = [cartas.reduce((a, b) => (valorDeEnvido(b) > valorDeEnvido(a) ? b : a))];
+
+    cartas.forEach((a, i) => {
+        cartas.slice(i + 1).forEach((b) => {
+            if (paloDe(a) === paloDe(b) && tanto([a, b]) >= tanto(mejores)) {
+                mejores = [a, b];
+            }
+        });
+    });
+
+    return mejores;
+}
+
 export function cartasAlAzar(cantidad) {
     const mazo = PALOS.flatMap((palo) => NUMEROS.map((numero) => `${numero}-${palo}`));
 

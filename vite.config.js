@@ -12,7 +12,8 @@ export default defineConfig({
     ],
     server: {
         watch: {
-            ignored: ['**/storage/framework/views/**'],
+            // docs/ no tiene nada que recargar, y en Windows copiar ahí una captura tiraba abajo a Vite.
+            ignored: ['**/storage/framework/views/**', '**/docs/**'],
         },
     },
 });

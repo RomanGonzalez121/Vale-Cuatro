@@ -21,7 +21,8 @@ class DatosDeEjemplo
         return [
             ['vos' => ['7-oro', '6-oro', '1-espada'], 'rival' => ['3-basto', '12-copa', '5-copa'], 'rivalCantaTruco' => false],
             ['vos' => ['3-espada', '11-basto', '4-copa'], 'rival' => ['7-espada', '2-oro', '10-oro'], 'rivalCantaTruco' => true],
-            ['vos' => ['1-basto', '2-copa', '12-espada'], 'rival' => ['1-oro', '6-basto', '4-espada'], 'rivalCantaTruco' => false],
+            // En esta el bot tiene mejor envido: sirve para ver el "son mejores" y sus cartas al cerrar la mano.
+            ['vos' => ['1-basto', '6-copa', '5-copa'], 'rival' => ['7-oro', '6-oro', '4-espada'], 'rivalCantaTruco' => false],
         ];
     }
 

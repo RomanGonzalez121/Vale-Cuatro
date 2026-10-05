@@ -948,6 +948,24 @@ html:has(body.superficie-pano) {
         cursor: default;
     }
 
+    /*
+     | Mientras se canta tu tanto, las cartas que lo arman se levantan y la que
+     | no cuenta se apaga.
+     */
+    .mesa-mano .naipe-jugable {
+        transition:
+            transform 160ms var(--ease-llegada),
+            opacity 200ms var(--ease-llegada);
+    }
+
+    .naipe-jugable.del-tanto {
+        transform: translateY(-6%);
+    }
+
+    .mesa-mano[data-tanto] .naipe-jugable:not(.del-tanto) {
+        opacity: 0.45;
+    }
+
     /* La mesa mide sus piezas contra su propio ancho, no contra el de la ventana. */
     /*
      | Todas las cartas de la mesa salen de una sola medida, --b, el ancho de una
@@ -973,12 +991,22 @@ html:has(body.superficie-pano) {
         min-height: calc(var(--ancho-rival) * 1.56);
     }
 
+    /* La fila guarda el ancho de las tres cartas aunque el rival ya las haya jugado: nada se corre. */
+    .mesa-rival {
+        min-width: calc(var(--ancho-rival) * 3 + 1rem);
+    }
+
     .mesa-rival > * {
         width: var(--ancho-rival);
     }
 
     .mesa-mano {
         --ancho-carta: calc(var(--b) * 1.4);
+    }
+
+    /* Cada lugar de tu mano conserva el alto de una carta cuando queda vacío: ahí va el cierre de la mano. */
+    .mesa-mano > * {
+        aspect-ratio: 100 / 156;
     }
 
     /* La mesa de juego ocupa la pantalla completa: barra, campo y cantos. */
@@ -1063,6 +1091,19 @@ html:has(body.superficie-pano) {
         border-color: transparent;
     }
 
+    /* Baza resuelta: la carta que gana queda arriba y la que pierde se apaga. */
+    .hueco-baza > * {
+        transition: opacity 220ms var(--ease-llegada);
+    }
+
+    .hueco-baza[data-gana] {
+        z-index: 2;
+    }
+
+    .hueco-baza[data-pierde] > * {
+        opacity: 0.45;
+    }
+
     .mesa-acciones .boton {
         flex: 1 1 0;
         min-width: 0;
@@ -1137,6 +1178,11 @@ html:has(body.superficie-pano) {
         opacity: 1;
         transform: scale(1) rotate(var(--giro));
         transition-duration: 240ms;
+    }
+
+    /* El tanto que pierde el envido queda a media tinta. */
+    .voz[data-visible='true'][data-pierde='true'] {
+        opacity: 0.38;
     }
 
     /* Tanteador: cada punto es un fósforo que cae en su lugar. */
@@ -1295,9 +1341,15 @@ html:has(body.superficie-pano) {
     .boton:not([disabled]):hover,
     .boton:not([disabled]):hover .icono,
     .naipe-jugable,
-    .naipe-jugable:not([disabled]):hover {
+    .naipe-jugable:not([disabled]):hover,
+    .naipe-jugable.del-tanto {
         transform: none;
         transition: none;
+    }
+
+    /* Las cartas del tanto no se levantan: alcanza con que la otra se apague. */
+    .mesa-mano .naipe-jugable {
+        transition: opacity 150ms ease;
     }
 
     .enlace-nav::before {

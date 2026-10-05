@@ -21,7 +21,8 @@
             </div>
         </header>
 
-        <div class="mesa-campo">
+        {{-- Tocar la mesa apura lo que se esté mostrando (los tantos del envido). --}}
+        <div class="mesa-campo" @click="apurar()">
             <section aria-label="Rival" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-7">
                 <p class="flex flex-col items-end gap-1 justify-self-end text-right text-sm font-semibold leading-tight sm:flex-row sm:items-center sm:gap-2 sm:text-base">
                     <x-icono nombre="bot" class="size-5" />
@@ -54,29 +55,62 @@
                         :class="{ 'canto-oro': voz.tono === 'oro', 'canto-ficha canto-copa': voz.tono === 'copa', 'canto-ficha canto-basto': voz.tono === 'basto' }"
                         x-text="voz.texto"></p>
                 </div>
+
+                {{--
+                    Los tantos del envido, cantados como en la mesa: arriba el rival y abajo vos.
+                    El que pierde queda a media tinta. Lo mismo se anuncia en el aviso de abajo.
+                --}}
+                <div class="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-[0.3em] pt-7" style="font-size: min(5.5rem, 9dvh, 23cqw)" aria-hidden="true">
+                    @foreach (['rival', 'vos'] as $quien)
+                        <p class="voz canto canto-oro text-center" data-quien="{{ $quien }}" :data-visible="tantos.{{ $quien }}.visible"
+                            :data-pierde="tantos.resuelto && tantos.gana !== '{{ $quien }}'">
+                            <span class="block leading-[0.85]" x-show="tantos.{{ $quien }}.numero !== ''" x-text="tantos.{{ $quien }}.numero"></span>
+                            <span class="block leading-none" :class="tantos.{{ $quien }}.numero === '' ? 'text-[0.5em]' : 'text-[0.34em]'" x-text="tantos.{{ $quien }}.frase"></span>
+                        </p>
+                    @endforeach
+                </div>
             </section>
 
-            <p aria-live="polite" class="min-h-6 text-center text-[0.95rem] font-semibold leading-snug sm:text-lg" x-text="aviso">Repartiendo.</p>
+            {{-- Al cerrar la mano el aviso sigue anunciándose, pero lo que se ve es el cierre de abajo. --}}
+            <p aria-live="polite" class="min-h-6 text-center text-[0.95rem] font-semibold leading-snug sm:text-lg" :class="{ 'opacity-0': cierre }" x-text="aviso">Repartiendo.</p>
 
             {{-- En el celular, la marca de mano y el estado del truco van arriba de las cartas; en pantallas anchas, a los costados. --}}
-            <section aria-label="Tu mano" class="grid items-center gap-x-7 pb-4 pt-1 sm:grid-cols-[1fr_auto_1fr]">
+            <section aria-label="Tu mano" class="relative grid items-center gap-x-7 pb-4 pt-1 sm:grid-cols-[1fr_auto_1fr]">
                 <div class="flex min-h-7 items-center justify-center gap-3 text-sm sm:contents">
-                    <p class="inline-flex items-center gap-1.5 rounded-full border border-naipe/40 px-2.5 py-0.5 font-semibold sm:order-1 sm:justify-self-end">
+                    <p class="inline-flex items-center gap-1.5 rounded-full border border-naipe/40 px-2.5 py-0.5 font-semibold sm:order-1 sm:justify-self-end" :class="{ 'opacity-0': cierre }">
                         <x-icono nombre="mano" class="size-4" /> Sos mano
                     </p>
-                    <p class="font-semibold sm:order-3 sm:justify-self-start sm:text-base" x-text="estadoDelTruco"></p>
+                    <p class="font-semibold sm:order-3 sm:justify-self-start sm:text-base" :class="{ 'opacity-0': cierre }" x-text="estadoDelTruco"></p>
                 </div>
                 <div x-ref="mano" class="abanico mesa-mano sm:order-2">
                     <div></div>
                     <div></div>
                     <div></div>
                 </div>
+
+                {{--
+                    El cierre de la mano ocupa el lugar de tus cartas, que ya volvieron al mazo:
+                    quién ganó, por qué y cuánto sumó cada cosa. No agrega una fila a la mesa.
+                --}}
+                <div x-show="cierre" x-cloak x-transition:enter="aparece" x-transition:enter-start="opacity-0"
+                    class="absolute inset-0 z-10 flex flex-col items-center justify-center px-2 text-center" aria-hidden="true">
+                    <p class="text-[clamp(1.5rem,7cqw,2.5rem)] font-black leading-none tracking-tight" x-text="cierre?.titulo"></p>
+                    <p class="mt-2 text-sm font-semibold sm:text-base" x-text="cierre?.motivo"></p>
+                    <ul class="mt-3 flex flex-wrap justify-center gap-x-6 gap-y-1.5">
+                        <template x-for="linea in cierre?.lineas ?? []" :key="linea.concepto">
+                            <li class="flex items-baseline gap-2 text-sm font-semibold sm:text-base">
+                                <span class="text-[1.75rem] font-black leading-none tabular-nums text-oro" x-text="linea.puntos"></span>
+                                <span x-text="linea.texto"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
             </section>
         </div>
 
         <section aria-label="Cantos disponibles" class="relative z-10 bg-pano-hondo px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
             {{-- Solo se muestran los cantos que existen en este momento de la mano. --}}
-            <div class="mesa-acciones mx-auto flex max-w-2xl gap-2" x-show="! pendiente">
+            <div class="mesa-acciones mx-auto flex max-w-2xl gap-2" x-show="! pendiente && ! cerrada">
                 <button type="button" class="boton boton-oro" x-show="hayEnvido" :disabled="! puedeEnvido" @click="cantarEnvido()">
                     <x-icono nombre="envido" /> Envido
                 </button>
@@ -97,6 +131,13 @@
                 </button>
                 <button type="button" class="boton boton-copa" @click="responder('no-quiero')">
                     <x-icono nombre="no-quiero" /> No quiero
+                </button>
+            </div>
+
+            {{-- Con la mano cerrada no queda nada por cantar: lo único que se puede hacer es repartir. --}}
+            <div class="mesa-acciones mx-auto flex max-w-2xl gap-2" x-show="cerrada" x-cloak>
+                <button type="button" x-ref="repartir" class="boton boton-naipe" :disabled="juntando || fin !== null" @click="siguienteMano()">
+                    <x-icono nombre="repartir" /> Repartir
                 </button>
             </div>
         </section>

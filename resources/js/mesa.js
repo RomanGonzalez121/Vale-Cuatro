@@ -5,12 +5,16 @@
  | sigue un guion mínimo, solo para poder ver el movimiento. Las reglas de acá
  | abajo (fuerza de las cartas, tanto, pardas) existen para que la muestra sea
  | coherente; el motor real es de M2 y vive en el servidor. Lo que queda para
- | siempre es la parte visual: repartir, mover una carta, cantar y anotar.
+ | siempre es la parte visual: repartir, mover una carta, cantar, cantar los
+ | tantos, cerrar la mano y anotar. Esas piezas reciben los datos ya resueltos,
+ | así en M3 solo cambia de dónde vienen.
  */
 
-import { LLEGADA, fuerza, movimientoReducido, nombreDe, plantilla, tanto } from './cartas';
+import { LLEGADA, cartasDelTanto, fuerza, movimientoReducido, nombreDe, plantilla, tanto } from './cartas';
 
 const CANTOS_DE_TRUCO = { 1: 'Truco', 2: 'Retruco', 3: 'Vale cuatro' };
+const DE_QUIEN = { vos: 'tuya', rival: 'del bot', parda: 'parda' };
+const CALLADO = { numero: '', frase: '', visible: false };
 
 export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
     manos,
@@ -23,15 +27,22 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
     manoRival: [],
     turno: 'espera',
     envidoCantado: false,
+    envidoGanadoPor: null,
     truco: { valor: 1, quiero: null },
     pendiente: false,
     voz: { texto: '', tono: 'copa', quien: 'vos', visible: false },
+    tantos: { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false },
+    desglose: [],
+    cierre: null,
     aviso: 'Repartiendo.',
     cerrada: false,
+    juntando: false,
     fin: null,
     reducido: movimientoReducido.matches,
     relojes: [],
     relojDeVoz: null,
+    relojDePasos: null,
+    pasos: [],
 
     init() {
         this.repartir();
@@ -64,13 +75,18 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         return this.truco.valor > 1 ? `${CANTOS_DE_TRUCO[this.truco.valor - 1]} querido, vale ${this.truco.valor}` : '';
     },
 
+    // Lo que vale la mano se anota con el nombre del último canto querido.
+    get conceptoDeLaMano() {
+        return this.truco.valor > 1 ? CANTOS_DE_TRUCO[this.truco.valor - 1] : 'Mano';
+    },
+
     get tamanoDeVoz() {
         // 0.56 em es el ancho medio de una letra de Piazzolla Black Italic; 0.6 em, el relleno de la ficha.
         return `min(11rem, 24dvh, calc(88cqw / ${Math.max(this.voz.texto.length, 4) * 0.56 + 0.6}))`;
     },
 
     resultadoDeBaza(numero) {
-        return { vos: 'tuya', rival: 'del bot', parda: 'parda' }[this.ganadas[numero]] ?? '';
+        return DE_QUIEN[this.ganadas[numero]] ?? '';
     },
 
     // Piezas visuales
@@ -82,6 +98,46 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
     frenarRelojes() {
         this.relojes.forEach(clearTimeout);
         this.relojes = [];
+        clearTimeout(this.relojDePasos);
+        this.pasos = [];
+    },
+
+    /**
+     * Corre una serie de pasos, cada uno con su espera: [milisegundos, acción].
+     */
+    secuencia(pasos) {
+        this.pasos = [...pasos];
+        this.proximoPaso();
+    },
+
+    proximoPaso() {
+        if (! this.pasos.length) {
+            return;
+        }
+
+        this.relojDePasos = setTimeout(() => {
+            this.pasos.shift()[1]();
+            this.proximoPaso();
+        }, this.pasos[0][0]);
+    },
+
+    /**
+     * Tocar la mesa apura lo que se está mostrando: se cumplen de una los pasos
+     * que faltan y el último, que es el que limpia, llega enseguida.
+     */
+    apurar() {
+        if (this.pasos.length < 2) {
+            return;
+        }
+
+        clearTimeout(this.relojDePasos);
+
+        while (this.pasos.length > 1) {
+            this.pasos.shift()[1]();
+        }
+
+        this.pasos[0][0] = 700;
+        this.proximoPaso();
     },
 
     hueco(numero, quien) {
@@ -112,6 +168,29 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
     },
 
     /**
+     * El camino inverso del reparto: la carta vuelve al mazo. Es una salida, así
+     * que dura menos que la llegada. Devuelve la animación para saber cuándo terminó.
+     */
+    guardar(elemento, orden) {
+        const origen = this.$refs.origen.getBoundingClientRect();
+        const desde = elemento.getBoundingClientRect();
+        const cuadros = this.reducido
+            ? [{ opacity: 1 }, { opacity: 0 }]
+            : [
+                { opacity: 1, transform: 'none' },
+                { opacity: 1, offset: 0.6 },
+                { opacity: 0, transform: `translate(${origen.left - desde.left}px, ${origen.top - desde.top}px) rotate(14deg) scale(0.8)` },
+            ];
+
+        return elemento.animate(cuadros, {
+            duration: this.reducido ? 120 : 200,
+            delay: this.reducido ? 0 : orden * 30,
+            easing: LLEGADA,
+            fill: 'forwards',
+        });
+    },
+
+    /**
      * Mueve una carta a su lugar en la baza y la anima desde donde estaba,
      * para que se vea de dónde salió.
      */
@@ -132,10 +211,86 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         carta.animate(cuadros, { duration: this.reducido ? 150 : 260, easing: LLEGADA });
     },
 
+    /**
+     * Da vuelta una carta que estaba boca abajo, con el mismo giro del resto del sitio.
+     */
+    darVuelta(lugar, carta) {
+        const giro = document.createElement('div');
+        const dorso = document.createElement('div');
+        const cara = document.createElement('div');
+
+        giro.className = 'giro';
+        giro.dataset.vuelta = 'false';
+        cara.className = 'giro-cara';
+        dorso.append(...lugar.childNodes);
+        cara.append(plantilla(carta));
+        giro.append(dorso, cara);
+        lugar.replaceChildren(giro);
+
+        // Dos cuadros de espera: el navegador tiene que pintar el dorso antes de girarlo.
+        requestAnimationFrame(() => requestAnimationFrame(() => (giro.dataset.vuelta = 'true')));
+    },
+
     cantar(texto, tono, quien) {
         clearTimeout(this.relojDeVoz);
         this.voz = { texto, tono, quien, visible: true };
         this.relojDeVoz = setTimeout(() => (this.voz.visible = false), 1250);
+    },
+
+    /**
+     * Los tantos se cantan como en la mesa. Primero el mano, que dice su número;
+     * el otro contesta con uno mayor ("31 son mejores") o con "Son buenas", sin
+     * mostrar el suyo. Después el que pierde queda a media tinta y recién ahí
+     * caen los puntos. Si empatan, gana el mano.
+     */
+    cantarTantos({ mano, tantos, concepto, puntos, alTerminar }) {
+        const otro = mano === 'vos' ? 'rival' : 'vos';
+        const gana = tantos[otro] > tantos[mano] ? otro : mano;
+
+        clearTimeout(this.relojDeVoz);
+        this.voz.visible = false;
+        this.tantos = { vos: { ...CALLADO }, rival: { ...CALLADO }, gana, resuelto: false };
+        this.envidoGanadoPor = gana;
+
+        this.secuencia([
+            [160, () => {
+                this.tantos[mano] = { numero: tantos[mano], frase: '', visible: true };
+                this.aviso = mano === 'vos' ? `Cantás ${tantos.vos}.` : `El bot canta ${tantos.rival}.`;
+                this.levantarTanto(mano === 'vos');
+            }],
+            [800, () => {
+                this.tantos[otro] = gana === otro
+                    ? { numero: tantos[otro], frase: 'son mejores', visible: true }
+                    : { numero: '', frase: 'Son buenas', visible: true };
+                this.levantarTanto(gana === 'vos');
+            }],
+            [650, () => {
+                // Corto, para que entre en un renglón del celular.
+                const respuesta = gana === otro ? `${tantos[otro]} son mejores.` : 'Son buenas.';
+
+                this.tantos.resuelto = true;
+                this.aviso = `${respuesta} ${gana === 'vos' ? `Ganás el envido: sumás ${puntos}.` : `El bot suma ${puntos}.`}`;
+                this.anotar(concepto, gana, puntos);
+            }],
+            [1500, () => {
+                this.tantos.vos.visible = false;
+                this.tantos.rival.visible = false;
+                this.levantarTanto(false);
+                alTerminar?.();
+            }],
+        ]);
+    },
+
+    /**
+     * Levanta de tu mano las cartas que arman tu tanto y apaga la que no cuenta.
+     */
+    levantarTanto(levantar) {
+        const delTanto = cartasDelTanto(this.manos[this.indice % this.manos.length].vos);
+
+        this.$refs.mano.toggleAttribute('data-tanto', levantar);
+        this.$refs.mano.querySelectorAll('button').forEach((boton) => {
+            boton.classList.toggle('del-tanto', levantar && delTanto.includes(boton.dataset.carta));
+        });
     },
 
     sumar(quien, cantidad) {
@@ -151,9 +306,17 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         }
     },
 
+    /**
+     * Suma puntos y deja anotado por qué, para el desglose del cierre de la mano.
+     */
+    anotar(concepto, quien, cantidad) {
+        this.desglose.push({ concepto, puntos: cantidad, texto: `${concepto}, para ${quien === 'vos' ? 'vos' : 'el bot'}` });
+        this.sumar(quien, cantidad);
+    },
+
     // La mano
 
-    repartir() {
+    repartir(enfocar = false) {
         const mano = this.manos[this.indice % this.manos.length];
 
         this.frenarRelojes();
@@ -163,23 +326,35 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         this.manoVos = [...mano.vos];
         this.manoRival = [...mano.rival];
         this.envidoCantado = false;
+        this.envidoGanadoPor = null;
         this.truco = { valor: 1, quiero: null };
+        this.tantos = { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false };
+        this.desglose = [];
+        this.cierre = null;
         this.pendiente = false;
         this.cerrada = false;
+        this.juntando = false;
         this.turno = 'espera';
         this.aviso = 'Repartiendo.';
 
         [0, 1, 2].forEach((numero) => {
-            this.hueco(numero, 'vos').replaceChildren();
-            this.hueco(numero, 'rival').replaceChildren();
+            ['vos', 'rival'].forEach((quien) => {
+                const hueco = this.hueco(numero, quien);
+
+                hueco.replaceChildren();
+                delete hueco.dataset.gana;
+                delete hueco.dataset.pierde;
+            });
         });
         this.$refs.rival.replaceChildren();
+        this.$refs.mano.removeAttribute('data-tanto');
 
         mano.vos.forEach((carta, i) => {
             const boton = document.createElement('button');
 
             boton.type = 'button';
             boton.className = 'naipe-jugable';
+            boton.dataset.carta = carta;
             boton.setAttribute('aria-label', `${nombreDe(carta)}, jugar esta carta`);
             boton.append(plantilla(carta));
             boton.addEventListener('click', () => this.jugar(carta, boton));
@@ -196,6 +371,11 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         this.despues(this.reducido ? 200 : 650, () => {
             this.turno = 'vos';
             this.aviso = 'Sos mano. Jugá una carta o cantá.';
+
+            // Quien llegó con el teclado al botón de repartir sigue en sus cartas.
+            if (enfocar) {
+                this.$refs.mano.querySelector('button')?.focus({ preventScroll: true });
+            }
         });
     },
 
@@ -259,6 +439,12 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
             parda: 'Parda. Sale el mano.',
         }[resultado];
 
+        // La carta que gana queda arriba y la que pierde se apaga: la baza se lee de un vistazo.
+        if (resultado !== 'parda') {
+            this.hueco(this.baza, resultado).dataset.gana = '';
+            this.hueco(this.baza, resultado === 'vos' ? 'rival' : 'vos').dataset.pierde = '';
+        }
+
         const ganador = this.ganadorDeLaMano();
 
         if (ganador) {
@@ -301,19 +487,76 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         return tercera ? (tercera === 'parda' ? primera : tercera) : null;
     },
 
-    cerrarMano(ganador, puntos, motivo = null) {
+    /**
+     * El cierre de la mano: quién la ganó, por qué y cuánto sumó cada cosa.
+     * Queda a la vista hasta que el jugador reparte. Lo que no se jugó vuelve
+     * al mazo boca abajo, salvo las cartas con las que el bot ganó el envido,
+     * que tiene que mostrar.
+     */
+    cerrarMano(ganador, puntos, { motivo = null, concepto = null } = {}) {
+        const titulo = ganador === 'vos' ? 'Ganaste la mano' : 'La mano es del bot';
+        const razon = motivo ?? `Bazas: ${this.ganadas.map((baza) => DE_QUIEN[baza]).join(', ')}.`;
+
         this.frenarRelojes();
         this.cerrada = true;
         this.pendiente = false;
         this.turno = 'espera';
-        this.aviso = motivo ?? (ganador === 'vos' ? `Ganaste la mano. Sumás ${puntos}.` : `El bot ganó la mano. Suma ${puntos}.`);
-        this.sumar(ganador, puntos);
+        this.tantos.vos.visible = false;
+        this.tantos.rival.visible = false;
+        this.anotar(concepto ?? this.conceptoDeLaMano, ganador, puntos);
 
-        this.despues(2100, () => {
-            if (! this.fin) {
-                this.indice++;
-                this.repartir();
-            }
+        const mostradas = this.recogerSobrantes();
+
+        this.cierre = { titulo, motivo: razon, lineas: [...this.desglose] };
+        this.aviso = [
+            `${titulo}. ${razon}`,
+            ...this.desglose.map((linea) => `${linea.puntos} por ${linea.texto}.`),
+            mostradas.length ? `El bot muestra ${mostradas.map((carta) => `el ${nombreDe(carta)}`).join(' y ')}.` : '',
+            'Apretá Repartir para seguir.',
+        ].filter(Boolean).join(' ');
+
+        this.$nextTick(() => this.$refs.repartir.focus({ preventScroll: true }));
+    },
+
+    /**
+     * Devuelve las cartas del bot que quedaron a la vista.
+     */
+    recogerSobrantes() {
+        const dorsos = [...this.$refs.rival.children];
+        const delTanto = cartasDelTanto(this.manos[this.indice % this.manos.length].rival);
+        const mostradas = this.envidoGanadoPor === 'rival' ? this.manoRival.filter((carta) => delTanto.includes(carta)) : [];
+
+        this.$refs.mano.removeAttribute('data-tanto');
+        this.$refs.mano.querySelectorAll('button').forEach((boton, i) => {
+            boton.disabled = true;
+            this.guardar(boton, i).finished.then(() => boton.remove());
+        });
+
+        mostradas.forEach((carta, i) => this.darVuelta(dorsos[i], carta));
+        dorsos.slice(mostradas.length).forEach((dorso, i) => this.guardar(dorso, i));
+
+        return mostradas;
+    },
+
+    /**
+     * Junta lo que quedó en la mesa y reparte la mano siguiente.
+     */
+    siguienteMano() {
+        if (! this.cerrada || this.fin || this.juntando) {
+            return;
+        }
+
+        const conTeclado = document.activeElement === this.$refs.repartir;
+        const cartas = [...this.$refs.bazas.querySelectorAll('[data-hueco] > *'), ...this.$refs.rival.querySelectorAll('.giro')];
+
+        this.juntando = true;
+        this.cierre = null;
+        this.aviso = 'Repartiendo.';
+        cartas.forEach((carta, i) => this.guardar(carta, i));
+
+        this.despues(this.reducido ? 130 : 210 + cartas.length * 30, () => {
+            this.indice++;
+            this.repartir(conTeclado);
         });
     },
 
@@ -325,8 +568,7 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         }
 
         const mano = this.manos[this.indice % this.manos.length];
-        const tuyo = tanto(mano.vos);
-        const suyo = tanto(mano.rival);
+        const tantos = { vos: tanto(mano.vos), rival: tanto(mano.rival) };
 
         this.envidoCantado = true;
         this.turno = 'espera';
@@ -334,17 +576,25 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         this.aviso = 'Cantaste envido.';
 
         this.despues(1300, () => {
-            if (suyo < 23) {
+            if (tantos.rival < 23) {
                 this.cantar('No quiero', 'copa', 'rival');
                 this.aviso = 'El bot no quiso el envido. Sumás 1.';
-                this.sumar('vos', 1);
-            } else {
-                this.cantar('Quiero', 'basto', 'rival');
-                this.aviso = tuyo >= suyo ? `Envido: ${tuyo} a ${suyo}. Sumás 2.` : `Envido: ${tuyo} a ${suyo}. El bot suma 2.`;
-                this.sumar(tuyo >= suyo ? 'vos' : 'rival', 2);
+                // Primero se lee el canto y después cae el punto.
+                this.despues(450, () => this.anotar('Envido no querido', 'vos', 1));
+                this.despues(1000, () => (this.turno = 'vos'));
+
+                return;
             }
 
-            this.despues(700, () => (this.turno = 'vos'));
+            this.cantar('Quiero', 'basto', 'rival');
+            this.aviso = 'El bot quiso el envido.';
+            this.despues(950, () => this.cantarTantos({
+                mano: 'vos',
+                tantos,
+                concepto: 'Envido',
+                puntos: 2,
+                alTerminar: () => (this.turno = 'vos'),
+            }));
         });
     },
 
@@ -366,7 +616,10 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
 
             if (Math.max(...cartasDelBot.map(fuerza)) < 8) {
                 this.cantar('No quiero', 'copa', 'rival');
-                this.cerrarMano('vos', this.truco.valor, `El bot no quiso. Sumás ${this.truco.valor}.`);
+                this.cerrarMano('vos', this.truco.valor, {
+                    motivo: `El bot no quiso el ${canto.toLowerCase()}.`,
+                    concepto: `${canto} no querido`,
+                });
 
                 return;
             }
@@ -387,7 +640,7 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
 
         if (respuesta === 'no-quiero') {
             this.cantar('No quiero', 'copa', 'vos');
-            this.cerrarMano('rival', this.truco.valor, `No quisiste. El bot suma ${this.truco.valor}.`);
+            this.cerrarMano('rival', this.truco.valor, { motivo: 'No quisiste el truco.', concepto: 'Truco no querido' });
 
             return;
         }
@@ -417,8 +670,11 @@ export default (manos, puntosIniciales = { vos: 7, rival: 5 }) => ({
         }
 
         // Mazo en la primera baza sin envido ni flor cantados: 2 para el rival.
-        const puntos = this.baza === 0 && ! this.envidoCantado && this.truco.valor === 1 && ! this.pendiente ? 2 : this.truco.valor;
+        const sinEnvido = this.baza === 0 && ! this.envidoCantado && this.truco.valor === 1 && ! this.pendiente;
 
-        this.cerrarMano('rival', puntos, `Te fuiste al mazo. El bot suma ${puntos}.`);
+        this.cerrarMano('rival', sinEnvido ? 2 : this.truco.valor, {
+            motivo: 'Te fuiste al mazo.',
+            concepto: sinEnvido ? 'Mano y envido sin jugar' : this.conceptoDeLaMano,
+        });
     },
 });
