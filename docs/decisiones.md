@@ -237,6 +237,49 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Hecho:** asientos intercalados, ronda desde el mano, tantos en ronda, cualquiera del equipo contesta y vale la primera respuesta, el quiero es del equipo, cada flor suma para su equipo, la contraflor compara la mejor flor cantada de cada equipo, y el mazo es de un jugador (la baza puede cerrarse con tres cartas). Hay una mano jugada de punta a punta y un test por cada una de esas reglas.
 - **Lecturas provisorias, para M19:** quien se fue al mazo no canta tanto en el envido; las cartas que jugó antes de irse siguen valiendo en la baza; una flor ya cantada sigue compitiendo en la contraflor aunque su dueño se haya ido; y una contraflor vale lo mismo (6, 4 o la falta) aunque un equipo haya cantado dos flores.
 
+## M3. Mesa contra el bot
+
+### La partida se guarda como una lista de eventos
+
+- **Problema:** hay que poder recargar la página y seguir, volver a ver una partida mano por mano (M7) y sacar estadísticas (M8). Si se guardara solo "cómo va", todo eso habría que guardarlo aparte.
+- **Se eligió:** guardar la historia y no el estado. La tabla `eventos_de_partida` tiene cada reparto, con las cartas de cada asiento, y cada acción, en orden. El estado se arma aplicando esos eventos al motor de M2. La fila de `partidas` solo dice de quién es, quién fue mano en la primera mano, a cuántos puntos se juega y en qué quedó.
+- **Se descartó:** guardar el estado entero en cada jugada (ocupa más y deja dos verdades que pueden no coincidir) y guardar la semilla del reparto en vez de las cartas (una partida real reparte con el azar seguro, que no tiene semilla).
+- **Cómo se prueba:** después de cada pedido, lo que devolvió la mesa tiene que ser idéntico a lo que sale de leer los eventos de la base y aplicarlos de cero.
+- **Costo:** cada pedido vuelve a aplicar toda la partida. Una partida entera son unos 200 eventos y el motor los aplica en milisegundos, así que no hizo falta guardar fotos intermedias.
+
+### Un solo lugar por donde cambia una partida
+
+- **Problema:** dos toques seguidos, o dos pestañas, podrían guardar la misma jugada dos veces o abrir dos partidas.
+- **Se eligió:** todo lo que cambia una partida pasa por `App\Juego\Mesa`, dentro de una transacción que bloquea su fila. Los eventos van numerados y la base no acepta dos con el mismo número en la misma partida.
+- **Una acción inválida no deja rastro:** el motor la rechaza con su motivo antes de guardar nada, y la mesa devuelve ese motivo para mostrarlo.
+
+### El navegador recibe pasos, y solo la vista de su asiento
+
+- **Problema:** una jugada del jugador puede desatar varias del bot (contesta un canto, juega su carta, canta). La pantalla tiene que poder contarlas de a una.
+- **Se eligió:** cada pedido devuelve una lista de pasos. Un paso es la vista del asiento del jugador después de una jugada, con los hechos que ocurrieron. La pantalla no tiene reglas: recorre los hechos y los anima con las piezas que ya existían (reparto, carta que cae, canto, tantos, cierre).
+- **Las cartas del bot no viajan:** lo único que sale del servidor es `vistaPara` del asiento del jugador. Hay tests que lo comprueban en las respuestas y en la página.
+- **Las rutas no reciben un número de partida:** siempre trabajan sobre la partida en curso de quien hace el pedido, así nadie puede tocar la de otro.
+- **La carta propia se mueve al tocarla,** sin esperar la respuesta: la jugada ya figuraba entre las válidas. Si igual volviera rechazada, la mesa se deshace sola y dice por qué.
+
+### El bot de M3 es provisional
+
+- **Problema:** los tres niveles del bot son de M4, pero M3 necesita un rival para poder jugar una partida entera.
+- **Se eligió (decidido por Román):** un bot sencillo, `BotProvisional`. Con flor, la canta; canta envido con 29 o más y truco solo con una carta brava y una baza ganada; quiere si tiene con qué; gana la baza con la carta más baja que alcance. Responde en el mismo pedido, sin cola. M4 lo reemplaza cambiando una línea, porque la mesa solo conoce la interfaz `Bot`.
+- **No hace trampa por construcción:** recibe la vista de su asiento, la misma que recibiría un jugador. Hay un test con un bot espía que lo comprueba.
+- **Se descartó:** el azar puro (se iba al mazo o cantaba falta envido sin sentido) y adelantar la cola (sin tiempo real, el navegador tendría que preguntar cada tanto si el bot ya jugó).
+
+### La barra de cantos muestra lo que vale, en una fila
+
+- **Problema:** con el motor real puede haber hasta siete opciones a la vez, por ejemplo cuando te cantan truco en la primera baza y el envido está primero. La mesa no hace scroll y la barra no puede crecer.
+- **Se eligió (decidido por Román):** una sola fila con lo que el motor declara válido en ese momento. "Envido" es un botón que cambia la barra por sus niveles y un "Volver". Si igual hay más de cuatro, los que sobran van detrás de "Más". En el celular, con cuatro botones o más se sacan los íconos y "Real envido" y "Falta envido" se escriben "Real" y "Falta", que es como se dicen en la mesa.
+- **Contestando un canto no se ofrece el mazo:** no querer y después irse da el mismo resultado, y así entra todo en la fila. La acción sigue siendo válida para el motor.
+- **Un detalle de Alpine:** `x-show` y `:style` en el mismo botón se pisan. Si el botón se ve y en qué orden va salen de un solo `:style`.
+
+### "Jugar" retoma la partida sin terminar
+
+- **Se eligió (decidido por Román):** con una partida en curso, "Jugar" vuelve a ella en el mismo punto. "Salir" ofrece seguir después o abandonar; abandonar agrega un evento y cierra la partida como perdida, sin borrar nada.
+- **La mesa no se crea con un GET:** abrir `/mesa` sin partida en curso manda a elegir el modo. Las partidas nacen solo del botón "Jugar", que es un POST.
+
 ## M17. Modos de juego (adelanto de la pantalla)
 
 ### Los juegos están en la mano o en el mazo

@@ -5,7 +5,7 @@ La idea es que cualquiera que entre pueda jugar una mano contra el bot en menos 
 
 Proyecto de portfolio de Román Gonzalez.
 
-![La mesa de juego, con el canto "Truco" sobre el paño](docs/capturas/mesa.jpeg)
+![La mesa de juego: el bot cantó truco y hay que contestar](docs/capturas/mesa.jpeg)
 
 | Portada | Mazo propio |
 |---|---|
@@ -43,7 +43,7 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 | M0 | Identidad visual y maqueta de las pantallas | Listo |
 | M1 | Cuentas y modo invitado | Listo |
 | M2 | Motor de reglas en PHP puro, pensado por asientos y equipos | Listo |
-| M3 | Mesa contra el bot, con la partida guardada como eventos | Pendiente |
+| M3 | Mesa contra el bot, con la partida guardada como eventos | Listo |
 | M4 | Bot con tres niveles | Pendiente |
 | M5 | Dos personas en tiempo real | Pendiente |
 | M6 | Tanteador, cantos y movimiento | En curso: el envido se canta y la mano tiene su cierre |
@@ -68,7 +68,7 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 | M20 | Mazos y mesas para elegir | Pendiente |
 
 Las pantallas ya son las definitivas. Las cuentas son reales: se puede registrarse, ingresar, cambiar el apodo o entrar a la mesa como invitado con un solo botón, sin llenar nada.
-El motor de reglas ya está escrito y testeado, pero la mesa todavía no lo usa: la mesa, el ranking y el historial siguen mostrando datos de ejemplo fijos hasta que llegue M3.
+La mesa ya juega de verdad: reparte con el motor de reglas, valida cada jugada en el servidor y guarda la partida como una lista de eventos. El rival es un bot sencillo, provisional hasta M4. El ranking y el historial siguen mostrando datos de ejemplo fijos.
 
 ## Lo que viene
 
