@@ -214,6 +214,16 @@ class EnvidoTest extends TestCase
         $this->assertSame([], $partida->accionesPara(1));
     }
 
+    public function test_si_el_envido_no_querido_cierra_la_partida_al_irse_al_mazo_no_se_anota_la_mano(): void
+    {
+        $partida = $this->jugar($this->mano(tanteo: [29, 10]), '0 envido', '1 mazo');
+
+        $this->assertSame(Fase::Terminada, $partida->fase());
+        $this->assertSame([30, 10], $partida->tanteo());
+        $this->assertSame('partida', $partida->cierre()['motivo']);
+        $this->assertSame([['equipo' => 0, 'puntos' => 1, 'concepto' => 'envido_no_querido']], $partida->cierre()['anotado']);
+    }
+
     public function test_quien_gana_el_envido_muestra_al_cerrar_las_cartas_de_su_tanto(): void
     {
         $partida = $this->jugar($this->mano(), '0 envido', '1 quiero', '0 mazo');

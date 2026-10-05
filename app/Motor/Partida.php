@@ -850,6 +850,14 @@ final class Partida
         }
 
         $this->anotarFlores(seCierraLaMano: true);
+
+        // Si el envido o la flor cerraron la partida, la mano no llega a valer nada: el cierre es el de la partida.
+        if ($this->fase === Fase::Terminada) {
+            $this->terminarMano($this->ganador, 'partida');
+
+            return;
+        }
+
         $this->anotar($equipo, $this->valorDeLaMano(), $this->truco['nivel'] > 0 ? 'truco' : 'mano');
         $this->terminarMano($equipo, $motivo);
     }
@@ -882,6 +890,7 @@ final class Partida
 
     /**
      * Suma puntos. La partida termina en cuanto alguien llega: lo que venga después ya no se anota.
+     * En lo anotado queda lo que vale la jugada; el tanteo no pasa de los puntos de la partida.
      */
     private function anotar(int $equipo, int $puntos, string $concepto): void
     {

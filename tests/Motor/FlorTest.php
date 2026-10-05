@@ -272,6 +272,32 @@ class FlorTest extends TestCase
         $this->assertSame('partida', $partida->cierre()['motivo']);
     }
 
+    public function test_si_la_flor_cierra_la_partida_al_irse_al_mazo_el_cierre_nombra_a_quien_gano_la_partida(): void
+    {
+        // El 0 canta flor y se va: pierde la mano, pero los 3 de la flor se anotan antes y le dan la partida.
+        $partida = $this->jugar($this->mano(self::FLOR_ALTA, self::SIN_FLOR, tanteo: [28, 5]), '0 flor', '0 mazo');
+
+        $this->assertSame(Fase::Terminada, $partida->fase());
+        $this->assertSame(0, $partida->ganador());
+        $this->assertSame([30, 5], $partida->tanteo());
+        $this->assertSame(0, $partida->cierre()['ganador']);
+        $this->assertSame('partida', $partida->cierre()['motivo']);
+        $this->assertSame([['equipo' => 0, 'puntos' => 3, 'concepto' => 'flor']], $partida->cierre()['anotado']);
+    }
+
+    public function test_la_flor_del_rival_se_contesta_en_el_turno_propio_y_si_la_mano_se_cierra_antes_se_pierde(): void
+    {
+        // El 0 tiene flor y elige cantar truco. El 1 contesta flor y no quiere: la mano se cierra
+        // sin que al 0 le vuelva el turno, así que no llega a cantar contraflor.
+        $partida = $this->jugar($this->mano(self::FLOR_ALTA, self::FLOR_BAJA), '0 truco', '1 flor', '1 no_quiero');
+
+        $this->assertSame([1, 3], $partida->tanteo());
+        $this->assertSame(
+            [['equipo' => 1, 'puntos' => 3, 'concepto' => 'flor'], ['equipo' => 0, 'puntos' => 1, 'concepto' => 'truco']],
+            $partida->cierre()['anotado'],
+        );
+    }
+
     public function test_irse_al_mazo_en_primera_con_flor_cantada_no_suma_el_punto_del_envido(): void
     {
         $partida = $this->jugar($this->mano(self::FLOR_ALTA, self::SIN_FLOR), '0 flor', '0 mazo');
