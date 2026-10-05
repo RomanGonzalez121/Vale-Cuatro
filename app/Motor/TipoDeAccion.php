@@ -8,6 +8,9 @@ namespace App\Motor;
 enum TipoDeAccion: string
 {
     case Jugar = 'jugar';
+    case Envido = 'envido';
+    case RealEnvido = 'real_envido';
+    case FaltaEnvido = 'falta_envido';
     case Truco = 'truco';
     case Retruco = 'retruco';
     case ValeCuatro = 'vale_cuatro';

@@ -17,6 +17,8 @@ final class Partida
 
     private const SIN_TRUCO = ['nivel' => 0, 'querido' => 0, 'canto' => null, 'quiero' => null];
 
+    private const SIN_ENVIDO = ['cadena' => [], 'estado' => null, 'canto' => null, 'tantos' => [], 'ganador' => null];
+
     /** @var array{0: int, 1: int} Los puntos de cada equipo. */
     private array $tanteo = [0, 0];
 
@@ -50,6 +52,15 @@ final class Partida
      * @var array{nivel: int, querido: int, canto: int|null, quiero: int|null}
      */
     private array $truco = self::SIN_TRUCO;
+
+    /**
+     * El envido de esta mano. "cadena" son los cantos en orden y "estado" va de null (nadie cantó) a
+     * "pendiente", "querido" o "no_querido". "tantos" es lo que se dijo en voz alta, en orden:
+     * un número o null por "son buenas". "ganador" es el asiento del mejor tanto.
+     *
+     * @var array{cadena: list<string>, estado: string|null, canto: int|null, tantos: list<array{asiento: int, tanto: int|null}>, ganador: int|null}
+     */
+    private array $envido = self::SIN_ENVIDO;
 
     /** @var list<array{equipo: int, puntos: int, concepto: string}> Lo que se anotó en esta mano, en orden. */
     private array $anotado = [];
@@ -148,6 +159,7 @@ final class Partida
         $nueva->turno = $this->mano;
         $nueva->enMazo = [];
         $nueva->truco = self::SIN_TRUCO;
+        $nueva->envido = self::SIN_ENVIDO;
         $nueva->anotado = [];
         $nueva->cierre = null;
         $nueva->hechos = [['tipo' => 'reparto', 'numero' => $nueva->numeroDeMano, 'mano' => $this->mano]];
@@ -207,6 +219,7 @@ final class Partida
 
         return match ($accion->tipo) {
             TipoDeAccion::Jugar => $this->motivoParaJugar($asiento, $accion->carta, $pendiente),
+            TipoDeAccion::Envido, TipoDeAccion::RealEnvido, TipoDeAccion::FaltaEnvido => $this->motivoParaElEnvido($asiento, $accion->tipo, $pendiente),
             TipoDeAccion::Truco, TipoDeAccion::Retruco, TipoDeAccion::ValeCuatro => $this->motivoParaElTruco($asiento, $accion->tipo, $pendiente),
             TipoDeAccion::Quiero, TipoDeAccion::NoQuiero => $pendiente === null ? 'No hay ningún canto para contestar.' : null,
             TipoDeAccion::Mazo => null,
@@ -223,6 +236,34 @@ final class Partida
         }
 
         return $this->tieneEnLaMano($asiento, $carta) ? null : 'Esa carta no está en tu mano.';
+    }
+
+    /**
+     * @param  array{canto: string, responde: int}|null  $pendiente
+     */
+    private function motivoParaElEnvido(int $asiento, TipoDeAccion $tipo, ?array $pendiente): ?string
+    {
+        // Contestando un envido se puede subir aunque ya se haya jugado la primera carta.
+        if ($pendiente !== null && $pendiente['canto'] === 'envido') {
+            return Envido::puedeSeguir($this->envido['cadena'], $tipo->value)
+                ? null
+                : 'El envido siempre sube: eso ya no se puede cantar.';
+        }
+
+        if ($this->envido['estado'] !== null) {
+            return 'El envido ya se cantó en esta mano.';
+        }
+
+        if ($this->yaJugo($asiento)) {
+            return 'El envido se canta antes de jugar tu primera carta.';
+        }
+
+        // "El envido está primero": vale contestar con envido un truco que nadie quiso todavía.
+        if ($this->truco['querido'] > 0 || $this->truco['nivel'] > 1) {
+            return 'Querido el truco, ya no se canta envido en esta mano.';
+        }
+
+        return null;
     }
 
     /**
@@ -259,6 +300,11 @@ final class Partida
      */
     private function pendiente(): ?array
     {
+        // El envido va primero: mientras no se conteste, el truco queda en suspenso.
+        if ($this->envido['estado'] === 'pendiente') {
+            return ['canto' => 'envido', 'responde' => $this->mesa->rivalDe($this->envido['canto'])];
+        }
+
         if ($this->truco['nivel'] > $this->truco['querido']) {
             return ['canto' => 'truco', 'responde' => $this->mesa->rivalDe($this->truco['canto'])];
         }
@@ -282,6 +328,7 @@ final class Partida
 
         match ($accion->tipo) {
             TipoDeAccion::Jugar => $nueva->jugarCarta($asiento, $accion->carta),
+            TipoDeAccion::Envido, TipoDeAccion::RealEnvido, TipoDeAccion::FaltaEnvido => $nueva->cantarEnvido($asiento, $accion->tipo),
             TipoDeAccion::Truco, TipoDeAccion::Retruco, TipoDeAccion::ValeCuatro => $nueva->cantarTruco($asiento, $accion->tipo),
             TipoDeAccion::Quiero => $nueva->contestar($asiento, quiere: true),
             TipoDeAccion::NoQuiero => $nueva->contestar($asiento, quiere: false),
@@ -369,6 +416,7 @@ final class Partida
             'bazas' => array_map(self::bazaComoArray(...), $this->bazas),
             'enMazo' => $this->enMazo,
             'truco' => $this->truco,
+            'envido' => $this->envido,
             'anotado' => $this->anotado,
             'cierre' => $this->cierre,
             'hechos' => $this->hechos,
@@ -439,6 +487,68 @@ final class Partida
         $this->turno = $this->primerActivoDesde($ganador ?? $this->mano);
     }
 
+    private function cantarEnvido(int $asiento, TipoDeAccion $tipo): void
+    {
+        $this->envido['cadena'][] = $tipo->value;
+        $this->envido['estado'] = 'pendiente';
+        $this->envido['canto'] = $this->mesa->equipoDe($asiento);
+        $this->hechos[] = ['tipo' => 'canto', 'asiento' => $asiento, 'canto' => $tipo->value];
+    }
+
+    private function contestarElEnvido(bool $quiere): void
+    {
+        if (! $quiere) {
+            $this->envido['estado'] = 'no_querido';
+            $this->anotar($this->envido['canto'], Envido::noQuerido($this->envido['cadena']), 'envido_no_querido');
+
+            return;
+        }
+
+        $tantos = [];
+
+        foreach ($this->mesa->rondaDesde($this->mano) as $asiento) {
+            if ($this->estaActivo($asiento)) {
+                $tantos[$asiento] = Tanto::deEnvido($this->repartidas[$asiento]);
+            }
+        }
+
+        // La falta se calcula con el tanteo de este momento, antes de anotar nada.
+        $puntos = Envido::querido($this->envido['cadena'], $this->tanteo, $this->puntosParaGanar);
+        [$dichos, $ganador] = $this->cantarTantos($tantos);
+
+        $this->envido['estado'] = 'querido';
+        $this->envido['tantos'] = $dichos;
+        $this->envido['ganador'] = $ganador;
+        $this->hechos[] = ['tipo' => 'tantos', 'canto' => 'envido', 'tantos' => $dichos, 'ganador' => $ganador];
+
+        $this->anotar($this->mesa->equipoDe($ganador), $puntos, 'envido');
+    }
+
+    /**
+     * Canta los tantos en voz alta, en orden desde el mano. Cada uno dice su número solo si supera
+     * al mejor cantado; si no, "son buenas" (null) sin revelarlo. Si va ganando el compañero, no canta.
+     * Con tantos iguales gana el que cantó primero, que es el que está más cerca del mano.
+     *
+     * @param  array<int, int>  $tantos  El tanto de cada asiento, ya en orden de ronda.
+     * @return array{0: list<array{asiento: int, tanto: int|null}>, 1: int}
+     */
+    private function cantarTantos(array $tantos): array
+    {
+        $dichos = [];
+        $mejor = null;
+
+        foreach ($tantos as $asiento => $tanto) {
+            if ($mejor === null || $tanto > $tantos[$mejor]) {
+                $dichos[] = ['asiento' => $asiento, 'tanto' => $tanto];
+                $mejor = $asiento;
+            } elseif ($this->mesa->equipoDe($asiento) !== $this->mesa->equipoDe($mejor)) {
+                $dichos[] = ['asiento' => $asiento, 'tanto' => null];
+            }
+        }
+
+        return [$dichos, $mejor];
+    }
+
     private function cantarTruco(int $asiento, TipoDeAccion $tipo): void
     {
         // Subir al contestar ("quiero retruco") acepta el canto anterior.
@@ -454,6 +564,7 @@ final class Partida
         $this->hechos[] = ['tipo' => 'respuesta', 'asiento' => $asiento, 'canto' => $canto, 'quiere' => $quiere];
 
         match ($canto) {
+            'envido' => $this->contestarElEnvido($quiere),
             'truco' => $this->contestarElTruco($asiento, $quiere),
         };
     }
@@ -473,8 +584,8 @@ final class Partida
 
     private function irseAlMazo(int $asiento): void
     {
-        // El punto del envido que no se jugó se suma solo si tampoco hubo truco: quererlo es dejar pasar el envido.
-        $enPrimera = ! $this->bazas[0]['cerrada'] && $this->truco['nivel'] === 0;
+        // El punto del envido que no se jugó se suma solo si no hubo envido ni truco: querer el truco es dejar pasar el envido.
+        $sinEnvido = ! $this->bazas[0]['cerrada'] && $this->truco['nivel'] === 0 && $this->envido['estado'] === null;
         $equipo = $this->mesa->equipoDe($asiento);
 
         $this->enMazo[] = $asiento;
@@ -490,7 +601,12 @@ final class Partida
             return;
         }
 
-        $this->cerrarMano($this->mesa->rivalDe($equipo), 'mazo', sumaElEnvidoNoJugado: $enPrimera);
+        // Irse con un canto sin contestar vale como no quererlo, además de perder la mano.
+        if (($this->pendiente()['canto'] ?? null) === 'envido') {
+            $this->contestarElEnvido(quiere: false);
+        }
+
+        $this->cerrarMano($this->mesa->rivalDe($equipo), 'mazo', sumaElEnvidoNoJugado: $sinEnvido);
     }
 
     /**
@@ -518,7 +634,12 @@ final class Partida
 
     private function terminarMano(int $equipo, string $motivo): void
     {
-        $this->cierre = ['ganador' => $equipo, 'motivo' => $motivo, 'anotado' => $this->anotado];
+        $this->cierre = [
+            'ganador' => $equipo,
+            'motivo' => $motivo,
+            'anotado' => $this->anotado,
+            'mostradas' => $this->cartasQueSeMuestran(),
+        ];
         $this->turno = null;
         $this->hechos[] = ['tipo' => 'mano_cerrada', 'ganador' => $equipo, 'motivo' => $motivo];
 
@@ -546,6 +667,29 @@ final class Partida
             $this->ganador = $equipo;
             $this->hechos[] = ['tipo' => 'partida_terminada', 'ganador' => $equipo];
         }
+    }
+
+    /**
+     * Quien gana el envido muestra al cerrar la mano las cartas que respaldan su tanto.
+     * Las demás cartas sin jugar vuelven al mazo boca abajo.
+     *
+     * @return array<int, list<string>>
+     */
+    private function cartasQueSeMuestran(): array
+    {
+        $mostradas = [];
+
+        if ($this->envido['estado'] === 'querido') {
+            $ganador = $this->envido['ganador'];
+            $mostradas[$ganador] = self::ids(Tanto::cartasDelEnvido($this->repartidas[$ganador]));
+        }
+
+        return $mostradas;
+    }
+
+    private function yaJugo(int $asiento): bool
+    {
+        return count($this->cartas[$asiento]) < count($this->repartidas[$asiento]);
     }
 
     private function estaActivo(int $asiento): bool

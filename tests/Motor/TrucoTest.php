@@ -105,9 +105,9 @@ class TrucoTest extends TestCase
 
     public function test_con_un_canto_sin_contestar_no_se_juega_una_carta(): void
     {
-        $partida = $this->jugar($this->mano(), '0 truco');
+        $partida = $this->jugar($this->mano(), '0 1-espada', '1 4-copa', '0 truco');
 
-        $this->assertSame('Antes de jugar hay que contestar el canto.', $this->rechazo($partida, '1 4-copa'));
+        $this->assertSame('Antes de jugar hay que contestar el canto.', $this->rechazo($partida, '1 5-copa'));
         $this->assertSame(['retruco', 'quiero', 'no_quiero', 'mazo'], $this->opciones($partida, 1));
     }
 
