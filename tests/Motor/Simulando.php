@@ -14,7 +14,7 @@ use App\Motor\Partida;
 trait Simulando
 {
     /**
-     * @param  callable(Partida, Partida|null): void|null  $enCadaPaso  Recibe la partida después de cada paso y la anterior.
+     * @param  callable(Partida, Partida): void|null  $enCadaPaso  Recibe la partida después de cada paso y la anterior.
      */
     private function simular(int $semilla, int $asientos = 2, int $puntos = 30, ?callable $enCadaPaso = null): Partida
     {
@@ -25,20 +25,9 @@ trait Simulando
         while ($partida->fase() !== Fase::Terminada) {
             $anterior = $partida;
 
-            if ($partida->fase() === Fase::PorRepartir) {
-                $partida = $partida->repartir(Mazo::mezcladoCon($azar));
-            } else {
-                $quienes = array_values(array_filter(
-                    range(0, $asientos - 1),
-                    fn (int $asiento) => $partida->accionesPara($asiento) !== [],
-                ));
-
-                $this->assertNotEmpty($quienes, "Semilla {$semilla}: la mano está en juego y nadie puede hacer nada.");
-
-                $asiento = $quienes[$azar->entero(0, count($quienes) - 1)];
-                $acciones = $partida->accionesPara($asiento);
-                $partida = $partida->aplicar($asiento, $acciones[$azar->entero(0, count($acciones) - 1)]);
-            }
+            $partida = $partida->fase() === Fase::PorRepartir
+                ? $partida->repartir(Mazo::mezcladoCon($azar))
+                : $this->pasoAlAzar($partida, $azar, "Semilla {$semilla}");
 
             if ($enCadaPaso !== null) {
                 $enCadaPaso($partida, $anterior);
@@ -48,5 +37,23 @@ trait Simulando
         }
 
         return $partida;
+    }
+
+    /**
+     * Elige al azar uno de los asientos que pueden actuar y una de sus acciones válidas.
+     */
+    private function pasoAlAzar(Partida $partida, Azar $azar, string $rotulo): Partida
+    {
+        $quienes = array_values(array_filter(
+            range(0, $partida->mesa()->asientos - 1),
+            fn (int $asiento) => $partida->accionesPara($asiento) !== [],
+        ));
+
+        $this->assertNotEmpty($quienes, "{$rotulo}: la mano está en juego y nadie puede hacer nada.");
+
+        $asiento = $quienes[$azar->entero(0, count($quienes) - 1)];
+        $acciones = $partida->accionesPara($asiento);
+
+        return $partida->aplicar($asiento, $acciones[$azar->entero(0, count($acciones) - 1)]);
     }
 }

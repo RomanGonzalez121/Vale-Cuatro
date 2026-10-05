@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Motor\Mazo;
 use App\View\Components\Carta;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -14,6 +15,14 @@ class CartaTest extends TestCase
 
         $this->assertCount(40, $identificadores);
         $this->assertCount(40, array_unique($identificadores));
+    }
+
+    public function test_el_mazo_que_se_dibuja_es_el_mismo_que_usa_el_motor(): void
+    {
+        $dibujadas = array_map(fn (array $carta) => (new Carta(...$carta))->identificador(), Carta::mazo());
+        $delMotor = array_map(fn (\App\Motor\Carta $carta) => $carta->id(), Mazo::completo());
+
+        $this->assertSame($delMotor, $dibujadas);
     }
 
     public function test_no_existen_el_ocho_ni_el_nueve(): void
