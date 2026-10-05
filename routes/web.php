@@ -21,6 +21,7 @@ Route::get('/mesa', [MesaController::class, 'ver'])->middleware('auth')->name('m
 
 // Lo que se hace desde la mesa: siempre sobre la partida en curso de quien hace el pedido.
 Route::middleware(['auth', 'throttle:240,1'])->group(function () {
+    Route::get('/mesa/estado', [MesaController::class, 'estado'])->name('mesa.estado');
     Route::post('/mesa/accion', [MesaController::class, 'accion'])->name('mesa.accion');
     Route::post('/mesa/repartir', [MesaController::class, 'repartir'])->name('mesa.repartir');
     Route::post('/mesa/abandonar', [MesaController::class, 'abandonar'])->name('mesa.abandonar');

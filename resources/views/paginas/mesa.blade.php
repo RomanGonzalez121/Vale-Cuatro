@@ -28,7 +28,7 @@
     <x-mazo.plantillas />
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa en app.css. --}}
-    <div x-data="mesa(@js($vista), @js(['accion' => route('mesa.accion'), 'repartir' => route('mesa.repartir'), 'token' => csrf_token()]))" class="mesa mesa-completa relative">
+    <div x-data="mesa(@js($vista), @js(['accion' => route('mesa.accion'), 'repartir' => route('mesa.repartir'), 'estado' => route('mesa.estado'), 'token' => csrf_token()]))" class="mesa mesa-completa relative">
         <h1 class="sr-only">Mesa contra el bot</h1>
 
         <header class="mesa-barra relative z-10">

@@ -40,6 +40,20 @@ class MesaController extends Controller
         return view('paginas.mesa', ['vista' => $this->mesa->vista($partida)]);
     }
 
+    /**
+     * Cómo está la partida ahora. La mesa lo pide cuando una jugada no entró, para ponerse al día.
+     */
+    public function estado(Request $request): JsonResponse
+    {
+        $partida = $this->mesa->enCursoDe($request->user());
+
+        if ($partida === null) {
+            return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
+        }
+
+        return response()->json(['vista' => $this->mesa->vista($partida)]);
+    }
+
     public function accion(Request $request): JsonResponse
     {
         try {
@@ -61,7 +75,11 @@ class MesaController extends Controller
         $partida = $this->mesa->enCursoDe($request->user());
 
         if ($partida !== null) {
-            $this->mesa->abandonar($partida);
+            try {
+                $this->mesa->abandonar($partida);
+            } catch (AccionInvalida) {
+                // Otro pedido la cerró justo antes (dos toques seguidos): ya está abandonada.
+            }
         }
 
         return redirect()->route('modos')->with('aviso', 'Abandonaste la partida.');

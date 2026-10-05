@@ -122,9 +122,24 @@ final class BotProvisional implements Bot
         return array_map(Carta::de(...), $ids);
     }
 
+    /**
+     * La carta más fuerte con la que todavía puede ganar: las que tiene en la mano y la que
+     * ya tiró en la baza que se está jugando. Sin esa, con la mano vacía regalaba el truco.
+     */
     private function laMasAlta(array $vista): int
     {
-        return max([0, ...array_map(fn (string $id) => Carta::de($id)->jerarquia(), $vista['misCartas'])]);
+        $cartas = $vista['misCartas'];
+        $enJuego = $vista['bazas'][count($vista['bazas']) - 1] ?? null;
+
+        if ($enJuego !== null && ! $enJuego['cerrada']) {
+            foreach ($enJuego['jugadas'] as [$asiento, $carta]) {
+                if ($asiento === $vista['asiento']) {
+                    $cartas[] = $carta;
+                }
+            }
+        }
+
+        return max([0, ...array_map(fn (string $id) => Carta::de($id)->jerarquia(), $cartas)]);
     }
 
     private function bazasGanadas(array $vista): int

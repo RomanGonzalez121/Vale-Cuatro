@@ -284,11 +284,25 @@ export default (inicial, pedidos) => ({
     },
 
     /**
-     * El servidor no aceptó la jugada: se dice por qué y la mesa vuelve a lo último que se sabía.
+     * La jugada no entró (el servidor la rechazó o no hubo conexión). Lo que muestra la pantalla puede
+     * haber quedado viejo, así que se le pregunta al servidor cómo está la partida y se pinta eso.
+     * Si tampoco contesta, queda lo último que se sabía.
      */
-    deshacer(motivo) {
+    async deshacer(motivo) {
+        let vista = this.vista;
+
+        try {
+            const respuesta = await fetch(this.pedidos.estado, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+
+            if (respuesta.ok) {
+                vista = (await respuesta.json()).vista;
+            }
+        } catch {
+            // Sin conexión: se sigue con la vista que había.
+        }
+
         this.adelantada = null;
-        this.pintar(this.vista, false, motivo);
+        this.pintar(vista, false, motivo);
     },
 
     /**
@@ -688,6 +702,7 @@ export default (inicial, pedidos) => ({
         // Entre dos manos: queda a la vista el cierre de la que terminó.
         this.cerrarMano(vista, false);
         this.fin = vista.ganador === null ? null : QUIEN[vista.ganador];
+        this.aviso = aviso ?? this.aviso;
         this.ocupada = false;
     },
 

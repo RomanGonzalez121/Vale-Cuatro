@@ -62,18 +62,23 @@ class MesaTest extends TestCase
     public function test_el_estado_reconstruido_desde_los_eventos_es_igual_al_estado_en_curso(): void
     {
         $mesa = $this->mesa();
-        $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
         $azar = Azar::deSemilla(5);
+        $comparados = 0;
 
-        // Se juegan varias manos. Después de cada pedido, la vista que devolvió la mesa (el estado en curso)
-        // tiene que ser idéntica a la que sale de leer los eventos de la base y aplicarlos de cero.
-        for ($pedidos = 0; $pedidos < 60 && $partida->fresh()->enCurso(); $pedidos++) {
-            $pasos = $this->unPedidoAlAzar($mesa, $partida, $azar);
+        // Después de cada pedido, la vista que devolvió la mesa (el estado en curso) tiene que ser idéntica a la
+        // que sale de leer los eventos de la base y aplicarlos de cero. Una partida al azar puede terminar en
+        // pocas jugadas (un falta envido querido de entrada), así que se juegan las que hagan falta.
+        for ($partidas = 0; $comparados < 80; $partidas++) {
+            $this->assertLessThan(40, $partidas, 'Las partidas terminan demasiado rápido para comparar nada.');
+            $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
 
-            $this->assertSame($pasos[count($pasos) - 1], $mesa->vista($partida->fresh()));
+            for ($pedidos = 0; $pedidos < 60 && $partida->fresh()->enCurso(); $pedidos++) {
+                $pasos = $this->unPedidoAlAzar($mesa, $partida, $azar);
+
+                $this->assertSame($pasos[count($pasos) - 1], $mesa->vista($partida->fresh()));
+                $comparados++;
+            }
         }
-
-        $this->assertGreaterThan(20, $partida->eventos()->count());
     }
 
     public function test_una_accion_invalida_se_rechaza_y_no_genera_evento(): void
@@ -180,11 +185,17 @@ class MesaTest extends TestCase
     public function test_ningun_paso_le_muestra_al_jugador_una_carta_del_bot_que_no_se_jugo_ni_se_mostro(): void
     {
         $mesa = $this->mesa();
-        $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
         $azar = Azar::deSemilla(9);
         $revisados = 0;
 
-        for ($pedidos = 0; $pedidos < 150 && $partida->fresh()->enCurso(); $pedidos++) {
+        // Se juegan las partidas que hagan falta hasta revisar pasos de sobra: alguna puede terminar enseguida.
+        for ($pedidos = 0; $revisados < 120; $pedidos++) {
+            $this->assertLessThan(2000, $pedidos, 'No se llegó a revisar nada.');
+
+            if (! isset($partida) || ! $partida->fresh()->enCurso()) {
+                $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
+            }
+
             $pasos = $this->unPedidoAlAzar($mesa, $partida, $azar);
 
             // Lo que recibió el bot en cada mano está en el reparto guardado: el primero es la mano 1, el segundo la 2.
@@ -204,8 +215,6 @@ class MesaTest extends TestCase
                 $revisados++;
             }
         }
-
-        $this->assertGreaterThan(50, $revisados);
     }
 
     public function test_el_bot_decide_solo_con_la_vista_de_su_asiento(): void
@@ -225,14 +234,17 @@ class MesaTest extends TestCase
         };
 
         $mesa = new Mesa($espia);
-        $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
         $azar = Azar::deSemilla(4);
 
-        for ($pedidos = 0; $pedidos < 80 && $partida->fresh()->enCurso(); $pedidos++) {
+        for ($pedidos = 0; count($espia->vistas) < 40; $pedidos++) {
+            $this->assertLessThan(2000, $pedidos, 'El bot casi no llegó a jugar.');
+
+            if (! isset($partida) || ! $partida->fresh()->enCurso()) {
+                $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
+            }
+
             $this->unPedidoAlAzar($mesa, $partida, $azar);
         }
-
-        $this->assertNotEmpty($espia->vistas);
 
         foreach ($espia->vistas as $vista) {
             $this->assertSame(Mesa::BOT, $vista['asiento']);

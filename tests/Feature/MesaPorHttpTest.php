@@ -122,12 +122,14 @@ class MesaPorHttpTest extends TestCase
     public function test_una_accion_mal_escrita_se_rechaza(): void
     {
         $jugador = $this->sentado();
+        // Si al bot le tocó ser mano, ya jugó al repartir: se compara contra lo que había, no contra un número fijo.
+        $antes = Partida::sole()->eventos()->count();
 
         foreach ([[], ['tipo' => 'bailar'], ['tipo' => 'jugar'], ['tipo' => 'jugar', 'carta' => '9-oro'], ['tipo' => ['truco']]] as $datos) {
             $this->actingAs($jugador)->postJson('/mesa/accion', $datos)->assertStatus(422)->assertJsonPath('motivo', 'Esa acción no existe.');
         }
 
-        $this->assertSame(1, Partida::sole()->eventos()->count());
+        $this->assertSame($antes, Partida::sole()->eventos()->count());
     }
 
     public function test_sin_sesion_no_se_puede_jugar(): void
@@ -192,10 +194,42 @@ class MesaPorHttpTest extends TestCase
             $jugadas = array_merge(...array_map(fn (array $baza) => array_column($baza['jugadas'], 1), $paso['bazas']));
             $mostradas = array_merge([], ...array_values($paso['cierre']['mostradas'] ?? []));
 
+            // Se comparan cartas enteras: "1-oro" no es lo mismo que el final de "11-oro".
+            preg_match_all('/\b(?:1[0-2]|[1-7])-(?:espada|basto|oro|copa)\b/', json_encode($paso), $nombradas);
+
             foreach (array_diff($delBot, $jugadas, $mostradas) as $oculta) {
-                $this->assertStringNotContainsString($oculta, json_encode($paso), "La respuesta trae el {$oculta} del bot, que no se jugó.");
+                $this->assertNotContains($oculta, $nombradas[0], "La respuesta trae el {$oculta} del bot, que no se jugó.");
             }
         }
+    }
+
+    public function test_la_mesa_puede_pedir_como_esta_la_partida_para_ponerse_al_dia(): void
+    {
+        $jugador = Jugador::factory()->invitado()->create();
+        $partida = $this->partidaArmada($jugador, [['4-copa', '5-copa', '6-basto'], ['1-espada', '3-oro', '10-basto']]);
+
+        $respuesta = $this->actingAs($jugador)->getJson('/mesa/estado')->assertOk();
+
+        $this->assertSame($this->app->make(Mesa::class)->vista($partida), $respuesta->json('vista'));
+
+        foreach (['1-espada', '3-oro', '10-basto'] as $delBot) {
+            $this->assertStringNotContainsString($delBot, $respuesta->getContent());
+        }
+
+        $this->actingAs(Jugador::factory()->invitado()->create())->getJson('/mesa/estado')->assertStatus(409);
+    }
+
+    public function test_abandonar_dos_veces_seguidas_no_falla(): void
+    {
+        $jugador = $this->sentado();
+        $partida = Partida::sole();
+
+        // El segundo pedido llega con la partida ya cerrada por el primero.
+        $this->app->make(Mesa::class)->abandonar($partida);
+        $this->actingAs($jugador)->post('/mesa/abandonar')->assertRedirect('/modos');
+
+        $this->assertSame(Partida::ABANDONADA, $partida->fresh()->estado);
+        $this->assertSame(1, $partida->eventos()->where('tipo', EventoDePartida::ABANDONO)->count());
     }
 
     public function test_abandonar_cierra_la_partida_y_vuelve_a_los_modos(): void
