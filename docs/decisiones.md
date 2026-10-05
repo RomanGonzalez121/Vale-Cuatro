@@ -306,3 +306,25 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 
 - **Se eligió (decidido por Román):** la carta elegida queda a pleno y las demás se apagan, que es lo que ya hace el sitio con la carta que pierde una baza. No suben ni bajan, ni al elegir ni al pasar el mouse. Quedan el reparto al cargar y la carta que se da vuelta al final.
 - **Un detalle que apareció al probar con tres cartas:** si las cartas van encimadas, una carta apagada se transparenta sobre la de al lado. Por eso, cuando hay varias, van separadas y el detalle del juego pasa abajo de la mano.
+
+## El sitio en el celular (pasada del 5 de octubre de 2026)
+
+### La portada entra en la primera pantalla
+
+- **Problema:** en el celular la mano de cartas y el canto quedaban abajo de todo el texto: al abrir el sitio se veían un título y dos botones, y lo propio del sitio recién aparecía deslizando.
+- **Se eligió:** en el celular la mano va entre el título y el botón, más chica y sin los dorsos del rival. A 360 por 640 entran el título, las cartas, "Jugar contra el bot" y las dos salidas. El escritorio no cambió.
+- **Cómo:** el bloque de texto se desarma en el celular (`display: contents`) y cada pieza toma su orden. No hay dos copias de la mano.
+- **"Invitar a alguien" mentía:** era un segundo botón del mismo formulario y entraba a la mesa contra el bot. Ahora es un link a `/modos`, donde se elige el rival. Hay un test que cuenta un solo botón que entra a la mesa.
+
+### Nada acompaña el scroll
+
+- **Problema:** en el ranking, "Tu puesto" iba pegado al borde de abajo y tapaba la tabla mientras se recorría.
+- **Se eligió (decidido por Román):** queda quieto al final de la tabla, en el celular y en el escritorio. Un test revisa que ninguna página de lectura tenga algo pegado o fijo.
+
+### Las listas, compactas
+
+- **Las cuatro que mandan** (portada, ranking y cómo se juega) van en un solo renglón también en el celular: el orden se lee de izquierda a derecha y ocupa la mitad. Debajo de cada carta, el número arriba y el nombre abajo.
+- **Historial:** en el celular cada partida son dos renglones (resultado y "Ver de nuevo"; contra quién y cuándo). El tanteo en fósforos repetía el resultado y entra recién desde el ancho de tablet.
+- **Repetición:** los tres controles van en un renglón, de igual ancho, para que no salten cuando el del medio cambia de texto.
+- **Tabla del envido:** tenía un ancho mínimo y en el celular obligaba a deslizar de costado para ver cuánto vale cada canto. Ahora entra: el canto largo baja de renglón.
+- **El menú de arriba** pasa a ser el desplegable hasta 1024 px: a 768 los links no entraban y "Cómo se juega" se partía en tres renglones.

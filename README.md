@@ -27,6 +27,10 @@ Proyecto de portfolio de Román Gonzalez.
 |---|---|
 | ![El juego que ya se juega, con su carta, y los que faltan en el mazo](docs/capturas/modos.jpeg) | ![La misma pantalla a 360 px](docs/capturas/modos-celular.jpeg) |
 
+| Portada en el celular | Ranking en el celular |
+|---|---|
+| ![A 360 px entran el título, la mano y el botón para jugar](docs/capturas/portada-celular.jpeg) | ![Los cuatro primeros, cada uno con su carta, en un renglón](docs/capturas/ranking-celular.jpeg) |
+
 ## Qué es real y qué es simulado
 
 - **Simulado, y dicho abiertamente en el sitio:** los rivales bot y los jugadores de ejemplo del ranking, que aparecen marcados como bots.
