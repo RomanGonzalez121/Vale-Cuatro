@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Juego\Mesa;
+use App\Juego\Nivel;
 use App\Models\Jugador;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 /**
  * La puerta de entrada a la mesa. Quien llega sin sesión recibe un jugador
@@ -17,6 +19,10 @@ class JugarController extends Controller
 {
     public function __invoke(Request $request, Mesa $mesa): RedirectResponse
     {
+        // El nivel del bot llega desde la pantalla de modos. El botón de la portada no lo manda: va el de siempre.
+        $request->validate(['nivel' => ['nullable', Rule::enum(Nivel::class)]]);
+        $nivel = Nivel::tryFrom((int) $request->input('nivel')) ?? Nivel::porDefecto();
+
         $jugador = $request->user();
 
         if ($jugador === null) {
@@ -28,8 +34,8 @@ class JugarController extends Controller
             $jugador->touch();
         }
 
-        // Retoma la partida que tenía sin terminar o empieza una nueva, ya repartida.
-        $mesa->abrir($jugador);
+        // Retoma la partida que tenía sin terminar, con su nivel, o empieza una nueva ya repartida.
+        $mesa->abrir($jugador, $nivel);
 
         return redirect()->route('mesa');
     }

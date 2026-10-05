@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Juego\Nivel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Model;
@@ -18,11 +19,12 @@ use Illuminate\Support\Carbon;
  * @property string $estado
  * @property int $primer_mano
  * @property int $puntos
+ * @property Nivel $nivel_bot
  * @property int|null $ganador
  * @property Carbon|null $terminada_en
  */
 #[Table('partidas')]
-#[Fillable(['jugador_id', 'primer_mano', 'puntos'])]
+#[Fillable(['jugador_id', 'primer_mano', 'puntos', 'nivel_bot'])]
 class Partida extends Model
 {
     public const EN_CURSO = 'en_curso';
@@ -31,9 +33,10 @@ class Partida extends Model
 
     public const ABANDONADA = 'abandonada';
 
-    /** Una partida recién creada ya está en curso, sin tener que volver a leerla de la base. */
+    /** Una partida recién creada ya está en curso y tiene su nivel, sin tener que volver a leerla de la base. */
     protected $attributes = [
         'estado' => self::EN_CURSO,
+        'nivel_bot' => Nivel::Intermedio->value,
     ];
 
     /**
@@ -65,6 +68,7 @@ class Partida extends Model
         return [
             'primer_mano' => 'integer',
             'puntos' => 'integer',
+            'nivel_bot' => Nivel::class,
             'ganador' => 'integer',
             'terminada_en' => 'datetime',
         ];

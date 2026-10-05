@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Juego\Mesa;
+use App\Juego\Nivel;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
@@ -33,6 +34,38 @@ class MesaPorHttpTest extends TestCase
         $this->post('/jugar')->assertRedirect('/mesa');
 
         $this->assertSame(1, Partida::count());
+    }
+
+    public function test_la_partida_guarda_el_nivel_del_bot_que_se_eligio(): void
+    {
+        $this->post('/jugar', ['nivel' => 3])->assertRedirect('/mesa');
+
+        $this->assertSame(Nivel::Dificil, Partida::sole()->nivel_bot);
+    }
+
+    public function test_sin_elegir_nivel_se_juega_contra_intermedio(): void
+    {
+        $this->post('/jugar')->assertRedirect('/mesa');
+
+        $this->assertSame(Nivel::Intermedio, Partida::sole()->nivel_bot);
+    }
+
+    public function test_un_nivel_que_no_existe_se_rechaza_sin_crear_nada(): void
+    {
+        foreach ([0, 4, 'difícil', ['3']] as $nivel) {
+            $this->post('/jugar', ['nivel' => $nivel])->assertSessionHasErrors('nivel');
+        }
+
+        $this->assertSame(0, Partida::count());
+        $this->assertSame(0, Jugador::count());
+    }
+
+    public function test_con_una_partida_sin_terminar_se_retoma_esa_con_su_nivel_aunque_se_pida_otro(): void
+    {
+        $this->post('/jugar', ['nivel' => 1]);
+        $this->post('/jugar', ['nivel' => 3])->assertRedirect('/mesa');
+
+        $this->assertSame(Nivel::Facil, Partida::sole()->nivel_bot);
     }
 
     public function test_la_mesa_muestra_la_partida_en_curso_con_las_plantillas_de_las_cartas(): void

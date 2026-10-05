@@ -31,14 +31,18 @@ final class Mesa
 
     public const BOT = 1;
 
-    public function __construct(private readonly Bot $bot) {}
+    /**
+     * Cada partida juega contra el bot de su nivel. Un bot fijo sirve para los tests, que necesitan mirar qué recibe.
+     */
+    public function __construct(private readonly ?Bot $botFijo = null) {}
 
     /**
-     * La partida en curso del jugador. Si no tiene ninguna, crea una y reparte la primera mano.
+     * La partida en curso del jugador. Si no tiene ninguna, crea una contra ese nivel y reparte la primera mano.
+     * Con una partida sin terminar se retoma esa, con su nivel, aunque se pida otro.
      */
-    public function abrir(Jugador $jugador): Partida
+    public function abrir(Jugador $jugador, ?Nivel $nivel = null): Partida
     {
-        return DB::transaction(function () use ($jugador) {
+        return DB::transaction(function () use ($jugador, $nivel) {
             // Se bloquea al jugador: dos toques seguidos en "Jugar" no pueden abrir dos partidas.
             Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
 
@@ -53,6 +57,7 @@ final class Mesa
                 'jugador_id' => $jugador->getKey(),
                 'primer_mano' => Azar::seguro()->entero(self::JUGADOR, self::BOT),
                 'puntos' => 30,
+                'nivel_bot' => $nivel ?? Nivel::porDefecto(),
             ]);
 
             $this->repartirEn($partida, $this->reconstruir($partida));
@@ -165,13 +170,15 @@ final class Mesa
      */
     private function seguir(Partida $partida, Motor $motor, array $pasos): array
     {
+        $bot = $this->botFijo ?? $partida->nivel_bot->bot(Azar::seguro());
+
         // Ninguna mano necesita tantas jugadas seguidas de un mismo lado: si pasa, es un error y se corta.
         for ($jugadas = 0; $motor->fase() === Fase::Jugando && $motor->accionesPara(self::BOT) !== []; $jugadas++) {
             if ($jugadas === 20) {
                 throw new LogicException('El bot no termina de jugar.');
             }
 
-            $accion = $this->bot->decidir($motor->vistaPara(self::BOT));
+            $accion = $bot->decidir($motor->vistaPara(self::BOT));
             $motor = $motor->aplicar(self::BOT, $accion);
 
             $this->guardar($partida, EventoDePartida::ACCION, self::BOT, $accion->aArray());
