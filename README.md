@@ -25,7 +25,7 @@ Proyecto de portfolio de Román Gonzalez.
 
 | Modos de juego | En el celular |
 |---|---|
-| ![Los modos como una mano de cartas: el que se juega, cara arriba](docs/capturas/modos.jpeg) | ![La misma pantalla a 360 px](docs/capturas/modos-celular.jpeg) |
+| ![El juego que ya se juega, con su carta, y los que faltan en el mazo](docs/capturas/modos.jpeg) | ![La misma pantalla a 360 px](docs/capturas/modos-celular.jpeg) |
 
 ## Qué es real y qué es simulado
 
@@ -58,13 +58,13 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 | Módulo | Qué es | Estado |
 |---|---|---|
 | M12 | Revancha y series al mejor de tres | Pendiente |
-| M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo | Pendiente |
+| M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
 | M14 | Sonido de cartas, fósforos y cantos | Pendiente |
 | M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
 | M16 | Panel de administración | Pendiente |
 | M17 | Modos de juego, desafíos y una escalera de niveles | Adelantada la pantalla para elegir modo; el resto, pendiente |
 | M18 | Perfil con categorías ganadas jugando | Pendiente |
-| M19 | Truco de a cuatro con señas | Pendiente |
+| M19 | Truco de a cuatro con señas: primero con bots, después entre personas | Pendiente |
 | M20 | Mazos y mesas para elegir | Pendiente |
 
 Las pantallas ya son las definitivas. Las cuentas son reales: se puede registrarse, ingresar, cambiar el apodo o entrar a la mesa como invitado con un solo botón, sin llenar nada.

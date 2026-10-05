@@ -158,6 +158,7 @@ Cada entrada dice qué problema había, qué se eligió y qué se descartó.
 - **Problema:** un formulario de ingreso es lo más genérico que tiene cualquier sitio.
 - **Se eligió:** media pantalla es formulario y la otra media es mesa, de borde a borde. Los campos no llevan caja: los subraya un fósforo que se dibuja al entrar, el mismo gesto que los links. La contraseña se muestra u oculta con una carta chica que se da vuelta: de un lado tiene un ojo abierto y del otro un ojo cerrado, dibujados con el trazo de los fósforos. En el ingreso, la mesa muestra tu mano boca abajo y cada carta se da vuelta al completar un paso: el email, la contraseña y el envío. En registro y perfil, la mesa muestra el apodo en el tanteador mientras se escribe.
 - **Se descartó:** la caja centrada con el logo arriba, y mostrar el error de ingreso como un canto "No quiero": Piazzolla es solo la voz de los jugadores y un error tiene que leerse sin vueltas. También se probó contar los caracteres de la contraseña con fósforos debajo del campo, y se sacó: no hacía falta.
+- **En el celular:** la mesa quedaba debajo del formulario, fuera de la pantalla, así que la mano no se veía darse vuelta. Ahora va en una franja de paño entre el título y el formulario: las tres cartas en ingreso y el apodo en el tanteador en registro. Es un bloque más de la página: se probó dejarla pegada arriba al bajar y también fija, y Román prefirió que no se mueva. En el celular ya no hay mesa debajo del formulario.
 - **En una ventana baja:** una notebook de 1366 x 768 deja unos 640 px de alto, y el formulario pasaba de ahí: la mano de cartas quedaba debajo del borde y no se veía darse vuelta. En escritorio, el tamaño del título, los márgenes y el ancho de las cartas se miden también contra el alto de la ventana, así el formulario y la mesa entran enteros sin bajar. En una ventana alta todo queda del tamaño de siempre. Se probó antes cambiar la estructura (mesa hasta el final de la página, mano fija al borde) y Román lo descartó: alcanzaba con achicar.
 - **El giro:** es una transición de CSS sobre `transform` (300 ms, la curva del sitio) y no una animación con keyframes, para que se pueda interrumpir: si se borra el email, la carta vuelve desde donde esté. La carta que ya corresponde dada vuelta al cargar la página sale así del servidor, sin animarse. Con movimiento reducido no gira: la cara aparece con un fundido de 150 ms.
 
@@ -232,21 +233,27 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 
 ## M17. Modos de juego (adelanto de la pantalla)
 
-### Elegir el modo es sacar una carta de la mano
+### Los juegos están en la mano o en el mazo
 
-- **Problema:** el sitio va a tener seis modos (contra el bot, invitar, de a cuatro, torneo, desafíos y escalera) y solo uno se juega hoy. Hacía falta un lugar para elegir que no fuera una grilla de tarjetas iguales ni una ventana encima de la portada.
-- **Se eligió:** una página propia, `/modos`, donde los modos son una mano de seis cartas en abanico. El modo que se juega está cara arriba; los que faltan, boca abajo. Elegir uno saca su carta de la mano. Los nombres están en una lista al lado, que es la que se usa con teclado y con lector de pantalla; la mano es su espejo para el mouse y el dedo.
-- **Se descartó:** un cartel emergente (es lo más genérico, y en el celular queda apretado), no mostrar los modos que faltan (la pantalla quedaría con una sola opción) y mostrarlos como botones apagados (un botón apagado no explica nada: la carta boca abajo sí, y cada módulo que se cierre le da vuelta una).
-- **La promesa de los 30 segundos:** el botón grande de la portada sigue entrando directo a la mesa. El que pasó a abrir esta pantalla es "Jugar" del menú, que por eso dejó de ser un formulario y ahora es un link.
-- **Honestidad:** cada fila dice "Se juega ahora" o "Todavía no se juega", y los modos que faltan no tienen botón. "Invitar a alguien" figura como pendiente aunque la portada tenga un botón con ese nombre, que sigue siendo de maqueta hasta M5.
+- **Problema:** el sitio va a tener varios juegos (mano a mano, de a cuatro, torneo, desafíos y escalera) y hoy se juega uno solo. Hacía falta un lugar para elegir que no fuera una grilla de tarjetas iguales ni una ventana encima de la portada, y que no escondiera lo que falta.
+- **Se eligió:** una página propia, `/modos`. Los juegos que ya se juegan están en la mano, cada uno con su carta. Los que faltan están en el mazo, apilado como en la mesa de juego, con sus nombres al lado. Cada módulo que se cierre reparte una carta del mazo a la mano.
+- **Primera versión, descartada:** un abanico de seis cartas, con la que se jugaba cara arriba y cinco boca abajo, y una lista al lado. Román la vio y marcó tres cosas: cinco dorsos iguales no dicen nada, el abanico y la lista repetían lo mismo, y la carta elegida subía y bajaba al pasar el mouse. De ahí salió esta.
+- **La promesa de los 30 segundos:** el botón grande de la portada sigue entrando directo a la mesa. El que abre esta pantalla es "Jugar" del menú, que por eso dejó de ser un formulario y ahora es un link.
 
-### Los modos son datos
+### Se elige el juego y después el rival
 
-- **Se eligió:** un catálogo, `App\Juego\Modos`, con el nombre, el ícono, la carta, el texto y si el modo se juega. Cuando se termine un módulo alcanza con pasar "disponible" a verdadero: la pantalla le da vuelta la carta y le pone su botón. Los tests leen el mismo catálogo, así que no hay que tocarlos.
-- **Las cartas** no son al azar: el ancho de espada para jugar solo contra el bot, el 2 para dos personas, el 4 para el juego de a cuatro, el rey para el torneo, el siete de espada para los desafíos y el caballo para la escalera.
+- **Problema:** "Contra el bot" e "Invitar a alguien" figuraban como dos modos, pero son el mismo juego con distinto rival. Y de a cuatro y torneo también van a tener las dos versiones.
+- **Se eligió:** ordenar por juego y, dentro de cada uno, elegir contra quién: bots o personas. El rival se elige con el mismo gesto que la navegación del sitio: el fósforo subraya la opción elegida. Un rival que todavía no se juega se puede mirar, dice "Todavía no se juega" y no tiene botón.
+- **Los juegos son datos:** el catálogo está en `App\Juego\Modos`. Un rival se juega cuando tiene el texto de su botón; un juego está en la mano cuando se juega con al menos un rival. Cuando se termine un módulo alcanza con ponerle el botón: la pantalla reparte la carta sola. Hay un test que arma la pantalla con tres juegos en la mano, para saber que ese día va a andar.
 
-### El abanico se mide en porcentajes
+### La carta de modo es un naipe con fósforos
 
-- **Problema:** seis cartas en abanico tienen que entrar en 360 px sin scroll y verse grandes en escritorio.
-- **Se eligió:** todas las cartas ocupan el mismo lugar y giran sobre un mismo punto, muy por debajo, como en una mano de verdad. El ancho de la carta, el punto de giro y lo que sube la elegida son porcentajes, así que el abanico es el mismo dibujo a cualquier tamaño. Van tan juntas que de cada carta de atrás se ve una franja que no llega al sello del dorso: abierto de más, el sello asomaba cortado.
-- **Movimiento:** el reparto al cargar reutiliza el de la portada y es el único que no responde a una acción; al final, la carta que se juega se da vuelta. Sacar una carta es una transición de 200 ms sobre `transform`, que se puede interrumpir. El detalle del modo cambia con un fundido, sin animar el alto. Con movimiento reducido no hay viaje ni giro.
+- **Problema:** una carta del mazo no dice a qué se juega: un ancho de espada no significa "contra el bot".
+- **Se eligió:** una carta propia para cada juego, con el mismo papel y el mismo marco que el resto del mazo, el ícono del juego en el lugar del palo y el nombre impreso. El ícono va dibujado como fósforos de verdad: el palito en Tinta y la cabeza en Copa, igual que en el tanteador. Mano a mano son dos fósforos; de a cuatro, cuatro.
+- **Por qué no un color de palo:** los cuatro colores de palo tienen una función cada uno y no se usan de adorno. El rojo de la cabeza del fósforo no es Copa usado como decoración: es la pieza del tanteador.
+- **Los trazos de los íconos** pasaron de la vista a `App\Identidad\Iconos`, porque ahora los dibujan dos piezas: el ícono suelto y la carta de modo.
+
+### Las cartas no se mueven al elegir
+
+- **Se eligió (decidido por Román):** la carta elegida queda a pleno y las demás se apagan, que es lo que ya hace el sitio con la carta que pierde una baza. No suben ni bajan, ni al elegir ni al pasar el mouse. Quedan el reparto al cargar y la carta que se da vuelta al final.
+- **Un detalle que apareció al probar con tres cartas:** si las cartas van encimadas, una carta apagada se transparenta sobre la de al lado. Por eso, cuando hay varias, van separadas y el detalle del juego pasa abajo de la mano.

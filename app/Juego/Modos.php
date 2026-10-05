@@ -3,74 +3,85 @@
 namespace App\Juego;
 
 /**
- * Los modos de juego del sitio, en el orden en que se muestran.
+ * Los modos de juego del sitio, ordenados por juego. Dentro de cada juego se
+ * elige el rival: contra bots o con personas.
  *
- * Cada modo lleva una carta del mazo. Los que todavía no se juegan se muestran
- * boca abajo, y cuando se termina su módulo alcanza con pasar "disponible" a
- * true: la pantalla le da vuelta la carta y le pone su botón.
+ * Un rival se juega cuando tiene "boton" (el texto del botón que entra a la
+ * mesa). Un juego está en la mano cuando se juega con al menos un rival; si
+ * no, todavía está en el mazo. Cuando se termina un módulo alcanza con ponerle
+ * el botón a su rival: la pantalla reparte la carta sola.
  */
 final class Modos
 {
     /**
-     * @return list<array{clave: string, nombre: string, icono: string, carta: array{0: string, 1: int}, resumen: string, disponible: bool, boton: string|null}>
+     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null}>}>
      */
-    public static function todos(): array
+    public static function juegos(): array
     {
         return [
             [
-                'clave' => 'bot',
-                'nombre' => 'Contra el bot',
-                'icono' => 'bot',
-                'carta' => ['espada', 1],
-                'resumen' => 'Una partida a 30 puntos contra el bot. Entrás sin registrarte y jugás ya.',
-                'disponible' => true,
-                'boton' => 'Jugar contra el bot',
-            ],
-            [
-                'clave' => 'invitar',
-                'nombre' => 'Invitar a alguien',
-                'icono' => 'invitar',
-                'carta' => ['oro', 2],
-                'resumen' => 'Le mandás un link a otra persona y juegan mano a mano, en vivo.',
-                'disponible' => false,
-                'boton' => null,
+                'clave' => 'mano-a-mano',
+                'nombre' => 'Mano a mano',
+                'renglones' => ['Mano', 'a mano'],
+                'icono' => 'mano-a-mano',
+                'resumen' => 'Uno contra uno, a 30 puntos y con flor. El truco de siempre.',
+                'rivales' => [
+                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Entrás sin registrarte y jugás ya.', 'boton' => 'Jugar contra el bot'],
+                    ['clave' => 'personas', 'nombre' => 'Con otra persona', 'detalle' => 'Le mandás un link a alguien y juegan en vivo.', 'boton' => null],
+                ],
             ],
             [
                 'clave' => 'de-a-cuatro',
                 'nombre' => 'De a cuatro',
+                'renglones' => ['De a', 'cuatro'],
                 'icono' => 'de-a-cuatro',
-                'carta' => ['copa', 4],
                 'resumen' => 'Dos contra dos, con señas entre compañeros.',
-                'disponible' => false,
-                'boton' => null,
+                'rivales' => [
+                    ['clave' => 'bots', 'nombre' => 'Con bots', 'detalle' => 'Un bot de compañero y dos de rivales.', 'boton' => null],
+                    ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Armás la pareja por link y juegan en vivo.', 'boton' => null],
+                ],
             ],
             [
                 'clave' => 'torneo',
                 'nombre' => 'Torneo relámpago',
+                'renglones' => ['Torneo'],
                 'icono' => 'torneo',
-                'carta' => ['oro', 12],
-                'resumen' => 'Cuatro u ocho jugadores, eliminación directa y llaves en vivo.',
-                'disponible' => false,
-                'boton' => null,
+                'resumen' => 'Cuatro u ocho jugadores, eliminación directa y las llaves a la vista.',
+                'rivales' => [
+                    ['clave' => 'bots', 'nombre' => 'Contra bots', 'detalle' => 'Jugás tus partidas y las demás se resuelven solas.', 'boton' => null],
+                    ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Se inscriben por link y se juega en vivo.', 'boton' => null],
+                ],
             ],
             [
                 'clave' => 'desafios',
                 'nombre' => 'Desafíos',
+                'renglones' => ['Desafíos'],
                 'icono' => 'desafio',
-                'carta' => ['espada', 7],
                 'resumen' => 'Manos armadas con un objetivo: ganar esa mano, o lograr que el bot no quiera.',
-                'disponible' => false,
-                'boton' => null,
+                'rivales' => [
+                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Cada desafío reparte siempre las mismas cartas.', 'boton' => null],
+                ],
             ],
             [
                 'clave' => 'escalera',
                 'nombre' => 'Escalera del club',
+                'renglones' => ['Escalera'],
                 'icono' => 'escalera',
-                'carta' => ['basto', 11],
                 'resumen' => 'Una serie de rivales cada vez más difíciles. Pasás uno y se abre el siguiente.',
-                'disponible' => false,
-                'boton' => null,
+                'rivales' => [
+                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Cada nivel es un rival nuevo o una mano con objetivo.', 'boton' => null],
+                ],
             ],
         ];
+    }
+
+    /**
+     * Un juego se puede jugar cuando al menos uno de sus rivales tiene botón.
+     *
+     * @param  array{rivales: list<array{boton: string|null}>}  $juego
+     */
+    public static function seJuega(array $juego): bool
+    {
+        return array_filter(array_column($juego['rivales'], 'boton')) !== [];
     }
 }

@@ -22,7 +22,7 @@ class PaginaController extends Controller
     public function modos(): View
     {
         return view('paginas.modos', [
-            'modos' => Modos::todos(),
+            'juegos' => Modos::juegos(),
         ]);
     }
 

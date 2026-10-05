@@ -37,7 +37,7 @@
         </div>
     </form>
 
-    {{-- En el celular no hay mesa: la mano va en una franja fija arriba, a la vista mientras se escribe. --}}
+    {{-- En el celular no hay mesa: la mano va en una franja arriba del formulario, a la vista mientras se escribe. --}}
     <x-slot:franja>
         <x-cuenta.mano :mano="$mano" style="--ancho-carta: 3.75rem" />
     </x-slot:franja>

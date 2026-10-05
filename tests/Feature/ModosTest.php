@@ -2,69 +2,102 @@
 
 namespace Tests\Feature;
 
+use App\Identidad\Iconos;
 use App\Juego\Modos;
-use App\View\Components\Carta;
-use Illuminate\Support\Facades\Blade;
 use Tests\TestCase;
 
 /**
- * La pantalla donde se elige el modo de juego. Hoy es una maqueta: solo se juega contra el bot
- * y los demás modos se muestran boca abajo hasta que se termine su módulo.
+ * La pantalla donde se elige el modo de juego. Los juegos que ya se juegan están en la mano,
+ * cada uno con su carta; los que faltan, en el mazo. Dentro de cada juego se elige el rival.
  */
 class ModosTest extends TestCase
 {
-    public function test_la_pantalla_muestra_todos_los_modos_con_su_nombre(): void
+    public function test_la_pantalla_nombra_todos_los_juegos(): void
     {
         $respuesta = $this->get('/modos')->assertOk();
 
-        foreach (Modos::todos() as $modo) {
-            $respuesta->assertSee($modo['nombre'])->assertSee($modo['resumen']);
+        foreach (Modos::juegos() as $juego) {
+            $respuesta->assertSee($juego['nombre'])->assertSee($juego['resumen']);
         }
     }
 
-    public function test_solo_los_modos_disponibles_tienen_boton_para_jugar(): void
+    public function test_en_la_mano_hay_una_carta_por_cada_juego_que_se_juega(): void
     {
         $html = $this->get('/modos')->assertOk()->getContent();
-        $disponibles = array_filter(Modos::todos(), fn (array $modo) => $modo['disponible']);
+        $seJuegan = array_values(array_filter(Modos::juegos(), Modos::seJuega(...)));
 
-        // Un formulario hacia la mesa por cada modo que se juega, y ninguno más: el menú ya no entra directo.
-        $this->assertSame(count($disponibles), preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
+        $this->assertSame(count($seJuegan), substr_count($html, 'aria-label="Carta del modo '));
 
-        foreach ($disponibles as $modo) {
-            $this->assertStringContainsString($modo['boton'], $html);
+        foreach ($seJuegan as $juego) {
+            $this->assertStringContainsString("aria-label=\"Carta del modo {$juego['nombre']}\"", $html);
         }
     }
 
-    public function test_los_modos_que_faltan_estan_dichos_y_van_boca_abajo(): void
+    public function test_solo_los_rivales_que_se_juegan_tienen_boton(): void
     {
         $html = $this->get('/modos')->assertOk()->getContent();
-        $faltan = count(array_filter(Modos::todos(), fn (array $modo) => ! $modo['disponible']));
+        $botones = array_filter(array_merge(...array_map(fn (array $juego) => array_column($juego['rivales'], 'boton'), Modos::juegos())));
 
-        $this->assertSame($faltan, substr_count($html, 'Todavía no se juega'));
-        $this->assertSame(count(Modos::todos()) - $faltan, substr_count($html, 'Se juega ahora'));
+        // Un formulario hacia la mesa por cada rival contra el que se puede jugar, y ninguno más.
+        $this->assertSame(count($botones), preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
 
-        // En la mano se dibuja cara arriba solo la carta de cada modo que se juega.
-        preg_match('/<div class="mano-modos.*?<ul/s', $html, $mano);
-        $this->assertSame(count(Modos::todos()) - $faltan, substr_count($mano[0], 'data-carta='));
-        $this->assertSame(count(Modos::todos()), substr_count($mano[0], 'href="#dorso"'));
+        foreach ($botones as $boton) {
+            $this->assertStringContainsString($boton, $html);
+        }
     }
 
-    public function test_entra_elegido_el_primer_modo_y_los_demas_esperan_cerrados(): void
+    public function test_lo_que_falta_esta_dicho_y_no_se_puede_jugar(): void
     {
         $html = $this->get('/modos')->assertOk()->getContent();
+        $enElMazo = array_filter(Modos::juegos(), fn (array $juego) => ! Modos::seJuega($juego));
 
-        $this->assertSame(1, preg_match_all('/class="enlace-menu fila-modo[^>]*aria-expanded="true"/s', $html));
-        $this->assertSame(count(Modos::todos()) - 1, preg_match_all('/class="enlace-menu fila-modo[^>]*aria-expanded="false"/s', $html));
+        $this->assertNotEmpty($enElMazo);
+        $this->assertStringContainsString('Todavía en el mazo', $html);
+
+        // La lista del mazo nombra cada juego que falta y no tiene ningún botón ni formulario.
+        preg_match('/<section aria-labelledby="titulo-mazo".*?<\/section>/s', $html, $mazo);
+
+        foreach ($enElMazo as $juego) {
+            $this->assertStringContainsString($juego['nombre'], $mazo[0]);
+        }
+
+        $this->assertStringNotContainsString('<form', $mazo[0]);
+        $this->assertStringNotContainsString('<button', $mazo[0]);
     }
 
-    public function test_la_mano_es_un_espejo_que_no_recibe_el_foco_del_teclado(): void
+    public function test_un_rival_que_todavia_no_se_juega_lo_dice_y_no_tiene_boton(): void
     {
         $html = $this->get('/modos')->assertOk()->getContent();
 
-        preg_match('/<div class="mano-modos.*?<ul/s', $html, $mano);
+        $faltan = 0;
 
-        $this->assertStringContainsString('aria-hidden="true"', $mano[0]);
-        $this->assertSame(substr_count($mano[0], '<button'), substr_count($mano[0], 'tabindex="-1"'));
+        foreach (array_filter(Modos::juegos(), Modos::seJuega(...)) as $juego) {
+            foreach ($juego['rivales'] as $rival) {
+                $this->assertStringContainsString($rival['nombre'], $html);
+                $faltan += $rival['boton'] === null ? 1 : 0;
+            }
+        }
+
+        $this->assertSame($faltan, substr_count($html, 'Todavía no se juega.'));
+    }
+
+    public function test_con_varios_juegos_en_la_mano_cada_carta_es_un_boton_y_entra_elegida_la_primera(): void
+    {
+        // Lo que va a pasar cuando se terminen de a cuatro y el torneo contra bots: se arma la pantalla con esos datos.
+        $juegos = array_map(function (array $juego) {
+            if (in_array($juego['clave'], ['de-a-cuatro', 'torneo'], true)) {
+                $juego['rivales'][0]['boton'] = 'Jugar con bots';
+            }
+
+            return $juego;
+        }, Modos::juegos());
+
+        $html = (string) $this->view('paginas.modos', ['juegos' => $juegos]);
+
+        $this->assertSame(3, substr_count($html, 'aria-label="Carta del modo '));
+        $this->assertSame(1, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="true"/s', $html));
+        $this->assertSame(2, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="false"/s', $html));
+        $this->assertSame(3, preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
     }
 
     public function test_jugar_del_menu_lleva_a_elegir_el_modo_desde_cualquier_pantalla(): void
@@ -84,29 +117,34 @@ class ModosTest extends TestCase
         $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/jugar"[^>]*>.*?Jugar contra el bot.*?<\/form>/s', $html);
     }
 
-    public function test_el_catalogo_de_modos_esta_bien_armado(): void
+    public function test_el_catalogo_de_juegos_esta_bien_armado(): void
     {
-        $modos = Modos::todos();
+        $juegos = Modos::juegos();
 
-        $this->assertCount(count($modos), array_unique(array_column($modos, 'clave')));
-        $this->assertTrue($modos[0]['disponible'], 'El primer modo es el que entra elegido: tiene que poder jugarse.');
+        $this->assertCount(count($juegos), array_unique(array_column($juegos, 'clave')));
+        $this->assertTrue(Modos::seJuega($juegos[0]), 'El primer juego es el que entra elegido: tiene que poder jugarse.');
 
-        foreach ($modos as $modo) {
-            // La carta existe en el mazo y el ícono existe entre los propios: si no, cualquiera de los dos tira un error.
-            new Carta(...$modo['carta']);
-            Blade::render('<x-icono :nombre="$nombre" />', ['nombre' => $modo['icono']]);
+        foreach ($juegos as $juego) {
+            // El ícono existe entre los propios: si no, tira un error.
+            Iconos::de($juego['icono']);
 
-            $this->assertSame($modo['disponible'], $modo['boton'] !== null, "{$modo['nombre']}: tiene botón si y solo si se juega.");
+            $this->assertNotEmpty($juego['rivales'], "{$juego['nombre']} no dice contra quién se juega.");
+            $this->assertCount(count($juego['rivales']), array_unique(array_column($juego['rivales'], 'clave')));
+            $this->assertLessThanOrEqual(2, count($juego['renglones']), "El nombre de {$juego['nombre']} no entra en la carta.");
         }
-
-        $this->assertCount(count($modos), array_unique(array_map(fn (array $modo) => implode('-', $modo['carta']), $modos)), 'Cada modo lleva una carta distinta.');
     }
 
-    public function test_la_identidad_muestra_los_iconos_de_los_modos(): void
+    public function test_un_juego_se_juega_si_al_menos_un_rival_tiene_boton(): void
+    {
+        $this->assertTrue(Modos::seJuega(['rivales' => [['boton' => null], ['boton' => 'Jugar']]]));
+        $this->assertFalse(Modos::seJuega(['rivales' => [['boton' => null], ['boton' => null]]]));
+    }
+
+    public function test_la_identidad_muestra_los_iconos_de_los_juegos(): void
     {
         $respuesta = $this->get('/identidad')->assertOk();
 
-        foreach (['De a cuatro', 'Torneo', 'Desafío', 'Escalera'] as $icono) {
+        foreach (['Mano a mano', 'De a cuatro', 'Torneo', 'Desafío', 'Escalera'] as $icono) {
             $respuesta->assertSee($icono);
         }
     }

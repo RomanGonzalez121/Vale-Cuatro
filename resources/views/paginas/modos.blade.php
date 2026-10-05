@@ -1,83 +1,136 @@
 @php
-    $elegido = $modos[0]['clave'];
+    use App\Juego\Modos;
+
+    // En la mano van los juegos que ya se juegan; en el mazo, los que todavía no se repartieron.
+    $enLaMano = array_values(array_filter($juegos, Modos::seJuega(...)));
+    $enElMazo = array_values(array_filter($juegos, fn (array $juego) => ! Modos::seJuega($juego)));
+
+    // Entra elegido el primer juego de la mano y, en cada juego, el primer rival contra el que se puede jugar.
+    $rivalElegido = [];
+
+    foreach ($enLaMano as $juego) {
+        $rivalElegido[$juego['clave']] = collect($juego['rivales'])->firstWhere('boton', '!==', null)['clave'];
+    }
+
+    $juegoElegido = $enLaMano[0]['clave'] ?? null;
+    $unaSola = count($enLaMano) === 1;
 @endphp
 
-<x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
+<x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
-    <section class="mx-auto grid max-w-6xl gap-x-12 gap-y-6 px-5 pb-16 pt-6 sm:gap-y-9 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:pb-24 lg:pt-14"
-        x-data="{ elegido: '{{ $elegido }}' }">
-        <div class="lg:col-start-1 lg:row-start-1">
-            <h1 class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
-                ¿Cómo querés jugar?
-            </h1>
-            {{-- En el celular no va: cada fila ya dice si se juega, y ese lugar lo necesitan la mano y el botón. --}}
-            <p class="mt-5 hidden max-w-[44ch] text-lg leading-relaxed sm:block">
-                Las cartas boca abajo todavía no se juegan.
-                Se dan vuelta a medida que se termina cada modo.
-            </p>
-        </div>
+        <div class="mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:pb-24 lg:pt-14"
+            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }} }">
+            <section aria-labelledby="titulo-modos">
+                <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
+                    ¿Cómo querés jugar?
+                </h1>
 
-        {{--
-            La mano. Es un espejo de la lista de abajo para quien mira y usa el mouse o el dedo:
-            el teclado y el lector de pantalla eligen desde la lista, que es la que tiene los nombres.
-        --}}
-        <div class="mano-modos mx-auto w-full max-w-[19rem] sm:max-w-sm lg:sticky lg:top-10 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-w-lg lg:self-start" aria-hidden="true">
-            @foreach ($modos as $i => $modo)
-                <div class="mano-modos-lugar" style="--i: {{ $i }}">
-                    <button type="button" tabindex="-1" class="naipe-modo"
-                        @if ($modo['clave'] === $elegido) data-elegida="true" @endif
-                        :data-elegida="elegido === '{{ $modo['clave'] }}'"
-                        @click="elegido = '{{ $modo['clave'] }}'">
-                        {{-- El reparto es el único movimiento que no responde a una acción. --}}
-                        <span class="se-reparte block" style="--orden: {{ $i }}">
-                            @if ($modo['disponible'])
-                                <span class="se-da-vuelta">
-                                    <x-carta :palo="$modo['carta'][0]" :numero="$modo['carta'][1]" />
-                                    <x-dorso class="reverso" />
-                                </span>
+                {{-- Con una sola carta, el detalle va al lado. Con varias, la mano ocupa el ancho y el detalle va debajo. --}}
+                <div @class(['mt-7 grid items-start gap-y-5 lg:mt-10', $unaSola ? 'grid-cols-[auto_minmax(0,1fr)] gap-x-5 sm:gap-x-9' : 'grid-cols-1'])>
+                    {{-- La mano: una carta por juego que ya se juega. El reparto es el único movimiento que no responde a una acción. --}}
+                    <div @class(['mano-juegos', $unaSola ? 'mano-de-una sm:row-span-2' : 'mano-de-varias'])
+                        style="--ancho-carta: clamp(6.25rem, 27vw, 13rem); --medio: {{ (count($enLaMano) - 1) / 2 }}">
+                        @foreach ($enLaMano as $i => $juego)
+                            @if ($unaSola)
+                                <div style="--i: {{ $i }}">
+                                    <span class="se-reparte block" style="--orden: {{ $i }}">
+                                        <span class="se-da-vuelta">
+                                            <x-carta-modo :icono="$juego['icono']" :nombre="$juego['nombre']" :renglones="$juego['renglones']" />
+                                            <x-dorso class="reverso" />
+                                        </span>
+                                    </span>
+                                </div>
                             @else
-                                <x-dorso />
-                            @endif
-                        </span>
-                    </button>
-                </div>
-            @endforeach
-        </div>
-
-        <ul class="divide-y divide-naipe/20 lg:col-start-1 lg:row-start-2">
-            @foreach ($modos as $modo)
-                <li>
-                    <button type="button" class="enlace-menu fila-modo flex w-full cursor-pointer items-center gap-4 py-3.5 pr-14 text-left"
-                        aria-controls="modo-{{ $modo['clave'] }}"
-                        aria-expanded="{{ $modo['clave'] === $elegido ? 'true' : 'false' }}"
-                        :aria-expanded="(elegido === '{{ $modo['clave'] }}').toString()"
-                        @click="elegido = '{{ $modo['clave'] }}'">
-                        <x-icono :nombre="$modo['icono']" class="size-7" />
-                        <span>
-                            <span class="block text-xl font-extrabold leading-tight tracking-tight sm:text-2xl">{{ $modo['nombre'] }}</span>
-                            <span class="mt-0.5 block text-[0.95rem]">{{ $modo['disponible'] ? 'Se juega ahora' : 'Todavía no se juega' }}</span>
-                        </span>
-                    </button>
-
-                    <div id="modo-{{ $modo['clave'] }}" class="pb-6 pl-11"
-                        x-show="elegido === '{{ $modo['clave'] }}'" @if ($modo['clave'] !== $elegido) x-cloak @endif
-                        x-transition:enter="transition-opacity duration-150 ease-out" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-                        <p class="max-w-[44ch] leading-relaxed sm:text-lg">{{ $modo['resumen'] }}</p>
-
-                        @if ($modo['disponible'])
-                            {{-- Sin campos: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
-                            <form method="POST" action="{{ route('jugar') }}" class="mt-4 sm:mt-5">
-                                @csrf
-                                <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
-                                    <x-icono :nombre="$modo['icono']" /> {{ $modo['boton'] }}
+                                <button type="button" class="naipe-juego" style="--i: {{ $i }}"
+                                    aria-pressed="{{ $juego['clave'] === $juegoElegido ? 'true' : 'false' }}"
+                                    :aria-pressed="(juego === '{{ $juego['clave'] }}').toString()"
+                                    @click="juego = '{{ $juego['clave'] }}'">
+                                    <span class="se-reparte block" style="--orden: {{ $i }}">
+                                        <span class="se-da-vuelta">
+                                            <x-carta-modo :icono="$juego['icono']" :nombre="$juego['nombre']" :renglones="$juego['renglones']" />
+                                            <x-dorso class="reverso" />
+                                        </span>
+                                    </span>
                                 </button>
-                            </form>
-                        @endif
+                            @endif
+                        @endforeach
                     </div>
-                </li>
-            @endforeach
-        </ul>
-    </section>
+
+                    @foreach ($enLaMano as $juego)
+                        <div class="contents" x-show="juego === '{{ $juego['clave'] }}'" @if ($juego['clave'] !== $juegoElegido) x-cloak @endif>
+                            <div @class(['self-center sm:self-end' => $unaSola])>
+                                <h2 class="text-2xl font-black leading-[1.02] tracking-tight sm:text-4xl">{{ $juego['nombre'] }}</h2>
+                                <p class="mt-2 max-w-[36ch] leading-relaxed sm:mt-3 sm:text-lg">{{ $juego['resumen'] }}</p>
+                            </div>
+
+                            <div @class(['col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola])>
+                                @if (count($juego['rivales']) > 1)
+                                    <div class="flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Contra quién">
+                                        @foreach ($juego['rivales'] as $rival)
+                                            <button type="button" class="enlace-nav cursor-pointer text-lg font-bold"
+                                                aria-pressed="{{ $rival['clave'] === $rivalElegido[$juego['clave']] ? 'true' : 'false' }}"
+                                                :aria-pressed="(rival['{{ $juego['clave'] }}'] === '{{ $rival['clave'] }}').toString()"
+                                                @click="rival['{{ $juego['clave'] }}'] = '{{ $rival['clave'] }}'">{{ $rival['nombre'] }}</button>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                @foreach ($juego['rivales'] as $rival)
+                                    <div class="mt-3" x-show="rival['{{ $juego['clave'] }}'] === '{{ $rival['clave'] }}'"
+                                        @if ($rival['clave'] !== $rivalElegido[$juego['clave']]) x-cloak @endif
+                                        x-transition:enter="transition-opacity duration-150 ease-out" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                                        <p class="max-w-[36ch] leading-relaxed">
+                                            {{ $rival['detalle'] }}
+                                            @if ($rival['boton'] === null)
+                                                <span class="font-bold">Todavía no se juega.</span>
+                                            @endif
+                                        </p>
+
+                                        @if ($rival['boton'] !== null)
+                                            {{-- Sin campos: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
+                                            <form method="POST" action="{{ route('jugar') }}" class="mt-4">
+                                                @csrf
+                                                <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
+                                                    <x-icono nombre="bot" /> {{ $rival['boton'] }}
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
+            @if ($enElMazo !== [])
+                <section aria-labelledby="titulo-mazo" class="lg:pt-4">
+                    <div class="flex items-center gap-6">
+                        <div class="mazo-modos" aria-hidden="true">
+                            <x-dorso />
+                            <x-dorso />
+                            <x-dorso />
+                        </div>
+                        <div>
+                            <h2 id="titulo-mazo" class="text-2xl font-black leading-tight tracking-tight sm:text-3xl">Todavía en el mazo</h2>
+                            <p class="mt-1.5 max-w-[28ch] leading-relaxed">Se reparten a medida que se termina cada modo.</p>
+                        </div>
+                    </div>
+
+                    <ul class="mt-7 divide-y divide-naipe/20 border-t border-naipe/20">
+                        @foreach ($enElMazo as $juego)
+                            <li class="flex gap-4 py-4">
+                                <x-icono :nombre="$juego['icono']" class="mt-0.5 size-6" />
+                                <div>
+                                    <p class="text-lg font-extrabold leading-tight tracking-tight">{{ $juego['nombre'] }}</p>
+                                    <p class="mt-1 max-w-[40ch] text-[0.95rem] leading-relaxed">{{ $juego['resumen'] }}</p>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
+            @endif
+        </div>
     </div>
 </x-layouts.base>
