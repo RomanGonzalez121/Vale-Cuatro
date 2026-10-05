@@ -106,21 +106,19 @@ html:has(body.superficie-pano) {
 }
 
 /*
- | Con la barra de abajo (celular y ventanas angostas), el scroll de la página
- | termina donde empieza la barra: el último tramo del carril toma su alto y su
- | color, así la barra llega de borde a borde y la píldora nunca le pasa por al lado.
+ | Con la barra de abajo (celular y ventanas angostas) la página no dibuja su
+ | barra de scroll: si la dibuja, el carril baja hasta el fondo y le corta el
+ | borde derecho a la barra. Se sigue bajando con el dedo, la rueda o el teclado,
+ | como en cualquier celular. Solo se saca la de la página: una tabla que se
+ | desliza de costado conserva la suya.
  */
 @media (width < 64rem) {
-    html:has(.barra-inferior)::-webkit-scrollbar-button:vertical:end:increment {
-        display: block;
-        height: 4rem;
-        border-top: 2px solid var(--color-texto);
-        background-color: var(--color-fondo);
+    html:has(.barra-inferior) {
+        scrollbar-width: none;
     }
 
-    html:has(body.superficie-pano .barra-inferior)::-webkit-scrollbar-button:vertical:end:increment {
-        border-top-color: color-mix(in srgb, var(--color-naipe) 22%, var(--color-pano-hondo));
-        background-color: var(--color-pano-hondo);
+    html:has(.barra-inferior)::-webkit-scrollbar {
+        display: none;
     }
 }
 
