@@ -320,6 +320,11 @@ final class Mesa
     {
         try {
             $bot = $this->botFijo ?? $partida->nivel_bot->bot(Azar::seguro());
+
+            if ($bot instanceof Recuerda) {
+                $bot->recordar($this->manosCerradas($partida));
+            }
+
             $accion = $bot->decidir($motor->vistaPara(self::BOT));
 
             return [$accion, $motor->aplicar(self::BOT, $accion)];
@@ -333,6 +338,29 @@ final class Mesa
         $accion = $cartas[0] ?? Accion::de(TipoDeAccion::NoQuiero);
 
         return [$accion, $motor->aplicar(self::BOT, $accion)];
+    }
+
+    /**
+     * Lo que el bot vio al cerrarse cada mano anterior, para el bot que lleva la cuenta de la partida.
+     * Sale de los mismos eventos que el estado y es la vista de su asiento: no trae nada que no haya visto.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function manosCerradas(Partida $partida): array
+    {
+        $motor = $this->sinJugar($partida);
+        $manos = [];
+
+        foreach ($partida->eventos()->get() as $evento) {
+            // Un reparto nuevo deja atrás una mano cerrada.
+            if ($evento->tipo === EventoDePartida::REPARTO && $motor->cierre() !== null) {
+                $manos[] = $motor->vistaPara(self::BOT);
+            }
+
+            $motor = $this->aplicarEvento($motor, $evento);
+        }
+
+        return $manos;
     }
 
     /**

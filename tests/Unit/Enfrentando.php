@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Juego\Bot;
 use App\Juego\Nivel;
+use App\Juego\Recuerda;
 use App\Motor\Accion;
 use App\Motor\Azar;
 use App\Motor\Fase;
@@ -27,17 +28,29 @@ trait Enfrentando
         $azar = Azar::deSemilla($semilla);
         $partida = Partida::nueva(2, $azar->entero(0, 1));
         $pasos = 0;
+        $cerradas = [[], []];
 
         while ($partida->fase() !== Fase::Terminada) {
             $this->assertLessThan(5000, ++$pasos, "Semilla {$semilla}: la partida no termina.");
 
             if ($partida->fase() === Fase::PorRepartir) {
+                // Igual que en la mesa: de cada mano cerrada queda lo que vio cada asiento.
+                if ($partida->cierre() !== null) {
+                    $cerradas[0][] = $partida->vistaPara(0);
+                    $cerradas[1][] = $partida->vistaPara(1);
+                }
+
                 $partida = $partida->repartir(Mazo::mezcladoCon($azar));
 
                 continue;
             }
 
             $asiento = $partida->accionesPara(0) !== [] ? 0 : 1;
+
+            if ($bots[$asiento] instanceof Recuerda) {
+                $bots[$asiento]->recordar($cerradas[$asiento]);
+            }
+
             $accion = $bots[$asiento]->decidir($partida->vistaPara($asiento));
 
             $this->assertContains(

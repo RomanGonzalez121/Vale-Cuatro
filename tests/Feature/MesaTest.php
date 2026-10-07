@@ -6,6 +6,8 @@ use App\Jobs\TurnoDelBot;
 use App\Juego\Bot;
 use App\Juego\BotIntermedio;
 use App\Juego\Mesa;
+use App\Juego\Nivel;
+use App\Juego\Recuerda;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
@@ -256,6 +258,83 @@ class MesaTest extends TestCase
             $this->assertLessThanOrEqual(3, count($vista['misCartas']));
             // De la mano del jugador solo sabe cuántas cartas le quedan.
             $this->assertIsInt($vista['cartasEnMano'][Mesa::JUGADOR]);
+        }
+    }
+
+    public function test_el_bot_que_recuerda_recibe_las_manos_anteriores_sin_las_cartas_que_el_jugador_no_mostro(): void
+    {
+        // Un bot que anota qué le recuerdan antes de cada jugada y juega como el Intermedio.
+        $espia = new class implements Bot, Recuerda
+        {
+            /** @var list<array{mano: int, anteriores: list<array<string, mixed>>}> */
+            public array $jugadas = [];
+
+            /** @var list<array<string, mixed>>|null */
+            private ?array $anteriores = null;
+
+            public function recordar(array $manos): void
+            {
+                $this->anteriores = $manos;
+            }
+
+            public function decidir(array $vista): Accion
+            {
+                $this->jugadas[] = ['mano' => $vista['numeroDeMano'], 'anteriores' => $this->anteriores];
+                $this->anteriores = null;
+
+                return (new BotIntermedio)->decidir($vista);
+            }
+        };
+
+        $this->app->instance(Mesa::class, $mesa = new Mesa($espia));
+        $azar = Azar::deSemilla(11);
+        $revisadas = 0;
+        $vistas = 0;
+
+        // Se juegan las partidas que hagan falta hasta revisar manos recordadas de sobra.
+        for ($pedidos = 0; $revisadas < 150; $pedidos++) {
+            $this->assertLessThan(4000, $pedidos, 'El bot casi no llegó a recordar nada.');
+
+            if (! isset($partida) || ! $partida->fresh()->enCurso()) {
+                $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
+            }
+
+            $this->unPedidoAlAzar($mesa, $partida, $azar);
+            $repartos = $partida->eventos()->where('tipo', EventoDePartida::REPARTO)->get()->values();
+
+            foreach (array_slice($espia->jugadas, $vistas) as $jugada) {
+                // Se le recuerda antes de cada jugada, y son todas las manos anteriores a la que está jugando.
+                $this->assertNotNull($jugada['anteriores'], 'El bot jugó sin que le recordaran la partida.');
+                $this->assertCount($jugada['mano'] - 1, $jugada['anteriores']);
+
+                foreach ($jugada['anteriores'] as $orden => $cerrada) {
+                    $this->assertSame(Mesa::BOT, $cerrada['asiento']);
+                    $this->assertSame($orden + 1, $cerrada['numeroDeMano']);
+                    $this->assertNotNull($cerrada['cierre'], 'Se le recordó una mano que no estaba cerrada.');
+
+                    $delJugador = $repartos[$orden]->datos['manos'][Mesa::JUGADOR];
+
+                    $aLaVista = array_merge(
+                        array_merge(...array_map(fn (array $baza) => array_column($baza['jugadas'], 1), $cerrada['bazas'])),
+                        array_merge([], ...array_values($cerrada['cierre']['mostradas'] ?? [])),
+                    );
+
+                    preg_match_all('/\b(?:1[0-2]|[1-7])-(?:espada|basto|oro|copa)\b/', json_encode($cerrada), $nombradas);
+
+                    $this->assertSame([], array_values(array_diff(array_intersect($nombradas[0], $delJugador), $aLaVista)));
+                    $revisadas++;
+                }
+            }
+
+            $vistas = count($espia->jugadas);
+        }
+    }
+
+    public function test_los_tres_niveles_de_siempre_no_llevan_memoria(): void
+    {
+        // Fácil, Intermedio y Difícil deciden solo con la vista de la mano: la mesa no les arma historia.
+        foreach ([Nivel::Facil, Nivel::Intermedio, Nivel::Dificil] as $nivel) {
+            $this->assertNotInstanceOf(Recuerda::class, $nivel->bot(Azar::deSemilla(1)));
         }
     }
 
