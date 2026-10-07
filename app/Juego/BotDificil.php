@@ -17,8 +17,11 @@ use App\Motor\TipoDeAccion;
  * Con esos números decide por puntos esperados: quiere cuando aceptar le deja
  * más que no querer, canta cuando va ganando y elige la carta que más manos gana.
  * Cada tanto miente: canta sin tener, más seguido cuando el tanteo lo apura.
+ *
+ * El nivel de arriba hereda estas decisiones y cambia solo cómo saca los dos
+ * números (ganaElEnvido y ganaLaMano): por eso la clase no es final.
  */
-final class BotDificil implements Bot
+class BotDificil implements Bot
 {
     /** Desde qué probabilidad de ganar el envido lo canta, y desde cuál lo sube. */
     private const CANTA_ENVIDO = 0.55;
@@ -62,6 +65,22 @@ final class BotDificil implements Bot
             ?? $this->cantandoElEnvido($lectura)
             ?? $this->cantandoElTruco($lectura)
             ?? Accion::jugar($this->laMejorCarta($lectura));
+    }
+
+    /**
+     * La probabilidad de ganar el envido con el tanto propio.
+     */
+    protected function ganaElEnvido(Lectura $lectura): float
+    {
+        return Probabilidades::deGanarElEnvido($lectura);
+    }
+
+    /**
+     * La probabilidad de ganar la mano. Con una carta, después de tirarla.
+     */
+    protected function ganaLaMano(Lectura $lectura, ?Carta $jugando = null): float
+    {
+        return Probabilidades::deGanarLaMano($lectura, $jugando);
     }
 
     private function conLaFlor(Lectura $lectura): ?Accion
@@ -127,7 +146,7 @@ final class BotDificil implements Bot
 
     private function contestarElEnvido(Lectura $lectura): Accion
     {
-        $gana = Probabilidades::deGanarElEnvido($lectura);
+        $gana = $this->ganaElEnvido($lectura);
 
         if ($gana >= self::CANTA_LA_FALTA && $lectura->puede(TipoDeAccion::FaltaEnvido) && ! $lectura->puede(TipoDeAccion::RealEnvido)) {
             return Accion::de(TipoDeAccion::FaltaEnvido);
@@ -145,7 +164,7 @@ final class BotDificil implements Bot
         $cantado = $lectura->vista['truco']['nivel'];
 
         // Quien canta truco suele tener con qué: cuanto más alto el canto, más se le cree.
-        $gana = Probabilidades::creyendole(Probabilidades::deGanarLaMano($lectura), 1 + $cantado);
+        $gana = Probabilidades::creyendole($this->ganaLaMano($lectura), 1 + $cantado);
         $subida = [1 => TipoDeAccion::Retruco, 2 => TipoDeAccion::ValeCuatro][$cantado] ?? null;
 
         if ($subida !== null && $gana >= self::SUBE_EL_TRUCO && $lectura->puede($subida)) {
@@ -175,7 +194,7 @@ final class BotDificil implements Bot
             return null;
         }
 
-        $gana = Probabilidades::deGanarElEnvido($lectura);
+        $gana = $this->ganaElEnvido($lectura);
 
         // Al rival le faltan dos puntos o menos: un envido común ya no cambia nada, así que va por la falta.
         if ($lectura->susPuntos() >= $lectura->paraGanar() - 2 && $gana >= 0.5) {
@@ -218,7 +237,7 @@ final class BotDificil implements Bot
             return Accion::de($canto);
         }
 
-        $gana = Probabilidades::deGanarLaMano($lectura);
+        $gana = $this->ganaLaMano($lectura);
 
         // Si el último que cantó fue el rival, se le sigue creyendo.
         if ($lectura->vista['truco']['canto'] === $lectura->rival) {
@@ -247,7 +266,7 @@ final class BotDificil implements Bot
         $conLaMejor = -1.0;
 
         foreach ($lectura->enMano() as $carta) {
-            $gana = Probabilidades::deGanarLaMano($lectura, $carta);
+            $gana = $this->ganaLaMano($lectura, $carta);
 
             if ($gana > $conLaMejor + 0.000001) {
                 [$mejor, $conLaMejor] = [$carta, $gana];

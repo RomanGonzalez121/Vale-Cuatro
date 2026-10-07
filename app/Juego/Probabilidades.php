@@ -31,8 +31,11 @@ final class Probabilidades
 
     /**
      * La probabilidad de ganar el envido con el tanto propio.
+     *
+     * Con $siLoCallo se cuenta además lo que el rival no cantó: ya pudo cantar envido y no lo hizo,
+     * así que las manos con las que se suele cantar pesan eso (menos de 1) y las demás, entero.
      */
-    public static function deGanarElEnvido(Lectura $lectura): float
+    public static function deGanarElEnvido(Lectura $lectura, ?float $siLoCallo = null): float
     {
         $mio = $lectura->tanto();
         $cantado = self::loQueCantoElRival($lectura);
@@ -42,6 +45,10 @@ final class Probabilidades
 
         foreach (self::tantosDelRival($lectura) as $suyo => $manos) {
             $peso = $manos * self::credito($suyo, $piso);
+
+            if ($cantado === null && $siLoCallo !== null && $suyo >= self::SE_CANTA_CON[Envido::ENVIDO]) {
+                $peso *= $siLoCallo;
+            }
             $total += $peso;
 
             // Con el mismo tanto gana el mano.
@@ -96,8 +103,13 @@ final class Probabilidades
      * Para cada mano posible del rival se juega lo que queda con las cartas a la
      * vista, eligiendo cada lado su mejor carta, y se anota quién gana. Con
      * $jugando se pregunta lo mismo después de tirar esa carta: así se comparan.
+     *
+     * Con $posibles se cuentan solo esas manos del rival y no todas las que se arman con
+     * las cartas sin ver: es para quien ya descartó algunas por lo que el rival dijo.
+     *
+     * @param  list<list<Carta>>|null  $posibles  Las cartas que le pueden quedar al rival en la mano.
      */
-    public static function deGanarLaMano(Lectura $lectura, ?Carta $jugando = null): float
+    public static function deGanarLaMano(Lectura $lectura, ?Carta $jugando = null, ?array $posibles = null): float
     {
         $miaEnLaMesa = $lectura->enLaMesaDe($lectura->asiento);
         $suyaEnLaMesa = $lectura->enLaMesaDe($lectura->rival);
@@ -134,7 +146,11 @@ final class Probabilidades
         $gano = 0;
         $total = 0;
 
-        foreach (self::manosPorLugar($porLugar, $lectura->vista['cartasEnMano'][$lectura->rival]) as [$suyas, $veces]) {
+        $manos = $posibles === null
+            ? self::manosPorLugar($porLugar, $lectura->vista['cartasEnMano'][$lectura->rival])
+            : self::agrupadasPorLugar($posibles, $lugar);
+
+        foreach ($manos as [$suyas, $veces]) {
             $total += $veces;
 
             $ganada = $cual === null
@@ -158,6 +174,62 @@ final class Probabilidades
         $pierde = $veces * (1 - $probabilidad);
 
         return $probabilidad + $pierde > 0 ? $probabilidad / ($probabilidad + $pierde) : 0.0;
+    }
+
+    /**
+     * Todas las manos que le pueden quedar al rival: cada forma de elegir, entre las cartas que
+     * el bot no vio, tantas como el rival tiene en la mano.
+     *
+     * @return list<list<Carta>>
+     */
+    public static function manosDelRival(Lectura $lectura): array
+    {
+        return self::elegir(self::sinVer($lectura), $lectura->vista['cartasEnMano'][$lectura->rival]);
+    }
+
+    /**
+     * @param  list<Carta>  $cartas
+     * @return list<list<Carta>>
+     */
+    private static function elegir(array $cartas, int $cuantas): array
+    {
+        if ($cuantas === 0) {
+            return [[]];
+        }
+
+        $manos = [];
+
+        foreach ($cartas as $i => $carta) {
+            foreach (self::elegir(array_slice($cartas, $i + 1), $cuantas - 1) as $resto) {
+                $manos[] = [$carta, ...$resto];
+            }
+        }
+
+        return $manos;
+    }
+
+    /**
+     * Las mismas manos, dichas como las entiende la cuenta de la mano: por el lugar de cada carta
+     * frente a las propias, y cuántas manos de cartas reales hay detrás de cada grupo.
+     *
+     * @param  list<list<Carta>>  $manos
+     * @param  callable(int): int  $lugar
+     * @return list<array{0: list<int>, 1: int}>
+     */
+    private static function agrupadasPorLugar(array $manos, callable $lugar): array
+    {
+        $grupos = [];
+
+        foreach ($manos as $mano) {
+            $lugares = array_map(fn (Carta $carta) => $lugar($carta->jerarquia()), $mano);
+            sort($lugares);
+            $clave = implode(',', $lugares);
+
+            $grupos[$clave] ??= [$lugares, 0];
+            $grupos[$clave][1]++;
+        }
+
+        return array_values($grupos);
     }
 
     /**
