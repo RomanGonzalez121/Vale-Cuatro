@@ -442,6 +442,14 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 
 ## Nivel 4, "Ultra difícil" (después de M4)
 
+### Los cuatro niveles salen del mismo molde
+
+- **Problema:** al sumar el cuarto nivel a la fila de `/modos`, quedó desordenada. Cada nombre medía otro ancho ("Fácil" 37 px, "Ultra difícil" 87) con la misma separación entre todos, y los dibujos eran cuatro formas distintas: uno, dos y tres fósforos parados y un cuadrado. Para que entraran a 360 px hubo que achicar la letra y quedaron apretados. Román lo marcó el 7 de octubre de 2026.
+- **Se eligió (decidido por Román):** que los cuatro salgan del mismo molde. Todos usan el mismo cuadrado, el grupo de cuatro del tanteador, con uno, dos, tres o cuatro fósforos puestos, que es como se anotan los puntos; el último nivel es el que lo cierra. Van en cuatro columnas iguales, con el nombre en una palabra (Fácil, Medio, Difícil, Ultra) y la letra en su tamaño de antes. El nombre completo va debajo, dicho igual que en la mesa ("Bot ultra difícil"), arriba de la frase.
+- **Cómo se lee un nivel sin elegir:** la marca de los fósforos que tiene va en Naipe al 42 %, y la de los que le faltan para cerrar el cuadrado al 13 %, como en el tanteador. Así se cuenta cuántos tiene cada uno aunque no esté puesto.
+- **Se descartó:** una lista de cuatro renglones (más prolija, pero sumaba unos 50 px de alto y en el celular el botón de jugar quedaba debajo de la barra) y emparejar solo los dibujos dejando los nombres completos (los anchos seguían desparejos).
+- **Medido** en un Chromium real: a 360 px cada columna mide 80 px y la fila entra en un renglón, también a 320 px; el botón de jugar termina a 671 px en un celular de 360 x 740 (la barra de abajo empieza a los 676) y a 588 en 1355 x 638. En la mesa, "Bot ultra difícil" ocupa dos renglones a 360 px y la mesa sigue sin scroll.
+
 ### El bot que recuerda recibe las manos anteriores
 
 - **Problema:** el nivel 4 tiene que llevar la cuenta de cómo juega el rival en la partida, pero el bot no tiene memoria: cada turno suyo es un job que reconstruye la partida, y la vista solo trae la mano en juego.

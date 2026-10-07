@@ -1303,6 +1303,11 @@ html:has(body.superficie-pano) {
         stroke: color-mix(in srgb, var(--color-naipe) 42%, transparent);
     }
 
+    /* Los lugares que al nivel le faltan para cerrar el cuadrado, tenues como en el tanteador. */
+    .nivel-fosforos .fosforo-falta {
+        stroke: color-mix(in srgb, var(--color-naipe) 13%, transparent);
+    }
+
     .nivel-fosforos .fosforo.puesto {
         transition-delay: calc(var(--orden, 0) * 60ms);
     }

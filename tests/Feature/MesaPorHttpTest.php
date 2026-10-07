@@ -55,7 +55,7 @@ class MesaPorHttpTest extends TestCase
 
     public function test_un_nivel_que_no_existe_se_rechaza_sin_crear_nada(): void
     {
-        foreach ([0, 4, 'difícil', ['3']] as $nivel) {
+        foreach ([0, 5, 'difícil', ['3']] as $nivel) {
             $this->post('/jugar', ['nivel' => $nivel])->assertSessionHasErrors('nivel');
         }
 

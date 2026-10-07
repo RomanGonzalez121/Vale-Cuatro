@@ -12,6 +12,7 @@ enum Nivel: int
     case Facil = 1;
     case Intermedio = 2;
     case Dificil = 3;
+    case UltraDificil = 4;
 
     /**
      * El nivel con el que se entra sin elegir: el botón de la portada.
@@ -27,6 +28,20 @@ enum Nivel: int
             self::Facil => 'Fácil',
             self::Intermedio => 'Intermedio',
             self::Dificil => 'Difícil',
+            self::UltraDificil => 'Ultra difícil',
+        };
+    }
+
+    /**
+     * El nombre en una palabra, para la fila donde se elige: los cuatro tienen que medir parecido.
+     */
+    public function corto(): string
+    {
+        return match ($this) {
+            self::Facil => 'Fácil',
+            self::Intermedio => 'Medio',
+            self::Dificil => 'Difícil',
+            self::UltraDificil => 'Ultra',
         };
     }
 
@@ -39,6 +54,7 @@ enum Nivel: int
             self::Facil => 'Tira cualquier cosa. Para aprender.',
             self::Intermedio => 'Juega de frente: si canta, tiene.',
             self::Dificil => 'Saca cuentas y cada tanto miente.',
+            self::UltraDificil => 'Te lee: se acuerda de cómo jugás.',
         };
     }
 
@@ -51,6 +67,7 @@ enum Nivel: int
             self::Facil => new BotFacil($azar),
             self::Intermedio => new BotIntermedio,
             self::Dificil => new BotDificil($azar),
+            self::UltraDificil => new BotUltraDificil($azar),
         };
     }
 }

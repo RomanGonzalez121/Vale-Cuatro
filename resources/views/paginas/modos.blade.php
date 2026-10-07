@@ -106,24 +106,29 @@
                                                     El nivel del bot. No lleva el subrayado de los links: cuál está elegido lo dicen sus fósforos.
                                                     Con una partida sin terminar queda apagado: Naipe al 70 % sobre Paño da 4,7:1, que todavía se lee.
                                                 --}}
-                                                <div class="mt-3 flex flex-wrap items-end gap-x-7 gap-y-1" role="group" aria-label="Nivel del bot">
+                                                <div class="mt-3 grid max-w-[21rem] grid-cols-4" role="group" aria-label="Nivel del bot">
                                                     @foreach ($niveles as $opcion)
-                                                        {{-- La dificultad se cuenta con fósforos, como los puntos: uno, dos y tres. Los del nivel elegido caen de a uno y se encienden. --}}
+                                                        {{--
+                                                            Los cuatro salen del mismo molde: una columna igual para cada uno, el mismo cuadrado de
+                                                            fósforos (con uno, dos, tres o cuatro puestos) y el nombre en una palabra, para que midan
+                                                            parecido. A 360 px cada columna tiene 80 px. Los del nivel elegido caen de a uno y se encienden.
+                                                        --}}
                                                         <button type="button" @disabled($sigue)
-                                                            class="nivel-opcion inline-block cursor-pointer py-2 text-left text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
+                                                            class="nivel-opcion cursor-pointer py-1 text-left text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
                                                             aria-pressed="{{ $opcion === $nivelElegido ? 'true' : 'false' }}"
                                                             :aria-pressed="(nivel === {{ $opcion->value }}).toString()"
-                                                            @click="nivel = {{ $opcion->value }}"><x-nivel-fosforos :nivel="$opcion" :puesto="$opcion === $nivelElegido" modelo="nivel === {{ $opcion->value }}" class="mb-1.5 text-[1.375rem]" />{{ $opcion->nombre() }}</button>
+                                                            @click="nivel = {{ $opcion->value }}"><x-nivel-fosforos :nivel="$opcion" :puesto="$opcion === $nivelElegido" modelo="nivel === {{ $opcion->value }}" class="mb-1.5 text-[1.25rem]" />{{ $opcion->corto() }}</button>
                                                     @endforeach
                                                 </div>
 
+                                                {{-- El nombre completo, dicho igual que en la mesa, y cómo juega. Siempre son dos renglones: el botón no salta al cambiar de nivel. --}}
                                                 @foreach ($niveles as $opcion)
-                                                    <p class="mt-1 max-w-[36ch] leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif>{{ $opcion->detalle() }}</p>
+                                                    <p class="mt-1 max-w-[36ch] leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Bot {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalle() }}</p>
                                                 @endforeach
                                             @endif
 
                                             {{-- Sin campos a la vista: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
-                                            <form method="POST" action="{{ route('jugar') }}" class="mt-4">
+                                            <form method="POST" action="{{ route('jugar') }}" class="mt-3">
                                                 @csrf
                                                 @if ($niveles !== [])
                                                     <input type="hidden" name="nivel" value="{{ $nivelElegido->value }}" :value="nivel">
