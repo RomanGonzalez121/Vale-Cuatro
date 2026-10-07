@@ -18,8 +18,8 @@ use App\Motor\TipoDeAccion;
  * más que no querer, canta cuando va ganando y elige la carta que más manos gana.
  * Cada tanto miente: canta sin tener, más seguido cuando el tanteo lo apura.
  *
- * El nivel de arriba hereda estas decisiones y cambia solo cómo saca los dos
- * números (ganaElEnvido y ganaLaMano): por eso la clase no es final.
+ * El nivel de arriba hereda estas decisiones y cambia solo de dónde salen sus
+ * números (los métodos protegidos): por eso la clase no es final.
  */
 class BotDificil implements Bot
 {
@@ -164,10 +164,10 @@ class BotDificil implements Bot
         $cantado = $lectura->vista['truco']['nivel'];
 
         // Quien canta truco suele tener con qué: cuanto más alto el canto, más se le cree.
-        $gana = Probabilidades::creyendole($this->ganaLaMano($lectura), 1 + $cantado);
+        $gana = $this->creyendole($this->ganaLaMano($lectura), $cantado);
         $subida = [1 => TipoDeAccion::Retruco, 2 => TipoDeAccion::ValeCuatro][$cantado] ?? null;
 
-        if ($subida !== null && $gana >= self::SUBE_EL_TRUCO && $lectura->puede($subida)) {
+        if ($subida !== null && $gana >= self::SUBE_EL_TRUCO + $this->cuidado($lectura) && $lectura->puede($subida)) {
             return Accion::de($subida);
         }
 
@@ -206,7 +206,7 @@ class BotDificil implements Bot
             return Accion::de($this->unaDe(3) ? TipoDeAccion::Envido : TipoDeAccion::RealEnvido);
         }
 
-        if ($gana >= self::CANTA_ENVIDO) {
+        if ($gana >= self::CANTA_ENVIDO + $this->cuidado($lectura)) {
             return Accion::de(TipoDeAccion::Envido);
         }
 
@@ -241,10 +241,10 @@ class BotDificil implements Bot
 
         // Si el último que cantó fue el rival, se le sigue creyendo.
         if ($lectura->vista['truco']['canto'] === $lectura->rival) {
-            $gana = Probabilidades::creyendole($gana, 1 + $lectura->vista['truco']['nivel']);
+            $gana = $this->creyendole($gana, $lectura->vista['truco']['nivel']);
         }
 
-        if ($gana >= self::CANTA_TRUCO[$canto->value]) {
+        if ($gana >= self::CANTA_TRUCO[$canto->value] + $this->cuidado($lectura)) {
             return Accion::de($canto);
         }
 
@@ -284,14 +284,33 @@ class BotDificil implements Bot
     /**
      * Si esta vez miente. Va apurado cuando al rival le faltan cinco puntos o menos y va ganando.
      */
-    private function miente(Lectura $lectura): bool
+    protected function miente(Lectura $lectura): bool
     {
-        $apurado = $lectura->susPuntos() >= $lectura->paraGanar() - 5 && $lectura->misPuntos() < $lectura->susPuntos();
-
-        return $this->unaDe($apurado ? self::APURADO_UNA_DE : self::MIENTE_UNA_DE);
+        return $this->unaDe($this->apurado($lectura) ? self::APURADO_UNA_DE : self::MIENTE_UNA_DE);
     }
 
-    private function unaDe(int $tantas): bool
+    protected function apurado(Lectura $lectura): bool
+    {
+        return $lectura->susPuntos() >= $lectura->paraGanar() - 5 && $lectura->misPuntos() < $lectura->susPuntos();
+    }
+
+    /**
+     * Le cree al que canta: cuanto más alto el canto del rival, más pesan las manos en las que viene ganando.
+     */
+    protected function creyendole(float $gana, int $cantado): float
+    {
+        return Probabilidades::creyendole($gana, 1 + $cantado);
+    }
+
+    /**
+     * Cuánto más (o menos) seguro quiere estar antes de cantar. El Difícil canta siempre con lo mismo.
+     */
+    protected function cuidado(Lectura $lectura): float
+    {
+        return 0.0;
+    }
+
+    protected function unaDe(int $tantas): bool
     {
         return $this->azar->entero(1, $tantas) === 1;
     }

@@ -34,8 +34,10 @@ final class Probabilidades
      *
      * Con $siLoCallo se cuenta además lo que el rival no cantó: ya pudo cantar envido y no lo hizo,
      * así que las manos con las que se suele cantar pesan eso (menos de 1) y las demás, entero.
+     * Con $siMiente se cambia cuánto pesan las manos sin tanto de un rival que cantó: es para quien
+     * ya vio cuánto miente ese rival.
      */
-    public static function deGanarElEnvido(Lectura $lectura, ?float $siLoCallo = null): float
+    public static function deGanarElEnvido(Lectura $lectura, ?float $siLoCallo = null, ?float $siMiente = null): float
     {
         $mio = $lectura->tanto();
         $cantado = self::loQueCantoElRival($lectura);
@@ -44,7 +46,7 @@ final class Probabilidades
         $total = 0.0;
 
         foreach (self::tantosDelRival($lectura) as $suyo => $manos) {
-            $peso = $manos * self::credito($suyo, $piso);
+            $peso = $manos * self::credito($suyo, $piso, $siMiente ?? self::ESTA_MINTIENDO);
 
             if ($cantado === null && $siLoCallo !== null && $suyo >= self::SE_CANTA_CON[Envido::ENVIDO]) {
                 $peso *= $siLoCallo;
@@ -169,7 +171,7 @@ final class Probabilidades
      * Le cree al que canta: si el rival fue el último en cantar o en subir, las manos en las que
      * viene ganando pesan $veces más que las otras. Con $veces = 2, un 50 % pasa a ser un 33 %.
      */
-    public static function creyendole(float $probabilidad, int $veces): float
+    public static function creyendole(float $probabilidad, float $veces): float
     {
         $pierde = $veces * (1 - $probabilidad);
 
@@ -264,12 +266,13 @@ final class Probabilidades
     /**
      * Cuánto pesa una mano del rival sabiendo lo que cantó.
      */
-    private static function credito(int $tanto, ?int $piso): float
+    private static function credito(int $tanto, ?int $piso, float $siMiente): float
     {
         return match (true) {
             $piso === null, $tanto >= $piso => 1.0,
-            $tanto >= $piso - 3 => self::CASI_LLEGA,
-            default => self::ESTA_MINTIENDO,
+            // Lo que casi llega nunca pesa menos que una mentira.
+            $tanto >= $piso - 3 => max(self::CASI_LLEGA, $siMiente),
+            default => $siMiente,
         };
     }
 

@@ -62,6 +62,23 @@
 }
 
 /*
+ | La mesa contra el Ultra difícil baja un paso, sin colores nuevos. De día usa
+ | los tonos de noche. De noche el paño toma el tono de las barras y las barras
+ | quedan igual: no hay un tono más oscuro en la paleta, así que el campo se lee
+ | por su línea de borde. Se cambia en el body para que el fondo de la página
+ | acompañe. Las combinaciones están en Paleta::combinacionesDeLaMesaUltra().
+ */
+body:has(.mesa-ultra) {
+    --color-pano: #153f32;
+    --color-pano-hondo: #0e2b21;
+    --color-sombra: #07180f;
+}
+
+:root[data-modo='noche'] body:has(.mesa-ultra) {
+    --color-pano: #0e2b21;
+}
+
+/*
  | Barra de scroll propia: fina y sobria. Una píldora del color del texto, a
  | media tinta, sobre un carril invisible; al pasar el mouse toma el color
  | pleno y engorda apenas. Sigue sola al modo de día y de noche, porque usa

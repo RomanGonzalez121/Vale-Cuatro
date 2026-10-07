@@ -458,3 +458,36 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **La garantía de las cartas ocultas se hereda:** una vista por asiento nunca trae cartas ajenas que no se jugaron ni se mostraron, y eso ya estaba testeado en el motor. Igual hay un test propio que juega partidas con un bot espía y revisa cada mano que se le recuerda contra el reparto guardado.
 - **Se descartó:** que el motor arme un resumen público por mano (más prolijo de leer, pero obligaba a tocar el motor cerrado en M2 y a demostrar de nuevo que no se filtra nada) y guardar la memoria del bot en la base (sería estado duplicado: todo sale de los eventos).
 - **En las tandas de bot contra bot** de los tests se hace lo mismo, para que lo que se mide sea lo que después juega en la mesa.
+
+### La mesa contra el Ultra difícil baja un paso
+
+- **Problema:** Román quería que jugar contra el nivel más alto se viera distinto, y la dirección visual no permite inventar colores, brillos ni nada en loop.
+- **Se eligió (decidido por Román el 7 de octubre de 2026):** bajar el paño un paso con los tonos que ya existían. De día la mesa usa los de noche (paño `#153F32`, barras `#0E2B21`). De noche el paño toma el tono de las barras y las barras quedan igual, porque no hay uno más oscuro en la paleta: el campo se lee por su línea de borde.
+- **Cómo está hecho:** dos reglas de CSS que cambian las variables del paño cuando la página tiene la mesa del Ultra (`body:has(.mesa-ultra)`). Nada más de la mesa se tocó.
+- **Contraste, medido y testeado** (`Paleta::combinacionesDeLaMesaUltra()`): al oscurecer, todo el texto mejora. Naipe pasa de 7,7 a 11,2 de día y a 14,5 de noche; Oro, de 4,3 a 6,3 y a 8,1.
+- **Se descartó:** un tono nuevo más oscuro para las barras de noche (era un color fuera de la paleta y el escalón que daba era de 1,2 a 1), un dorso propio para el rival, un color de paño nuevo y dejar solo los cuatro fósforos.
+
+### El Ultra difícil es el Difícil con otros números
+
+- **Problema:** el nivel 4 tiene que jugar mejor que el 3 sin hacer trampa. Copiar al Difícil y retocarlo dejaba dos bots casi iguales para mantener.
+- **Se eligió:** que herede. `BotUltraDificil` extiende a `BotDificil` y no cambia ninguna decisión: cambia de dónde salen los números con los que el Difícil decide. Son cuatro métodos: la probabilidad de ganar el envido, la de ganar la mano, cuánto le cree al truco del rival y cuándo miente, más uno que dice cuánto se cuida según el tanteo. En el Difícil devuelven lo de siempre, así que sigue jugando exactamente igual (sus tests no se tocaron).
+- **Se descartó:** un bot aparte con sus propias reglas (duplicaba casi todo el Difícil) y pasarle al Difícil un objeto de configuración (más piezas para lo mismo).
+
+### Qué lee del rival, y de dónde lo saca
+
+- **Los tantos que se dijeron** (`Deducciones::manosPosibles`). Si el rival dijo "28", sus tres cartas dan 28; si dijo "son buenas", su tanto no pasa del que se cantó antes. Al calcular quién gana la mano se cuentan solo las manos del rival que cierran con eso. Ejemplo del test: el rival dice 33 y el bot tiene el 7 de oro y el 6 de espada, así que ese 33 es de copa o de basto, dos cartas bajas; el Ultra contesta el truco subiendo y el Difícil no.
+- **Lo que no se cantó** (`Deducciones::seCalloElEnvido`). Si el rival ya tiró su primera carta sin cantar envido, las manos con tanto para cantar pesan menos, y el bot canta envido con menos.
+- **Cómo viene jugando en la partida** (`Perfil`), con las manos que la mesa le recuerda. Son cuatro números: de los envidos que abre, cuántos canta sin tanto; con tanto, cuántas veces se lo calla; de los trucos que cantó y se jugaron hasta el final, cuántos ganó; y de los cantos que le hizo el bot, cuántos no quiso.
+- **Una partida tiene pocas manos,** así que cada número arranca en lo que supone el Difícil y esa suposición pesa como cuatro manos vistas. Con dos o tres manos casi no se mueve; recién manda lo visto cuando hay bastantes más. Al truco nunca se le cree menos de la mitad ni más del doble que a un rival cualquiera.
+- **El tanto del rival solo se usa cuando se supo:** porque lo dijo o porque jugó sus tres cartas. Un envido no querido no enseña nada (test).
+- **La mentira deja de ser fija.** El Difícil miente una de cada seis veces que podría. El Ultra, una de cada tres contra un rival que se va mucho y una de cada diez contra uno que quiere todo.
+- **El tanteo:** ganando por seis o más pide cinco puntos más de probabilidad antes de cantar; perdiendo por seis o más, cinco menos.
+- **Las cuentas de la mano tienen ahora dos caminos:** el rápido, que agrupa las cartas sin ver, y el que recibe las manos posibles una por una. Un test comprueba que con todas las manos dan lo mismo.
+
+### Cuánto le gana al Difícil, medido
+
+- **Cómo se midió:** bot contra bot sobre el motor, 400 partidas con semilla fija (semillas 1000 a 1399), turnándose el asiento.
+- **Solo con las deducciones de los tantos:** 215 de 400, el 53,8 %.
+- **Con todo (deducciones, perfil del rival, tanteo y mentira variable):** 213 de 400, el 53,2 %.
+- **Qué dice ese número:** con 400 partidas el margen de error es de unos 5 puntos, así que un 53 % todavía no se distingue de un empate. Y el perfil del rival no sumó nada medible contra el Difícil. Es esperable por dos motivos: entre dos bots fuertes pesan mucho las cartas, y el Difícil juega parecido a lo que el Ultra ya suponía de un rival cualquiera, así que aprenderlo cambia poco.
+- **Queda abierto:** el nivel sale con ese nombre solo si le gana al Difícil por el margen que fije Román. Con este resultado no está demostrado. Falta medir con más partidas y revisar qué lectura aporta y cuál no.

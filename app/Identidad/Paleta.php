@@ -86,6 +86,23 @@ class Paleta
         ];
     }
 
+    /**
+     * La mesa contra el Ultra difícil baja un paso sin sumar colores: de día usa los tonos de noche
+     * y de noche el paño toma el de las barras. Estas son sus combinaciones, con los tonos de DE_NOCHE.
+     *
+     * @return list<array{texto: string, fondo: string, minimo: float, donde: string}>
+     */
+    public static function combinacionesDeLaMesaUltra(): array
+    {
+        return [
+            ['texto' => 'naipe', 'fondo' => 'mesa', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'De día, texto sobre la mesa'],
+            ['texto' => 'oro', 'fondo' => 'mesa', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'De día, cantos de envido'],
+            ['texto' => 'naipe', 'fondo' => 'barras', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Texto del tanteador y las barras, y de noche también el de la mesa'],
+            ['texto' => 'oro', 'fondo' => 'barras', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Puntos del tanteador, y de noche también los cantos de envido'],
+            ['texto' => 'fosforo', 'fondo' => 'barras', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Fósforos del tanteador (gráfico)'],
+        ];
+    }
+
     public static function nombre(string $color): string
     {
         return (self::COLORES[$color] ?? self::DE_NOCHE[$color])['nombre'];

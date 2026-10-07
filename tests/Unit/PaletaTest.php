@@ -33,6 +33,22 @@ class PaletaTest extends TestCase
         }
     }
 
+    public function test_cada_combinacion_de_la_mesa_del_ultra_dificil_alcanza_su_minimo_de_contraste(): void
+    {
+        foreach (Paleta::combinacionesDeLaMesaUltra() as $combinacion) {
+            $contraste = Paleta::contraste($combinacion['texto'], $combinacion['fondo']);
+
+            $this->assertGreaterThanOrEqual(
+                $combinacion['minimo'],
+                $contraste,
+                sprintf('En la mesa del Ultra difícil, %s sobre %s da %.2f y necesita %.1f.', $combinacion['texto'], $combinacion['fondo'], $contraste, $combinacion['minimo']),
+            );
+
+            // No suma colores: todos sus fondos son tonos que el modo de noche ya tenía.
+            $this->assertArrayHasKey($combinacion['fondo'], Paleta::DE_NOCHE);
+        }
+    }
+
     public function test_los_colores_de_palo_sin_aclarar_no_alcanzan_como_texto_sobre_tinta(): void
     {
         // Por esto existen los tonos de noche: sin aclararlos, no se leen.

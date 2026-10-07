@@ -23,7 +23,7 @@ final class Deducciones
      */
     public static function manosPosibles(Lectura $lectura): ?array
     {
-        $dicho = self::loQueDijoElRival($lectura);
+        $dicho = self::tantoDicho($lectura);
 
         if ($dicho === null) {
             return null;
@@ -54,9 +54,11 @@ final class Deducciones
     }
 
     /**
+     * Lo que el rival dejó saber de su tanto al cantarse los tantos del envido, o null si no dijo nada.
+     *
      * @return array{0: bool, 1: int}|null Si el tanto es exacto (o un tope) y cuál es.
      */
-    private static function loQueDijoElRival(Lectura $lectura): ?array
+    public static function tantoDicho(Lectura $lectura): ?array
     {
         $mejor = null;
 
