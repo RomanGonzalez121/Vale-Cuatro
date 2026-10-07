@@ -419,6 +419,14 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Deja lugar para el nivel 4:** el cuarto fósforo cierra el cuadrado del logo.
 - **Se descartó:** tres naipes chicos, uno por nivel (competían con la carta grande del modo y sumaban 70 px de alto) y cambiar solo tamaños de letra (seguía siendo todo texto).
 
+### Los niveles no llevan el subrayado de los links
+
+- **Problema:** cada nivel tenía dos gestos de fósforo a la vez. Arriba del nombre caían los fósforos que cuentan la dificultad y abajo se dibujaba otro, acostado: el subrayado de los links del menú. Decían lo mismo dos veces. Román lo marcó el 7 de octubre de 2026.
+- **Se eligió (decidido por Román):** sacar el subrayado solo en los niveles (sigue en el menú y en "contra quién") y que el gesto sea uno. Al elegir, los fósforos caen de a uno y la cabeza de cada uno se enciende cuando el palito llega, igual que la cabeza del subrayado de los links. Los del nivel que se deja se apagan enseguida. Como todo botón lleva su hover, al pasar el mouse los fósforos del nivel se levantan apenas; en el celular, al apretar.
+- **Cómo está hecho:** son transiciones de CSS sobre `transform` y `opacity`, no animaciones con cuadros, para que cambiar de nivel rápido no reinicie nada: cada fósforo sigue desde donde estaba. Con movimiento reducido aparecen todos juntos con un fundido y no se levantan.
+- **Se descartó:** dejar los palitos siempre puestos y encender solo las cabezas (perdía el parecido con el punto que cae en el tanteador) y sacar la línea sin tocar la caída.
+- **Medido** en un Chromium real: con tres fósforos, los palitos están puestos a los 280 ms y la última cabeza termina de encenderse antes de los 400 ms; no queda subrayado y a 360 px la página no se ensancha.
+
 ### Los modos en una ventana baja de escritorio
 
 - **Problema:** al sumar los niveles, en una notebook de 1366 x 768 (unos 640 px libres) el botón de jugar quedaba debajo del borde.
@@ -431,3 +439,14 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Lo que tarda el bot:** desde que el jugador tira una carta hasta que puede volver a jugar pasan unos 2 segundos (mediana de las tres partidas), contando el segundo de demora, la consulta y las cartas que caen.
 - **La red de seguridad, probada:** con el proceso de la cola detenido, el bot igual jugó; la espera fue de unos 5 segundos más.
 - Capturas en `docs/capturas/modos.jpeg`, `modos-celular.jpeg` y `mesa-bot-piensa.jpeg`.
+
+## Nivel 4, "Ultra difícil" (después de M4)
+
+### El bot que recuerda recibe las manos anteriores
+
+- **Problema:** el nivel 4 tiene que llevar la cuenta de cómo juega el rival en la partida, pero el bot no tiene memoria: cada turno suyo es un job que reconstruye la partida, y la vista solo trae la mano en juego.
+- **Se eligió (decidido por Román el 7 de octubre de 2026):** antes de decidir, la mesa le pasa al bot lo que su asiento vio al cerrarse cada mano anterior. Son las mismas vistas que recibe un jugador, armadas desde los eventos al reconstruir: no se guarda nada nuevo en la base y el motor no se toca.
+- **Es una interfaz aparte, `Recuerda`,** con un solo método, `recordar()`. La mesa arma la historia solo para el bot que la implementa. Fácil, Intermedio y Difícil no la implementan, así que siguen decidiendo igual que antes y no pagan ese recorrido.
+- **La garantía de las cartas ocultas se hereda:** una vista por asiento nunca trae cartas ajenas que no se jugaron ni se mostraron, y eso ya estaba testeado en el motor. Igual hay un test propio que juega partidas con un bot espía y revisa cada mano que se le recuerda contra el reparto guardado.
+- **Se descartó:** que el motor arme un resumen público por mano (más prolijo de leer, pero obligaba a tocar el motor cerrado en M2 y a demostrar de nuevo que no se filtra nada) y guardar la memoria del bot en la base (sería estado duplicado: todo sale de los eventos).
+- **En las tandas de bot contra bot** de los tests se hace lo mismo, para que lo que se mide sea lo que después juega en la mesa.
