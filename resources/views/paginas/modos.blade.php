@@ -103,14 +103,14 @@
 
                                             @if ($niveles !== [])
                                                 {{--
-                                                    El nivel del bot, con el mismo gesto que el rival. Con una partida sin terminar queda apagado:
-                                                    Naipe al 70 % sobre Paño da 4,7:1, que todavía se lee.
+                                                    El nivel del bot. No lleva el subrayado de los links: cuál está elegido lo dicen sus fósforos.
+                                                    Con una partida sin terminar queda apagado: Naipe al 70 % sobre Paño da 4,7:1, que todavía se lee.
                                                 --}}
                                                 <div class="mt-3 flex flex-wrap items-end gap-x-7 gap-y-1" role="group" aria-label="Nivel del bot">
                                                     @foreach ($niveles as $opcion)
-                                                        {{-- La dificultad se cuenta con fósforos, como los puntos: uno, dos y tres. Los del nivel elegido caen de a uno. --}}
+                                                        {{-- La dificultad se cuenta con fósforos, como los puntos: uno, dos y tres. Los del nivel elegido caen de a uno y se encienden. --}}
                                                         <button type="button" @disabled($sigue)
-                                                            class="enlace-nav cursor-pointer text-left text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
+                                                            class="nivel-opcion inline-block cursor-pointer py-2 text-left text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
                                                             aria-pressed="{{ $opcion === $nivelElegido ? 'true' : 'false' }}"
                                                             :aria-pressed="(nivel === {{ $opcion->value }}).toString()"
                                                             @click="nivel = {{ $opcion->value }}"><x-nivel-fosforos :nivel="$opcion" :puesto="$opcion === $nivelElegido" modelo="nivel === {{ $opcion->value }}" class="mb-1.5 text-[1.375rem]" />{{ $opcion->nombre() }}</button>

@@ -5,7 +5,8 @@
     uno es Fácil, dos Intermedio y tres Difícil. Son gruesos y de cabeza grande,
     como los de la carta de modo. Debajo de cada uno va la marca de su lugar,
     así se lee cuántos tiene un nivel aunque no esté elegido. Con "modelo"
-    (una expresión de Alpine) caen de a uno cuando pasa a ser cierta.
+    (una expresión de Alpine) caen de a uno cuando pasa a ser cierta, y la
+    cabeza de cada uno se enciende al llegar.
 --}}
 
 <span {{ $attributes->class('nivel-fosforos flex gap-[0.2em]') }} aria-hidden="true">
@@ -17,7 +18,7 @@
             </g>
             <g @class(['fosforo', 'puesto' => $puesto]) @if ($modelo) :class="{ puesto: {{ $modelo }} }" @endif>
                 <path d="M5 21.5V10.5" fill="none" stroke="var(--color-fosforo)" stroke-width="3.2" stroke-linecap="round" />
-                <circle cx="5" cy="4.4" r="3.8" fill="var(--color-copa)" />
+                <circle class="fosforo-cabeza" cx="5" cy="4.4" r="3.8" fill="var(--color-copa)" />
             </g>
         </svg>
     @endfor

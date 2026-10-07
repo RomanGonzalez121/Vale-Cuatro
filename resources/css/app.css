@@ -1304,7 +1304,37 @@ html:has(body.superficie-pano) {
     }
 
     .nivel-fosforos .fosforo.puesto {
-        transition-delay: calc(var(--orden, 0) * 70ms);
+        transition-delay: calc(var(--orden, 0) * 60ms);
+    }
+
+    /*
+     | La cabeza se enciende cuando el palito llega, como en el subrayado de los
+     | links. Al dejar un nivel se apaga enseguida, sin esperar su turno.
+     */
+    .nivel-fosforos .fosforo-cabeza {
+        opacity: 0;
+        transform: scale(0.5);
+        transform-box: fill-box;
+        transform-origin: center;
+        transition:
+            opacity 100ms var(--ease-llegada),
+            transform 100ms var(--ease-llegada);
+    }
+
+    .nivel-fosforos .fosforo.puesto .fosforo-cabeza {
+        opacity: 1;
+        transform: none;
+        transition-duration: 120ms, 180ms;
+        transition-delay: calc(var(--orden, 0) * 60ms + 150ms);
+    }
+
+    /* El botón de nivel responde con sus fósforos, que se levantan apenas. En el celular, al apretar. */
+    .nivel-opcion .nivel-fosforos {
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    .nivel-opcion:active .nivel-fosforos {
+        transform: translateY(-0.14em);
     }
 
     /* Reparto de la portada: predeterminado, corre en CSS para no trabarse al cargar. */
@@ -1580,6 +1610,10 @@ html:has(body.superficie-pano) {
         transition-delay: 110ms;
     }
 
+    .nivel-opcion:hover .nivel-fosforos {
+        transform: translateY(-0.14em);
+    }
+
     .naipe-jugable:not([disabled]):hover {
         transform: translateY(-6%);
     }
@@ -1677,6 +1711,25 @@ html:has(body.superficie-pano) {
     .fosforo.puesto {
         transform: none;
         transition: opacity 150ms ease;
+    }
+
+    /* Los del nivel aparecen todos juntos, con la cabeza puesta, y no se levantan. */
+    .nivel-fosforos .fosforo.puesto,
+    .nivel-fosforos .fosforo.puesto .fosforo-cabeza {
+        transition-delay: 0s;
+    }
+
+    .nivel-fosforos .fosforo-cabeza,
+    .nivel-fosforos .fosforo.puesto .fosforo-cabeza {
+        transform: none;
+        transition: opacity 150ms ease;
+    }
+
+    .nivel-opcion .nivel-fosforos,
+    .nivel-opcion:hover .nivel-fosforos,
+    .nivel-opcion:active .nivel-fosforos {
+        transform: none;
+        transition: none;
     }
 
     .se-reparte,
