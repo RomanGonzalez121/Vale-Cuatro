@@ -577,6 +577,15 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **El aviso mide siempre un renglón.** Con un apodo largo algunos avisos ocupan dos, y cada vez que pasaba las bazas se movían. Ahora el renglón de más crece hacia arriba, sobre el paño libre. De paso dejó de correrse la mesa al cerrar cada mano, que ya pasaba contra el bot.
 - **Se descartó:** dos archivos de mesa, uno por tipo de partida (duplicaba todas las piezas visuales); esperar al rival trabando la mesa como con el bot (no dejaba apurar el reparto ni enterarse de un vencimiento propio); y un canal o un pedido distinto para la cuenta regresiva (alcanza con el `restan` que ya traía cada paso).
 
+### La sala de espera es la mesa servida
+
+- **Problema:** la sala era la pantalla más floja del sitio. Lo que más pesaba era un campo con una dirección, los tres rectángulos vacíos del rival no se leían como un lugar en la mesa, y la llegada del rival eran tres dorsos que aparecían un segundo antes de cambiar de página.
+- **Elegido por Román el 8 de octubre de 2026,** entre tres opciones: la mitad del rival pasa a ser una mesa chica hecha con las piezas de la de juego (el tanteador con "Vos" y "Tu rival", el mazo contra el borde, la línea del campo, el aviso en el medio y los dos lugares vacíos). Descartó dejar la disposición y solo sumar movimiento, y hacer protagonista a la carta de modo. La pantalla que ve quien recibe el link no se tocó.
+- **Mientras se espera no se mueve nada,** también elegido por Román: es la regla de "nada en loop". Descartó un fósforo que se consumiera durante los 30 minutos de la sala (avanza tan lento que no se ve) y un indicador en loop.
+- **La llegada es el único momento coreografiado:** el apodo cae en el tanteador y el mazo reparte tres cartas a cada uno, una para cada uno y con 70 ms entre carta y carta, igual que en la mesa (Web Animations API, solo `transform` y `opacity`). Se reparten boca abajo: la sala no conoce las cartas, que recién llegan en la mesa. Con movimiento reducido todo aparece con un fundido corto.
+- **El botón de copiar confirma él mismo:** por tres segundos pasa a Basto y dice "Link copiado". Antes la confirmación era una ficha aparte, que en el celular caía a otro renglón y empujaba la mesa hacia abajo cada vez.
+- **Nada salta:** el aviso guarda siempre dos renglones (al llegar el rival el texto es más largo), y las cartas de la mesa chica se miden contra el ancho y el alto de la ventana, así en 1355 x 638 entra entera al lado del link. En el celular, si la mesa quedó debajo del borde cuando llega el rival, la página baja hasta mostrarla.
+
 ### Los modos con una sala abierta
 
 - **Problema:** Román abrió una sala, volvió a los modos y creyó que la pantalla estaba rota: los niveles del bot estaban apagados y el motivo se leía poco.

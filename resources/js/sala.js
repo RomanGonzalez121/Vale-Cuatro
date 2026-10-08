@@ -7,12 +7,14 @@
  | WebSocket andando cada 15 segundos y, si se cayó o nunca conectó, cada 4. Al volver a estar a la vista
  | o al reconectarse se pregunta de inmediato.
  |
- | Cuando se sienta, se reparten los tres dorsos en el lugar del rival, que es el único movimiento de la
- | pantalla, y pasa a la mesa. Todo lo que decide el servidor llega por esa pregunta: la página no sabe
- | quién es el rival ni si la sala sigue abierta hasta que se lo dicen.
+ | La pantalla es la mesa servida y quieta: tanteador, mazo y los dos lugares vacíos. Cuando alguien se
+ | sienta, su apodo cae en el tanteador y el mazo reparte tres cartas a cada uno, boca abajo: es el único
+ | momento coreografiado, y después pasa a la mesa. Todo lo que decide el servidor llega por esa
+ | pregunta: la página no sabe quién es el rival ni si la sala sigue abierta hasta que se lo dicen, y
+ | las cartas de verdad recién llegan en la mesa.
  */
 
-import { movimientoReducido } from './cartas';
+import { LLEGADA, movimientoReducido } from './cartas';
 import { conectarEcho } from './echo';
 
 /** Cada cuánto pregunta si no le avisaron: con el WebSocket andando es solo un respaldo. */
@@ -113,7 +115,49 @@ export default function sala({ estado, mesa, enlace, partida }) {
             this.rival = apodo;
             this.llego = true;
 
+            // Los dorsos existen recién cuando Alpine los dibuja: ahí se reparten.
+            this.$nextTick(() => this.repartir());
+
             setTimeout(() => window.location.assign(mesa), movimientoReducido.matches ? PAUSA_REDUCIDA : PAUSA_DEL_REPARTO);
+        },
+
+        /**
+         * La llegada del rival: su apodo cae en el tanteador y después el mazo reparte, una carta para
+         * cada uno y con 70 ms entre carta y carta, igual que en la mesa. Con movimiento reducido todo
+         * aparece con un fundido corto.
+         */
+        repartir() {
+            const reducido = movimientoReducido.matches;
+
+            // En el celular la mesa puede haber quedado debajo del borde: se la trae a la vista para que el reparto se vea.
+            // Va sin deslizar: las cartas miden de dónde salen y adónde llegan con la página ya quieta.
+            this.$refs.mesa.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+
+            const origen = this.$refs.mazo.getBoundingClientRect();
+            const cartas = (lugar) => [...this.$refs[lugar].querySelectorAll('.carta')];
+
+            this.$refs.tanteoRival.querySelector('span').animate(
+                reducido ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(-0.6em)' }, { opacity: 1, transform: 'none' }],
+                { duration: reducido ? 150 : 260, easing: LLEGADA },
+            );
+
+            const llegar = (carta, orden) => {
+                const destino = carta.getBoundingClientRect();
+
+                carta.animate(
+                    reducido
+                        ? [{ opacity: 0 }, { opacity: 1 }]
+                        : [
+                            { opacity: 0, transform: `translate(${origen.left - destino.left}px, ${origen.top - destino.top}px) rotate(18deg)` },
+                            { opacity: 1, offset: 0.35 },
+                            { opacity: 1, transform: 'none' },
+                        ],
+                    { duration: reducido ? 150 : 280, delay: reducido ? 0 : 180 + orden * 70, easing: LLEGADA, fill: 'backwards' },
+                );
+            };
+
+            cartas('lugarPropio').forEach((carta, i) => llegar(carta, i * 2));
+            cartas('lugarRival').forEach((carta, i) => llegar(carta, i * 2 + 1));
         },
 
         async copiar() {
