@@ -466,6 +466,8 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Cómo está hecho:** dos reglas de CSS que cambian las variables del paño cuando la página tiene la mesa del Ultra (`body:has(.mesa-ultra)`). Nada más de la mesa se tocó.
 - **Contraste, medido y testeado** (`Paleta::combinacionesDeLaMesaUltra()`): al oscurecer, todo el texto mejora. Naipe pasa de 7,7 a 11,2 de día y a 14,5 de noche; Oro, de 4,3 a 6,3 y a 8,1.
 - **Se descartó:** un tono nuevo más oscuro para las barras de noche (era un color fuera de la paleta y el escalón que daba era de 1,2 a 1), un dorso propio para el rival, un color de paño nuevo y dejar solo los cuatro fósforos.
+- **Lo que cuesta, medido:** la sombra de las cartas, que sigue siendo `#07180F` de noche, queda con contraste 1,21 sobre el paño de la mesa del Ultra de noche. En el resto de la mesa es 1,56 de noche y 1,88 de día. Más oscura no puede ser sin un color nuevo, así que se acepta: las cartas son de Naipe y se leen igual por su borde.
+- **La barra del navegador acompaña sola:** al cargar la página, `modo.js` copia el fondo real de la página a `theme-color`, así que en la mesa del Ultra toma el paño nuevo sin cambiar nada más.
 
 ### El Ultra difícil es el Difícil con otros números
 
@@ -484,10 +486,33 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **El tanteo:** ganando por seis o más pide cinco puntos más de probabilidad antes de cantar; perdiendo por seis o más, cinco menos.
 - **Las cuentas de la mano tienen ahora dos caminos:** el rápido, que agrupa las cartas sin ver, y el que recibe las manos posibles una por una. Un test comprueba que con todas las manos dan lo mismo.
 
+### Revisión de código antes de subir (8 de octubre de 2026)
+
+- **Corregido:** el perfil contaba como "se fue" cualquier envido del bot con estado distinto de `null`, incluidos `anulado` (por una flor) y `pendiente`. Ahora solo cuentan `querido` y `no_querido`. De paso, un truco que el rival rechaza yéndose al mazo también cuenta como que se fue (antes solo el "no quiero"). Dos tests nuevos.
+- **Verificado:** el Difícil decide igual que antes del refactor. Se jugaron 60 partidas del Difícil contra el Intermedio con semilla fija, con el código del commit anterior (`29efcb5`) y con el actual: las dos dieron 8.471 jugadas con la misma huella. No se dejó como test permanente: fijar sus decisiones obligaría a romper el test cada vez que se quiera ajustar al bot, y los tests de niveles ya dejan margen para eso.
+- **Descartado como error:** que la barra del navegador no acompañe a la mesa del Ultra (ver arriba).
+- **Remedido con el código final:** 416 de 800 en el test del margen, el 52,0 %. Antes de corregir el perfil había dado 417 (52,1 %). Pasa, pero con el piso exacto: una partida menos y el test fallaría. Es lo que hay que saber del margen del 52 %: es el que Román fijó y el Ultra lo alcanza raspando en esas semillas; las 2.000 partidas con otras semillas dieron 53,3 %.
+- **Dejado así, a propósito:** (1) `Mesa::manosCerradas()` vuelve a leer los eventos en cada turno del Ultra, un recorrido de unos 185 eventos al lado de las cuentas del bot, que tardan segundos. (2) En `Deducciones::tantoDicho`, un "son buenas" sin número antes no se da en el mano a mano (el que habla primero siempre dice su número); importa recién en el de a cuatro (M19). (3) El test del margen del 52 % tiene un margen de unas pocas partidas y no corre en la integración continua (tarda 11 minutos): es una medición para correr a mano antes de tocar al bot.
+
 ### Cuánto le gana al Difícil, medido
 
 - **Cómo se midió:** bot contra bot sobre el motor, 400 partidas con semilla fija (semillas 1000 a 1399), turnándose el asiento.
 - **Solo con las deducciones de los tantos:** 215 de 400, el 53,8 %.
 - **Con todo (deducciones, perfil del rival, tanteo y mentira variable):** 213 de 400, el 53,2 %.
 - **Qué dice ese número:** con 400 partidas el margen de error es de unos 5 puntos, así que un 53 % todavía no se distingue de un empate. Y el perfil del rival no sumó nada medible contra el Difícil. Es esperable por dos motivos: entre dos bots fuertes pesan mucho las cartas, y el Difícil juega parecido a lo que el Ultra ya suponía de un rival cualquiera, así que aprenderlo cambia poco.
-- **Queda abierto:** el nivel sale con ese nombre solo si le gana al Difícil por el margen que fije Román. Con este resultado no está demostrado. Falta medir con más partidas y revisar qué lectura aporta y cuál no.
+- **Con más partidas (8 de octubre de 2026):** 1.600 partidas nuevas, en dos tandas de 800 con semillas desde 2000 y desde 3000: 425 y 428 ganadas, el 53,3 % entre las dos. Sumadas a las 400 de arriba son 1.066 de 2.000, el **53,3 %**, con un intervalo del 95 % de 51,1 a 55,5. Tres tandas con semillas distintas dieron lo mismo (53,2, 53,1 y 53,5).
+- **Qué dice ese número:** es real, no es suerte: le gana más de la mitad de las veces y el intervalo no llega a 50. Pero es chico: más o menos una partida de cada treinta que el Difícil no ganaría. Para comparar, el Difícil le gana al Intermedio el 82 %, y entre niveles de tanta distancia el salto se nota jugando; este no.
+- **Qué lectura aporta (8 de octubre de 2026):** para no depender de la suerte de las cartas, cada reparto se jugó dos veces con los asientos cambiados (partidas en espejo). Eso baja el error de 1,8 a unos 0,9 puntos con 800 partidas, pero no a cero. Resultados, todos contra el Difícil con las mismas semillas:
+
+  | Variante | Le gana | Error |
+  |---|---|---|
+  | Control: Difícil con otro azar, sin ninguna lectura | 48,4 % | 0,8 |
+  | Solo los tantos dichos | 48,9 % | 0,9 |
+  | Solo el silencio (no cantó envido) | 49,8 % | 0,8 |
+  | Solo el perfil del rival | 49,9 % | 1,0 |
+  | Solo el tanteo | 47,8 % | 0,8 |
+  | Ultra completo | 52,1 % | 1,0 |
+
+- **Cómo se lee:** el control, que juega igual que el Difícil, dio 48,4 y no 50: ese es el piso de ruido, unos 1,6 puntos. Contra su propio control el Ultra completo suma 3,7, parecido al 3,3 de las 2.000 partidas sin espejo. Ninguna lectura suelta se distingue del ruido: el silencio y el perfil suman 1,4 y 1,5, los tantos dichos 0,5 y el tanteo solo da -0,6. La suma de las partes (2,8) se acerca al total, así que la ventaja viene repartida y no de una sola lectura.
+- **Para separarlas con certeza** hacen falta unas 3.000 partidas por variante (cerca de 40 minutos cada una). No se hizo: lo que se vería es una diferencia de uno o dos puntos entre piezas.
+- **Queda abierto:** el margen mínimo para que salga como "Ultra difícil" lo fija Román. Hasta que lo fije no se sube a GitHub.
