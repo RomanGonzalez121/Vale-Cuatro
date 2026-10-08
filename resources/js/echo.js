@@ -36,3 +36,30 @@ export function conectarEcho() {
 
     return conexion;
 }
+
+/**
+ * Escucha los avisos de una partida entre personas, por su canal privado. Los usan la sala de espera y la mesa.
+ *
+ * - alAvisar recibe lo que manda el servidor, que es solo el número del último evento;
+ * - alConectar corre al conectar y cada vez que se reconecta: ahí conviene ponerse al día, por si un aviso
+ *   pasó mientras no había conexión;
+ * - alCaer corre cuando la conexión se pierde o no se puede abrir.
+ *
+ * Si no hay tiempo real (Reverb apagado o sin configurar) no falla: avisa con alCaer y quien llama sigue
+ * preguntando por su cuenta.
+ */
+export function escucharPartida(partida, { alAvisar, alConectar, alCaer }) {
+    try {
+        const echo = conectarEcho();
+        const enlace = echo.connector.pusher.connection;
+
+        echo.private(`partida.${partida}`).listen('.partida.actualizada', alAvisar);
+        enlace.bind('connected', alConectar);
+
+        for (const caida of ['disconnected', 'unavailable', 'failed']) {
+            enlace.bind(caida, alCaer);
+        }
+    } catch {
+        alCaer();
+    }
+}

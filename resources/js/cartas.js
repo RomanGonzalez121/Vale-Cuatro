@@ -87,6 +87,30 @@ export function plantilla(nombre) {
     return document.querySelector(`template[data-plantilla="${nombre}"]`).content.firstElementChild.cloneNode(true);
 }
 
+/**
+ * El reparto: una carta que ya está en su lugar llega desde el mazo, con 70 ms entre carta y carta.
+ * Lo usan la mesa y la sala de espera, para que el reparto sea el mismo en las dos. Con movimiento
+ * reducido aparece con un fundido corto. Devuelve la animación.
+ */
+export function llegarDelMazo(carta, mazo, orden, { reducido = movimientoReducido.matches, demora = 0 } = {}) {
+    const origen = mazo.getBoundingClientRect();
+    const destino = carta.getBoundingClientRect();
+    const cuadros = reducido
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : [
+            { opacity: 0, transform: `translate(${origen.left - destino.left}px, ${origen.top - destino.top}px) rotate(18deg)` },
+            { opacity: 1, offset: 0.35 },
+            { opacity: 1, transform: 'none' },
+        ];
+
+    return carta.animate(cuadros, {
+        duration: reducido ? 150 : 280,
+        delay: reducido ? 0 : demora + orden * 70,
+        easing: LLEGADA,
+        fill: 'backwards',
+    });
+}
+
 /** Pone una carta en su lugar y la hace llegar como recién repartida. */
 export function repartirEn(lugar, carta, orden = 0) {
     const naipe = plantilla(carta);

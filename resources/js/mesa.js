@@ -21,8 +21,8 @@
  | le quedan.
  */
 
-import { LLEGADA, cartasDelTanto, movimientoReducido, nombreDe, plantilla } from './cartas';
-import { conectarEcho } from './echo';
+import { LLEGADA, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
+import { escucharPartida } from './echo';
 
 const LADOS = ['vos', 'rival'];
 
@@ -69,6 +69,8 @@ const GRACIA_DEL_PLAZO = 2000;
 const ENTRE_RECLAMOS = 5000;
 // Cuando al turno propio le quedan estos segundos, la mesa lo dice.
 const SEGUNDOS_DE_APURO = 10;
+// Lo mínimo que el cierre de una mano queda a la vista cuando el reparto siguiente no lo pidió esta mesa.
+const LECTURA_DEL_CIERRE = 2500;
 
 export default (inicial, pedidos) => ({
     vista: inicial,
@@ -87,6 +89,8 @@ export default (inicial, pedidos) => ({
     preguntando: false,
     relojDeVigia: null,
     ultimoReclamo: 0,
+    // Quien abrió la sala ya avisó que tiene la mesa a la vista.
+    presentado: false,
     // De qué lado arde el fósforo de la cuenta regresiva ('vos', 'rival' o ninguno) y sus animaciones.
     plazo: null,
     llamas: [],
@@ -99,6 +103,7 @@ export default (inicial, pedidos) => ({
     voz: { texto: '', tono: 'copa', quien: 'vos', visible: false },
     tantos: { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false },
     cierre: null,
+    cierreDesde: 0,
     aviso: 'Repartiendo.',
     fin: null,
     saliendo: false,
@@ -291,6 +296,14 @@ export default (inicial, pedidos) => ({
         await this.pedir(this.pedidos.accion, accion);
     },
 
+    /**
+     * Toda jugada va con el último evento que mostró la mesa. Si en el servidor ya pasó algo más (se venció el
+     * turno, se repartió), la rechaza: lo que se tocó mirando una mano no puede entrar en otra.
+     */
+    conDesde(cuerpo) {
+        return { ...cuerpo, desde: this.vista.evento };
+    },
+
     async pedirReparto() {
         if (this.ocupada || this.fin) {
             return;
@@ -316,7 +329,7 @@ export default (inicial, pedidos) => ({
             respuesta = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
-                body: JSON.stringify(cuerpo),
+                body: JSON.stringify(this.conDesde(cuerpo)),
                 credentials: 'same-origin',
             });
         } catch {
@@ -439,8 +452,44 @@ export default (inicial, pedidos) => ({
      */
     sellar(paso) {
         paso.vence = paso.restan == null ? null : Date.now() + paso.restan * 1000;
+        // Un plazo más largo que un turno es la espera a quien abrió la sala y todavía no llegó a la mesa.
+        paso.llegando = paso.fase === 'jugando' && (paso.restan ?? 0) > this.pedidos.turno;
 
         return paso;
+    },
+
+    /**
+     * Quien abrió la sala avisa que ya tiene la mesa a la vista: hasta entonces su turno corre con un plazo
+     * de espera más largo, por si el rival se sentó mientras mandaba el link desde otra aplicación. Con la
+     * pestaña tapada no avisa. El servidor contesta con lo que pasó desde lo último que la mesa mostró,
+     * que incluye la llegada: así la mesa queda al día antes de que se pueda jugar.
+     */
+    async presentarse() {
+        if (! this.pedidos.presente || this.presentado || document.hidden || this.fin) {
+            return;
+        }
+
+        this.presentado = true;
+
+        try {
+            const respuesta = await fetch(this.pedidos.presente, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                body: JSON.stringify({ desde: this.vista.evento }),
+                credentials: 'same-origin',
+            });
+
+            if (! respuesta.ok) {
+                return;
+            }
+
+            for (const paso of (await respuesta.json()).pasos) {
+                await this.mostrar(this.sellar(paso));
+            }
+        } catch {
+            // Sin conexión: se vuelve a probar cuando la pestaña vuelva a estar a la vista. Jugar también cuenta como llegar.
+            this.presentado = false;
+        }
     },
 
     // Con otra persona enfrente
@@ -451,33 +500,35 @@ export default (inicial, pedidos) => ({
      * queda la pregunta cada pocos segundos.
      */
     escuchar() {
-        try {
-            const echo = conectarEcho();
-            const conexion = echo.connector.pusher.connection;
-
-            echo.private(`partida.${this.vista.partida}`).listen('.partida.actualizada', (aviso) => {
+        escucharPartida(this.vista.partida, {
+            alAvisar: (aviso) => {
                 this.avisado = Math.max(this.avisado, aviso?.evento ?? 0);
                 this.ponerseAlDia();
-            });
-
+            },
             // Al conectar (y al reconectar) se pone al día, por si un aviso pasó mientras no estaba.
-            conexion.bind('connected', () => {
+            alConectar: () => {
                 this.enVivo = true;
                 this.ponerseAlDia();
-            });
+            },
+            alCaer: () => (this.enVivo = false),
+        });
 
-            for (const caida of ['disconnected', 'unavailable', 'failed']) {
-                conexion.bind(caida, () => (this.enVivo = false));
+        // Si la pestaña estaba dormida, se entera apenas vuelve. Y si era la primera vez que se la ve, avisa que llegó.
+        document.addEventListener('visibilitychange', async () => {
+            if (document.hidden) {
+                return;
             }
-        } catch {
-            this.enVivo = false;
-        }
 
-        // Si la pestaña estaba dormida, se entera apenas vuelve.
-        document.addEventListener('visibilitychange', () => {
-            if (! document.hidden) {
-                this.ponerseAlDia();
+            if (! this.ocupada && this.pedidos.presente && ! this.presentado) {
+                this.ocupada = true;
+                this.apagar();
+                await this.presentarse();
+                this.liberar();
+
+                return;
             }
+
+            this.ponerseAlDia();
         });
     },
 
@@ -534,8 +585,16 @@ export default (inicial, pedidos) => ({
 
         this.preguntando = false;
 
-        // Mientras se preguntaba, el jugador hizo algo: su propio pedido trae lo que haya pasado.
-        if (this.ocupada || this.fin || this.vista.evento !== desde) {
+        // Mientras se preguntaba, el jugador hizo algo y su pedido sigue en curso: al terminar, la mesa vuelve a vigilar.
+        if (this.ocupada || this.fin) {
+            return;
+        }
+
+        // Ese pedido ya terminó y la mesa mostró algo más nuevo que lo que se preguntó: esta respuesta quedó vieja.
+        // No se cuenta, pero el reloj de la próxima pregunta tiene que quedar puesto.
+        if (this.vista.evento !== desde) {
+            this.vigilar();
+
             return;
         }
 
@@ -576,8 +635,12 @@ export default (inicial, pedidos) => ({
      */
     async contarLoQuePaso(pasos) {
         this.ocupada = true;
-        this.menu = null;
         this.apagar();
+
+        // Si lo único que pasó es que el rival llegó a la mesa, no hay nada que contar: la barra queda como estaba.
+        if (pasos.some((paso) => paso.hechos.length)) {
+            this.menu = null;
+        }
 
         for (const [numero, paso] of pasos.entries()) {
             await this.mostrar(paso, numero > 0);
@@ -723,7 +786,11 @@ export default (inicial, pedidos) => ({
 
         if (! this.vista.acciones.length) {
             // Mientras juega el bot lo dice esperarAlBot(); a otra persona se la espera sin trabar la mesa.
-            return this.pedidos.entrePersonas ? `Juega ${this.rival}.` : '';
+            if (! this.pedidos.entrePersonas) {
+                return '';
+            }
+
+            return this.vista.llegando ? `Esperando que ${this.rival} llegue a la mesa.` : `Juega ${this.rival}.`;
         }
 
         if (this.puede('quiero')) {
@@ -764,8 +831,10 @@ export default (inicial, pedidos) => ({
             await this.esperar(650);
         }
 
-        // Si el reparto no lo pidió esta mesa (repartió el servidor, o lo apuró el rival), primero se junta lo que quedó.
+        // Si el reparto no lo pidió esta mesa (repartió el servidor, o lo apuró el rival), primero se junta lo que
+        // quedó. Antes, el cierre queda a la vista lo que lleva leerlo: si el rival apura, no se lo saca de adelante.
         if (paso.hechos[0]?.tipo === 'reparto' && this.cierre) {
+            await this.esperar(LECTURA_DEL_CIERRE - (Date.now() - this.cierreDesde));
             await this.juntar();
         }
 
@@ -875,22 +944,7 @@ export default (inicial, pedidos) => ({
      * para cada uno, con 70 ms entre carta y carta.
      */
     llegar(elemento, orden) {
-        const origen = this.$refs.origen.getBoundingClientRect();
-        const destino = elemento.getBoundingClientRect();
-        const cuadros = this.reducido
-            ? [{ opacity: 0 }, { opacity: 1 }]
-            : [
-                { opacity: 0, transform: `translate(${origen.left - destino.left}px, ${origen.top - destino.top}px) rotate(18deg)` },
-                { opacity: 1, offset: 0.35 },
-                { opacity: 1, transform: 'none' },
-            ];
-
-        elemento.animate(cuadros, {
-            duration: this.reducido ? 150 : 280,
-            delay: this.reducido ? 0 : orden * 70,
-            easing: LLEGADA,
-            fill: 'backwards',
-        });
+        llegarDelMazo(elemento, this.$refs.origen, orden, { reducido: this.reducido });
     },
 
     /**
@@ -1132,6 +1186,7 @@ export default (inicial, pedidos) => ({
                 const jugabaElBot = ! this.pedidos.entrePersonas && this.juegaElOtro;
 
                 await this.esperarAlBot();
+                await this.presentarse();
 
                 this.liberar(jugabaElBot ? null : aviso);
             }, animar && ! this.reducido ? 650 : 0);
@@ -1143,8 +1198,13 @@ export default (inicial, pedidos) => ({
         this.cerrarMano(vista, false);
         this.fin = vista.ganador === null ? null : this.quien(vista.ganador);
         this.aviso = aviso ?? this.aviso;
-        this.ocupada = false;
-        this.vigilar();
+
+        // Quien abrió la sala también avisa que llegó si cargó la página entre dos manos. Contra el bot no hace nada.
+        this.presentarse().finally(() => {
+            this.ocupada = false;
+            this.aviso = this.enJuego ? (this.indicacion() || this.aviso) : this.aviso;
+            this.vigilar();
+        });
     },
 
     /**
@@ -1259,6 +1319,7 @@ export default (inicial, pedidos) => ({
         dorsos.slice(delBot.length).forEach((dorso, i) => (animar ? this.guardar(dorso, i) : dorso.remove()));
 
         this.cierre = { titulo, motivo: razon, lineas };
+        this.cierreDesde = Date.now();
         this.aviso = [
             `${titulo}. ${razon}`,
             ...lineas.map((linea) => `${linea.puntos} por ${linea.texto}.`),

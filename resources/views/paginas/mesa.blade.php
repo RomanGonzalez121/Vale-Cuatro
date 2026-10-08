@@ -15,6 +15,8 @@
         'estado' => route('mesa.estado'),
         'bot' => route('mesa.bot'),
         'plazo' => route('mesa.plazo'),
+        // Solo para quien abrió la sala y todavía no avisó que tiene la mesa a la vista.
+        'presente' => ($faltaLlegar ?? false) ? route('mesa.presente') : null,
         'token' => csrf_token(),
         'entrePersonas' => $rival !== null,
         'rival' => $rival,
@@ -244,15 +246,25 @@
             </div>
         </div>
 
-        {{-- Salir: la partida queda guardada para seguirla después, o se abandona y se pierde. --}}
+        {{--
+            Salir: contra el bot la partida queda guardada para seguirla después, o se abandona y se pierde.
+            Con otra persona no espera: el turno sigue venciendo, y el cartel lo dice antes de salir.
+        --}}
         <div x-show="saliendo" x-cloak x-transition.opacity.duration.200ms class="absolute inset-0 z-30 flex items-center justify-center bg-pano-hondo/90 p-6"
             @keydown.escape.window="saliendo = false" role="dialog" aria-modal="true" aria-labelledby="titulo-salir">
             <div class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
                 <h2 id="titulo-salir" class="text-3xl font-black tracking-tight">¿Salir de la mesa?</h2>
-                <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés.</p>
+                @if ($rival === null)
+                    <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés.</p>
+                @else
+                    <p class="mt-2 leading-relaxed">
+                        Con otra persona la partida no se detiene. Si salís, cada turno tuyo se vence a los {{ \App\Juego\Mesa::SEGUNDOS_DE_TURNO }} segundos,
+                        y con {{ \App\Juego\Mesa::VENCIMIENTOS_PARA_PERDER }} vencidos seguidos la perdés.
+                    </p>
+                @endif
                 <div class="mt-6 flex flex-col gap-2.5">
                     <button type="button" class="boton boton-tinta" @click="saliendo = false">Seguir jugando</button>
-                    <a href="{{ route('portada') }}" class="boton boton-linea">Salir y seguir después</a>
+                    <a href="{{ route('portada') }}" class="boton boton-linea">{{ $rival === null ? 'Salir y seguir después' : 'Salir un momento' }}</a>
                     <form method="POST" action="{{ route('mesa.abandonar') }}" class="flex flex-col">
                         @csrf
                         <button type="submit" class="boton boton-linea">Abandonar la partida</button>

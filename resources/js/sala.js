@@ -14,8 +14,8 @@
  | las cartas de verdad recién llegan en la mesa.
  */
 
-import { LLEGADA, movimientoReducido } from './cartas';
-import { conectarEcho } from './echo';
+import { LLEGADA, llegarDelMazo, movimientoReducido } from './cartas';
+import { escucharPartida } from './echo';
 
 /** Cada cuánto pregunta si no le avisaron: con el WebSocket andando es solo un respaldo. */
 const CADA_EN_VIVO = 15000;
@@ -54,24 +54,15 @@ export default function sala({ estado, mesa, enlace, partida }) {
          * no pasa nada: queda la pregunta cada pocos segundos.
          */
         escuchar() {
-            try {
-                const echo = conectarEcho();
-                const conexion = echo.connector.pusher.connection;
-
-                echo.private(`partida.${partida}`).listen('.partida.actualizada', () => this.consultar());
-
+            escucharPartida(partida, {
+                alAvisar: () => this.consultar(),
                 // Al conectar (y al reconectar) se pone al día, por si el aviso pasó mientras no estaba.
-                conexion.bind('connected', () => {
+                alConectar: () => {
                     this.enVivo = true;
                     this.consultar();
-                });
-
-                for (const caida of ['disconnected', 'unavailable', 'failed']) {
-                    conexion.bind(caida, () => (this.enVivo = false));
-                }
-            } catch {
-                this.enVivo = false;
-            }
+                },
+                alCaer: () => (this.enVivo = false),
+            });
         },
 
         async consultar() {
@@ -133,28 +124,14 @@ export default function sala({ estado, mesa, enlace, partida }) {
             // Va sin deslizar: las cartas miden de dónde salen y adónde llegan con la página ya quieta.
             this.$refs.mesa.scrollIntoView({ block: 'nearest', behavior: 'instant' });
 
-            const origen = this.$refs.mazo.getBoundingClientRect();
             const cartas = (lugar) => [...this.$refs[lugar].querySelectorAll('.carta')];
+            // El reparto arranca cuando el apodo ya está llegando.
+            const llegar = (carta, orden) => llegarDelMazo(carta, this.$refs.mazo, orden, { reducido, demora: 180 });
 
             this.$refs.tanteoRival.querySelector('span').animate(
                 reducido ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(-0.6em)' }, { opacity: 1, transform: 'none' }],
                 { duration: reducido ? 150 : 260, easing: LLEGADA },
             );
-
-            const llegar = (carta, orden) => {
-                const destino = carta.getBoundingClientRect();
-
-                carta.animate(
-                    reducido
-                        ? [{ opacity: 0 }, { opacity: 1 }]
-                        : [
-                            { opacity: 0, transform: `translate(${origen.left - destino.left}px, ${origen.top - destino.top}px) rotate(18deg)` },
-                            { opacity: 1, offset: 0.35 },
-                            { opacity: 1, transform: 'none' },
-                        ],
-                    { duration: reducido ? 150 : 280, delay: reducido ? 0 : 180 + orden * 70, easing: LLEGADA, fill: 'backwards' },
-                );
-            };
 
             cartas('lugarPropio').forEach((carta, i) => llegar(carta, i * 2));
             cartas('lugarRival').forEach((carta, i) => llegar(carta, i * 2 + 1));
