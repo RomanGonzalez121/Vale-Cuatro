@@ -515,4 +515,26 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 
 - **Cómo se lee:** el control, que juega igual que el Difícil, dio 48,4 y no 50: ese es el piso de ruido, unos 1,6 puntos. Contra su propio control el Ultra completo suma 3,7, parecido al 3,3 de las 2.000 partidas sin espejo. Ninguna lectura suelta se distingue del ruido: el silencio y el perfil suman 1,4 y 1,5, los tantos dichos 0,5 y el tanteo solo da -0,6. La suma de las partes (2,8) se acerca al total, así que la ventaja viene repartida y no de una sola lectura.
 - **Para separarlas con certeza** hacen falta unas 3.000 partidas por variante (cerca de 40 minutos cada una). No se hizo: lo que se vería es una diferencia de uno o dos puntos entre piezas.
-- **Queda abierto:** el margen mínimo para que salga como "Ultra difícil" lo fija Román. Hasta que lo fije no se sube a GitHub.
+- **Cerrado:** Román fijó el margen en 52 % y el nivel se subió a GitHub el 8 de octubre de 2026 (ver "Revisión de código antes de subir", más arriba, y el test `MedicionDelUltraDificilTest`).
+
+## M5. Dos personas en tiempo real
+
+### Reverb en la rama principal, porque la estable obliga a una dependencia con avisos de seguridad
+
+- **Problema:** `composer require laravel/reverb` instaló `dev-main` y no una versión estable. La última estable (v1.12.0) exige `guzzlehttp/psr7 ^2.6`, y Laravel 13 ya había traído `guzzlehttp/guzzle` 8, que pide psr7 3.x.
+- **Se verificó:** bajar a psr7 2.x no es una opción, porque composer bloquea todas sus versiones por avisos de seguridad (y las de Guzzle 7 que Laravel también admite). Para usar la estable había que silenciar esos avisos.
+- **Se eligió:** `laravel/reverb: dev-main`, que admite psr7 2.x y 3.x. `composer.lock` fija el commit exacto (`74c8c4082c`), así que cada instalación trae lo mismo, y `composer audit` no encuentra nada.
+- **Se descartó:** silenciar los avisos de seguridad y forzar versiones viejas de Guzzle.
+- **A revisar:** cuando Reverb publique una versión estable compatible con psr7 3, pasar a esa (`composer require laravel/reverb:^1.13`).
+
+### Echo se conecta solo donde se necesita
+
+- **Problema:** el instalador de Laravel carga Echo en `app.js`, o sea en todas las páginas. Cada visita a la portada o al ranking abriría un WebSocket, y fallaría con errores en la consola si Reverb no está prendido.
+- **Se eligió:** `resources/js/echo.js` exporta `conectarEcho()`, que crea la conexión la primera vez que alguien la pide. La mesa y la sala la piden; el resto del sitio no. El paquete principal no cambió de tamaño (77 kB).
+
+### Detalles del arranque
+
+- **Sin claves, ningún comando arranca.** Con `BROADCAST_CONNECTION=reverb` y las claves vacías, Laravel falla al crear el emisor y también falla el comando que genera las claves. Se resuelve corriendo `reverb:install` con la conexión en `null` solo para ese comando. Está explicado en `.env.example`, que deja la conexión en `log` para que la integración continua y quien clone el proyecto sin Reverb sigan arrancando.
+- **Quinto proceso local:** `php artisan reverb:start`, en el puerto 8080.
+- **Probado de punta a punta:** un cliente de Node se conecta al WebSocket como lo haría un navegador, Laravel manda un aviso y llega.
+- **Pendiente que no es de M5:** `npm audit` marca dos vulnerabilidades críticas en `shell-quote`, que viene de `concurrently`, una herramienta de desarrollo que ya estaba antes.
