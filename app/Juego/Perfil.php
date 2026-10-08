@@ -93,12 +93,14 @@ final class Perfil
                 $ganados += (int) ($vista['cierre']['ganador'] === $lectura->rival);
             }
 
+            // El bot cantó y el rival contestó. Si el truco quedó sin querer ("no quiero" o mazo), se fue.
             if ($truco['canto'] === $lectura->asiento) {
                 $apretado++;
-                $seFue += (int) ($motivo === 'no_quiero');
+                $seFue += (int) ($truco['nivel'] > $truco['querido']);
             }
 
-            if ($cadena !== [] && $envido['canto'] === $lectura->asiento && $envido['estado'] !== null) {
+            // Solo cuenta si el rival respondió: un envido anulado por una flor o sin contestar no dice nada.
+            if ($cadena !== [] && $envido['canto'] === $lectura->asiento && in_array($envido['estado'], ['querido', 'no_querido'], true)) {
                 $apretado++;
                 $seFue += (int) ($envido['estado'] === 'no_querido');
             }

@@ -88,6 +88,25 @@ class PerfilTest extends TestCase
         $this->assertEqualsWithDelta((4 * 0.4) / 7, Perfil::de([$quiso, $quiso, $quiso])->seVa, 0.000001);
     }
 
+    public function test_un_envido_anulado_por_una_flor_no_cuenta_como_que_el_rival_se_fue(): void
+    {
+        // El bot canta envido y el rival le contesta con flor: el envido queda anulado, nadie lo quiso ni lo rechazó.
+        $anulado = $this->cerrada(
+            $this->armada([['7-copa', '6-copa', '4-copa'], ['3-copa', '2-espada', '5-basto']], mano: self::BOT),
+            '1 envido', '0 flor', '1 mazo',
+        );
+
+        $this->assertSame('anulado', $anulado['envido']['estado']);
+        $this->assertEqualsWithDelta(0.4, Perfil::de([$anulado, $anulado, $anulado])->seVa, 0.000001, 'No vio nada: queda lo que se supone.');
+    }
+
+    public function test_el_rival_que_contesta_el_truco_yendose_al_mazo_cuenta_como_que_se_fue(): void
+    {
+        $alMazo = $this->cerrada($this->armada(self::CON_TANTO, mano: self::BOT), '1 truco', '0 mazo');
+
+        $this->assertEqualsWithDelta((4 * 0.4 + 3) / 7, Perfil::de([$alMazo, $alMazo, $alMazo])->seVa, 0.000001);
+    }
+
     public function test_contra_el_que_se_va_miente_mas_seguido_que_contra_el_que_quiere_todo(): void
     {
         $seFue = $this->cerrada($this->armada(self::CON_TANTO, mano: self::BOT), '1 truco', '0 no_quiero');
