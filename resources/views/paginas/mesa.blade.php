@@ -51,7 +51,8 @@
     <div x-data="mesa(@js($vista), @js($pedidos))" @class(['mesa mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
         <h1 class="sr-only">{{ $nivel ? "Mesa contra el bot, nivel {$nivel->nombre()}" : "Mesa contra {$rival}" }}</h1>
 
-        <header class="mesa-barra relative z-10">
+        {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
+        <header class="mesa-barra relative z-10" :inert="fin !== null">
             <a href="{{ route('portada') }}" class="justify-self-start rounded text-lg no-underline [grid-area:logo] lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
 
             <section aria-label="Tanteador" class="grid grid-cols-2 gap-x-4 text-[clamp(0.8rem,4.1cqw,1.3rem)] [grid-area:tanteo] lg:gap-x-12">
@@ -64,6 +65,15 @@
 
             <div class="flex items-center gap-2 justify-self-end [grid-area:acciones]">
                 <x-modo />
+                {{--
+                    El ritmo de la mesa: tranquilo o ágil. No cambia el juego, cambia cuánto se detiene la mesa para
+                    que se lea cada jugada. Lleno es ágil. La elección queda en el navegador, como el modo de día y
+                    de noche, y al cambiarla la mesa lo dice en el renglón de avisos.
+                --}}
+                <button type="button" class="boton size-10 min-h-0 p-0" :class="agil ? 'boton-naipe' : 'boton-linea'"
+                    :aria-pressed="agil.toString()" aria-label="Ritmo ágil" title="Ritmo ágil" @click="cambiarRitmo()">
+                    <x-icono nombre="ritmo" class="size-5" />
+                </button>
                 <button type="button" class="boton boton-linea min-h-10 gap-1.5 px-3 py-1.5 text-sm" @click="saliendo = true" aria-label="Salir de la mesa">
                     <x-icono nombre="salir" class="size-5" /> Salir
                 </button>
@@ -71,7 +81,7 @@
         </header>
 
         {{-- Tocar la mesa apura lo que se esté mostrando (los tantos del envido). --}}
-        <div class="mesa-campo" @click="apurar()">
+        <div class="mesa-campo" @click="apurar()" :inert="fin !== null">
             {{--
                 La cuenta regresiva entre personas: un fósforo acostado en el borde del campo, arriba cuando
                 le toca al rival y abajo cuando te toca a vos. No ocupa lugar: la mesa mide lo mismo que sin él.
@@ -194,7 +204,7 @@
             </section>
         </div>
 
-        <section aria-label="Cantos disponibles" class="relative z-10 bg-pano-hondo px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+        <section aria-label="Cantos disponibles" :inert="fin !== null" class="relative z-10 bg-pano-hondo px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
             {{--
                 Solo se muestran los cantos que el motor declara válidos en este momento, en una fila.
                 Los botones están todos acá; la mesa decide cuáles se ven y en qué orden. Las dos cosas
@@ -230,14 +240,15 @@
             El que perdió se queda en su tanteo y el que ganó completa el último grupo. Los botones se usan desde
             que aparecen. Lo que se cuenta es dibujo: el resultado va escrito para el lector de pantalla.
         --}}
+        {{-- El contenido se centra con márgenes y no con la alineación del contenedor: así, en una ventana baja, lo que no entra se alcanza bajando. --}}
         <div x-show="fin" x-cloak x-transition:enter="aparece" x-transition:enter-start="opacity-0"
-            class="sobre-pano absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-pano-hondo px-6 py-8 text-naipe"
-            role="dialog" aria-modal="true" aria-labelledby="titulo-fin">
-            <div x-show="fin" x-transition:enter="aparece" x-transition:enter-start="desde-chico" class="w-full max-w-md">
+            class="sobre-pano absolute inset-0 z-30 flex overflow-y-auto bg-pano-hondo px-6 py-8 text-naipe"
+            role="dialog" aria-modal="true" aria-labelledby="titulo-fin" aria-describedby="tanteo-fin">
+            <div x-show="fin" x-transition:enter="aparece" x-transition:enter-start="desde-chico" class="m-auto w-full max-w-md">
                 {{-- El título recibe el foco para que el lector de pantalla lo anuncie; no es un control, así que no lleva el marco del foco. --}}
                 <h2 id="titulo-fin" x-ref="fin" tabindex="-1" class="text-[clamp(2.75rem,14cqw,4.75rem)] font-black leading-[0.94] tracking-[-0.035em] outline-none [overflow-wrap:anywhere]"
                     x-text="fin === 'vos' ? 'Ganaste la partida' : @js($nivel ? 'Ganó el bot' : "Ganó {$rival}")"></h2>
-                <p class="sr-only">
+                <p id="tanteo-fin" class="sr-only">
                     Vos <span x-text="puntos.vos"></span>, {{ $rival ?? 'el bot' }} <span x-text="puntos.rival"></span>.
                 </p>
 

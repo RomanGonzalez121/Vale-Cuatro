@@ -338,7 +338,7 @@ class MesaTest extends TestCase
         }
     }
 
-    public function test_cuando_le_toca_al_bot_su_turno_queda_en_la_cola_con_demora(): void
+    public function test_cuando_le_toca_al_bot_su_turno_queda_en_la_cola_y_sale_al_confirmarse_la_jugada(): void
     {
         Queue::fake();
 
@@ -351,10 +351,12 @@ class MesaTest extends TestCase
         $this->assertCount(1, $pasos, 'La respuesta trae solo la jugada propia: el bot todavía no jugó.');
         $this->assertSame(2, $partida->eventos()->count());
 
+        // Sale de la cola recién cuando la jugada quedó guardada, y sin demora: el bot juega apenas le toca, y la
+        // pausa para que parezca que piensa la pone la mesa del navegador, según el ritmo que eligió quien juega.
         Queue::assertPushed(TurnoDelBot::class, 1);
         Queue::assertPushed(
             TurnoDelBot::class,
-            fn (TurnoDelBot $turno) => $turno->partidaId === $partida->id && $turno->delay !== null && $turno->afterCommit === true,
+            fn (TurnoDelBot $turno) => $turno->partidaId === $partida->id && $turno->delay === null && $turno->afterCommit === true,
         );
     }
 

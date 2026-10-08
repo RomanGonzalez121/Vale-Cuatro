@@ -55,8 +55,27 @@ const CONCEPTOS = {
 
 const CALLADO = { numero: '', frase: '', visible: false };
 
-// Cada cuánto se le pregunta al servidor qué jugó el bot, y cuánto se lo espera antes de pedirle que juegue ya.
-const CONSULTA = 600;
+// El ritmo de la mesa lo elige quien juega, con el botón de la barra. No cambia el juego: cambia cuánto se detiene
+// la mesa. "pausas" multiplica las pausas para leer cada jugada (1 es lo escrito en cada lugar); "piensa" es lo
+// mínimo que tarda en verse una jugada del bot, que en el servidor juega apenas le toca; "consulta", cada cuánto
+// se le pregunta al servidor qué jugó.
+const RITMOS = {
+    tranquilo: { pausas: 1, piensa: 1000, consulta: 600 },
+    agil: { pausas: 0.7, piensa: 0, consulta: 300 },
+};
+// La elección queda en el navegador, como el modo de día y de noche: vale también para quien juega sin cuenta.
+const CLAVE_DEL_RITMO = 'vale-cuatro:ritmo';
+const RITMO_DE_FABRICA = 'tranquilo';
+
+function ritmoGuardado() {
+    try {
+        return localStorage.getItem(CLAVE_DEL_RITMO) ?? RITMO_DE_FABRICA;
+    } catch {
+        // Sin almacenamiento (modo privado estricto) vale el de fábrica.
+        return RITMO_DE_FABRICA;
+    }
+}
+// Cuánto se espera al bot antes de pedirle que juegue ya.
 const RED_DE_SEGURIDAD = 5000;
 
 // Con otra persona, cada cuánto se pregunta si no llegó ningún aviso: con el WebSocket andando es solo un respaldo.
@@ -81,7 +100,7 @@ const ANTES_DE_CONTAR_EL_FINAL = 320;
 
 // Un canto de varias palabras se parte en dos renglones cuando así las letras quedan bastante más grandes
 // (en el celular; en una pantalla ancha entra entero). Las medidas son las de .voz en mesa.blade.php.
-const LETRA_MAS_GRANDE = 176;
+const REMS_DE_LA_LETRA_MAS_GRANDE = 11;
 const ANCHO_DE_LETRA = 0.56;
 const RELLENO_DEL_CANTO = 0.6;
 const GANANCIA_PARA_PARTIR = 1.15;
@@ -107,6 +126,8 @@ export default (inicial, pedidos) => ({
     ultimoReclamo: 0,
     // Quien abrió la sala ya avisó que tiene la mesa a la vista.
     presentado: false,
+    // El ritmo que eligió quien juega: ágil o tranquilo.
+    agil: ritmoGuardado() === 'agil',
     // De qué lado arde el fósforo de la cuenta regresiva ('vos', 'rival' o ninguno) y sus animaciones.
     plazo: null,
     llamas: [],
@@ -207,7 +228,7 @@ export default (inicial, pedidos) => ({
         const renglones = this.voz.texto.split('\n');
         const largo = Math.max(...renglones.map((renglon) => renglon.length), 4);
 
-        return `min(11rem, ${24 / renglones.length}dvh, calc(88cqw / ${largo * ANCHO_DE_LETRA + RELLENO_DEL_CANTO}))`;
+        return `min(${REMS_DE_LA_LETRA_MAS_GRANDE}rem, ${24 / renglones.length}dvh, calc(88cqw / ${largo * ANCHO_DE_LETRA + RELLENO_DEL_CANTO}))`;
     },
 
     /**
@@ -223,8 +244,9 @@ export default (inicial, pedidos) => ({
         }
 
         const masLargo = (renglones) => Math.max(...renglones.map((renglon) => renglon.length), 4);
+        // Las mismas tres medidas que tamanoDeVoz le pasa a los estilos (11rem, dvh y cqw), sacadas en píxeles.
         const letra = (renglones) => Math.min(
-            LETRA_MAS_GRANDE,
+            REMS_DE_LA_LETRA_MAS_GRANDE * parseFloat(getComputedStyle(document.documentElement).fontSize),
             (window.innerHeight * 0.24) / renglones.length,
             (this.$root.clientWidth * 0.88) / (masLargo(renglones) * ANCHO_DE_LETRA + RELLENO_DEL_CANTO),
         );
@@ -453,11 +475,14 @@ export default (inicial, pedidos) => ({
                 this.aviso = 'Juega el bot.';
             }
 
-            await new Promise((listo) => setTimeout(listo, CONSULTA));
+            await new Promise((listo) => setTimeout(listo, this.ritmo.consulta));
 
             const pasos = await this.consultar();
 
             if (pasos?.length) {
+                // En el servidor el bot juega apenas le toca. La pausa para que parezca que piensa la pone la
+                // mesa: lo que falte para llegar al mínimo del ritmo elegido. Tocar la mesa la saltea.
+                await this.esperar(this.ritmo.piensa - (Date.now() - ultimaNovedad));
                 this.pensando = false;
 
                 // Entre dos jugadas seguidas del bot hay una pausa; antes de la primera ya se esperó.
@@ -869,6 +894,33 @@ export default (inicial, pedidos) => ({
         return new Promise((listo) => setTimeout(listo, this.prisa ? Math.min(milisegundos, 80) : milisegundos));
     },
 
+    get ritmo() {
+        return this.agil ? RITMOS.agil : RITMOS.tranquilo;
+    },
+
+    /**
+     * El botón de la barra: pasa de ritmo tranquilo a ágil y al revés. Vale desde la jugada siguiente, se
+     * recuerda en este navegador y la mesa lo dice con palabras, porque el ícono solo no alcanza.
+     */
+    cambiarRitmo() {
+        this.agil = ! this.agil;
+        this.aviso = this.agil ? 'Ritmo ágil.' : 'Ritmo tranquilo.';
+
+        try {
+            localStorage.setItem(CLAVE_DEL_RITMO, this.agil ? 'agil' : 'tranquilo');
+        } catch {
+            // Sin almacenamiento el ritmo igual cambia; solo no se recuerda.
+        }
+    },
+
+    /**
+     * Una pausa para leer lo que acaba de pasar. Su largo depende del ritmo de la mesa; las esperas que
+     * acompañan a una animación (el reparto, juntar las cartas) no pasan por acá y duran lo que la animación.
+     */
+    leer(milisegundos) {
+        return this.esperar(milisegundos * this.ritmo.pausas);
+    },
+
     /**
      * Tocar la mesa apura lo que se está mostrando.
      */
@@ -881,7 +933,7 @@ export default (inicial, pedidos) => ({
     async mostrar(paso, conPausa = false) {
         // Entre dos jugadas seguidas del rival hay un momento, para que se lea la anterior.
         if (conPausa && paso.hechos[0]?.asiento === this.ellos) {
-            await this.esperar(650);
+            await this.leer(650);
         }
 
         // Si el reparto no lo pidió esta mesa (repartió el servidor, o lo apuró el rival), primero se junta lo que
@@ -896,7 +948,7 @@ export default (inicial, pedidos) => ({
         }
 
         if (this.tantos.vos.visible || this.tantos.rival.visible) {
-            await this.esperar(1300);
+            await this.leer(1300);
             this.tantos.vos.visible = false;
             this.tantos.rival.visible = false;
             this.levantarTanto([]);
@@ -924,25 +976,25 @@ export default (inicial, pedidos) => ({
                     this.adelantada = null;
                 } else {
                     this.jugarCarta(quien, hecho.carta, this.bazaDe(paso, hecho));
-                    await this.esperar(520);
+                    await this.leer(520);
                 }
                 break;
 
             case 'baza':
                 this.resolverBaza(hecho, paso);
-                await this.esperar(700);
+                await this.leer(700);
                 break;
 
             case 'canto':
                 this.cantar(CANTOS[hecho.canto], TRUCOS.includes(hecho.canto) ? 'copa' : 'oro', quien);
                 this.aviso = `${quien === 'vos' ? 'Cantaste' : `${rival} cantó`} ${CANTOS[hecho.canto].toLowerCase()}.`;
-                await this.esperar(1250);
+                await this.leer(1250);
                 break;
 
             case 'respuesta':
                 this.cantar(hecho.quiere ? 'Quiero' : 'No quiero', hecho.quiere ? 'basto' : 'copa', quien);
                 this.aviso = `${quien === 'vos' ? (hecho.quiere ? 'Quisiste' : 'No quisiste') : `${rival} ${hecho.quiere ? 'quiso' : 'no quiso'}`}.`;
-                await this.esperar(1100);
+                await this.leer(1100);
                 break;
 
             case 'tantos':
@@ -952,18 +1004,18 @@ export default (inicial, pedidos) => ({
             case 'puntos':
                 this.aviso = `${quien === 'vos' ? 'Sumás' : `${rival} suma`} ${hecho.puntos}: ${this.conceptoDe(hecho.concepto, paso).toLowerCase()}.`;
                 await this.sumar(quien, hecho.tanteo[hecho.equipo]);
-                await this.esperar(350);
+                await this.leer(350);
                 break;
 
             case 'mazo':
                 this.aviso = this.comoSeFue(asiento, paso);
-                await this.esperar(400);
+                await this.leer(400);
                 break;
 
             case 'mano_cerrada':
                 this.vista = paso;
                 this.cerrarMano(paso);
-                await this.esperar(300);
+                await this.leer(300);
                 break;
 
             case 'partida_terminada':
@@ -1068,7 +1120,7 @@ export default (inicial, pedidos) => ({
     cantar(texto, tono, quien) {
         clearTimeout(this.relojDeVoz);
         this.voz = { texto: this.enRenglones(texto), tono, quien, visible: true };
-        this.relojDeVoz = setTimeout(() => (this.voz.visible = false), 1250);
+        this.relojDeVoz = setTimeout(() => (this.voz.visible = false), 1250 * this.ritmo.pausas);
     },
 
     /**
@@ -1087,13 +1139,13 @@ export default (inicial, pedidos) => ({
         this.voz.visible = false;
         this.tantos = { vos: { ...CALLADO }, rival: { ...CALLADO }, gana, resuelto: false };
 
-        await this.esperar(160);
+        await this.leer(160);
 
         for (const [orden, dicho] of hecho.tantos.entries()) {
             const quien = this.quien(dicho.asiento);
 
             if (orden > 0) {
-                await this.esperar(800);
+                await this.leer(800);
             }
 
             if (dicho.tanto === null) {
@@ -1107,7 +1159,7 @@ export default (inicial, pedidos) => ({
             }
         }
 
-        await this.esperar(650);
+        await this.leer(650);
         this.tantos.resuelto = true;
         this.levantarTanto(gana === 'vos' ? mias : []);
     },

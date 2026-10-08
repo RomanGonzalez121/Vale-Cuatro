@@ -41,9 +41,6 @@ final class Mesa
 
     public const BOT = 1;
 
-    /** Los segundos que el bot espera antes de cada jugada. La cola en base de datos cuenta segundos enteros. */
-    public const DEMORA_DEL_BOT = 1;
-
     /** Cuánto espera una sala a que se siente alguien antes de cerrarse sola. */
     public const MINUTOS_DE_SALA = 30;
 
@@ -655,10 +652,9 @@ final class Mesa
         }
 
         if ($this->leTocaAlBot($motor)) {
-            // El job sale recién cuando la jugada quedó guardada, y con una demora para que parezca que piensa.
-            TurnoDelBot::dispatch($partida->getKey())
-                ->delay(now()->addSeconds(self::DEMORA_DEL_BOT))
-                ->afterCommit();
+            // El job sale recién cuando la jugada quedó guardada. No lleva demora: el bot juega apenas le toca, y
+            // la pausa para que parezca que piensa la pone la mesa del navegador, según el ritmo que eligió quien juega.
+            TurnoDelBot::dispatch($partida->getKey())->afterCommit();
         }
     }
 
