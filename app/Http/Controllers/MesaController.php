@@ -34,12 +34,23 @@ class MesaController extends Controller
         $partida = $this->mesa->enCursoDe($request->user());
 
         if ($partida === null) {
+            // Quien abrió una sala y todavía espera rival vuelve a su sala.
+            $sala = $this->mesa->abiertaDe($request->user());
+
+            if ($sala?->esperando()) {
+                return redirect()->route('sala', $sala->codigo);
+            }
+
             return redirect()->route('modos')->with('aviso', $this->comoTermino($request));
         }
 
+        $asiento = $this->asientoDe($partida, $request);
+
         return view('paginas.mesa', [
-            'vista' => $this->mesa->vista($partida, $this->asientoDe($partida, $request)),
+            'vista' => $this->mesa->vista($partida, $asiento),
+            // Contra el bot, su nivel. Con otra persona no hay nivel: se muestra su apodo.
             'nivel' => $partida->nivel_bot,
+            'rival' => $this->apodoDelRival($partida, $asiento),
         ]);
     }
 
@@ -143,6 +154,18 @@ class MesaController extends Controller
         $rival = $ultima->entre_personas ? 'tu rival' : 'el bot';
 
         return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($ultima->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.");
+    }
+
+    /**
+     * El apodo de la otra persona, o null si se juega contra el bot. Si su cuenta ya no existe, "Tu rival".
+     */
+    private function apodoDelRival(Partida $partida, int $asiento): ?string
+    {
+        if (! $partida->entre_personas) {
+            return null;
+        }
+
+        return ($asiento === Mesa::JUGADOR ? $partida->invitado : $partida->jugador)?->apodo ?? 'Tu rival';
     }
 
     /**

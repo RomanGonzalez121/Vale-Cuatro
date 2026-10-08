@@ -60,7 +60,8 @@ final class Mesa
             // Se bloquea al jugador: dos toques seguidos en "Jugar" no pueden abrir dos partidas.
             Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
 
-            $enCurso = $this->enCursoDe($jugador);
+            // Una sola partida sin terminar por persona: también cuenta una sala que todavía espera rival.
+            $enCurso = $this->abiertaDe($jugador);
 
             if ($enCurso !== null) {
                 return $enCurso;

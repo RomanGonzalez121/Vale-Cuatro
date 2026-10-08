@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\InvitacionController;
 use App\Http\Controllers\JugarController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\PaginaController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\RegistroController;
+use App\Http\Controllers\SalaController;
 use App\Http\Controllers\SesionController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +20,17 @@ Route::get('/modos', [PaginaController::class, 'modos'])->name('modos');
 // Entrar a jugar: con cuenta, o como invitado creado en el momento.
 Route::post('/jugar', JugarController::class)->middleware('throttle:10,1')->name('jugar');
 Route::get('/mesa', [MesaController::class, 'ver'])->middleware('auth')->name('mesa');
+
+// Jugar con otra persona: se abre una sala y se le manda el link. El código tiene 16 caracteres sorteados.
+Route::post('/invitar', [SalaController::class, 'crear'])->middleware('throttle:10,1')->name('invitar');
+Route::get('/invitacion/{codigo}', [InvitacionController::class, 'ver'])->where('codigo', '[a-z0-9]{16}')->middleware('throttle:60,1')->name('invitacion');
+Route::post('/invitacion/{codigo}', [InvitacionController::class, 'entrar'])->where('codigo', '[a-z0-9]{16}')->middleware('throttle:10,1')->name('invitacion.entrar');
+
+Route::middleware(['auth', 'throttle:240,1'])->where(['codigo' => '[a-z0-9]{16}'])->group(function () {
+    Route::get('/sala/{codigo}', [SalaController::class, 'ver'])->name('sala');
+    Route::get('/sala/{codigo}/estado', [SalaController::class, 'estado'])->name('sala.estado');
+    Route::post('/sala/{codigo}/cancelar', [SalaController::class, 'cancelar'])->name('sala.cancelar');
+});
 
 // Lo que se hace desde la mesa: siempre sobre la partida en curso de quien hace el pedido.
 Route::middleware(['auth', 'throttle:240,1'])->group(function () {

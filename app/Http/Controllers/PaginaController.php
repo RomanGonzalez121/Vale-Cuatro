@@ -27,8 +27,9 @@ class PaginaController extends Controller
 
         return view('paginas.modos', [
             'juegos' => Modos::juegos(),
-            // Con una partida sin terminar, la pantalla lo avisa y no deja elegir otro nivel.
-            'enCurso' => $jugador === null ? null : $mesa->enCursoDe($jugador),
+            // Con una partida sin terminar (contra el bot, con otra persona o una sala esperando rival),
+            // la pantalla lo avisa y ofrece seguirla en vez de empezar otra.
+            'enCurso' => $jugador === null ? null : $mesa->abiertaDe($jugador),
         ]);
     }
 

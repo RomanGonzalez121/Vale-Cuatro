@@ -2,37 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\EntraComoInvitado;
 use App\Juego\Mesa;
 use App\Juego\Nivel;
-use App\Models\Jugador;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 /**
- * La puerta de entrada a la mesa. Quien llega sin sesión recibe un jugador
+ * La puerta de entrada a la mesa contra el bot. Quien llega sin sesión recibe un jugador
  * invitado en el momento, sin formulario. Es un POST porque crea datos: un
  * buscador o una precarga del navegador no deben fabricar jugadores ni partidas.
  */
 class JugarController extends Controller
 {
+    use EntraComoInvitado;
+
     public function __invoke(Request $request, Mesa $mesa): RedirectResponse
     {
         // El nivel del bot llega desde la pantalla de modos. El botón de la portada no lo manda: va el de siempre.
         $request->validate(['nivel' => ['nullable', Rule::enum(Nivel::class)]]);
         $nivel = $request->enum('nivel', Nivel::class) ?? Nivel::porDefecto();
 
-        $jugador = $request->user();
-
-        if ($jugador === null) {
-            // Con "recordarme" el invitado sigue siendo el mismo aunque venza la sesión.
-            Auth::login($jugador = Jugador::invitado(), remember: true);
-            $request->session()->regenerate();
-        } elseif ($jugador->esInvitado()) {
-            // Anota que volvió a jugar: los invitados que no vuelven se borran solos.
-            $jugador->touch();
-        }
+        $jugador = $this->jugadorOInvitado($request);
 
         // Retoma la partida que tenía sin terminar, con su nivel, o empieza una nueva ya repartida.
         $mesa->abrir($jugador, $nivel);
