@@ -577,6 +577,27 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **El aviso mide siempre un renglón.** Con un apodo largo algunos avisos ocupan dos, y cada vez que pasaba las bazas se movían. Ahora el renglón de más crece hacia arriba, sobre el paño libre. De paso dejó de correrse la mesa al cerrar cada mano, que ya pasaba contra el bot.
 - **Se descartó:** dos archivos de mesa, uno por tipo de partida (duplicaba todas las piezas visuales); esperar al rival trabando la mesa como con el bot (no dejaba apurar el reparto ni enterarse de un vencimiento propio); y un canal o un pedido distinto para la cuenta regresiva (alcanza con el `restan` que ya traía cada paso).
 
+### El reloj espera a quien abrió la sala
+
+- **Problema:** al sentarse el invitado se reparte y corre el primer turno. Pero quien abrió la sala puede no estar mirando: en el celular lo normal es copiar el link, pasar a otra aplicación a mandarlo y que la otra persona entre enseguida. Con 45 segundos por turno perdía una mano, y en dos minutos y medio la partida, sin haberla visto.
+- **Decidido por Román el 8 de octubre de 2026,** entre tres opciones: mientras quien abrió la sala no tiene la mesa a la vista, su turno espera 3 minutos (`SEGUNDOS_DE_LLEGADA`) en vez de 45 segundos. Cuando su mesa está a la vista, avisa (`POST /mesa/presente`) y, si le toca, el turno arranca de cero con el plazo de siempre. El invitado lee "Esperando que Fulano llegue a la mesa". Descartó alargar solo el primer turno de la partida (no cubre el caso de que empiece el invitado) y dejarlo como estaba.
+- **La espera larga es una sola.** Cuenta como haber llegado avisarlo, haber jugado o que ya se le haya vencido un turno: después de eso el plazo es el de siempre. Así el invitado espera como mucho 3 minutos una vez, y no 3 minutos por turno.
+- **La llegada es un evento de la partida** (`llegada`) y no una columna. Tres motivos: el rival se entera por el mismo camino que de una jugada (el aviso del WebSocket y la consulta), los números de evento siguen diciendo qué mostró cada mesa, y queda en la historia de la partida. Para el motor no es nada: el paso de una llegada no trae hechos, solo el plazo nuevo. La mesa de quien llega recibe ese paso en la misma respuesta, así queda al día antes de poder jugar.
+- **Solo cuenta con la pestaña a la vista.** En el escritorio la sala puede pasar sola a la mesa en una pestaña tapada: ahí no avisa, y lo hace cuando la persona vuelve.
+- **Al invitado no se le regala tiempo:** si quien abrió la sala llega cuando le toca al otro, ese plazo no cambia de hora. Como el trabajo en cola lleva el número del último evento, se deja otro a la misma hora y el anterior ya no hace nada.
+- **Se descartó** medir la presencia con la conexión del WebSocket (un canal de presencia): en el celular la conexión queda viva unos segundos con la pantalla ya tapada, y habría sumado otra cosa que viaja por ahí.
+
+### Lo que encontró la revisión de código de M5
+
+La revisión no encontró ningún camino por el que las cartas del rival lleguen al otro navegador. Encontró esto, y se corrigió todo:
+
+- **La mesa seguía la partida equivocada.** La consulta buscaba "la última partida del jugador" por número. Una sala recibe su número al abrirse y se juega después: quien se sentaba teniendo una partida más nueva contra el bot, ya abandonada, recibía un "no tenés partida" en cada consulta y su mesa se recargaba sin parar. Ahora se busca la partida que la mesa dice estar mostrando, y solo entre las del jugador.
+- **Una jugada sobre una pantalla atrasada entraba igual.** Si el servidor mandaba al mazo a alguien y repartía mientras su pantalla seguía mostrando la mano anterior, un "Truco" o un "Al mazo" tocado ahí valía en la mano nueva, que esa persona no había visto. Ahora toda jugada lleva el número del último evento que mostró la mesa (`desde`) y el servidor la rechaza, con la fila bloqueada, si no es el último. La mesa cuenta entonces lo que pasó de verdad.
+- **El cartel de "Salir" prometía algo falso entre personas:** decía que la partida quedaba guardada, y con otra persona el turno sigue venciendo. Ahora lo dice.
+- **Si el rival apuraba el reparto, el cierre de la mano no se llegaba a leer.** Queda a la vista dos segundos y medio como mínimo; tocar la mesa lo saltea.
+- **El plazo se leía en un momento y los eventos en otro.** Si alguien jugaba en el medio, la mesa recibía el turno nuevo con lo que le quedaba al plazo viejo. La fila y los eventos se leen ahora de una misma foto de la base (una transacción de lectura).
+- **Otras:** la mesa podía quedarse sin programar su próxima consulta en un cruce angosto; la sala y la mesa tenían copiado el código que escucha los avisos y el del reparto (ahora están en `echo.js` y `cartas.js`); y cada jugada hacía dos consultas de más.
+
 ### La sala de espera es la mesa servida
 
 - **Problema:** la sala era la pantalla más floja del sitio. Lo que más pesaba era un campo con una dirección, los tres rectángulos vacíos del rival no se leían como un lugar en la mesa, y la llegada del rival eran tres dorsos que aparecían un segundo antes de cambiar de página.
