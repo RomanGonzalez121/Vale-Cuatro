@@ -532,6 +532,15 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Problema:** el instalador de Laravel carga Echo en `app.js`, o sea en todas las páginas. Cada visita a la portada o al ranking abriría un WebSocket, y fallaría con errores en la consola si Reverb no está prendido.
 - **Se eligió:** `resources/js/echo.js` exporta `conectarEcho()`, que crea la conexión la primera vez que alguien la pide. La mesa y la sala la piden; el resto del sitio no. El paquete principal no cambió de tamaño (77 kB).
 
+### La mesa sabe en qué asiento está cada persona
+
+- **Problema:** `Mesa` daba por hecho que quien juega es el asiento 0 y el rival el 1, que es el bot. Para dos personas, cada una tiene que mirar y mover desde su asiento.
+- **Se eligió:** los métodos de `Mesa` (`vista`, `pasosDesde`, `actuar`, `repartir`, `abandonar`) reciben el asiento. Contra el bot se puede omitir y vale el 0, así que ningún llamador ni test de antes cambió. **Entre personas, omitirlo falla con un error** en vez de suponer un asiento: suponer uno dejaría a una persona mirando o moviendo las cartas de la otra por un descuido. Contra el bot, pedir el asiento 1 también falla: es del bot.
+- **El asiento sale del servidor.** El controlador lo calcula con `Partida::asientoDe($request->user())` y nunca lo lee del pedido. Un test manda `asiento` del otro jugador en el cuerpo y comprueba que se ignora; otro comprueba que un tercero recibe 409 en todo.
+- **El bot no se activa entre personas:** `despuesDeJugar` no encola turnos y `turnoDelBot` devuelve `false`, aunque alguien lo pida. Un test lo comprueba con la cola simulada.
+- **Probado una partida entera,** jugada al azar por los dos asientos y repetida hasta revisar 400 pasos: ningún paso que recibe un asiento nombra una carta del otro que no se haya jugado ni mostrado, ni lo que recibe quien juega ni lo que se entera el otro. Es el mismo criterio del test de M3, ahora en las dos direcciones.
+- **Se descartó:** guardar el asiento en la sesión o mandarlo desde el navegador (se puede falsificar), y dos clases de mesa, una por tipo de partida (duplicaba toda la lógica de eventos).
+
 ### Detalles del arranque
 
 - **Sin claves, ningún comando arranca.** Con `BROADCAST_CONNECTION=reverb` y las claves vacías, Laravel falla al crear el emisor y también falla el comando que genera las claves. Se resuelve corriendo `reverb:install` con la conexión en `null` solo para ese comando. Está explicado en `.env.example`, que deja la conexión en `log` para que la integración continua y quien clone el proyecto sin Reverb sigan arrancando.

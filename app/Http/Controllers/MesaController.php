@@ -37,7 +37,10 @@ class MesaController extends Controller
             return redirect()->route('modos')->with('aviso', $this->comoTermino($request));
         }
 
-        return view('paginas.mesa', ['vista' => $this->mesa->vista($partida), 'nivel' => $partida->nivel_bot]);
+        return view('paginas.mesa', [
+            'vista' => $this->mesa->vista($partida, $this->asientoDe($partida, $request)),
+            'nivel' => $partida->nivel_bot,
+        ]);
     }
 
     /**
@@ -58,8 +61,10 @@ class MesaController extends Controller
             return $sinPartida;
         }
 
+        $asiento = $this->asientoDe($partida, $request);
+
         if (! isset($datos['desde'])) {
-            return $partida->enCurso() ? response()->json(['vista' => $this->mesa->vista($partida)]) : $sinPartida;
+            return $partida->enCurso() ? response()->json(['vista' => $this->mesa->vista($partida, $asiento)]) : $sinPartida;
         }
 
         // La pestaña que pregunta puede haber quedado con una partida vieja (se abandonó desde otra y se empezó una nueva).
@@ -67,7 +72,7 @@ class MesaController extends Controller
             return $sinPartida;
         }
 
-        $pasos = $this->mesa->pasosDesde($partida, (int) $datos['desde']);
+        $pasos = $this->mesa->pasosDesde($partida, (int) $datos['desde'], $asiento);
 
         // Cerrada y sin nada nuevo que contar: no hay bot al que esperar. La mesa se recarga y el servidor decide.
         return $pasos === [] && ! $partida->enCurso() ? $sinPartida : response()->json(['pasos' => $pasos]);
@@ -98,12 +103,12 @@ class MesaController extends Controller
             return $this->rechazo('Esa acción no existe.');
         }
 
-        return $this->conLaPartida($request, fn (Partida $partida) => $this->mesa->actuar($partida, $accion));
+        return $this->conLaPartida($request, fn (Partida $partida, int $asiento) => $this->mesa->actuar($partida, $accion, $asiento));
     }
 
     public function repartir(Request $request): JsonResponse
     {
-        return $this->conLaPartida($request, fn (Partida $partida) => $this->mesa->repartir($partida));
+        return $this->conLaPartida($request, fn (Partida $partida, int $asiento) => $this->mesa->repartir($partida, $asiento));
     }
 
     public function abandonar(Request $request): RedirectResponse
@@ -112,7 +117,7 @@ class MesaController extends Controller
 
         if ($partida !== null) {
             try {
-                $this->mesa->abandonar($partida);
+                $this->mesa->abandonar($partida, $this->asientoDe($partida, $request));
             } catch (AccionInvalida) {
                 // Otro pedido la cerró justo antes (dos toques seguidos): ya está abandonada.
             }
@@ -133,13 +138,24 @@ class MesaController extends Controller
             return null;
         }
 
-        [$propios, $delBot] = $this->mesa->reconstruir($ultima)->tanteo();
+        $asiento = $this->asientoDe($ultima, $request);
+        $tanteo = $this->mesa->reconstruir($ultima)->tanteo();
+        $rival = $ultima->entre_personas ? 'tu rival' : 'el bot';
 
-        return "Tu última partida terminó {$propios} a {$delBot}: ".($ultima->ganador === Mesa::JUGADOR ? 'ganaste.' : 'ganó el bot.');
+        return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($ultima->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.");
     }
 
     /**
-     * @param  callable(Partida): list<array<string, mixed>>  $hacer
+     * El asiento de quien hace el pedido, sacado de la partida y no de lo que mande el navegador:
+     * nadie puede mirar ni mover las cartas del otro eligiendo un asiento. Si no es de la partida, no pasa.
+     */
+    private function asientoDe(Partida $partida, Request $request): int
+    {
+        return $partida->asientoDe($request->user()) ?? abort(403, 'Esa partida no es tuya.');
+    }
+
+    /**
+     * @param  callable(Partida, int): list<array<string, mixed>>  $hacer
      */
     private function conLaPartida(Request $request, callable $hacer): JsonResponse
     {
@@ -150,7 +166,7 @@ class MesaController extends Controller
         }
 
         try {
-            return response()->json(['pasos' => $hacer($partida)]);
+            return response()->json(['pasos' => $hacer($partida, $this->asientoDe($partida, $request))]);
         } catch (AccionInvalida $rechazo) {
             return $this->rechazo($rechazo->getMessage());
         }

@@ -15,7 +15,10 @@ use App\Motor\Mazo;
 use App\Motor\Partida as Motor;
 use App\Motor\TipoDeAccion;
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
+use LogicException;
 use Throwable;
 
 /**
@@ -74,22 +77,59 @@ final class Mesa
         });
     }
 
+    /**
+     * La partida que el jugador tiene en juego: la suya contra el bot, o la que comparte con otra persona,
+     * sea que la creó o que se sentó con el link.
+     */
     public function enCursoDe(Jugador $jugador): ?Partida
     {
-        return Partida::query()
-            ->where('jugador_id', $jugador->getKey())
-            ->where('estado', Partida::EN_CURSO)
-            ->latest('id')
-            ->first();
+        return $this->delJugador($jugador)->where('estado', Partida::EN_CURSO)->latest('id')->first();
     }
 
     /**
      * La última partida del jugador, esté en curso o no. La mesa la consulta para enterarse de
-     * las jugadas del bot, y la última de todas puede ser la que cerró la partida.
+     * las jugadas del bot o del rival, y la última de todas puede ser la que cerró la partida.
      */
     public function ultimaDe(Jugador $jugador): ?Partida
     {
-        return Partida::query()->where('jugador_id', $jugador->getKey())->latest('id')->first();
+        return $this->delJugador($jugador)->latest('id')->first();
+    }
+
+    /**
+     * Las partidas en las que el jugador ocupa un asiento.
+     *
+     * @return Builder<Partida>
+     */
+    private function delJugador(Jugador $jugador): Builder
+    {
+        return Partida::query()->where(
+            fn (Builder $consulta) => $consulta->where('jugador_id', $jugador->getKey())->orWhere('invitado_id', $jugador->getKey()),
+        );
+    }
+
+    /**
+     * Desde qué asiento se mira o se juega. Si no se dice, vale solo en una partida contra el bot, donde
+     * el jugador es el asiento 0: en una partida entre personas hay que decirlo, porque suponer uno
+     * dejaría a un jugador mirando o moviendo las cartas del otro.
+     */
+    private function asientoPara(Partida $partida, ?int $asiento): int
+    {
+        if ($asiento === null) {
+            if ($partida->entre_personas) {
+                throw new LogicException('En una partida entre personas hay que decir desde qué asiento se mira o se juega.');
+            }
+
+            return self::JUGADOR;
+        }
+
+        // Contra el bot, el único asiento de una persona es el 0: el 1 es del bot y lo mueve su turno.
+        $validos = $partida->entre_personas ? [self::JUGADOR, self::BOT] : [self::JUGADOR];
+
+        if (! in_array($asiento, $validos, true)) {
+            throw new InvalidArgumentException("El asiento {$asiento} no es de una persona en esta partida.");
+        }
+
+        return $asiento;
     }
 
     /**
@@ -107,33 +147,37 @@ final class Mesa
     }
 
     /**
-     * Lo que ve el jugador: su vista del motor, que no trae las cartas del bot, y el número del último evento.
+     * Lo que ve un jugador: la vista de su asiento del motor, que no trae las cartas del rival, y el
+     * número del último evento. Sin decir el asiento vale la partida contra el bot, donde es el 0.
      *
      * @return array<string, mixed>
      */
-    public function vista(Partida $partida): array
+    public function vista(Partida $partida, ?int $asiento = null): array
     {
+        $asiento = $this->asientoPara($partida, $asiento);
         $motor = $this->sinJugar($partida);
         $ultimo = 0;
 
-        // El estado y el número salen de la misma lectura: si el bot juega justo ahora, no pueden quedar desparejos.
+        // El estado y el número salen de la misma lectura: si el rival juega justo ahora, no pueden quedar desparejos.
         foreach ($partida->eventos()->get() as $evento) {
             $motor = $this->aplicarEvento($motor, $evento);
             $ultimo = $evento->numero;
         }
 
-        return $this->paso($partida, $motor, $ultimo);
+        return $this->paso($partida, $motor, $ultimo, $asiento);
     }
 
     /**
-     * Lo que pasó después de un evento: la vista del jugador tras cada evento posterior, en orden.
-     * Así se entera la mesa de las jugadas del bot, que juega aparte.
+     * Lo que pasó después de un evento: la vista de ese asiento tras cada evento posterior, en orden.
+     * Así se entera la mesa de las jugadas del bot o del rival, que juegan aparte.
      *
      * @return list<array<string, mixed>>
      */
-    public function pasosDesde(Partida $partida, int $desde): array
+    public function pasosDesde(Partida $partida, int $desde, ?int $asiento = null): array
     {
-        // Casi todas las consultas llegan antes de que el bot juegue: ahí no hace falta reconstruir nada.
+        $asiento = $this->asientoPara($partida, $asiento);
+
+        // Casi todas las consultas llegan antes de que el otro juegue: ahí no hace falta reconstruir nada.
         if ((int) $partida->eventos()->max('numero') <= $desde) {
             return [];
         }
@@ -146,7 +190,7 @@ final class Mesa
 
             // Un abandono no cambia lo que hay en la mesa: no es un paso para mostrar.
             if ($evento->numero > $desde && $evento->tipo !== EventoDePartida::ABANDONO) {
-                $pasos[] = $this->paso($partida, $motor, $evento->numero);
+                $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento);
             }
         }
 
@@ -154,21 +198,24 @@ final class Mesa
     }
 
     /**
-     * El jugador hace algo. Si el motor lo acepta se guarda, y si después le toca al bot se le
-     * deja el turno en la cola. Devuelve el paso de esa jugada: las del bot llegan por pasosDesde().
+     * Un jugador hace algo desde su asiento. Si el motor lo acepta se guarda, y si después le toca al bot se
+     * le deja el turno en la cola. Devuelve el paso de esa jugada, visto desde ese asiento: las del bot o del
+     * rival llegan por pasosDesde().
      *
      * @return list<array<string, mixed>>
      *
      * @throws AccionInvalida si el reglamento no lo permite: en ese caso no se guarda nada.
      */
-    public function actuar(Partida $partida, Accion $accion): array
+    public function actuar(Partida $partida, Accion $accion, ?int $asiento = null): array
     {
-        return $this->conLaPartida($partida, function (Partida $partida, Motor $motor) use ($accion) {
-            $motor = $motor->aplicar(self::JUGADOR, $accion);
-            $evento = $this->guardar($partida, EventoDePartida::ACCION, self::JUGADOR, $accion->aArray());
+        $asiento = $this->asientoPara($partida, $asiento);
+
+        return $this->conLaPartida($partida, function (Partida $partida, Motor $motor) use ($accion, $asiento) {
+            $motor = $motor->aplicar($asiento, $accion);
+            $evento = $this->guardar($partida, EventoDePartida::ACCION, $asiento, $accion->aArray());
             $this->despuesDeJugar($partida, $motor);
 
-            return [$this->paso($partida, $motor, $evento)];
+            return [$this->paso($partida, $motor, $evento, $asiento)];
         });
     }
 
@@ -179,19 +226,24 @@ final class Mesa
      *
      * @throws AccionInvalida si la mano todavía se está jugando.
      */
-    public function repartir(Partida $partida): array
+    public function repartir(Partida $partida, ?int $asiento = null): array
     {
-        return $this->conLaPartida($partida, fn (Partida $partida, Motor $motor) => $this->repartirEn($partida, $motor));
+        $asiento = $this->asientoPara($partida, $asiento);
+
+        return $this->conLaPartida($partida, fn (Partida $partida, Motor $motor) => $this->repartirEn($partida, $motor, $asiento));
     }
 
     /**
-     * El jugador deja la partida: queda cerrada como perdida, con todo lo jugado intacto.
+     * Un jugador deja la partida: queda cerrada como perdida para él y ganada para el otro asiento,
+     * con todo lo jugado intacto.
      */
-    public function abandonar(Partida $partida): void
+    public function abandonar(Partida $partida, ?int $asiento = null): void
     {
-        $this->conLaPartida($partida, function (Partida $partida) {
-            $this->guardar($partida, EventoDePartida::ABANDONO, self::JUGADOR, []);
-            $this->cerrar($partida, Partida::ABANDONADA, self::BOT);
+        $asiento = $this->asientoPara($partida, $asiento);
+
+        $this->conLaPartida($partida, function (Partida $partida) use ($asiento) {
+            $this->guardar($partida, EventoDePartida::ABANDONO, $asiento, []);
+            $this->cerrar($partida, Partida::ABANDONADA, 1 - $asiento);
 
             return [];
         });
@@ -208,7 +260,8 @@ final class Mesa
         return DB::transaction(function () use ($partidaId) {
             $partida = Partida::query()->whereKey($partidaId)->lockForUpdate()->first();
 
-            if ($partida === null || ! $partida->enCurso()) {
+            // Entre personas no hay bot: el asiento 1 es de alguien y juega por su cuenta.
+            if ($partida === null || ! $partida->enCurso() || $partida->entre_personas) {
                 return false;
             }
 
@@ -245,19 +298,19 @@ final class Mesa
     /**
      * @return list<array<string, mixed>>
      */
-    private function repartirEn(Partida $partida, Motor $motor): array
+    private function repartirEn(Partida $partida, Motor $motor, int $asiento = self::JUGADOR): array
     {
         // El mazo se mezcla con el azar seguro y las cartas repartidas quedan en el evento.
         $motor = $motor->repartir(Mazo::mezcladoCon(Azar::seguro()));
         $evento = $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => $motor->aArray()['cartas']]);
         $this->despuesDeJugar($partida, $motor);
 
-        return [$this->paso($partida, $motor, $evento)];
+        return [$this->paso($partida, $motor, $evento, $asiento)];
     }
 
     /**
      * Lo que sigue a cualquier jugada guardada: cerrar la partida si alguien llegó a los puntos,
-     * o dejarle el turno al bot si ahora le toca a él.
+     * o dejarle el turno al bot si ahora le toca a él (solo contra el bot).
      */
     private function despuesDeJugar(Partida $partida, Motor $motor): void
     {
@@ -267,7 +320,7 @@ final class Mesa
             return;
         }
 
-        if ($this->leTocaAlBot($motor)) {
+        if (! $partida->entre_personas && $this->leTocaAlBot($motor)) {
             // El job sale recién cuando la jugada quedó guardada, y con una demora para que parezca que piensa.
             TurnoDelBot::dispatch($partida->getKey())
                 ->delay(now()->addSeconds(self::DEMORA_DEL_BOT))
@@ -299,15 +352,17 @@ final class Mesa
     }
 
     /**
-     * Un paso es la vista del jugador después de un evento, con el número de ese evento y el de
+     * Un paso es la vista de un asiento después de un evento, con el número de ese evento y el de
      * la partida. Con esos dos números la mesa pregunta qué pasó después, y el servidor sabe si
      * la pestaña que pregunta sigue mostrando la última partida.
      *
+     * Es lo único que sale hacia un navegador: la vista de un asiento nunca trae las cartas del otro.
+     *
      * @return array<string, mixed>
      */
-    private function paso(Partida $partida, Motor $motor, int $evento): array
+    private function paso(Partida $partida, Motor $motor, int $evento, int $asiento): array
     {
-        return [...$motor->vistaPara(self::JUGADOR), 'partida' => $partida->getKey(), 'evento' => $evento];
+        return [...$motor->vistaPara($asiento), 'partida' => $partida->getKey(), 'evento' => $evento];
     }
 
     /**
