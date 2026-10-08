@@ -111,7 +111,7 @@
                 </div>
 
                 <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-texto/15" aria-hidden="true">
-                    <div class="h-full origin-left bg-texto transition-transform duration-200 ease-llegada" :style="{ transform: `scaleX(${(indice + 1) / pasos.length})` }"></div>
+                    <div class="h-full origin-left bg-texto transition-transform duration-200 ease-llegada motion-reduce:transition-none" :style="{ transform: `scaleX(${(indice + 1) / pasos.length})` }"></div>
                 </div>
 
                 {{-- En el celular los tres controles van en un renglón, de igual ancho: no saltan cuando cambia el texto del medio. --}}

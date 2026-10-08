@@ -42,7 +42,7 @@ export function contarCuatro(logo) {
                     { opacity: 1, transform: 'scale(1.35)', offset: 0.6 },
                     { opacity: 0, transform: 'scale(1)' },
                 ],
-                { duration: 620, delay: espera + CAIDA * 0.45, easing: 'ease-out' },
+                { duration: 620, delay: espera + CAIDA * 0.45, easing: LLEGADA },
             ),
         ];
     });

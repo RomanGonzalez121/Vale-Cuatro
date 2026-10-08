@@ -13,6 +13,9 @@ class MovimientoTest extends TestCase
 {
     private const array SE_ANIMA = ['transform', 'opacity'];
 
+    /** El bloque que apaga el movimiento de las piezas del sitio (hay otros dos chicos, para el cambio de modo). */
+    private const string REDUCIDO = '@media (prefers-reduced-motion: reduce) {'."\n".'    .boton';
+
     public function test_las_transiciones_de_los_estilos_solo_mueven_transform_y_opacity(): void
     {
         $estilos = $this->estilos();
@@ -111,7 +114,7 @@ class MovimientoTest extends TestCase
         $estilos = $this->estilos();
         $conMouse = $this->bloque($estilos, '@media (hover: hover) and (pointer: fine)');
         // En el bloque de movimiento reducido los hover aparecen solo para apagarlos.
-        $reducido = $this->bloque($estilos, '@media (prefers-reduced-motion: reduce) {'."\n".'    .boton');
+        $reducido = $this->bloque($estilos, self::REDUCIDO);
         $resto = str_replace([$conMouse, $reducido], '', $estilos);
 
         $this->assertNotSame('', $conMouse);
@@ -123,6 +126,44 @@ class MovimientoTest extends TestCase
         $sueltos = array_filter($sueltos[0], fn (string $selector) => ! str_contains($selector, '::-webkit-scrollbar'));
 
         $this->assertSame([], array_values(array_map(trim(...), $sueltos)));
+    }
+
+    public function test_todo_lo_que_se_mueve_en_los_estilos_tiene_su_version_de_movimiento_reducido(): void
+    {
+        $estilos = $this->estilos();
+        $reducido = $this->bloque($estilos, self::REDUCIDO);
+        $resto = str_replace($reducido, '', $estilos);
+
+        // Cada regla que mueve algo (una transición de transform, o una animación) nombra alguna clase que el bloque
+        // de movimiento reducido también nombra: ahí se la deja quieta o se la pasa a un fundido.
+        preg_match_all('/([^{}]+)\{([^{}]*)\}/', $resto, $reglas, PREG_SET_ORDER);
+        $seMueven = 0;
+
+        foreach ($reglas as [, $selector, $cuerpo]) {
+            $mueve = preg_match('/(?<![\w-])transition\s*:[^;]*\btransform\b/', $cuerpo) === 1
+                || preg_match('/(?<![\w-])animation\s*:\s*(?!none)/', $cuerpo) === 1;
+
+            if (! $mueve || str_contains($selector, '::view-transition')) {
+                continue;
+            }
+
+            $seMueven++;
+            preg_match_all('/\.([a-z][\w-]*)/', $selector, $clases);
+            $cubiertas = array_filter($clases[1], fn (string $clase) => preg_match('/\.'.preg_quote($clase, '/').'(?![\w-])/', $reducido) === 1);
+
+            $this->assertNotEmpty($cubiertas, 'Se mueve y no tiene versión de movimiento reducido: '.trim((string) preg_replace('/\s+/', ' ', $selector)));
+        }
+
+        $this->assertGreaterThan(15, $seMueven, 'El test dejó de encontrar las reglas que mueven algo.');
+    }
+
+    public function test_el_javascript_que_anima_pregunta_si_hay_que_moverse_menos(): void
+    {
+        foreach ($this->archivos('resources/js', 'js') as $ruta => $codigo) {
+            if (str_contains($codigo, '.animate(')) {
+                $this->assertMatchesRegularExpression('/movimientoReducido|reducido/', $codigo, "{$ruta} anima sin mirar la preferencia de movimiento reducido.");
+            }
+        }
     }
 
     private function estilos(): string

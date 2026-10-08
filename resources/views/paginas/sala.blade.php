@@ -53,7 +53,7 @@
 
                 <div class="sala-campo">
                     <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3" aria-hidden="true">
-                        <x-icono nombre="jugador" class="size-5 justify-self-end transition-opacity duration-200 ease-out" ::class="llego ? 'opacity-100' : 'opacity-45'" />
+                        <x-icono nombre="jugador" class="size-5 justify-self-end transition-opacity duration-200 ease-llegada" ::class="llego ? 'opacity-100' : 'opacity-45'" />
                         <div x-ref="lugarRival" class="sala-lugares sala-lugares-rival">
                             @foreach (range(0, 2) as $i)
                                 <div class="sala-lugar">

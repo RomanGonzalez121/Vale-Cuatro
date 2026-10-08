@@ -83,7 +83,7 @@
                                 @foreach ($juego['rivales'] as $rival)
                                     <div class="mt-3" x-show="rival['{{ $juego['clave'] }}'] === '{{ $rival['clave'] }}'"
                                         @if ($rival['clave'] !== $rivalElegido[$juego['clave']]) x-cloak @endif
-                                        x-transition:enter="transition-opacity duration-150 ease-out" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                                        x-transition:enter="transition-opacity duration-150 ease-llegada" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                                         <p class="max-w-[36ch] leading-relaxed">
                                             {{ $rival['detalle'] }}
                                             @if ($rival['boton'] === null)

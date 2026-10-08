@@ -279,7 +279,7 @@ html:has(body.superficie-pano) {
         width: 1.5rem;
         aspect-ratio: 100 / 156;
         transform-style: preserve-3d;
-        transition: transform 320ms var(--ease-llegada);
+        transition: transform 300ms var(--ease-llegada);
     }
 
     .modo-carta svg {
@@ -1370,6 +1370,28 @@ html:has(body.superficie-pano) {
     }
 
     /*
+     | La cabeza se enciende cuando el palito llega: el mismo gesto del logo, de
+     | los links y de los niveles, que en el tanteador faltaba. Al sacar un punto
+     | se apaga enseguida.
+     */
+    .fosforo .fosforo-cabeza {
+        opacity: 0;
+        transform: scale(0.5);
+        transform-box: fill-box;
+        transform-origin: center;
+        transition:
+            opacity 100ms var(--ease-llegada),
+            transform 100ms var(--ease-llegada);
+    }
+
+    .fosforo.puesto .fosforo-cabeza {
+        opacity: 1;
+        transform: none;
+        transition-duration: 120ms, 180ms;
+        transition-delay: 150ms;
+    }
+
+    /*
      | El nivel del bot contado con fósforos. Los del nivel elegido caen de a uno,
      | como los puntos; los de los otros muestran su lugar, más marcado que en el
      | tanteador porque acá esa marca es lo que dice cuántos tiene cada nivel.
@@ -1387,24 +1409,8 @@ html:has(body.superficie-pano) {
         transition-delay: calc(var(--orden, 0) * 60ms);
     }
 
-    /*
-     | La cabeza se enciende cuando el palito llega, como en el subrayado de los
-     | links. Al dejar un nivel se apaga enseguida, sin esperar su turno.
-     */
-    .nivel-fosforos .fosforo-cabeza {
-        opacity: 0;
-        transform: scale(0.5);
-        transform-box: fill-box;
-        transform-origin: center;
-        transition:
-            opacity 100ms var(--ease-llegada),
-            transform 100ms var(--ease-llegada);
-    }
-
+    /* En los niveles la cabeza espera su turno, como el palito. Al dejar un nivel se apaga enseguida. */
     .nivel-fosforos .fosforo.puesto .fosforo-cabeza {
-        opacity: 1;
-        transform: none;
-        transition-duration: 120ms, 180ms;
         transition-delay: calc(var(--orden, 0) * 60ms + 150ms);
     }
 
@@ -1883,15 +1889,34 @@ html:has(body.superficie-pano) {
         transition: opacity 150ms ease;
     }
 
+    /* La cabeza aparece con el palito, sin encenderse después. */
+    .fosforo .fosforo-cabeza,
+    .fosforo.puesto .fosforo-cabeza {
+        transform: none;
+        transition: opacity 150ms ease;
+    }
+
     /* Los del nivel aparecen todos juntos, con la cabeza puesta, y no se levantan. */
     .nivel-fosforos .fosforo.puesto,
     .nivel-fosforos .fosforo.puesto .fosforo-cabeza {
         transition-delay: 0s;
     }
 
-    .nivel-fosforos .fosforo-cabeza,
-    .nivel-fosforos .fosforo.puesto .fosforo-cabeza {
+    /* En los duelos de "Cómo se juega" la carta que gana no sube: alcanza con que la otra se apague. */
+    .carta-duelo,
+    .carta-duelo.gana {
         transform: none;
+        transition: opacity 150ms ease;
+    }
+
+    .pestana,
+    .pestana:active {
+        transform: none;
+        transition: none;
+    }
+
+    /* Lo que aparece, aparece: sin cambiar de tamaño. */
+    .aparece {
         transition: opacity 150ms ease;
     }
 
