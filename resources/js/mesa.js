@@ -72,6 +72,22 @@ const SEGUNDOS_DE_APURO = 10;
 // Lo mínimo que el cierre de una mano queda a la vista cuando el reparto siguiente no lo pidió esta mesa.
 const LECTURA_DEL_CIERRE = 2500;
 
+// Anotar puntos: cuánto hay entre un fósforo y el siguiente, y lo máximo que tarda en caer una suma entera.
+const ENTRE_FOSFOROS = 150;
+const SUMA_MAS_LARGA = 1000;
+// El final de la partida: los dos tanteadores se cuentan de corrido, a un fósforo cada tanto, después de que entra el cartel.
+const ENTRE_FOSFOROS_DEL_FINAL = 32;
+const ANTES_DE_CONTAR_EL_FINAL = 320;
+
+// Un canto de varias palabras se parte en dos renglones cuando así las letras quedan bastante más grandes
+// (en el celular; en una pantalla ancha entra entero). Las medidas son las de .voz en mesa.blade.php.
+const LETRA_MAS_GRANDE = 176;
+const ANCHO_DE_LETRA = 0.56;
+const RELLENO_DEL_CANTO = 0.6;
+const GANANCIA_PARA_PARTIR = 1.15;
+// Hasta este largo el canto va siempre en un renglón: "No quiero" se lee bien entero.
+const LARGO_PARA_PARTIR = 9;
+
 export default (inicial, pedidos) => ({
     vista: inicial,
     pedidos,
@@ -106,9 +122,10 @@ export default (inicial, pedidos) => ({
     cierreDesde: 0,
     aviso: 'Repartiendo.',
     fin: null,
+    // El final de la partida: los puntos que van contando los dos tanteadores del cartel.
+    cuenta: { vos: 0, rival: 0 },
     saliendo: false,
     prisa: false,
-    reducido: movimientoReducido.matches,
     relojDeVoz: null,
 
     init() {
@@ -133,6 +150,13 @@ export default (inicial, pedidos) => ({
 
     get esMano() {
         return this.vista.mano === this.yo;
+    },
+
+    /**
+     * Si la persona pidió menos movimiento. Se pregunta cada vez: puede cambiarlo con la mesa abierta.
+     */
+    get reducido() {
+        return movimientoReducido.matches;
     },
 
     /**
@@ -179,7 +203,36 @@ export default (inicial, pedidos) => ({
 
     get tamanoDeVoz() {
         // 0.56 em es el ancho medio de una letra de Piazzolla Black Italic; 0.6 em, el relleno de la ficha.
-        return `min(11rem, 24dvh, calc(88cqw / ${Math.max(this.voz.texto.length, 4) * 0.56 + 0.6}))`;
+        // Manda el renglón más largo, y con dos renglones cada uno tiene la mitad del alto.
+        const renglones = this.voz.texto.split('\n');
+        const largo = Math.max(...renglones.map((renglon) => renglon.length), 4);
+
+        return `min(11rem, ${24 / renglones.length}dvh, calc(88cqw / ${largo * ANCHO_DE_LETRA + RELLENO_DEL_CANTO}))`;
+    },
+
+    /**
+     * Un canto largo en una mesa angosta queda con letras chicas ("Contraflor al resto" a 360 px medía 28 px
+     * contra los 93 de "Truco"). Si partido en dos renglones se lee bastante más grande, se parte por donde
+     * los dos queden más parejos. En una pantalla ancha entra entero y no se toca.
+     */
+    enRenglones(texto) {
+        const palabras = texto.split(' ');
+
+        if (palabras.length < 2 || texto.length <= LARGO_PARA_PARTIR) {
+            return texto;
+        }
+
+        const masLargo = (renglones) => Math.max(...renglones.map((renglon) => renglon.length), 4);
+        const letra = (renglones) => Math.min(
+            LETRA_MAS_GRANDE,
+            (window.innerHeight * 0.24) / renglones.length,
+            (this.$root.clientWidth * 0.88) / (masLargo(renglones) * ANCHO_DE_LETRA + RELLENO_DEL_CANTO),
+        );
+        const partido = palabras.slice(1)
+            .map((_, corte) => [palabras.slice(0, corte + 1).join(' '), palabras.slice(corte + 1).join(' ')])
+            .reduce((mejor, renglones) => (masLargo(renglones) < masLargo(mejor) ? renglones : mejor));
+
+        return letra(partido) > letra([texto]) * GANANCIA_PARA_PARTIR ? partido.join('\n') : texto;
     },
 
     resultadoDeBaza(numero) {
@@ -915,6 +968,7 @@ export default (inicial, pedidos) => ({
 
             case 'partida_terminada':
                 this.fin = quien;
+                this.contarElFinal();
                 break;
         }
     },
@@ -1013,7 +1067,7 @@ export default (inicial, pedidos) => ({
 
     cantar(texto, tono, quien) {
         clearTimeout(this.relojDeVoz);
-        this.voz = { texto, tono, quien, visible: true };
+        this.voz = { texto: this.enRenglones(texto), tono, quien, visible: true };
         this.relojDeVoz = setTimeout(() => (this.voz.visible = false), 1250);
     },
 
@@ -1072,6 +1126,9 @@ export default (inicial, pedidos) => ({
      * Anota los puntos de a uno, como fósforos que caen, hasta llegar al tanteo que dijo el motor.
      */
     sumar(quien, hasta) {
+        // Un punto o dos caen con su tiempo; una suma grande (un falta envido) se aprieta para entrar en un segundo.
+        const entreFosforos = Math.min(ENTRE_FOSFOROS, SUMA_MAS_LARGA / Math.max(hasta - this.puntos[quien], 1));
+
         return new Promise((listo) => {
             const caer = () => {
                 if (this.puntos[quien] >= hasta) {
@@ -1081,11 +1138,41 @@ export default (inicial, pedidos) => ({
                 }
 
                 this.puntos[quien]++;
-                setTimeout(caer, this.prisa ? 40 : 150);
+                setTimeout(caer, this.prisa ? Math.min(entreFosforos, 40) : entreFosforos);
             };
 
             caer();
         });
+    },
+
+    /**
+     * El final de la partida es el gesto fuerte de la mesa, y lo hace el tanteador: en el cartel, los dos se
+     * cuentan desde cero, de corrido y al mismo paso. El que perdió se queda en su tanteo y el que ganó sigue
+     * hasta completar el último grupo. Corre una sola vez y no traba nada: los botones se usan desde que
+     * aparecen. Con movimiento reducido los dos tanteos están completos de entrada.
+     */
+    contarElFinal() {
+        const hasta = { ...this.puntos };
+
+        if (this.reducido) {
+            this.cuenta = hasta;
+
+            return;
+        }
+
+        this.cuenta = { vos: 0, rival: 0 };
+
+        const caer = () => {
+            const faltan = LADOS.filter((lado) => this.cuenta[lado] < hasta[lado]);
+
+            faltan.forEach((lado) => this.cuenta[lado]++);
+
+            if (faltan.length) {
+                setTimeout(caer, ENTRE_FOSFOROS_DEL_FINAL);
+            }
+        };
+
+        setTimeout(caer, ANTES_DE_CONTAR_EL_FINAL);
     },
 
     conceptoDe(concepto, vista) {
@@ -1137,6 +1224,9 @@ export default (inicial, pedidos) => ({
         this.$refs.mano.removeAttribute('data-tanto');
         [...this.$refs.mano.children].forEach((lugar) => lugar.replaceChildren());
 
+        // Se reparte de a una para cada uno, y la primera es para el mano, como en la mesa de verdad.
+        const soyMano = vista.mano === this.yo;
+
         vista.misCartas.forEach((carta, i) => {
             const boton = document.createElement('button');
 
@@ -1146,14 +1236,14 @@ export default (inicial, pedidos) => ({
             boton.setAttribute('aria-label', `${nombreDe(carta)}, jugar esta carta`);
             boton.append(plantilla(carta));
             boton.addEventListener('click', (evento) => {
-                // El toque no sube hasta la mesa: ahí apuraría lo que conteste el rival.
+                // El toque no sube hasta la mesa: si jugó la carta, no tiene que apurar además lo que conteste el rival.
                 evento.stopPropagation();
                 this.jugar(carta, boton);
             });
             this.$refs.mano.children[i].replaceChildren(boton);
 
             if (animar) {
-                this.llegar(boton, i * 2);
+                this.llegar(boton, i * 2 + (soyMano ? 0 : 1));
             }
         });
 
@@ -1164,7 +1254,7 @@ export default (inicial, pedidos) => ({
             this.$refs.rival.append(dorso);
 
             if (animar) {
-                this.llegar(dorso, i * 2 + 1);
+                this.llegar(dorso, i * 2 + (soyMano ? 1 : 0));
             }
         }
 
@@ -1197,6 +1287,7 @@ export default (inicial, pedidos) => ({
         // Entre dos manos: queda a la vista el cierre de la que terminó.
         this.cerrarMano(vista, false);
         this.fin = vista.ganador === null ? null : this.quien(vista.ganador);
+        this.cuenta = { ...this.puntos };
         this.aviso = aviso ?? this.aviso;
 
         // Quien abrió la sala también avisa que llegó si cargó la página entre dos manos. Contra el bot no hace nada.
@@ -1212,7 +1303,15 @@ export default (inicial, pedidos) => ({
      * ya figura entre las válidas. Si igual volviera rechazada, la mesa se deshace sola.
      */
     jugar(carta, boton) {
-        if (this.ocupada || ! this.vista.acciones.some((accion) => accion.tipo === 'jugar' && accion.carta === carta)) {
+        // Mientras la mesa cuenta lo que pasó, tocar una carta la apura, igual que tocar el paño. No la juega:
+        // quien la tocó todavía no terminó de ver lo que hizo el rival.
+        if (this.ocupada) {
+            this.apurar();
+
+            return;
+        }
+
+        if (! this.vista.acciones.some((accion) => accion.tipo === 'jugar' && accion.carta === carta)) {
             return;
         }
 

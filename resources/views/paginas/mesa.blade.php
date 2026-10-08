@@ -90,7 +90,7 @@
                 <p class="flex min-w-0 flex-col items-end gap-1 justify-self-end text-right text-sm font-semibold leading-tight [overflow-wrap:anywhere] sm:flex-row sm:items-center sm:gap-2 sm:text-base">
                     <span class="flex items-center gap-1.5">
                         {{-- Mientras el rival piensa, el reloj aparece junto a su ícono. Guarda su lugar, así nada se corre, y no gira ni late. --}}
-                        <span class="transition-opacity ease-out" :class="piensaElRival ? 'opacity-100 duration-200' : 'opacity-0 duration-100'" aria-hidden="true">
+                        <span class="transition-opacity ease-llegada" :class="piensaElRival ? 'opacity-100 duration-200' : 'opacity-0 duration-100'" aria-hidden="true">
                             <x-icono nombre="tiempo" class="size-4" />
                         </span>
                         <x-icono :nombre="$nivel ? 'bot' : 'jugador'" class="size-5" />
@@ -128,7 +128,8 @@
                 </ol>
 
                 <div class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" aria-hidden="true">
-                    <p class="voz canto text-center" :data-visible="voz.visible" :data-quien="voz.quien" :style="{ fontSize: tamanoDeVoz }"
+                    {{-- Un canto largo puede venir partido en dos renglones (mesa.js, enRenglones): el salto de línea se respeta. --}}
+                    <p class="voz canto whitespace-pre text-center" :data-visible="voz.visible" :data-quien="voz.quien" :style="{ fontSize: tamanoDeVoz }"
                         :class="{ 'canto-oro': voz.tono === 'oro', 'canto-ficha canto-copa': voz.tono === 'copa', 'canto-ficha canto-basto': voz.tono === 'basto' }"
                         x-text="voz.texto"></p>
                 </div>
@@ -223,23 +224,39 @@
             </div>
         </section>
 
-        <div x-show="fin" x-cloak x-transition.opacity.duration.200ms class="absolute inset-0 z-30 flex items-center justify-center bg-pano-hondo/90 p-6">
-            <div class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
-                <h2 class="text-3xl font-black tracking-tight" x-text="fin === 'vos' ? 'Ganaste la partida' : @js($nivel ? 'Ganó el bot' : "Ganó {$rival}")" x-ref="fin" tabindex="-1"></h2>
-                <p class="mt-2 text-lg tabular-nums">
-                    <span x-text="puntos.vos"></span> a <span x-text="puntos.rival"></span>
+        {{--
+            El final de la partida es el gesto fuerte de la mesa, y no es un festejo: el paño hondo ocupa todo, el
+            resultado entra grande y los dos tanteadores se cuentan de corrido desde cero (mesa.js, contarElFinal).
+            El que perdió se queda en su tanteo y el que ganó completa el último grupo. Los botones se usan desde
+            que aparecen. Lo que se cuenta es dibujo: el resultado va escrito para el lector de pantalla.
+        --}}
+        <div x-show="fin" x-cloak x-transition:enter="aparece" x-transition:enter-start="opacity-0"
+            class="sobre-pano absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-pano-hondo px-6 py-8 text-naipe"
+            role="dialog" aria-modal="true" aria-labelledby="titulo-fin">
+            <div x-show="fin" x-transition:enter="aparece" x-transition:enter-start="desde-chico" class="w-full max-w-md">
+                {{-- El título recibe el foco para que el lector de pantalla lo anuncie; no es un control, así que no lleva el marco del foco. --}}
+                <h2 id="titulo-fin" x-ref="fin" tabindex="-1" class="text-[clamp(2.75rem,14cqw,4.75rem)] font-black leading-[0.94] tracking-[-0.035em] outline-none [overflow-wrap:anywhere]"
+                    x-text="fin === 'vos' ? 'Ganaste la partida' : @js($nivel ? 'Ganó el bot' : "Ganó {$rival}")"></h2>
+                <p class="sr-only">
+                    Vos <span x-text="puntos.vos"></span>, {{ $rival ?? 'el bot' }} <span x-text="puntos.rival"></span>.
                 </p>
-                <div class="mt-6 flex flex-col gap-2.5">
+
+                <div class="mt-7 grid gap-5 text-[1.5rem] sm:text-[1.75rem]" aria-hidden="true">
+                    <x-tanteador nombre="Vos" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" />
+                    <x-tanteador :nombre="$rival ?? 'Bot'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" />
+                </div>
+
+                <div class="mt-8 flex flex-col gap-2.5 sm:flex-row">
                     @if ($nivel)
                         <form method="POST" action="{{ route('jugar') }}" class="flex flex-col">
                             @csrf
                             {{-- La partida siguiente es contra el mismo nivel. --}}
                             <input type="hidden" name="nivel" value="{{ $nivel->value }}">
-                            <button type="submit" class="boton boton-tinta">Jugar otra partida</button>
+                            <button type="submit" class="boton boton-naipe">Jugar otra partida</button>
                         </form>
                     @else
                         {{-- Con otra persona, la revancha es de M12: por ahora se vuelve a elegir cómo jugar. --}}
-                        <a href="{{ route('modos') }}" class="boton boton-tinta">Elegir cómo jugar</a>
+                        <a href="{{ route('modos') }}" class="boton boton-naipe">Elegir cómo jugar</a>
                     @endif
                     <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
                 </div>
@@ -249,10 +266,13 @@
         {{--
             Salir: contra el bot la partida queda guardada para seguirla después, o se abandona y se pierde.
             Con otra persona no espera: el turno sigue venciendo, y el cartel lo dice antes de salir.
+            El fondo entra con un fundido y el cartel apenas más chico; los dos se van juntos y más rápido.
         --}}
-        <div x-show="saliendo" x-cloak x-transition.opacity.duration.200ms class="absolute inset-0 z-30 flex items-center justify-center bg-pano-hondo/90 p-6"
+        <div x-show="saliendo" x-cloak x-transition:enter="aparece" x-transition:enter-start="opacity-0" x-transition:leave="se-va" x-transition:leave-end="opacity-0"
+            class="absolute inset-0 z-30 flex items-center justify-center bg-pano-hondo/90 p-6"
             @keydown.escape.window="saliendo = false" role="dialog" aria-modal="true" aria-labelledby="titulo-salir">
-            <div class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
+            <div x-show="saliendo" x-transition:enter="aparece" x-transition:enter-start="desde-chico" x-transition:leave="se-va" x-transition:leave-end="opacity-0"
+                class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
                 <h2 id="titulo-salir" class="text-3xl font-black tracking-tight">¿Salir de la mesa?</h2>
                 @if ($rival === null)
                     <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés.</p>
