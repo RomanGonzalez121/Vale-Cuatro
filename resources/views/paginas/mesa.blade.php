@@ -4,6 +4,24 @@
      | muestra solo los que el motor declara válidos en cada momento, y en el
      | orden que corresponde: [clave, texto, texto corto, clase, ícono].
      */
+    /*
+     | Lo que la mesa le pide al servidor y lo que necesita saber de la partida. Con otra persona
+     | enfrente suma su apodo, el pedido que resuelve un plazo vencido y lo que duran el turno y
+     | la espera del reparto, para dibujar la cuenta regresiva.
+     */
+    $pedidos = [
+        'accion' => route('mesa.accion'),
+        'repartir' => route('mesa.repartir'),
+        'estado' => route('mesa.estado'),
+        'bot' => route('mesa.bot'),
+        'plazo' => route('mesa.plazo'),
+        'token' => csrf_token(),
+        'entrePersonas' => $rival !== null,
+        'rival' => $rival,
+        'turno' => \App\Juego\Mesa::SEGUNDOS_DE_TURNO,
+        'reparto' => \App\Juego\Mesa::SEGUNDOS_PARA_REPARTIR,
+    ];
+
     $botones = [
         ['quiero', 'Quiero', null, 'boton-basto', 'quiero'],
         ['no_quiero', 'No quiero', null, 'boton-copa', 'no-quiero'],
@@ -28,15 +46,18 @@
     <x-mazo.plantillas />
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa en app.css. --}}
-    <div x-data="mesa(@js($vista), @js(['accion' => route('mesa.accion'), 'repartir' => route('mesa.repartir'), 'estado' => route('mesa.estado'), 'bot' => route('mesa.bot'), 'token' => csrf_token()]))" @class(['mesa mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
+    <div x-data="mesa(@js($vista), @js($pedidos))" @class(['mesa mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
         <h1 class="sr-only">{{ $nivel ? "Mesa contra el bot, nivel {$nivel->nombre()}" : "Mesa contra {$rival}" }}</h1>
 
         <header class="mesa-barra relative z-10">
             <a href="{{ route('portada') }}" class="justify-self-start rounded text-lg no-underline [grid-area:logo] lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
 
             <section aria-label="Tanteador" class="grid grid-cols-2 gap-x-4 text-[clamp(0.8rem,4.1cqw,1.3rem)] [grid-area:tanteo] lg:gap-x-12">
-                <x-tanteador nombre="Vos" :puntos="$vista['tanteo'][0]" modelo="puntos.vos" />
-                <x-tanteador nombre="Bot" :puntos="$vista['tanteo'][1]" modelo="puntos.rival" />
+                {{-- El asiento propio va siempre primero: quien se sentó por invitación es el 1. --}}
+                <x-tanteador nombre="Vos" :puntos="$vista['tanteo'][$vista['asiento']]" modelo="puntos.vos" class="min-w-0" />
+                {{-- Un apodo puede tener 20 letras: si no entra en su mitad se corta, y los puntos quedan a la vista. --}}
+                <x-tanteador :nombre="$rival ?? 'Bot'" :puntos="$vista['tanteo'][1 - $vista['asiento']]" modelo="puntos.rival" class="min-w-0"
+                    clase-nombre="min-w-0 truncate text-sm font-semibold" />
             </section>
 
             <div class="flex items-center gap-2 justify-self-end [grid-area:acciones]">
@@ -49,11 +70,25 @@
 
         {{-- Tocar la mesa apura lo que se esté mostrando (los tantos del envido). --}}
         <div class="mesa-campo" @click="apurar()">
+            {{--
+                La cuenta regresiva entre personas: un fósforo acostado en el borde del campo, arriba cuando
+                le toca al rival y abajo cuando te toca a vos. No ocupa lugar: la mesa mide lo mismo que sin él.
+                Lo que cuenta también se dice en el aviso, así que acá es solo dibujo.
+            --}}
+            @if ($rival !== null)
+                @foreach (['plazoRival' => 'rival', 'plazoPropio' => 'vos'] as $referencia => $lado)
+                    <div x-ref="{{ $referencia }}" class="plazo plazo-{{ $lado }}" :data-arde="plazo === '{{ $lado }}'" aria-hidden="true">
+                        <span class="plazo-palito"></span>
+                        <span class="plazo-carril"><span class="plazo-cabeza"></span></span>
+                    </div>
+                @endforeach
+            @endif
+
             <section aria-label="Rival" class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-7">
-                <p class="flex flex-col items-end gap-1 justify-self-end text-right text-sm font-semibold leading-tight sm:flex-row sm:items-center sm:gap-2 sm:text-base">
+                <p class="flex min-w-0 flex-col items-end gap-1 justify-self-end text-right text-sm font-semibold leading-tight [overflow-wrap:anywhere] sm:flex-row sm:items-center sm:gap-2 sm:text-base">
                     <span class="flex items-center gap-1.5">
-                        {{-- Mientras el bot piensa, el reloj aparece junto a su ícono. Guarda su lugar, así nada se corre, y no gira ni late. --}}
-                        <span class="transition-opacity ease-out" :class="pensando ? 'opacity-100 duration-200' : 'opacity-0 duration-100'" aria-hidden="true">
+                        {{-- Mientras el rival piensa, el reloj aparece junto a su ícono. Guarda su lugar, así nada se corre, y no gira ni late. --}}
+                        <span class="transition-opacity ease-out" :class="piensaElRival ? 'opacity-100 duration-200' : 'opacity-0 duration-100'" aria-hidden="true">
                             <x-icono nombre="tiempo" class="size-4" />
                         </span>
                         <x-icono :nombre="$nivel ? 'bot' : 'jugador'" class="size-5" />
@@ -62,7 +97,8 @@
                             <x-nivel-fosforos :nivel="$nivel" class="text-[0.8rem]" />
                         @endif
                     </span>
-                    {{ $nivel ? 'Bot '.mb_strtolower($nivel->nombre()) : $rival }}
+                    {{-- Un apodo largo ocupa dos renglones como mucho: la fila del rival mide siempre lo mismo. --}}
+                    <span class="line-clamp-2">{{ $nivel ? 'Bot '.mb_strtolower($nivel->nombre()) : $rival }}</span>
                 </p>
                 <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
                 {{-- El mazo, contra el borde del campo para que no parezca una carta más del rival. De acá sale el reparto. --}}
@@ -110,13 +146,19 @@
                 </div>
             </section>
 
-            {{-- Al cerrar la mano el aviso sigue anunciándose, pero lo que se ve es el cierre de abajo. --}}
-            <p aria-live="polite" class="min-h-6 text-center text-[0.95rem] font-semibold leading-snug sm:text-lg" :class="{ 'opacity-0': cierre }" x-text="aviso">Repartiendo.</p>
+            {{--
+                Al cerrar la mano el aviso sigue anunciándose, pero lo que se ve es el cierre de abajo.
+                Mide siempre un renglón: si el texto ocupa dos (un apodo largo), el de más crece hacia
+                arriba, sobre el paño libre, y las bazas no se mueven.
+            --}}
+            <p aria-live="polite" class="flex h-6 items-end justify-center text-center text-[0.95rem] font-semibold leading-snug sm:h-[1.55rem] sm:text-lg" :class="{ 'opacity-0': cierre }">
+                <span x-text="aviso">Repartiendo.</span>
+            </p>
 
             {{-- En el celular, la marca de mano y el estado del truco van arriba de las cartas; en pantallas anchas, a los costados. --}}
             <section aria-label="Tu mano" class="relative grid items-center gap-x-7 pb-4 pt-1 sm:grid-cols-[1fr_auto_1fr]">
                 <div class="flex min-h-7 items-center justify-center gap-3 text-sm sm:contents">
-                    {{-- La marca guarda su lugar aunque el mano sea el bot: la mesa no se corre. --}}
+                    {{-- La marca guarda su lugar aunque el mano sea el rival: la mesa no se corre. --}}
                     <p class="inline-flex items-center gap-1.5 rounded-full border border-naipe/40 px-2.5 py-0.5 font-semibold sm:order-1 sm:justify-self-end"
                         :class="{ 'opacity-0': cierre || ! esMano }" :aria-hidden="(! esMano).toString()">
                         <x-icono nombre="mano" class="size-4" /> Sos mano

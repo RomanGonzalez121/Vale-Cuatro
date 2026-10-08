@@ -10,14 +10,21 @@
  | El bot juega aparte, desde una cola del servidor. Mientras le toca, la mesa
  | pregunta cada tanto qué pasó después del último paso que mostró.
  |
- | Las cartas del bot no llegan nunca: de su mano solo se sabe cuántas le quedan.
+ | Con otra persona enfrente es igual, pero no se pregunta sin parar: el servidor
+ | avisa por el WebSocket que hay novedades (sin cartas ni datos, solo el número
+ | del último evento) y recién ahí la mesa pregunta qué pasó. Esa pregunta se
+ | hace sola cada tanto por si el aviso no llega, y también cuando se cumple el
+ | plazo del turno, que resuelve el servidor.
+ |
+ | La pantalla habla de "vos" y del "rival": qué asiento es cada uno lo dice la
+ | vista. Las cartas del rival no llegan nunca: de su mano solo se sabe cuántas
+ | le quedan.
  */
 
 import { LLEGADA, cartasDelTanto, movimientoReducido, nombreDe, plantilla } from './cartas';
+import { conectarEcho } from './echo';
 
-const VOS = 0;
-const RIVAL = 1;
-const QUIEN = ['vos', 'rival'];
+const LADOS = ['vos', 'rival'];
 
 const CANTOS = {
     envido: 'Envido',
@@ -46,21 +53,44 @@ const CONCEPTOS = {
     mano: 'Mano',
 };
 
-const DE_QUIEN = { vos: 'tuya', rival: 'del bot', parda: 'parda' };
 const CALLADO = { numero: '', frase: '', visible: false };
 
 // Cada cuánto se le pregunta al servidor qué jugó el bot, y cuánto se lo espera antes de pedirle que juegue ya.
 const CONSULTA = 600;
 const RED_DE_SEGURIDAD = 5000;
 
+// Con otra persona, cada cuánto se pregunta si no llegó ningún aviso: con el WebSocket andando es solo un respaldo.
+const RESPALDO_EN_VIVO = 15000;
+const RESPALDO_SIN_AVISOS = 3000;
+// Cumplido el plazo, cada cuánto se vuelve a preguntar, cuánto se espera al servidor antes de pedirle
+// que lo resuelva ya, y cada cuánto se le insiste como mucho.
+const TRAS_EL_PLAZO = 1500;
+const GRACIA_DEL_PLAZO = 2000;
+const ENTRE_RECLAMOS = 5000;
+// Cuando al turno propio le quedan estos segundos, la mesa lo dice.
+const SEGUNDOS_DE_APURO = 10;
+
 export default (inicial, pedidos) => ({
     vista: inicial,
     pedidos,
-    puntos: { vos: inicial.tanteo[VOS], rival: inicial.tanteo[RIVAL] },
+    // El asiento propio y el de enfrente. Contra el bot siempre son el 0 y el 1.
+    yo: inicial.asiento,
+    ellos: 1 - inicial.asiento,
+    puntos: { vos: inicial.tanteo[inicial.asiento], rival: inicial.tanteo[1 - inicial.asiento] },
     // Mientras se cuenta lo que pasó o se espera al servidor, no se puede hacer nada.
     ocupada: true,
     // Le toca al bot y todavía no jugó: la mesa lo marca junto a su nombre.
     pensando: false,
+    // Entre personas: si el WebSocket está conectado, el último evento del que avisó y el reloj de la próxima pregunta.
+    enVivo: false,
+    avisado: 0,
+    preguntando: false,
+    relojDeVigia: null,
+    ultimoReclamo: 0,
+    // De qué lado arde el fósforo de la cuenta regresiva ('vos', 'rival' o ninguno) y sus animaciones.
+    plazo: null,
+    llamas: [],
+    relojDeApuro: null,
     // Cuando la barra está desplegada (los niveles del envido, por ejemplo), acá van sus botones.
     menu: null,
     ganadas: [],
@@ -77,6 +107,12 @@ export default (inicial, pedidos) => ({
     relojDeVoz: null,
 
     init() {
+        this.sellar(this.vista);
+
+        if (this.pedidos.entrePersonas) {
+            this.escuchar();
+        }
+
         this.pintar(this.vista);
     },
 
@@ -91,7 +127,39 @@ export default (inicial, pedidos) => ({
     },
 
     get esMano() {
-        return this.vista.mano === VOS;
+        return this.vista.mano === this.yo;
+    },
+
+    /**
+     * De qué lado de la mesa está un asiento.
+     */
+    quien(asiento) {
+        return asiento === this.yo ? 'vos' : 'rival';
+    },
+
+    /**
+     * Cómo se nombra al rival en medio de una frase y al empezarla: "el bot", o el apodo de la otra persona.
+     */
+    get rival() {
+        return this.pedidos.rival ?? 'el bot';
+    },
+
+    get rivalAlEmpezar() {
+        return this.pedidos.rival ?? 'El bot';
+    },
+
+    /**
+     * El reloj junto al nombre del rival: el bot está pensando, o le toca a la otra persona.
+     */
+    get piensaElRival() {
+        return this.pensando || (this.pedidos.entrePersonas && this.juegaElOtro && ! this.ocupada);
+    },
+
+    /**
+     * De quién fue una baza. El apodo no entra en ese renglón a 360 px: con otra persona es "del rival".
+     */
+    deQuien(resultado) {
+        return { vos: 'tuya', rival: this.pedidos.entrePersonas ? 'del rival' : 'del bot', parda: 'parda' }[resultado];
     },
 
     get baza() {
@@ -110,7 +178,7 @@ export default (inicial, pedidos) => ({
     },
 
     resultadoDeBaza(numero) {
-        return DE_QUIEN[this.ganadas[numero]] ?? '';
+        return this.deQuien(this.ganadas[numero]) ?? '';
     },
 
     // La barra de cantos: muestra, en una sola fila, lo que el motor declara válido ahora.
@@ -218,6 +286,7 @@ export default (inicial, pedidos) => ({
 
         this.ocupada = true;
         this.menu = null;
+        this.apagar();
 
         await this.pedir(this.pedidos.accion, accion);
     },
@@ -230,6 +299,7 @@ export default (inicial, pedidos) => ({
         const conTeclado = document.activeElement === this.$refs.repartir;
 
         this.ocupada = true;
+        this.apagar();
         await this.juntar();
         await this.pedir(this.pedidos.repartir, {});
 
@@ -256,7 +326,12 @@ export default (inicial, pedidos) => ({
         }
 
         if (respuesta.status === 422) {
-            this.deshacer((await respuesta.json()).motivo);
+            const { motivo } = await respuesta.json();
+
+            // Entre personas, la jugada puede no entrar porque el servidor llegó antes: venció el turno o ya repartió.
+            if (! (await this.alcanzarAlServidor())) {
+                this.deshacer(motivo);
+            }
 
             return;
         }
@@ -269,21 +344,30 @@ export default (inicial, pedidos) => ({
         }
 
         for (const paso of (await respuesta.json()).pasos) {
-            await this.mostrar(paso);
+            await this.mostrar(this.sellar(paso));
         }
 
         await this.esperarAlBot();
 
-        this.prisa = false;
-        this.ocupada = false;
-        this.aviso = this.indicacion() || this.aviso;
-        this.enfocarLoQueSigue();
+        this.liberar();
     },
 
     /**
-     * Le toca al bot cuando la mano está en juego y el jugador no tiene nada para hacer.
+     * Terminó de contarse lo que pasó: la mesa se puede volver a usar. Entre personas, además,
+     * arranca la cuenta regresiva de quien tenga el turno y se queda atenta a lo que haga el rival.
      */
-    get juegaElBot() {
+    liberar(aviso = null) {
+        this.prisa = false;
+        this.ocupada = false;
+        this.aviso = aviso ?? (this.indicacion() || this.aviso);
+        this.enfocarLoQueSigue();
+        this.vigilar();
+    },
+
+    /**
+     * Le toca al otro cuando la mano está en juego y el jugador no tiene nada para hacer.
+     */
+    get juegaElOtro() {
         return ! this.fin && this.enJuego && ! this.vista.acciones.length;
     },
 
@@ -291,11 +375,13 @@ export default (inicial, pedidos) => ({
      * El bot juega en el servidor, aparte. Mientras le toque, la mesa pregunta qué pasó después del
      * último evento que mostró y cuenta los pasos que lleguen. Si pasan unos segundos sin novedades
      * le pide al servidor que juegue en el momento: es la red de seguridad por si la cola no anda.
+     *
+     * A otra persona no se la espera así: puede tardar todo su turno. De eso se ocupa vigilar().
      */
     async esperarAlBot() {
         let ultimaNovedad = Date.now();
 
-        while (this.juegaElBot) {
+        while (! this.pedidos.entrePersonas && this.juegaElOtro) {
             if (! this.pensando) {
                 this.pensando = true;
                 this.aviso = 'Juega el bot.';
@@ -340,10 +426,243 @@ export default (inicial, pedidos) => ({
                 await new Promise(() => {});
             }
 
-            return respuesta.ok ? (await respuesta.json()).pasos : null;
+            return respuesta.ok ? (await respuesta.json()).pasos.map((paso) => this.sellar(paso)) : null;
         } catch {
             return null;
         }
+    },
+
+    /**
+     * Cada paso dice cuántos segundos faltan para que el servidor resuelva la espera (el turno o el
+     * reparto). Apenas llega se anota a qué hora de este navegador se cumple: lo que tarde en contarse
+     * el paso en pantalla no le regala tiempo a nadie. Contra el bot no hay plazo.
+     */
+    sellar(paso) {
+        paso.vence = paso.restan == null ? null : Date.now() + paso.restan * 1000;
+
+        return paso;
+    },
+
+    // Con otra persona enfrente
+
+    /**
+     * Se suscribe al canal privado de la partida. Por ahí no llegan cartas ni jugadas: solo el número del
+     * último evento. Si no hay tiempo real (Reverb apagado, o el navegador no puede conectar) no pasa nada:
+     * queda la pregunta cada pocos segundos.
+     */
+    escuchar() {
+        try {
+            const echo = conectarEcho();
+            const conexion = echo.connector.pusher.connection;
+
+            echo.private(`partida.${this.vista.partida}`).listen('.partida.actualizada', (aviso) => {
+                this.avisado = Math.max(this.avisado, aviso?.evento ?? 0);
+                this.ponerseAlDia();
+            });
+
+            // Al conectar (y al reconectar) se pone al día, por si un aviso pasó mientras no estaba.
+            conexion.bind('connected', () => {
+                this.enVivo = true;
+                this.ponerseAlDia();
+            });
+
+            for (const caida of ['disconnected', 'unavailable', 'failed']) {
+                conexion.bind(caida, () => (this.enVivo = false));
+            }
+        } catch {
+            this.enVivo = false;
+        }
+
+        // Si la pestaña estaba dormida, se entera apenas vuelve.
+        document.addEventListener('visibilitychange', () => {
+            if (! document.hidden) {
+                this.ponerseAlDia();
+            }
+        });
+    },
+
+    /**
+     * Deja programada la próxima pregunta al servidor y enciende la cuenta regresiva. Se pregunta cuando
+     * llega un aviso, cuando se cumple el plazo de lo que se está esperando y, por si nada de eso pasa,
+     * cada tanto. Si ya hay un aviso de algo que la mesa todavía no mostró, se pregunta ya.
+     */
+    vigilar(recienPreguntado = false) {
+        clearTimeout(this.relojDeVigia);
+        this.arder();
+
+        if (! this.pedidos.entrePersonas || this.fin) {
+            return;
+        }
+
+        const vence = this.vista.vence ?? null;
+        const falta = vence === null ? null : vence - Date.now();
+        let espera = this.enVivo ? RESPALDO_EN_VIVO : RESPALDO_SIN_AVISOS;
+
+        if (falta !== null) {
+            espera = falta > 0 ? Math.min(espera, falta + 400) : TRAS_EL_PLAZO;
+        }
+
+        if (! recienPreguntado && this.avisado > this.vista.evento) {
+            espera = 0;
+        }
+
+        this.relojDeVigia = setTimeout(() => this.ponerseAlDia(), espera);
+    },
+
+    /**
+     * Pregunta qué pasó después de lo último que mostró y lo cuenta. Mientras la mesa está ocupada con la
+     * jugada propia no pregunta: ese pedido trae lo suyo, y al terminar la mesa vuelve a vigilar.
+     */
+    async ponerseAlDia() {
+        if (this.ocupada || this.fin || this.preguntando) {
+            return;
+        }
+
+        clearTimeout(this.relojDeVigia);
+        this.preguntando = true;
+
+        const desde = this.vista.evento;
+        const avisado = this.avisado;
+        let pasos = await this.consultar();
+
+        // El plazo se cumplió y el servidor no lo resolvió (la cola está caída o atrasada): se le pide que lo haga ya.
+        if (! pasos?.length && ! this.ocupada && this.plazoSinResolver()) {
+            this.ultimoReclamo = Date.now();
+            await this.reclamarElPlazo();
+            pasos = await this.consultar();
+        }
+
+        this.preguntando = false;
+
+        // Mientras se preguntaba, el jugador hizo algo: su propio pedido trae lo que haya pasado.
+        if (this.ocupada || this.fin || this.vista.evento !== desde) {
+            return;
+        }
+
+        if (! pasos?.length) {
+            // Si en el medio llegó otro aviso, se pregunta de nuevo sin esperar.
+            this.vigilar(this.avisado === avisado);
+
+            return;
+        }
+
+        await this.contarLoQuePaso(pasos);
+    },
+
+    plazoSinResolver() {
+        const vence = this.vista.vence ?? null;
+
+        return vence !== null && Date.now() > vence + GRACIA_DEL_PLAZO && Date.now() - this.ultimoReclamo > ENTRE_RECLAMOS;
+    },
+
+    /**
+     * La red de seguridad del plazo. El servidor decide: si todavía no se cumplió, o ya lo resolvió, no hace nada.
+     */
+    async reclamarElPlazo() {
+        try {
+            await fetch(this.pedidos.plazo, {
+                method: 'POST',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                credentials: 'same-origin',
+            });
+        } catch {
+            // Sin conexión: la pregunta siguiente vuelve a probar.
+        }
+    },
+
+    /**
+     * Cuenta en pantalla los pasos que no salieron de un pedido propio: lo que jugó el rival, el reparto
+     * que hizo el servidor o la jugada que hizo por quien se quedó sin tiempo.
+     */
+    async contarLoQuePaso(pasos) {
+        this.ocupada = true;
+        this.menu = null;
+        this.apagar();
+
+        for (const [numero, paso] of pasos.entries()) {
+            await this.mostrar(paso, numero > 0);
+        }
+
+        this.liberar();
+    },
+
+    /**
+     * La jugada propia no entró. Entre personas puede ser porque el servidor llegó antes (se venció el
+     * turno, o ya repartió): si hay pasos nuevos, la mesa vuelve a lo último cierto y los cuenta.
+     * Devuelve si fue así; si no, queda deshacer la jugada como siempre.
+     */
+    async alcanzarAlServidor() {
+        if (! this.pedidos.entrePersonas) {
+            return false;
+        }
+
+        const pasos = await this.consultar();
+
+        if (! pasos?.length) {
+            return false;
+        }
+
+        // La carta que se había movido al tocarla no se jugó: vuelve a la mano.
+        if (this.adelantada) {
+            this.adelantada = null;
+            this.repartir(this.vista, false);
+        }
+
+        await this.contarLoQuePaso(pasos);
+
+        return true;
+    },
+
+    /**
+     * La cuenta regresiva: un fósforo acostado en el borde del campo, del lado de quien tiene que jugar,
+     * que se consume en lo que falta para el plazo. Con la mano cerrada es lo que falta para que se
+     * reparta sola, y arde de tu lado, donde está "Repartir". Solo se mueve con transform.
+     */
+    arder() {
+        this.apagar();
+
+        const vence = this.vista.vence ?? null;
+        const falta = vence === null ? 0 : vence - Date.now();
+
+        if (! this.pedidos.entrePersonas || this.fin || falta <= 0) {
+            return;
+        }
+
+        const lado = this.juegaElOtro ? 'rival' : 'vos';
+        const total = (this.enJuego ? this.pedidos.turno : this.pedidos.reparto) * 1000;
+        const queda = Math.min(falta / total, 1);
+        const fosforo = this.$refs[lado === 'vos' ? 'plazoPropio' : 'plazoRival'];
+        // Con movimiento reducido no se desliza: da un salto cada cinco segundos.
+        const opciones = {
+            duration: falta,
+            easing: this.reducido ? `steps(${Math.max(1, Math.round(falta / 5000))}, end)` : 'linear',
+            fill: 'forwards',
+        };
+
+        this.plazo = lado;
+        this.llamas = [
+            fosforo.querySelector('.plazo-palito').animate([{ transform: `scaleX(${queda})` }, { transform: 'scaleX(0)' }], opciones),
+            // La cabeza no se achica: viaja con la punta del palito.
+            fosforo.querySelector('.plazo-carril').animate(
+                [{ transform: `translateX(${(1 - queda) * 100}%)` }, { transform: 'translateX(100%)' }],
+                opciones,
+            ),
+        ];
+
+        if (lado === 'vos' && this.enJuego && falta > SEGUNDOS_DE_APURO * 1000) {
+            this.relojDeApuro = setTimeout(() => {
+                if (! this.ocupada) {
+                    this.aviso = `Te quedan ${SEGUNDOS_DE_APURO} segundos.`;
+                }
+            }, falta - SEGUNDOS_DE_APURO * 1000);
+        }
+    },
+
+    apagar() {
+        clearTimeout(this.relojDeApuro);
+        this.llamas.forEach((llama) => llama.cancel());
+        this.llamas = [];
+        this.plazo = null;
     },
 
     async despertarAlBot() {
@@ -384,7 +703,7 @@ export default (inicial, pedidos) => ({
             const respuesta = await fetch(this.pedidos.estado, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
 
             if (respuesta.ok) {
-                vista = (await respuesta.json()).vista;
+                vista = this.sellar((await respuesta.json()).vista);
             }
         } catch {
             // Sin conexión: se sigue con la vista que había.
@@ -398,12 +717,17 @@ export default (inicial, pedidos) => ({
      * Qué puede hacer el jugador ahora, dicho en una línea.
      */
     indicacion() {
-        if (this.fin || ! this.enJuego || ! this.vista.acciones.length) {
+        if (this.fin || ! this.enJuego) {
             return '';
         }
 
+        if (! this.vista.acciones.length) {
+            // Mientras juega el bot lo dice esperarAlBot(); a otra persona se la espera sin trabar la mesa.
+            return this.pedidos.entrePersonas ? `Juega ${this.rival}.` : '';
+        }
+
         if (this.puede('quiero')) {
-            return `El bot cantó ${this.cantoPendiente().toLowerCase()}. ¿Qué hacés?`;
+            return `${this.rivalAlEmpezar} cantó ${this.cantoPendiente().toLowerCase()}. ¿Qué hacés?`;
         }
 
         return 'Jugá una carta o cantá.';
@@ -435,9 +759,14 @@ export default (inicial, pedidos) => ({
     },
 
     async mostrar(paso, conPausa = false) {
-        // Entre dos jugadas seguidas del bot hay un momento, para que se lea la anterior.
-        if (conPausa && paso.hechos[0]?.asiento === RIVAL) {
+        // Entre dos jugadas seguidas del rival hay un momento, para que se lea la anterior.
+        if (conPausa && paso.hechos[0]?.asiento === this.ellos) {
             await this.esperar(650);
+        }
+
+        // Si el reparto no lo pidió esta mesa (repartió el servidor, o lo apuró el rival), primero se junta lo que quedó.
+        if (paso.hechos[0]?.tipo === 'reparto' && this.cierre) {
+            await this.juntar();
         }
 
         for (const hecho of paso.hechos) {
@@ -455,7 +784,9 @@ export default (inicial, pedidos) => ({
     },
 
     async contar(hecho, paso) {
-        const quien = QUIEN[hecho.asiento ?? hecho.equipo ?? hecho.ganador];
+        const asiento = hecho.asiento ?? hecho.equipo ?? hecho.ganador ?? null;
+        const quien = asiento === null ? null : this.quien(asiento);
+        const rival = this.rivalAlEmpezar;
 
         switch (hecho.tipo) {
             case 'reparto':
@@ -464,7 +795,7 @@ export default (inicial, pedidos) => ({
                 break;
 
             case 'carta':
-                this.aviso = quien === 'vos' ? `Jugaste el ${nombreDe(hecho.carta)}.` : `El bot jugó el ${nombreDe(hecho.carta)}.`;
+                this.aviso = quien === 'vos' ? `Jugaste el ${nombreDe(hecho.carta)}.` : `${rival} jugó el ${nombreDe(hecho.carta)}.`;
 
                 if (quien === 'vos' && this.adelantada === hecho.carta) {
                     // Esta carta ya se movió al tocarla: no se vuelve a animar.
@@ -482,13 +813,13 @@ export default (inicial, pedidos) => ({
 
             case 'canto':
                 this.cantar(CANTOS[hecho.canto], TRUCOS.includes(hecho.canto) ? 'copa' : 'oro', quien);
-                this.aviso = `${quien === 'vos' ? 'Cantaste' : 'El bot cantó'} ${CANTOS[hecho.canto].toLowerCase()}.`;
+                this.aviso = `${quien === 'vos' ? 'Cantaste' : `${rival} cantó`} ${CANTOS[hecho.canto].toLowerCase()}.`;
                 await this.esperar(1250);
                 break;
 
             case 'respuesta':
                 this.cantar(hecho.quiere ? 'Quiero' : 'No quiero', hecho.quiere ? 'basto' : 'copa', quien);
-                this.aviso = `${quien === 'vos' ? (hecho.quiere ? 'Quisiste' : 'No quisiste') : (hecho.quiere ? 'El bot quiso' : 'El bot no quiso')}.`;
+                this.aviso = `${quien === 'vos' ? (hecho.quiere ? 'Quisiste' : 'No quisiste') : `${rival} ${hecho.quiere ? 'quiso' : 'no quiso'}`}.`;
                 await this.esperar(1100);
                 break;
 
@@ -497,13 +828,13 @@ export default (inicial, pedidos) => ({
                 break;
 
             case 'puntos':
-                this.aviso = `${quien === 'vos' ? 'Sumás' : 'El bot suma'} ${hecho.puntos}: ${this.conceptoDe(hecho.concepto, paso).toLowerCase()}.`;
+                this.aviso = `${quien === 'vos' ? 'Sumás' : `${rival} suma`} ${hecho.puntos}: ${this.conceptoDe(hecho.concepto, paso).toLowerCase()}.`;
                 await this.sumar(quien, hecho.tanteo[hecho.equipo]);
                 await this.esperar(350);
                 break;
 
             case 'mazo':
-                this.aviso = quien === 'vos' ? 'Te fuiste al mazo.' : 'El bot se fue al mazo.';
+                this.aviso = this.comoSeFue(asiento, paso);
                 await this.esperar(400);
                 break;
 
@@ -517,6 +848,20 @@ export default (inicial, pedidos) => ({
                 this.fin = quien;
                 break;
         }
+    },
+
+    /**
+     * Quién se fue al mazo, dicho en una frase. Entre personas el servidor manda al mazo a quien se
+     * queda sin tiempo: ahí se cuenta eso, que no es lo mismo que irse.
+     */
+    comoSeFue(asiento, vista) {
+        const vos = asiento === this.yo;
+
+        if ((vista.vencio ?? null) === asiento) {
+            return vos ? 'Se te venció el turno.' : `A ${this.rival} se le venció el turno.`;
+        }
+
+        return vos ? 'Te fuiste al mazo.' : `${this.rivalAlEmpezar} se fue al mazo.`;
     },
 
     // Piezas visuales
@@ -625,7 +970,8 @@ export default (inicial, pedidos) => ({
      * navegador. Después el que pierde queda a media tinta.
      */
     async cantarTantos(hecho) {
-        const gana = QUIEN[hecho.ganador];
+        const gana = this.quien(hecho.ganador);
+        const rival = this.rivalAlEmpezar;
         // En la contraflor el tanto son las tres cartas; en el envido, las que lo arman.
         const mias = hecho.canto === 'contraflor' ? this.repartidas : cartasDelTanto(this.repartidas);
 
@@ -636,7 +982,7 @@ export default (inicial, pedidos) => ({
         await this.esperar(160);
 
         for (const [orden, dicho] of hecho.tantos.entries()) {
-            const quien = QUIEN[dicho.asiento];
+            const quien = this.quien(dicho.asiento);
 
             if (orden > 0) {
                 await this.esperar(800);
@@ -644,10 +990,10 @@ export default (inicial, pedidos) => ({
 
             if (dicho.tanto === null) {
                 this.tantos[quien] = { numero: '', frase: 'Son buenas', visible: true };
-                this.aviso = quien === 'vos' ? 'Decís: son buenas.' : 'El bot dice: son buenas.';
+                this.aviso = quien === 'vos' ? 'Decís: son buenas.' : `${rival} dice: son buenas.`;
             } else {
                 this.tantos[quien] = { numero: dicho.tanto, frase: orden === 0 ? '' : 'son mejores', visible: true };
-                this.aviso = `${quien === 'vos' ? 'Cantás' : 'El bot canta'} ${dicho.tanto}${orden === 0 ? '' : ', son mejores'}.`;
+                this.aviso = `${quien === 'vos' ? 'Cantás' : `${rival} canta`} ${dicho.tanto}${orden === 0 ? '' : ', son mejores'}.`;
                 // Mientras se canta tu tanto se levantan las cartas que lo arman.
                 this.levantarTanto(quien === 'vos' ? mias : []);
             }
@@ -702,7 +1048,7 @@ export default (inicial, pedidos) => ({
     // La mano
 
     /**
-     * Pone sobre la mesa lo que dice una vista: tu mano, los dorsos del bot y lo ya jugado.
+     * Pone sobre la mesa lo que dice una vista: tu mano, los dorsos del rival y lo ya jugado.
      * Es lo que se usa al cargar la página y al repartir; con "animar", las cartas llegan desde el mazo.
      */
     repartir(vista, animar) {
@@ -710,14 +1056,15 @@ export default (inicial, pedidos) => ({
         this.menu = null;
         this.cierre = null;
         this.tantos = { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false };
-        this.ganadas = vista.bazas.filter((baza) => baza.cerrada).map((baza) => (baza.ganador === null ? 'parda' : QUIEN[baza.ganador]));
+        this.ganadas = vista.bazas.filter((baza) => baza.cerrada).map((baza) => (baza.ganador === null ? 'parda' : this.quien(baza.ganador)));
         this.repartidas = [
             ...vista.misCartas,
-            ...vista.bazas.flatMap((baza) => baza.jugadas.filter(([asiento]) => asiento === VOS).map(([, carta]) => carta)),
+            ...vista.bazas.flatMap((baza) => baza.jugadas.filter(([asiento]) => asiento === this.yo).map(([, carta]) => carta)),
         ];
 
         [0, 1, 2].forEach((numero) => {
-            QUIEN.forEach((quien, asiento) => {
+            LADOS.forEach((quien) => {
+                const asiento = quien === 'vos' ? this.yo : this.ellos;
                 const hueco = this.hueco(numero, quien);
                 const baza = vista.bazas[numero];
                 const jugada = baza?.jugadas.find(([otro]) => otro === asiento);
@@ -745,7 +1092,7 @@ export default (inicial, pedidos) => ({
             boton.setAttribute('aria-label', `${nombreDe(carta)}, jugar esta carta`);
             boton.append(plantilla(carta));
             boton.addEventListener('click', (evento) => {
-                // El toque no sube hasta la mesa: ahí apuraría lo que conteste el bot.
+                // El toque no sube hasta la mesa: ahí apuraría lo que conteste el rival.
                 evento.stopPropagation();
                 this.jugar(carta, boton);
             });
@@ -756,7 +1103,7 @@ export default (inicial, pedidos) => ({
             }
         });
 
-        for (let i = 0; i < vista.cartasEnMano[RIVAL]; i++) {
+        for (let i = 0; i < vista.cartasEnMano[this.ellos]; i++) {
             const dorso = document.createElement('div');
 
             dorso.append(plantilla('dorso'));
@@ -776,20 +1123,17 @@ export default (inicial, pedidos) => ({
     pintar(vista, animar = true, aviso = null) {
         const enJuego = vista.fase === 'jugando';
 
-        this.puntos = { vos: vista.tanteo[VOS], rival: vista.tanteo[RIVAL] };
+        this.puntos = { vos: vista.tanteo[this.yo], rival: vista.tanteo[this.ellos] };
         this.repartir(vista, animar && enJuego);
 
         if (enJuego) {
             setTimeout(async () => {
                 // Si se cargó la página en el turno del bot, primero se espera lo que juegue.
-                const jugabaElBot = this.juegaElBot;
+                const jugabaElBot = ! this.pedidos.entrePersonas && this.juegaElOtro;
 
                 await this.esperarAlBot();
 
-                this.prisa = false;
-                this.ocupada = false;
-                this.aviso = jugabaElBot ? (this.indicacion() || this.aviso) : (aviso ?? this.indicacion());
-                this.enfocarLoQueSigue();
+                this.liberar(jugabaElBot ? null : aviso);
             }, animar && ! this.reducido ? 650 : 0);
 
             return;
@@ -797,9 +1141,10 @@ export default (inicial, pedidos) => ({
 
         // Entre dos manos: queda a la vista el cierre de la que terminó.
         this.cerrarMano(vista, false);
-        this.fin = vista.ganador === null ? null : QUIEN[vista.ganador];
+        this.fin = vista.ganador === null ? null : this.quien(vista.ganador);
         this.aviso = aviso ?? this.aviso;
         this.ocupada = false;
+        this.vigilar();
     },
 
     /**
@@ -818,7 +1163,7 @@ export default (inicial, pedidos) => ({
     },
 
     /**
-     * La carta sale de la mano (o de los dorsos del bot) y cae en su lugar de la baza.
+     * La carta sale de la mano (o de los dorsos del rival) y cae en su lugar de la baza.
      */
     jugarCarta(quien, carta, baza, boton = null) {
         if (quien === 'rival') {
@@ -847,7 +1192,7 @@ export default (inicial, pedidos) => ({
 
     resolverBaza(hecho, vista) {
         const numero = hecho.numero - 1;
-        const resultado = hecho.ganador === null ? 'parda' : QUIEN[hecho.ganador];
+        const resultado = hecho.ganador === null ? 'parda' : this.quien(hecho.ganador);
         const jugadas = vista.bazas[numero].jugadas;
 
         this.ganadas = [...this.ganadas.slice(0, numero), resultado];
@@ -860,7 +1205,7 @@ export default (inicial, pedidos) => ({
 
         const carta = jugadas.find(([asiento]) => asiento === hecho.ganador)[1];
 
-        this.aviso = resultado === 'vos' ? `Ganaste la baza con el ${nombreDe(carta)}.` : `El bot ganó la baza con el ${nombreDe(carta)}.`;
+        this.aviso = resultado === 'vos' ? `Ganaste la baza con el ${nombreDe(carta)}.` : `${this.rivalAlEmpezar} ganó la baza con el ${nombreDe(carta)}.`;
 
         // La carta que gana queda arriba y la que pierde se apaga: la baza se lee de un vistazo.
         this.hueco(numero, resultado).dataset.gana = '';
@@ -869,21 +1214,23 @@ export default (inicial, pedidos) => ({
 
     /**
      * El cierre de la mano: quién la ganó, por qué y cuánto sumó cada cosa.
-     * Queda a la vista hasta que el jugador reparte. Lo que no se jugó vuelve
-     * al mazo boca abajo, salvo las cartas que el bot tiene que mostrar porque
-     * ganó el envido o sumó por una flor.
+     * Queda a la vista hasta que se reparte. Lo que no se jugó vuelve al mazo
+     * boca abajo, salvo las cartas que el rival tiene que mostrar porque ganó
+     * el envido o sumó por una flor.
      */
     cerrarMano(vista, animar = true) {
         const { ganador, motivo, anotado, mostradas } = vista.cierre;
+        const entrePersonas = this.pedidos.entrePersonas;
         const titulo = motivo === 'partida'
             ? 'Se terminó la partida'
-            : (ganador === VOS ? 'Ganaste la mano' : 'La mano es del bot');
+            // Con otra persona el título no lleva su apodo: uno largo lo partiría en tres renglones.
+            : (ganador === this.yo ? 'Ganaste la mano' : (entrePersonas ? 'Perdiste la mano' : 'La mano es del bot'));
         const razon = this.razonDelCierre(vista);
         const lineas = anotado.map((linea) => ({
             puntos: linea.puntos,
-            texto: `${this.conceptoDe(linea.concepto, vista)}, para ${linea.equipo === VOS ? 'vos' : 'el bot'}`,
+            texto: `${this.conceptoDe(linea.concepto, vista)}, para ${linea.equipo === this.yo ? 'vos' : this.rival}`,
         }));
-        const delBot = (mostradas[RIVAL] ?? []).filter((carta) => ! vista.bazas.some((baza) => baza.jugadas.some(([, otra]) => otra === carta)));
+        const delBot = (mostradas[this.ellos] ?? []).filter((carta) => ! vista.bazas.some((baza) => baza.jugadas.some(([, otra]) => otra === carta)));
         const dorsos = [...this.$refs.rival.children];
 
         this.tantos.vos.visible = false;
@@ -915,8 +1262,8 @@ export default (inicial, pedidos) => ({
         this.aviso = [
             `${titulo}. ${razon}`,
             ...lineas.map((linea) => `${linea.puntos} por ${linea.texto}.`),
-            delBot.length ? `El bot muestra ${delBot.map((carta) => `el ${nombreDe(carta)}`).join(' y ')}.` : '',
-            vista.fase === 'por_repartir' ? 'Apretá Repartir para seguir.' : '',
+            delBot.length ? `${this.rivalAlEmpezar} muestra ${delBot.map((carta) => `el ${nombreDe(carta)}`).join(' y ')}.` : '',
+            vista.fase === 'por_repartir' ? (entrePersonas ? 'Se reparte solo en unos segundos. Repartir lo apura.' : 'Apretá Repartir para seguir.') : '',
         ].filter(Boolean).join(' ');
     },
 
@@ -924,20 +1271,21 @@ export default (inicial, pedidos) => ({
         const { ganador, motivo } = vista.cierre;
 
         if (motivo === 'bazas') {
-            return `Bazas: ${this.ganadas.map((baza) => DE_QUIEN[baza]).join(', ')}.`;
+            return `Bazas: ${this.ganadas.map((baza) => this.deQuien(baza)).join(', ')}.`;
         }
 
         if (motivo === 'mazo') {
-            return ganador === VOS ? 'El bot se fue al mazo.' : 'Te fuiste al mazo.';
+            // Se fue quien perdió la mano.
+            return this.comoSeFue(ganador === this.yo ? this.ellos : this.yo, vista);
         }
 
         if (motivo === 'no_quiero') {
             const canto = NIVEL_DE_TRUCO[vista.truco.nivel].toLowerCase();
 
-            return ganador === VOS ? `El bot no quiso el ${canto}.` : `No quisiste el ${canto}.`;
+            return ganador === this.yo ? `${this.rivalAlEmpezar} no quiso el ${canto}.` : `No quisiste el ${canto}.`;
         }
 
-        return `${ganador === VOS ? 'Llegaste' : 'El bot llegó'} a ${vista.puntosParaGanar}.`;
+        return `${ganador === this.yo ? 'Llegaste' : `${this.rivalAlEmpezar} llegó`} a ${vista.puntosParaGanar}.`;
     },
 
     /**

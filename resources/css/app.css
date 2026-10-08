@@ -1113,6 +1113,64 @@ html:has(body.superficie-pano) {
         pointer-events: none;
     }
 
+    /*
+     | La cuenta regresiva del turno entre dos personas: un fósforo acostado en
+     | el borde del campo, contra la barra de quien tiene que jugar: arriba, bajo
+     | el tanteador, cuando le toca al rival, y abajo, sobre los cantos, cuando
+     | te toca a vos. El palito se consume hacia la derecha (scaleX) y la cabeza
+     | viaja con la punta, sin achicarse: los mueve mesa.js con el tiempo que
+     | falta. No ocupa lugar en la mesa, así que la cuenta de --b no cambia, y
+     | va por encima de las barras (z-index 10) para que la cabeza no se corte.
+     */
+    .plazo {
+        position: absolute;
+        inset-inline: 0;
+        z-index: 11;
+        width: min(calc(100% - 5rem), 24rem);
+        height: 3px;
+        margin-inline: auto;
+        opacity: 0;
+        transition: opacity 120ms var(--ease-llegada);
+        pointer-events: none;
+    }
+
+    .plazo[data-arde='true'] {
+        opacity: 1;
+        transition-duration: 200ms;
+    }
+
+    /* Centrado sobre el borde: la mitad del palito queda en el campo y la mitad en la barra. */
+    .plazo-rival {
+        top: -1.5px;
+    }
+
+    .plazo-vos {
+        bottom: -1.5px;
+    }
+
+    .plazo-palito,
+    .plazo-carril {
+        position: absolute;
+        inset: 0;
+    }
+
+    .plazo-palito {
+        border-radius: 3px;
+        background-color: var(--color-fosforo);
+        transform-origin: right center;
+    }
+
+    .plazo-cabeza {
+        position: absolute;
+        top: 50%;
+        left: -0.25rem;
+        width: 0.5rem;
+        height: 0.5rem;
+        margin-top: -0.25rem;
+        border-radius: 50%;
+        background-color: var(--color-copa);
+    }
+
     /* El mazo, apilado al lado del rival: de ahí salen las cartas al repartir. */
     .mesa-mazo {
         position: relative;
