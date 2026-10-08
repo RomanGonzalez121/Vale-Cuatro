@@ -187,6 +187,23 @@ final class Mesa
     }
 
     /**
+     * La partida contada de nuevo: después de cada evento, en orden, ese evento y cómo quedó el motor.
+     * Lo usa la repetición del historial, que así no guarda nada: sale de los mismos eventos que el juego.
+     *
+     * @return iterable<int, array{0: EventoDePartida, 1: Motor}>
+     */
+    public function pasoAPaso(Partida $partida): iterable
+    {
+        $motor = $this->sinJugar($partida);
+
+        foreach ($partida->eventos()->get() as $evento) {
+            $motor = $this->aplicarEvento($motor, $evento);
+
+            yield [$evento, $motor];
+        }
+    }
+
+    /**
      * Lo que ve un jugador: la vista de su asiento del motor, que no trae las cartas del rival, y el
      * número del último evento. Sin decir el asiento vale la partida contra el bot, donde es el 0.
      *
