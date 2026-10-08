@@ -101,7 +101,8 @@
                                             @if ($sigue)
                                                 <p class="mt-4 max-w-[36ch] font-bold leading-relaxed">
                                                     @if ($enCurso->esperando())
-                                                        Tenés una sala esperando que se siente alguien.
+                                                        {{-- Dicho de entrada y con la salida al lado: sin esto los niveles apagados parecen un error. --}}
+                                                        Tenés una sala abierta esperando rival. Para jugar contra el bot o en otro modo, primero cancelala.
                                                     @elseif ($enCurso->entre_personas)
                                                         Tenés una partida sin terminar con otra persona.
                                                     @else
@@ -137,20 +138,30 @@
                                             @endif
 
                                             {{-- Sin campos a la vista: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
-                                            <form method="POST" action="{{ route($rival['ruta'] ?? 'jugar') }}" class="mt-3">
-                                                @csrf
-                                                @if ($niveles !== [])
-                                                    <input type="hidden" name="nivel" value="{{ $nivelElegido->value }}" :value="nivel">
-                                                @endif
-                                                <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
-                                                    <x-icono :nombre="$rival['icono'] ?? 'bot'" />
-                                                    {{ $sigue ? ($enCurso->esperando() ? 'Volver a la sala' : 'Seguir la partida') : $rival['boton'] }}
-                                                </button>
-                                            </form>
+                                            <div class="mt-3 flex flex-wrap items-center gap-3">
+                                                <form method="POST" action="{{ route($rival['ruta'] ?? 'jugar') }}">
+                                                    @csrf
+                                                    @if ($niveles !== [])
+                                                        <input type="hidden" name="nivel" value="{{ $nivelElegido->value }}" :value="nivel">
+                                                    @endif
+                                                    <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
+                                                        <x-icono :nombre="$rival['icono'] ?? 'bot'" />
+                                                        {{ $sigue ? ($enCurso->esperando() ? 'Volver a la sala' : 'Seguir la partida') : $rival['boton'] }}
+                                                    </button>
+                                                </form>
 
-                                            @if ($sigue)
+                                                {{-- La sala se cancela desde acá mismo: no hace falta entrar a ella para poder jugar otra cosa. --}}
+                                                @if ($enCurso?->esperando())
+                                                    <form method="POST" action="{{ route('sala.cancelar', $enCurso->codigo) }}">
+                                                        @csrf
+                                                        <button type="submit" class="boton boton-linea min-h-14 px-6 text-lg">Cancelar sala</button>
+                                                    </form>
+                                                @endif
+                                            </div>
+
+                                            @if ($sigue && ! $enCurso->esperando())
                                                 <p class="mt-3 max-w-[36ch] text-[0.95rem] leading-relaxed">
-                                                    {{ $enCurso->esperando() ? 'Para empezar otra, primero cerrá esa sala.' : ($niveles !== [] ? 'Para jugar contra otro nivel, primero abandonala desde la mesa.' : 'Para empezar otra, primero abandonala desde la mesa.') }}
+                                                    {{ $niveles !== [] ? 'Para jugar contra otro nivel, primero abandonala desde la mesa.' : 'Para empezar otra, primero abandonala desde la mesa.' }}
                                                 </p>
                                             @endif
                                         @endif

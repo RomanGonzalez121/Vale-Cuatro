@@ -130,16 +130,32 @@ class SalaPantallasTest extends TestCase
             ->assertSee('action="'.route('jugar').'"', false);
     }
 
-    public function test_con_una_sala_esperando_los_modos_ofrecen_volver_a_ella(): void
+    public function test_con_una_sala_esperando_los_modos_ofrecen_volver_a_ella_o_cancelarla(): void
     {
         $creador = Jugador::factory()->invitado()->create();
-        $this->mesa()->crearSala($creador);
+        $sala = $this->mesa()->crearSala($creador);
+
+        // Los niveles quedan apagados: la pantalla dice por qué y deja cancelar la sala ahí mismo.
+        $this->actingAs($creador)->get('/modos')
+            ->assertOk()
+            ->assertSee('Tenés una sala abierta esperando rival. Para jugar contra el bot o en otro modo, primero cancelala.')
+            ->assertSee('Volver a la sala')
+            ->assertSee('Cancelar sala')
+            ->assertSee('action="'.route('sala.cancelar', $sala->codigo).'"', false);
+    }
+
+    public function test_cancelar_la_sala_desde_los_modos_deja_elegir_nivel_otra_vez(): void
+    {
+        $creador = Jugador::factory()->invitado()->create();
+        $sala = $this->mesa()->crearSala($creador);
+
+        $this->actingAs($creador)->post(route('sala.cancelar', $sala->codigo))->assertRedirect(route('modos'));
 
         $this->actingAs($creador)->get('/modos')
             ->assertOk()
-            ->assertSee('Tenés una sala esperando que se siente alguien.')
-            ->assertSee('Volver a la sala')
-            ->assertSee('Para empezar otra, primero cerrá esa sala.');
+            ->assertDontSee('Cancelar sala')
+            ->assertDontSee('Volver a la sala')
+            ->assertSee('Jugar contra el bot');
     }
 
     public function test_con_una_partida_en_curso_con_otra_persona_los_modos_ofrecen_seguirla(): void
