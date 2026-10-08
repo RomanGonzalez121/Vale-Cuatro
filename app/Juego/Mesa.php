@@ -42,6 +42,9 @@ final class Mesa
     /** Los segundos que el bot espera antes de cada jugada. La cola en base de datos cuenta segundos enteros. */
     public const DEMORA_DEL_BOT = 1;
 
+    /** Cuánto espera una sala a que se siente alguien antes de cerrarse sola. */
+    public const MINUTOS_DE_SALA = 30;
+
     /**
      * Cada partida juega contra el bot de su nivel. Un bot fijo sirve para los tests, que necesitan mirar qué recibe.
      */
@@ -84,6 +87,15 @@ final class Mesa
     public function enCursoDe(Jugador $jugador): ?Partida
     {
         return $this->delJugador($jugador)->where('estado', Partida::EN_CURSO)->latest('id')->first();
+    }
+
+    /**
+     * La partida sin terminar del jugador, sea que ya se juega o que todavía espera rival.
+     * Una persona tiene una sola a la vez, contra el bot o contra otra persona.
+     */
+    public function abiertaDe(Jugador $jugador): ?Partida
+    {
+        return $this->delJugador($jugador)->whereIn('estado', [Partida::ESPERANDO, Partida::EN_CURSO])->latest('id')->first();
     }
 
     /**
@@ -247,6 +259,108 @@ final class Mesa
 
             return [];
         });
+    }
+
+    /**
+     * Abre una sala para jugar con otra persona: queda esperando, con un link para mandarle.
+     * Si el jugador ya tiene una partida sin terminar (esta misma sala u otra), devuelve esa:
+     * un toque repetido no abre dos salas, igual que con la partida contra el bot.
+     */
+    public function crearSala(Jugador $jugador): Partida
+    {
+        return DB::transaction(function () use ($jugador) {
+            // Se bloquea al jugador: dos toques seguidos no pueden abrir dos salas.
+            Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
+
+            $abierta = $this->abiertaDe($jugador);
+
+            if ($abierta !== null) {
+                return $abierta;
+            }
+
+            $sala = new Partida([
+                'jugador_id' => $jugador->getKey(),
+                'puntos' => 30,
+                'entre_personas' => true,
+                'codigo' => Partida::codigoNuevo(),
+                'nivel_bot' => null,
+            ]);
+
+            // El estado no se asigna en masa: solo lo cambia el código de la mesa.
+            $sala->estado = Partida::ESPERANDO;
+            $sala->save();
+
+            return $sala;
+        });
+    }
+
+    /**
+     * Quien abrió el link se sienta en el asiento 1: se sortea quién es mano y se reparte la primera mano.
+     * Volver a abrir el link de una partida que ya es suya no hace nada (recargar, o quien abrió la sala tocando su
+     * propio link), y devuelve la partida como está.
+     *
+     * @throws SalaNoDisponible si ya tiene rival, ya terminó o el jugador tiene otra partida sin terminar.
+     */
+    public function sentarse(string $codigo, Jugador $jugador): Partida
+    {
+        return DB::transaction(function () use ($codigo, $jugador) {
+            // Se bloquea al jugador y después a la sala: dos toques, o dos personas a la vez, no pueden sentarse dos veces.
+            Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
+
+            $partida = Partida::query()->where('codigo', $codigo)->where('entre_personas', true)->lockForUpdate()->firstOrFail();
+
+            if ($partida->asientoDe($jugador) !== null) {
+                return $partida;
+            }
+
+            if (! $partida->esperando()) {
+                throw new SalaNoDisponible($partida->enCurso() ? 'Esa partida ya tiene sus dos jugadores.' : 'Esa partida ya terminó.');
+            }
+
+            if ($this->abiertaDe($jugador) !== null) {
+                throw new SalaNoDisponible('Tenés otra partida sin terminar. Terminala o abandonala antes de entrar a esta.');
+            }
+
+            $partida->invitado_id = $jugador->getKey();
+            $partida->primer_mano = Azar::seguro()->entero(self::JUGADOR, self::BOT);
+            $partida->estado = Partida::EN_CURSO;
+            $partida->save();
+
+            $this->repartirEn($partida, $this->reconstruir($partida), self::BOT);
+
+            return $partida;
+        });
+    }
+
+    /**
+     * Quien abrió la sala la cierra antes de que se siente alguien. Devuelve false si justo se sentó
+     * otra persona: ahí la partida ya empezó y no se cancela, se abandona desde la mesa.
+     */
+    public function cancelarSala(Partida $partida): bool
+    {
+        return DB::transaction(function () use ($partida) {
+            $bloqueada = Partida::query()->whereKey($partida->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $bloqueada->esperando()) {
+                return false;
+            }
+
+            $this->cerrar($bloqueada, Partida::ABANDONADA, null);
+
+            return true;
+        });
+    }
+
+    /**
+     * Cierra las salas que esperaron más de MINUTOS_DE_SALA sin que se sentara nadie. Devuelve cuántas.
+     * Una sola consulta con el estado en la condición: si alguien se sienta justo ahora, esa sala no se toca.
+     */
+    public function cerrarSalasVencidas(): int
+    {
+        return Partida::query()
+            ->where('estado', Partida::ESPERANDO)
+            ->where('created_at', '<', now()->subMinutes(self::MINUTOS_DE_SALA))
+            ->update(['estado' => Partida::ABANDONADA, 'terminada_en' => now()]);
     }
 
     /**

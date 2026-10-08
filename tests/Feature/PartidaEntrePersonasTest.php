@@ -62,11 +62,11 @@ class PartidaEntrePersonasTest extends TestCase
 
     public function test_en_una_partida_contra_el_bot_el_asiento_1_no_es_de_ninguna_persona(): void
     {
-        $dueno = Jugador::factory()->invitado()->create();
+        $creador = Jugador::factory()->invitado()->create();
         $otro = Jugador::factory()->invitado()->create();
-        $partida = Partida::create(['jugador_id' => $dueno->id, 'primer_mano' => 0, 'puntos' => 30]);
+        $partida = Partida::create(['jugador_id' => $creador->id, 'primer_mano' => 0, 'puntos' => 30]);
 
-        $this->assertSame(0, $partida->asientoDe($dueno));
+        $this->assertSame(0, $partida->asientoDe($creador));
         $this->assertNull($partida->asientoDe($otro));
     }
 
@@ -80,11 +80,11 @@ class PartidaEntrePersonasTest extends TestCase
             $this->assertMatchesRegularExpression('/^[a-z0-9]{16}$/', $codigo);
         }
 
-        $dueno = Jugador::factory()->invitado()->create();
-        $this->esperando($dueno, 'abcdefghijklmnop');
+        $creador = Jugador::factory()->invitado()->create();
+        $this->esperando($creador, 'abcdefghijklmnop');
 
         $this->expectException(UniqueConstraintViolationException::class);
-        $this->esperando($dueno, 'abcdefghijklmnop');
+        $this->esperando($creador, 'abcdefghijklmnop');
     }
 
     public function test_si_se_borra_la_cuenta_del_rival_la_partida_queda(): void
