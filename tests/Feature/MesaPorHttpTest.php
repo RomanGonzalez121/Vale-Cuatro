@@ -215,10 +215,17 @@ class MesaPorHttpTest extends TestCase
         $vieja = Partida::sole();
 
         // Desde otra pestaña abandona y empieza otra partida.
+        $mostrado = $vieja->eventos()->count();
         $this->app->make(Mesa::class)->abandonar($vieja);
         $nueva = $this->app->make(Mesa::class)->abrir($jugador);
 
-        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$vieja->id}&desde=0")->assertStatus(409);
+        // La pestaña vieja pregunta qué pasó después de lo último que mostró: nada, y la partida está cerrada. Se recarga.
+        $this->actingAs($jugador)->getJson("/mesa/estado?partida={$vieja->id}&desde={$mostrado}")->assertStatus(409);
+
+        // Aunque preguntara desde el principio, lo que recibe es de su partida y nunca de la nueva.
+        $pasos = $this->actingAs($jugador)->getJson("/mesa/estado?partida={$vieja->id}&desde=0")->assertOk()->json('pasos');
+        $this->assertSame([$vieja->id], array_values(array_unique(array_column($pasos, 'partida'))));
+
         $this->actingAs($jugador)->getJson("/mesa/estado?partida={$nueva->id}&desde=0")->assertOk();
     }
 

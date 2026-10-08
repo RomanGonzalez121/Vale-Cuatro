@@ -8,8 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Algo que pasó en una partida: un reparto (con las cartas de cada asiento),
- * una acción de un asiento o un abandono. Los eventos no se editan ni se borran:
- * aplicados en orden al motor, devuelven la partida tal como quedó.
+ * una acción de un asiento, un turno vencido, la llegada de quien abrió la sala
+ * o un abandono. Los eventos no se editan ni se borran: aplicados en orden al
+ * motor, devuelven la partida tal como quedó.
  *
  * @property int $partida_id
  * @property int $numero
@@ -29,6 +30,12 @@ class EventoDePartida extends Model
     public const VENCIMIENTO = 'vencimiento';
 
     public const ABANDONO = 'abandono';
+
+    /**
+     * Quien abrió la sala tuvo la mesa a la vista por primera vez. No cambia lo que hay en la mesa: desde ahí
+     * su turno corre con el plazo de siempre, y no con el de espera que tiene mientras no llegó.
+     */
+    public const LLEGADA = 'llegada';
 
     public $timestamps = false;
 

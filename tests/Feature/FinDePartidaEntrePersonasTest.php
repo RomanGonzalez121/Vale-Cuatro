@@ -117,8 +117,12 @@ class FinDePartidaEntrePersonasTest extends TestCase
         $uno = Jugador::factory()->invitado()->create();
         $dos = Jugador::factory()->invitado()->create();
         $sala = $this->mesa()->crearSala($uno);
+        $partida = $this->mesa()->sentarse($sala->codigo, $dos);
 
-        return [$this->mesa()->sentarse($sala->codigo, $dos), $uno, $dos];
+        // Los dos en la mesa: quien abrió la sala ya avisó que llegó, y su turno corre con el plazo de siempre.
+        $this->mesa()->llegar($partida, 0);
+
+        return [$partida, $uno, $dos];
     }
 
     private function quienTieneElTurno(Partida $partida): ?int

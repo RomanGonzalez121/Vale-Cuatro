@@ -49,7 +49,7 @@ class PlazosTest extends TestCase
 
         Queue::assertPushed(ResolverPlazo::class, function (ResolverPlazo $trabajo) use ($partida) {
             return $trabajo->partidaId === $partida->id
-                && $trabajo->evento === 1
+                && $trabajo->evento === $partida->eventos()->count()
                 && $trabajo->delay->getTimestamp() === $partida->fresh()->plazo_vence_en->getTimestamp();
         });
     }
@@ -140,6 +140,107 @@ class PlazosTest extends TestCase
         $this->travelTo($partida->fresh()->plazo_vence_en);
         $this->mesa()->resolverPlazo($partida->id);
         $this->assertNull($this->mesa()->vista($partida->fresh(), $siguiente)['vencio']);
+    }
+
+    public function test_mientras_quien_abrio_la_sala_no_llego_a_la_mesa_su_turno_espera_mas(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$partida] = $this->partidaDondeEmpieza(0);
+
+        // Los dos leen la misma espera: quien abrió la sala puede estar mandando el link desde otra aplicación.
+        $this->assertSame(Mesa::SEGUNDOS_DE_LLEGADA, $this->mesa()->vista($partida, 0)['restan']);
+        $this->assertSame(Mesa::SEGUNDOS_DE_LLEGADA, $this->mesa()->vista($partida, 1)['restan']);
+        $this->assertTrue($this->mesa()->faltaLlegar($partida, 0));
+
+        // A quien se sentó con el link nunca le falta llegar: entra directo a la mesa y su turno es el de siempre.
+        [$otra] = $this->partidaDondeEmpieza(1);
+        $this->assertSame(Mesa::SEGUNDOS_DE_TURNO, $this->mesa()->vista($otra, 1)['restan']);
+        $this->assertFalse($this->mesa()->faltaLlegar($otra, 1));
+    }
+
+    public function test_al_llegar_su_turno_arranca_de_cero_con_el_plazo_de_siempre(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$partida] = $this->partidaDondeEmpieza(0);
+        $antes = $partida->eventos()->count();
+        $cartasDelRival = $this->mesa()->vista($partida, 1)['misCartas'];
+
+        $this->travel(100)->seconds();
+        $this->assertTrue($this->mesa()->llegar($partida, 0));
+
+        $llegada = $partida->eventos()->get()->last();
+        $this->assertSame([EventoDePartida::LLEGADA, 0, $antes + 1], [$llegada->tipo, $llegada->asiento, $llegada->numero]);
+        $this->assertSame(now()->addSeconds(Mesa::SEGUNDOS_DE_TURNO)->getTimestamp(), $partida->fresh()->plazo_vence_en->getTimestamp());
+        $this->assertFalse($this->mesa()->faltaLlegar($partida, 0));
+
+        // El rival se entera como de una jugada, pero no hay nada que contar: la mesa quedó igual y cambió el plazo.
+        $pasos = $this->mesa()->pasosDesde($partida->fresh(), $antes, 1);
+        $this->assertCount(1, $pasos);
+        $this->assertSame([], $pasos[0]['hechos']);
+        $this->assertSame(Mesa::SEGUNDOS_DE_TURNO, $pasos[0]['restan']);
+        $this->assertSame($cartasDelRival, $pasos[0]['misCartas']);
+        $this->assertSame($pasos[0], $this->mesa()->vista($partida->fresh(), 1));
+
+        // Llegar es una sola vez: repetirlo no anota nada ni vuelve a darle tiempo.
+        $this->travel(20)->seconds();
+        $this->assertFalse($this->mesa()->llegar($partida, 0));
+        $this->assertSame($antes + 1, $partida->eventos()->count());
+        $this->assertSame(Mesa::SEGUNDOS_DE_TURNO - 20, $this->mesa()->vista($partida->fresh(), 0)['restan']);
+    }
+
+    public function test_si_llega_cuando_le_toca_al_otro_ese_plazo_no_cambia_y_se_sigue_resolviendo(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        [$partida] = $this->partidaDondeEmpieza(1);
+        $vence = $partida->fresh()->plazo_vence_en->getTimestamp();
+
+        $this->travel(10)->seconds();
+        $this->assertTrue($this->mesa()->llegar($partida, 0));
+
+        // Al invitado no se le regala tiempo: su turno vence a la misma hora que antes.
+        $this->assertSame($vence, $partida->fresh()->plazo_vence_en->getTimestamp());
+
+        // El trabajo que estaba en la cola llevaba el evento anterior y ya no resuelve nada; queda otro, a la misma hora.
+        Queue::assertPushed(ResolverPlazo::class, fn (ResolverPlazo $trabajo) => $trabajo->partidaId === $partida->id
+            && $trabajo->evento === 2
+            && $trabajo->delay->getTimestamp() === $vence);
+
+        $this->travelTo($partida->fresh()->plazo_vence_en);
+        $this->assertFalse($this->mesa()->resolverPlazo($partida->id, 1));
+        $this->assertTrue($this->mesa()->resolverPlazo($partida->id, 2));
+    }
+
+    public function test_la_espera_larga_es_una_sola_y_jugar_tambien_cuenta_como_llegar(): void
+    {
+        // Nunca avisa que llegó: se le vence la espera larga, y desde ahí su turno es el de siempre.
+        [$partida] = $this->partidaDondeEmpieza(0);
+        $this->travelTo($partida->fresh()->plazo_vence_en);
+        $this->assertTrue($this->mesa()->resolverPlazo($partida->id));
+        $this->assertSame(EventoDePartida::VENCIMIENTO, $partida->eventos()->get()->last()->tipo);
+        $this->assertFalse($this->mesa()->faltaLlegar($partida, 0));
+
+        $this->esperarSuTurno(0, $partida);
+        $this->assertSame(Mesa::SEGUNDOS_DE_TURNO, $this->mesa()->vista($partida->fresh(), 0)['restan']);
+
+        // Tampoco avisa, pero juega: está en la mesa.
+        [$otra] = $this->partidaDondeEmpieza(0);
+        $carta = collect($this->mesa()->vista($otra, 0)['acciones'])->firstWhere('tipo', 'jugar');
+        $this->mesa()->actuar($otra, Accion::desdeArray($carta), 0);
+        $this->assertFalse($this->mesa()->faltaLlegar($otra, 0));
+        $this->assertFalse($this->mesa()->llegar($otra, 0));
+
+        $this->esperarSuTurno(0, $otra);
+        $this->assertSame(Mesa::SEGUNDOS_DE_TURNO, $this->mesa()->vista($otra->fresh(), 0)['restan']);
+    }
+
+    public function test_contra_el_bot_nadie_tiene_que_llegar(): void
+    {
+        $partida = $this->mesa()->abrir(Jugador::factory()->invitado()->create());
+        $eventos = $partida->eventos()->count();
+
+        $this->assertFalse($this->mesa()->faltaLlegar($partida, 0));
+        $this->assertFalse($this->mesa()->llegar($partida, 0));
+        $this->assertSame($eventos, $partida->eventos()->count());
     }
 
     public function test_con_un_canto_sin_contestar_el_vencimiento_vale_como_no_querer(): void
@@ -303,11 +404,12 @@ class PlazosTest extends TestCase
     public function test_al_cerrarse_la_partida_no_queda_un_trabajo_nuevo_en_la_cola(): void
     {
         [$partida] = $this->partidaEnCurso();
+        $antes = Queue::pushed(ResolverPlazo::class)->count();
 
         $this->mesa()->abandonar($partida, 1);
 
-        // El único trabajo es el del primer turno, que se encoló al sentarse: cerrar no suma otro.
-        Queue::assertPushed(ResolverPlazo::class, 1);
+        // Los trabajos que había son los del primer turno (al sentarse y al llegar quien abrió la sala): cerrar no suma otro.
+        Queue::assertPushed(ResolverPlazo::class, $antes);
         $this->assertNull($partida->fresh()->plazo_vence_en);
     }
 
@@ -317,17 +419,50 @@ class PlazosTest extends TestCase
     }
 
     /**
-     * Una partida entre dos personas ya en curso, con la primera mano repartida.
+     * Una partida entre dos personas ya en curso, con la primera mano repartida y los dos en la mesa:
+     * quien abrió la sala ya avisó que llegó, así que su turno corre con el plazo de siempre.
      *
      * @return array{0: Partida, 1: Jugador, 2: Jugador}
      */
     private function partidaEnCurso(): array
+    {
+        [$partida, $uno, $dos] = $this->partidaRecienSentada();
+        $this->mesa()->llegar($partida, 0);
+
+        return [$partida, $uno, $dos];
+    }
+
+    /**
+     * La partida en el momento en que alguien se sentó con el link: quien abrió la sala todavía no llegó a la mesa.
+     *
+     * @return array{0: Partida, 1: Jugador, 2: Jugador}
+     */
+    private function partidaRecienSentada(): array
     {
         $uno = Jugador::factory()->invitado()->create();
         $dos = Jugador::factory()->invitado()->create();
         $sala = $this->mesa()->crearSala($uno);
 
         return [$this->mesa()->sentarse($sala->codigo, $dos), $uno, $dos];
+    }
+
+    /**
+     * Una partida recién sentada en la que el primer turno es de ese asiento. Quién es mano se sortea, así que
+     * se abren partidas hasta que salga.
+     *
+     * @return array{0: Partida, 1: Jugador, 2: Jugador}
+     */
+    private function partidaDondeEmpieza(int $asiento): array
+    {
+        for ($intento = 0; $intento < 60; $intento++) {
+            $sentada = $this->partidaRecienSentada();
+
+            if ($this->quienTieneElTurno($sentada[0]) === $asiento) {
+                return $sentada;
+            }
+        }
+
+        $this->fail('En 60 partidas el primer turno nunca fue del asiento '.$asiento);
     }
 
     private function quienTieneElTurno(Partida $partida): ?int

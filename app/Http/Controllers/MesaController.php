@@ -52,7 +52,29 @@ class MesaController extends Controller
             // Contra el bot, su nivel. Con otra persona no hay nivel: se muestra su apodo.
             'nivel' => $partida->nivel_bot,
             'rival' => $this->apodoDelRival($partida, $asiento),
+            // Quien abrió la sala todavía no avisó que llegó: la mesa lo hace apenas está a la vista.
+            'faltaLlegar' => $this->mesa->faltaLlegar($partida, $asiento),
         ]);
+    }
+
+    /**
+     * La mesa de quien abrió la sala avisa que ya está a la vista. Mientras no lo hace, su turno corre con un
+     * plazo de espera más largo: el rival pudo sentarse cuando esa persona estaba mandando el link desde otra
+     * aplicación. Devuelve lo que pasó después de lo último que la mesa mostró, que incluye su propia llegada.
+     */
+    public function presente(Request $request): JsonResponse
+    {
+        $datos = $request->validate(['desde' => ['required', 'integer', 'min:0']]);
+        $partida = $this->mesa->enCursoDe($request->user());
+
+        if ($partida === null) {
+            return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
+        }
+
+        $asiento = $this->asientoDe($partida, $request);
+        $this->mesa->llegar($partida, $asiento);
+
+        return response()->json(['pasos' => $this->mesa->pasosDesde($partida, (int) $datos['desde'], $asiento)]);
     }
 
     /**
@@ -66,27 +88,26 @@ class MesaController extends Controller
             'desde' => ['sometimes', 'integer', 'min:0'],
             'partida' => ['required_with:desde', 'integer'],
         ]);
-        $partida = $this->mesa->ultimaDe($request->user());
         $sinPartida = response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
+
+        if (! isset($datos['desde'])) {
+            $partida = $this->mesa->enCursoDe($request->user());
+
+            return $partida === null ? $sinPartida : response()->json(['vista' => $this->mesa->vista($partida, $this->asientoDe($partida, $request))]);
+        }
+
+        // Se busca la partida que la mesa dice estar mostrando, y solo entre las del jugador. No alcanza con
+        // "su última partida": quien se sienta en una sala puede tener otra más nueva, ya cerrada.
+        $partida = $this->mesa->deJugador($request->user(), (int) $datos['partida']);
 
         if ($partida === null) {
             return $sinPartida;
         }
 
-        $asiento = $this->asientoDe($partida, $request);
+        $pasos = $this->mesa->pasosDesde($partida, (int) $datos['desde'], $this->asientoDe($partida, $request));
 
-        if (! isset($datos['desde'])) {
-            return $partida->enCurso() ? response()->json(['vista' => $this->mesa->vista($partida, $asiento)]) : $sinPartida;
-        }
-
-        // La pestaña que pregunta puede haber quedado con una partida vieja (se abandonó desde otra y se empezó una nueva).
-        if ($partida->id !== (int) $datos['partida']) {
-            return $sinPartida;
-        }
-
-        $pasos = $this->mesa->pasosDesde($partida, (int) $datos['desde'], $asiento);
-
-        // Cerrada y sin nada nuevo que contar: no hay bot al que esperar. La mesa se recarga y el servidor decide.
+        // Cerrada y sin nada nuevo que contar: no hay a quién esperar. Pasa también cuando la pestaña quedó con una
+        // partida vieja (se abandonó desde otra y se empezó una nueva). La mesa se recarga y el servidor decide.
         return $pasos === [] && ! $partida->enCurso() ? $sinPartida : response()->json(['pasos' => $pasos]);
     }
 
@@ -131,12 +152,27 @@ class MesaController extends Controller
             return $this->rechazo('Esa acción no existe.');
         }
 
-        return $this->conLaPartida($request, fn (Partida $partida, int $asiento) => $this->mesa->actuar($partida, $accion, $asiento));
+        $desde = $this->desde($request);
+
+        return $this->conLaPartida($request, fn (Partida $partida, int $asiento) => $this->mesa->actuar($partida, $accion, $asiento, $desde));
     }
 
     public function repartir(Request $request): JsonResponse
     {
-        return $this->conLaPartida($request, fn (Partida $partida, int $asiento) => $this->mesa->repartir($partida, $asiento));
+        $desde = $this->desde($request);
+
+        return $this->conLaPartida($request, fn (Partida $partida, int $asiento) => $this->mesa->repartir($partida, $asiento, $desde));
+    }
+
+    /**
+     * El último evento que la mesa dice haber mostrado al mandar la jugada, si lo mandó. Con eso el servidor
+     * rechaza una jugada decidida sobre una pantalla atrasada.
+     */
+    private function desde(Request $request): ?int
+    {
+        $desde = $request->input('desde');
+
+        return is_int($desde) || (is_string($desde) && ctype_digit($desde)) ? (int) $desde : null;
     }
 
     public function abandonar(Request $request): RedirectResponse

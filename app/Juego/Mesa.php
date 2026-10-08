@@ -50,6 +50,13 @@ final class Mesa
     /** Entre personas: cuánto tiene quien debe jugar o contestar antes de que el servidor lo mande al mazo. */
     public const SEGUNDOS_DE_TURNO = 45;
 
+    /**
+     * Entre personas: lo que tiene para su turno quien abrió la sala mientras todavía no llegó a la mesa. El rival
+     * puede sentarse cuando esa persona está mandando el link desde otra aplicación: no se le hace perder una mano
+     * que no vio, pero tampoco se deja al invitado esperando para siempre.
+     */
+    public const SEGUNDOS_DE_LLEGADA = 180;
+
     /** Entre personas: cuánto se espera, con la mano cerrada, antes de repartir la siguiente. Tocar la mesa lo apura. */
     public const SEGUNDOS_PARA_REPARTIR = 6;
 
@@ -111,12 +118,24 @@ final class Mesa
     }
 
     /**
-     * La última partida del jugador, esté en curso o no. La mesa la consulta para enterarse de
-     * las jugadas del bot o del rival, y la última de todas puede ser la que cerró la partida.
+     * La última partida que el jugador tuvo en la mesa, esté en curso o no: sirve para contarle cómo terminó.
+     *
+     * No es la del número más alto. Una sala recibe su número cuando se abre y se empieza a jugar después:
+     * quien se sienta en ella puede tener una partida más nueva, contra el bot, que abandonó para entrar.
+     * La última es la que se tocó por última vez.
      */
     public function ultimaDe(Jugador $jugador): ?Partida
     {
-        return $this->delJugador($jugador)->latest('id')->first();
+        return $this->delJugador($jugador)->latest('updated_at')->latest('id')->first();
+    }
+
+    /**
+     * Una partida del jugador, por su número: la que su mesa dice estar mostrando. Null si no existe o
+     * si el jugador no ocupa un asiento en ella.
+     */
+    public function deJugador(Jugador $jugador, int $partidaId): ?Partida
+    {
+        return $this->delJugador($jugador)->whereKey($partidaId)->first();
     }
 
     /**
@@ -179,18 +198,19 @@ final class Mesa
     public function vista(Partida $partida, ?int $asiento = null): array
     {
         $asiento = $this->asientoPara($partida, $asiento);
-        $motor = $this->sinJugar($partida);
-        $ultimo = 0;
-        $vencio = null;
 
-        // El estado y el número salen de la misma lectura: si el rival juega justo ahora, no pueden quedar desparejos.
-        foreach ($partida->eventos()->get() as $evento) {
-            $motor = $this->aplicarEvento($motor, $evento);
-            $ultimo = $evento->numero;
-            $vencio = $this->aQuienSeLeVencio($evento);
-        }
+        return $this->enUnaFoto($partida, function () use ($partida, $asiento) {
+            $motor = $this->sinJugar($partida);
+            $ultimo = null;
 
-        return $this->paso($partida, $motor, $ultimo, $asiento, $vencio);
+            // El estado y el número salen de la misma lectura: si el rival juega justo ahora, no pueden quedar desparejos.
+            foreach ($partida->eventos()->get() as $evento) {
+                $motor = $this->aplicarEvento($motor, $evento);
+                $ultimo = $evento;
+            }
+
+            return $this->paso($partida, $motor, $ultimo->numero ?? 0, $asiento, $ultimo);
+        });
     }
 
     /**
@@ -208,19 +228,41 @@ final class Mesa
             return [];
         }
 
-        $motor = $this->sinJugar($partida);
-        $pasos = [];
+        return $this->enUnaFoto($partida, function () use ($partida, $desde, $asiento) {
+            $motor = $this->sinJugar($partida);
+            $pasos = [];
 
-        foreach ($partida->eventos()->get() as $evento) {
-            $motor = $this->aplicarEvento($motor, $evento);
+            foreach ($partida->eventos()->get() as $evento) {
+                $motor = $this->aplicarEvento($motor, $evento);
 
-            // Un abandono no cambia lo que hay en la mesa: no es un paso para mostrar.
-            if ($evento->numero > $desde && $evento->tipo !== EventoDePartida::ABANDONO) {
-                $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento, $this->aQuienSeLeVencio($evento));
+                // Un abandono no cambia lo que hay en la mesa: no es un paso para mostrar.
+                if ($evento->numero > $desde && $evento->tipo !== EventoDePartida::ABANDONO) {
+                    $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento, $evento);
+                }
             }
-        }
 
-        return $pasos;
+            return $pasos;
+        });
+    }
+
+    /**
+     * Lee la partida y sus eventos de una misma foto de la base. La fila trae el plazo que corre y los eventos
+     * dicen a quién le toca: leídos en momentos distintos, si alguien juega en el medio, la mesa recibiría el turno
+     * nuevo con lo que le quedaba al plazo viejo y la cuenta regresiva arrancaría casi consumida.
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $leer
+     * @return T
+     */
+    private function enUnaFoto(Partida $partida, Closure $leer): mixed
+    {
+        return DB::transaction(function () use ($partida, $leer) {
+            // Dentro de la transacción, la primera lectura fija la foto: la fila primero y los eventos después.
+            $partida->refresh();
+
+            return $leer();
+        });
     }
 
     /**
@@ -228,35 +270,40 @@ final class Mesa
      * le deja el turno en la cola. Devuelve el paso de esa jugada, visto desde ese asiento: las del bot o del
      * rival llegan por pasosDesde().
      *
+     * Con $desde, la mesa dice cuál fue el último evento que mostró: si después pasó algo (entre personas, el
+     * servidor resolvió un plazo), la jugada se rechaza. Sin eso, un canto tocado mirando una mano podía entrar
+     * en la siguiente, que la persona todavía no vio.
+     *
      * @return list<array<string, mixed>>
      *
-     * @throws AccionInvalida si el reglamento no lo permite: en ese caso no se guarda nada.
+     * @throws AccionInvalida si el reglamento no lo permite o la mesa quedó atrasada: en ese caso no se guarda nada.
      */
-    public function actuar(Partida $partida, Accion $accion, ?int $asiento = null): array
+    public function actuar(Partida $partida, Accion $accion, ?int $asiento = null, ?int $desde = null): array
     {
         $asiento = $this->asientoPara($partida, $asiento);
 
         return $this->conLaPartida($partida, function (Partida $partida, Motor $motor) use ($accion, $asiento) {
             $motor = $motor->aplicar($asiento, $accion);
             $evento = $this->guardar($partida, EventoDePartida::ACCION, $asiento, $accion->aArray());
-            $this->despuesDeJugar($partida, $motor);
+            $this->despuesDeJugar($partida, $motor, $evento);
 
             return [$this->paso($partida, $motor, $evento, $asiento)];
-        });
+        }, $desde);
     }
 
     /**
-     * Reparte la mano siguiente. Solo vale entre dos manos.
+     * Reparte la mano siguiente. Solo vale entre dos manos. Con $desde, igual que en actuar(): no se reparte
+     * sobre una mano que la mesa todavía no mostró.
      *
      * @return list<array<string, mixed>>
      *
-     * @throws AccionInvalida si la mano todavía se está jugando.
+     * @throws AccionInvalida si la mano todavía se está jugando o la mesa quedó atrasada.
      */
-    public function repartir(Partida $partida, ?int $asiento = null): array
+    public function repartir(Partida $partida, ?int $asiento = null, ?int $desde = null): array
     {
         $asiento = $this->asientoPara($partida, $asiento);
 
-        return $this->conLaPartida($partida, fn (Partida $partida, Motor $motor) => $this->repartirEn($partida, $motor, $asiento));
+        return $this->conLaPartida($partida, fn (Partida $partida, Motor $motor) => $this->repartirEn($partida, $motor, $asiento), $desde);
     }
 
     /**
@@ -401,8 +448,8 @@ final class Mesa
 
             [$accion, $motor] = $this->jugadaDelBot($partida, $motor);
 
-            $this->guardar($partida, EventoDePartida::ACCION, self::BOT, $accion->aArray());
-            $this->despuesDeJugar($partida, $motor);
+            $evento = $this->guardar($partida, EventoDePartida::ACCION, self::BOT, $accion->aArray());
+            $this->despuesDeJugar($partida, $motor, $evento);
 
             return true;
         });
@@ -460,11 +507,60 @@ final class Mesa
 
             $accion = $this->accionPorVencimiento($motor, $asiento);
             $motor = $motor->aplicar($asiento, $accion);
-            $this->guardar($partida, EventoDePartida::VENCIMIENTO, $asiento, $accion->aArray());
-            $this->despuesDeJugar($partida, $motor);
+            $vencimiento = $this->guardar($partida, EventoDePartida::VENCIMIENTO, $asiento, $accion->aArray());
+            $this->despuesDeJugar($partida, $motor, $vencimiento);
 
             return true;
         });
+    }
+
+    /**
+     * Quien abrió la sala tiene la mesa a la vista por primera vez. Hasta ahora su turno corría con el plazo de
+     * espera (SEGUNDOS_DE_LLEGADA); desde acá corre con el de siempre, y si justo le toca, arranca de cero.
+     *
+     * Queda como un evento de la partida: así el rival se entera por el mismo camino que de una jugada, y los
+     * números de evento siguen diciendo qué vio cada mesa. Llamarlo de más no hace nada. Devuelve si anotó algo.
+     */
+    public function llegar(Partida $partida, int $asiento): bool
+    {
+        return DB::transaction(function () use ($partida, $asiento) {
+            $bloqueada = Partida::query()->whereKey($partida->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $bloqueada->enCurso() || ! $this->faltaLlegar($bloqueada, $asiento)) {
+                return false;
+            }
+
+            $motor = $this->reconstruir($bloqueada);
+            $evento = $this->guardar($bloqueada, EventoDePartida::LLEGADA, $asiento, []);
+
+            if ($motor->fase() === Fase::Jugando && $this->quienTieneElTurno($motor) === $asiento) {
+                // Le toca a quien acaba de llegar: su turno de verdad empieza ahora.
+                $this->esperarPlazo($bloqueada, $motor, $evento);
+            } elseif ($bloqueada->plazo_vence_en !== null) {
+                // Lo que se espera no cambia de hora. Pero el trabajo que lo resuelve lleva el número del último
+                // evento, que acaba de cambiar: se deja otro a la misma hora, y el anterior ya no hace nada.
+                ResolverPlazo::dispatch($bloqueada->getKey(), $evento)->delay($bloqueada->plazo_vence_en)->afterCommit();
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * Si a ese asiento todavía le falta llegar a la mesa. Solo le puede faltar a quien abrió la sala, que
+     * espera en otra pantalla: quien se sienta con el link entra directo a la mesa. Cuenta como haber llegado
+     * avisarlo, haber jugado o que ya se le haya vencido un turno: la espera larga es una sola.
+     */
+    public function faltaLlegar(Partida $partida, int $asiento): bool
+    {
+        if (! $partida->entre_personas || $asiento !== self::JUGADOR) {
+            return false;
+        }
+
+        return ! $partida->eventos()->getQuery()
+            ->where('asiento', self::JUGADOR)
+            ->whereIn('tipo', [EventoDePartida::LLEGADA, EventoDePartida::ACCION, EventoDePartida::VENCIMIENTO])
+            ->exists();
     }
 
     /**
@@ -476,6 +572,8 @@ final class Mesa
         $tipos = $partida->eventos()->getQuery()->reorder('numero', 'desc')
             ->where('asiento', $asiento)
             ->whereIn('tipo', [EventoDePartida::ACCION, EventoDePartida::VENCIMIENTO])
+            // Más de los que hacen perder la partida no hace falta contar.
+            ->limit(self::VENCIMIENTOS_PARA_PERDER)
             ->pluck('tipo');
 
         $seguidos = 0;
@@ -533,7 +631,7 @@ final class Mesa
         // El mazo se mezcla con el azar seguro y las cartas repartidas quedan en el evento.
         $motor = $motor->repartir(Mazo::mezcladoCon(Azar::seguro()));
         $evento = $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => $motor->aArray()['cartas']]);
-        $this->despuesDeJugar($partida, $motor);
+        $this->despuesDeJugar($partida, $motor, $evento);
 
         return [$this->paso($partida, $motor, $evento, $asiento)];
     }
@@ -542,7 +640,7 @@ final class Mesa
      * Lo que sigue a cualquier jugada guardada: cerrar la partida si alguien llegó a los puntos,
      * o dejarle el turno al bot si ahora le toca a él (solo contra el bot).
      */
-    private function despuesDeJugar(Partida $partida, Motor $motor): void
+    private function despuesDeJugar(Partida $partida, Motor $motor, int $evento): void
     {
         if ($motor->fase() === Fase::Terminada) {
             $this->cerrar($partida, Partida::TERMINADA, $motor->ganador());
@@ -551,7 +649,7 @@ final class Mesa
         }
 
         if ($partida->entre_personas) {
-            $this->esperarPlazo($partida, $motor);
+            $this->esperarPlazo($partida, $motor, $evento);
 
             return;
         }
@@ -571,12 +669,16 @@ final class Mesa
      * El plazo se guarda en segundos enteros y el trabajo sale exactamente a esa hora: así la base y la cola
      * miden lo mismo y un redondeo no puede hacer que el trabajo llegue un segundo antes y no encuentre nada.
      */
-    private function esperarPlazo(Partida $partida, Motor $motor): void
+    private function esperarPlazo(Partida $partida, Motor $motor, int $evento): void
     {
+        $conTurno = $motor->fase() === Fase::Jugando ? $this->quienTieneElTurno($motor) : null;
+
         $segundos = match (true) {
             $motor->fase() === Fase::PorRepartir => self::SEGUNDOS_PARA_REPARTIR,
-            $motor->fase() === Fase::Jugando && $this->quienTieneElTurno($motor) !== null => self::SEGUNDOS_DE_TURNO,
-            default => null,
+            $conTurno === null => null,
+            // A quien abrió la sala y todavía no llegó a la mesa se lo espera más, una sola vez.
+            $this->faltaLlegar($partida, $conTurno) => self::SEGUNDOS_DE_LLEGADA,
+            default => self::SEGUNDOS_DE_TURNO,
         };
 
         $vence = $segundos === null ? null : now()->addSeconds($segundos)->startOfSecond();
@@ -585,7 +687,7 @@ final class Mesa
         $partida->save();
 
         if ($vence !== null) {
-            ResolverPlazo::dispatch($partida->getKey(), (int) $partida->eventos()->max('numero'))->delay($vence)->afterCommit();
+            ResolverPlazo::dispatch($partida->getKey(), $evento)->delay($vence)->afterCommit();
         }
     }
 
@@ -622,9 +724,14 @@ final class Mesa
      *
      * @return array<string, mixed>
      */
-    private function paso(Partida $partida, Motor $motor, int $evento, int $asiento, ?int $vencio = null): array
+    private function paso(Partida $partida, Motor $motor, int $evento, int $asiento, ?EventoDePartida $guardado = null): array
     {
         $paso = [...$motor->vistaPara($asiento), 'partida' => $partida->getKey(), 'evento' => $evento];
+
+        // Una llegada no cambia la mesa: el motor sigue con los hechos de la jugada anterior, que ya se contaron.
+        if ($guardado?->tipo === EventoDePartida::LLEGADA) {
+            $paso['hechos'] = [];
+        }
 
         // Entre personas, cuántos segundos faltan para que el servidor resuelva la espera: el turno o el reparto.
         // La mesa lo usa para la cuenta regresiva. Y si esta jugada la hizo el servidor porque a alguien se le
@@ -632,18 +739,10 @@ final class Mesa
         // Contra el bot no hay plazo y el paso queda como siempre.
         if ($partida->entre_personas) {
             $paso['restan'] = $this->restan($partida, $motor);
-            $paso['vencio'] = $vencio;
+            $paso['vencio'] = $guardado?->tipo === EventoDePartida::VENCIMIENTO ? $guardado->asiento : null;
         }
 
         return $paso;
-    }
-
-    /**
-     * El asiento al que se le venció el turno en este evento, o null si fue una jugada como cualquier otra.
-     */
-    private function aQuienSeLeVencio(EventoDePartida $evento): ?int
-    {
-        return $evento->tipo === EventoDePartida::VENCIMIENTO ? $evento->asiento : null;
     }
 
     /**
@@ -733,13 +832,18 @@ final class Mesa
      * @param  Closure(Partida, Motor): list<array<string, mixed>>  $hacer
      * @return list<array<string, mixed>>
      */
-    private function conLaPartida(Partida $partida, Closure $hacer): array
+    private function conLaPartida(Partida $partida, Closure $hacer, ?int $desde = null): array
     {
-        return DB::transaction(function () use ($partida, $hacer) {
+        return DB::transaction(function () use ($partida, $hacer, $desde) {
             $bloqueada = Partida::query()->whereKey($partida->getKey())->lockForUpdate()->firstOrFail();
 
             if (! $bloqueada->enCurso()) {
                 throw new AccionInvalida('La partida ya terminó.');
+            }
+
+            // Con la fila bloqueada nadie más puede sumar un evento: lo que la mesa mostró es lo último, o no lo es.
+            if ($desde !== null && (int) $bloqueada->eventos()->max('numero') !== $desde) {
+                throw new AccionInvalida('La mesa cambió mientras jugabas.');
             }
 
             return $hacer($bloqueada, $this->reconstruir($bloqueada));

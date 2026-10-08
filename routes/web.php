@@ -40,6 +40,7 @@ Route::middleware(['auth', 'throttle:240,1'])->group(function () {
     Route::post('/mesa/abandonar', [MesaController::class, 'abandonar'])->name('mesa.abandonar');
     Route::post('/mesa/bot', [MesaController::class, 'despertarAlBot'])->name('mesa.bot');
     Route::post('/mesa/plazo', [MesaController::class, 'resolverPlazo'])->name('mesa.plazo');
+    Route::post('/mesa/presente', [MesaController::class, 'presente'])->name('mesa.presente');
 });
 
 Route::middleware('sin-cuenta')->group(function () {
