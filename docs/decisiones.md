@@ -618,3 +618,34 @@ La revisión no encontró ningún camino por el que las cartas del rival lleguen
 - **Quinto proceso local:** `php artisan reverb:start`, en el puerto 8080.
 - **Probado de punta a punta:** un cliente de Node se conecta al WebSocket como lo haría un navegador, Laravel manda un aviso y llega.
 - **Pendiente que no es de M5:** `npm audit` marca dos vulnerabilidades críticas en `shell-quote`, que viene de `concurrently`, una herramienta de desarrollo que ya estaba antes.
+
+## M6. Tanteador, cantos y movimiento
+
+Las tres piezas propias ya existían desde M0 y M3. Este módulo no construyó nada nuevo: revisó el movimiento de todo el sitio, corrigió lo que encontró y dejó las reglas de la casa escritas como tests.
+
+### Las reglas de movimiento se comprueban solas
+
+- **Problema:** "solo se animan `transform` y `opacity`", "nada en loop" y "con movimiento reducido todo es un fundido" eran reglas que se cumplían porque alguien se acordaba. Una animación nueva podía romperlas sin que nadie lo notara.
+- **Se eligió:** `tests/Unit/MovimientoTest.php` lee los estilos, las vistas y el JavaScript y falla si una transición o una animación mueve otra propiedad, si algo se repite, si aparece una curva que arranca lenta (`ease-in`), si hay un hover fuera del puntero fino o si una regla que mueve algo no tiene su versión de movimiento reducido. No mira cómo se ve una animación: eso se revisa en el navegador.
+- **La única excepción** está nombrada en el test: el recorte en círculo del cambio de modo (`clip-path`, en `modo.js`), que ya estaba aprobado.
+- **El tanteador tiene el suyo:** `tests/Feature/TanteadorTest.php` lo dibuja en los 31 tanteos posibles, de 0 a 30, y comprueba un fósforo por punto, en orden, con las malas separadas de las buenas.
+- **Se descartó** una herramienta de análisis de estilos: son reglas simples y un test que lee texto alcanza, sin sumar nada al stack.
+
+### Lo que encontró la revisión del movimiento
+
+La base estaba bien: una sola curva en todo el sitio, duraciones cortas y nada en loop. Se corrigió esto, elegido por Román el 8 de octubre de 2026 mirando la lista:
+
+- **Tocar una carta mientras la mesa cuenta una jugada no hacía nada.** Ahora apura, igual que tocar el paño. No juega la carta: quien la tocó todavía no terminó de ver lo que hizo el rival. Román descartó que además quedara anotada para jugarse sola.
+- **Los cantos largos quedaban chicos en el celular.** Medido a 360 px: "Truco" 93 px, "Real envido" 47, "Falta envido" 43 y "Contraflor al resto" 28, y el canto es el gesto fuerte de la mesa. Ahora un canto de varias palabras se parte en dos renglones cuando así se lee bastante más grande (80, 80 y 51 px). En una pantalla ancha entra entero y no se parte; "No quiero" va siempre en uno.
+- **Anotar puntos no tenía tope:** 150 ms por fósforo, así que un falta envido de 15 eran más de dos segundos mirando caer fósforos. Una suma entera tarda ahora un segundo como mucho.
+- **El reparto le daba siempre la primera carta al jugador.** Empieza por el mano, como en la mesa de verdad.
+- **La cabeza del fósforo no se encendía en el tanteador,** y sí en el logo, los links y los niveles. Es el mismo gesto en los cuatro lugares, con una sola regla de estilos.
+- **Con movimiento reducido se seguían moviendo** los duelos de "Cómo se juega", las pestañas y la barra de avance del historial; y la mesa leía esa preferencia una sola vez, al cargar. Ahora la pregunta cada vez.
+- **Detalles:** los carteles entran con algo de cuerpo y se van más rápido de lo que entran; la carta del botón de modo pasó de 320 a 300 ms; la llama del logo y tres vistas usaban una curva de fábrica en vez de la del sitio.
+
+### El final de la partida lo cuenta el tanteador
+
+- **Problema:** la regla dice que el gesto fuerte de la mesa se guarda para el final de la partida, pero el final era un cartel chico con un fundido. Y los festejos están fuera del módulo.
+- **Elegido por Román:** un cierre con peso y sin festejo. El paño hondo ocupa toda la mesa, el resultado entra grande y los dos tanteadores se cuentan desde cero, de corrido y al mismo paso: el que perdió se queda en su tanteo y el que ganó sigue hasta completar el último grupo. Lo que se mueve es el tanteo, que es de lo que se trata.
+- **No traba nada:** corre una sola vez, dura cerca de un segundo y los botones se usan desde que aparecen. Con movimiento reducido los dos tanteos están completos de entrada. El resultado va escrito aparte para el lector de pantalla, porque lo que se cuenta es dibujo.
+- **Se descartó** confeti o cualquier cosa en loop, y dejar el cartel como estaba.
