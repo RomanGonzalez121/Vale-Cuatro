@@ -20,11 +20,13 @@ class MovimientoTest extends TestCase
     {
         $estilos = $this->estilos();
 
-        preg_match_all('/(?<![\w-])transition\s*:\s*([^;]+);/', $estilos, $transiciones);
+        // Hasta el punto y coma o hasta la llave, por si es la última declaración de la regla y no lo lleva.
+        preg_match_all('/(?<![\w-])transition\s*:\s*([^;}]+)/', $estilos, $transiciones);
         $this->assertNotEmpty($transiciones[1]);
 
         foreach ($transiciones[1] as $transicion) {
-            foreach (explode(',', $transicion) as $parte) {
+            // Las comas de adentro de una curva (cubic-bezier, steps) no separan transiciones.
+            foreach (explode(',', $this->sinParentesis($transicion)) as $parte) {
                 $propiedad = strtok(trim($parte), " \t\r\n");
 
                 $this->assertContains($propiedad, [...self::SE_ANIMA, 'none'], "Una transición anima «{$propiedad}»: ".trim($transicion));
@@ -32,7 +34,7 @@ class MovimientoTest extends TestCase
         }
 
         // La propiedad suelta tampoco: es otra manera de escribir lo mismo.
-        preg_match_all('/transition-property\s*:\s*([^;]+);/', $estilos, $propiedades);
+        preg_match_all('/transition-property\s*:\s*([^;}]+)/', $estilos, $propiedades);
 
         foreach ($propiedades[1] as $lista) {
             foreach (array_map(trim(...), explode(',', $lista)) as $propiedad) {
@@ -46,11 +48,14 @@ class MovimientoTest extends TestCase
         $cuadros = $this->cuadros($this->estilos());
         $this->assertNotEmpty($cuadros);
 
+        // Dentro de un cuadro también puede ir desde dónde gira o con qué curva sigue: eso no es mover otra cosa.
+        $permitidas = [...self::SE_ANIMA, 'transform-origin', 'animation-timing-function'];
+
         foreach ($cuadros as $nombre => $cuerpo) {
-            preg_match_all('/([a-z-]+)\s*:/', $cuerpo, $propiedades);
+            preg_match_all('/([a-z-]+)\s*:/', $this->sinParentesis($cuerpo), $propiedades);
 
             foreach ($propiedades[1] as $propiedad) {
-                $this->assertContains($propiedad, self::SE_ANIMA, "La animación «{$nombre}» mueve «{$propiedad}».");
+                $this->assertContains($propiedad, $permitidas, "La animación «{$nombre}» mueve «{$propiedad}».");
             }
         }
     }
@@ -58,27 +63,49 @@ class MovimientoTest extends TestCase
     public function test_las_vistas_solo_piden_transiciones_de_transform_y_opacity(): void
     {
         foreach ($this->archivos('resources/views', 'php') as $ruta => $vista) {
-            // Las clases de Tailwind. "x-transition" es de Alpine y no entra: sus clases se revisan por su nombre.
-            preg_match_all('/(?<![\w:.-])transition(?:-[a-z\[\],_-]+)?(?![\w-])/', $vista, $clases);
+            // Las clases de Tailwind, con las variantes que lleven adelante ("sm:", "hover:", "motion-reduce:"): lo que
+            // se revisa es la clase, la lleve quien la lleve. "x-transition" es de Alpine y no entra: sus clases se
+            // revisan por su nombre.
+            preg_match_all('/(?<![\w.:-])(?:[a-z0-9-]+:)*(transition(?:-[a-z\[\],_-]+)?)(?![\w-])/', $vista, $clases);
 
-            foreach ($clases[0] as $clase) {
+            foreach ($clases[1] as $clase) {
                 $this->assertContains($clase, ['transition-opacity', 'transition-transform', 'transition-none'], "{$ruta} usa «{$clase}».");
             }
 
             // Las animaciones de fábrica de Tailwind corren en loop.
             $this->assertDoesNotMatchRegularExpression('/(?<![\w-])animate-(spin|ping|pulse|bounce)(?![\w-])/', $vista, "{$ruta} usa una animación en loop.");
+
+            // El hover que mueve algo se escribe en los estilos, dentro del bloque de puntero fino: la variante
+            // "hover:" de las vistas no lo garantiza.
+            $this->assertDoesNotMatchRegularExpression('/(?<![\w-])hover:-?(translate|rotate|scale|skew)/', $vista, "{$ruta} mueve algo con hover: desde la vista.");
         }
     }
 
+    /**
+     * Es una lista de lo que no se anima nunca, no una lista de lo permitido: no puede saber qué objeto es un cuadro
+     * de animación y cuál no. Si aparece una clave con uno de estos nombres que no anima nada, el test falla igual:
+     * ahí se mira el caso y, si corresponde, se lo nombra de otra manera.
+     */
     public function test_el_javascript_no_anima_medidas_colores_ni_posiciones(): void
     {
-        // Las propiedades que no se animan nunca, escritas como clave de un cuadro de animación o de un estilo.
-        $prohibidas = 'width|height|top|left|right|bottom|margin\w*|padding\w*|inset\w*|color|backgroundColor|background|borderRadius|boxShadow|fontSize|filter';
+        $prohibidas = 'width|height|maxWidth|maxHeight|minWidth|minHeight|top|left|right|bottom|margin\w*|padding\w*|inset\w*|gap'
+            .'|color|backgroundColor|background|borderColor|borderWidth|borderRadius|boxShadow|outline\w*|fontSize|letterSpacing|filter|strokeDashoffset';
 
         foreach ($this->archivos('resources/js', 'js') as $ruta => $codigo) {
-            preg_match_all('/[{,]\s*('.$prohibidas.')\s*:/', $this->sinComentarios($codigo), $claves);
+            $codigo = $this->sinComentarios($codigo);
 
+            // Como clave de un objeto, con comillas o sin ellas.
+            preg_match_all('/[{,]\s*[\'"]?('.$prohibidas.')[\'"]?\s*:/', $codigo, $claves);
             $this->assertSame([], $claves[1], "{$ruta} le pone valores a: ".implode(', ', $claves[1]));
+
+            // Y escrito directo sobre el estilo de un elemento, que es otra manera de mover lo mismo.
+            preg_match_all('/\.style\.(\w+)\s*=|\.style\.setProperty\(\s*[\'"]([\w-]+)/', $codigo, $directas, PREG_SET_ORDER);
+
+            foreach ($directas as $directa) {
+                $propiedad = $directa[1] !== '' ? $directa[1] : $directa[2];
+
+                $this->assertContains($propiedad, self::SE_ANIMA, "{$ruta} escribe «{$propiedad}» en el estilo de un elemento.");
+            }
 
             // Recortar con clip-path es la única excepción, y está en un solo lugar: la página que se abre en
             // círculo al cambiar de modo.
@@ -134,24 +161,31 @@ class MovimientoTest extends TestCase
         $reducido = $this->bloque($estilos, self::REDUCIDO);
         $resto = str_replace($reducido, '', $estilos);
 
-        // Cada regla que mueve algo (una transición de transform, o una animación) nombra alguna clase que el bloque
-        // de movimiento reducido también nombra: ahí se la deja quieta o se la pasa a un fundido.
+        // Cada regla que mueve algo (una transición de transform, o una animación) tiene que estar nombrada en el
+        // bloque de movimiento reducido por la pieza que se mueve: la última clase de su selector, no la de un
+        // contenedor. El test comprueba que esté nombrada; cómo queda (quieta, o con un fundido) se mira en el navegador.
         preg_match_all('/([^{}]+)\{([^{}]*)\}/', $resto, $reglas, PREG_SET_ORDER);
         $seMueven = 0;
 
-        foreach ($reglas as [, $selector, $cuerpo]) {
-            $mueve = preg_match('/(?<![\w-])transition\s*:[^;]*\btransform\b/', $cuerpo) === 1
+        foreach ($reglas as [, $selectores, $cuerpo]) {
+            $mueve = preg_match('/(?<![\w-])transition\s*:[^;}]*\btransform\b/', $cuerpo) === 1
                 || preg_match('/(?<![\w-])animation\s*:\s*(?!none)/', $cuerpo) === 1;
 
-            if (! $mueve || str_contains($selector, '::view-transition')) {
+            if (! $mueve || str_contains($selectores, '::view-transition')) {
                 continue;
             }
 
-            $seMueven++;
-            preg_match_all('/\.([a-z][\w-]*)/', $selector, $clases);
-            $cubiertas = array_filter($clases[1], fn (string $clase) => preg_match('/\.'.preg_quote($clase, '/').'(?![\w-])/', $reducido) === 1);
+            foreach (explode(',', $selectores) as $selector) {
+                $seMueven++;
+                preg_match_all('/\.([a-z][\w-]*)/', $selector, $clases);
+                $pieza = end($clases[1]);
 
-            $this->assertNotEmpty($cubiertas, 'Se mueve y no tiene versión de movimiento reducido: '.trim((string) preg_replace('/\s+/', ' ', $selector)));
+                $this->assertMatchesRegularExpression(
+                    '/\.'.preg_quote((string) $pieza, '/').'(?![\w-])/',
+                    $reducido,
+                    'Se mueve y no tiene versión de movimiento reducido: '.trim((string) preg_replace('/\s+/', ' ', $selector)),
+                );
+            }
         }
 
         $this->assertGreaterThan(15, $seMueven, 'El test dejó de encontrar las reglas que mueven algo.');
@@ -160,8 +194,11 @@ class MovimientoTest extends TestCase
     public function test_el_javascript_que_anima_pregunta_si_hay_que_moverse_menos(): void
     {
         foreach ($this->archivos('resources/js', 'js') as $ruta => $codigo) {
+            // Sin los comentarios: que el archivo hable de movimiento reducido no quiere decir que lo consulte.
+            $codigo = $this->sinComentarios($codigo);
+
             if (str_contains($codigo, '.animate(')) {
-                $this->assertMatchesRegularExpression('/movimientoReducido|reducido/', $codigo, "{$ruta} anima sin mirar la preferencia de movimiento reducido.");
+                $this->assertMatchesRegularExpression('/movimientoReducido|\breducido\b/', $codigo, "{$ruta} anima sin mirar la preferencia de movimiento reducido.");
             }
         }
     }
@@ -176,9 +213,27 @@ class MovimientoTest extends TestCase
         return dirname(__DIR__, 2);
     }
 
+    /**
+     * Sin los comentarios de bloque ni los de línea (que en JavaScript empiezan con dos barras; las de una
+     * dirección, "http://", no son comentario).
+     */
     private function sinComentarios(string $codigo): string
     {
-        return (string) preg_replace('~/\*.*?\*/~s', '', $codigo);
+        $codigo = (string) preg_replace('~/\*.*?\*/~s', '', $codigo);
+
+        return (string) preg_replace('~(?<![:\'"`])//[^\n]*~', '', $codigo);
+    }
+
+    /**
+     * Sin lo que va entre paréntesis, también los de adentro: "cubic-bezier(0.23, 1, 0.32, 1)" queda "cubic-bezier".
+     */
+    private function sinParentesis(string $texto): string
+    {
+        do {
+            $texto = (string) preg_replace('/\([^()]*\)/', '', $texto, -1, $cambios);
+        } while ($cambios > 0);
+
+        return $texto;
     }
 
     /**

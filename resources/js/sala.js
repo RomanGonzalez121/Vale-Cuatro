@@ -79,7 +79,7 @@ export default function sala({ estado, mesa, enlace, partida }) {
                     const datos = await respuesta.json();
 
                     if (datos.empezo) {
-                        this.sentarse(datos.rival);
+                        this.sentarse(datos.rival, datos.mano);
 
                         return;
                     }
@@ -98,7 +98,7 @@ export default function sala({ estado, mesa, enlace, partida }) {
             this.espera = setTimeout(() => this.consultar(), this.enVivo ? CADA_EN_VIVO : CADA_SIN_AVISOS);
         },
 
-        sentarse(apodo) {
+        sentarse(apodo, soyMano) {
             if (this.llego) {
                 return;
             }
@@ -107,17 +107,17 @@ export default function sala({ estado, mesa, enlace, partida }) {
             this.llego = true;
 
             // Los dorsos existen recién cuando Alpine los dibuja: ahí se reparten.
-            this.$nextTick(() => this.repartir());
+            this.$nextTick(() => this.repartir(soyMano));
 
             setTimeout(() => window.location.assign(mesa), movimientoReducido.matches ? PAUSA_REDUCIDA : PAUSA_DEL_REPARTO);
         },
 
         /**
          * La llegada del rival: su apodo cae en el tanteador y después el mazo reparte, una carta para
-         * cada uno y con 70 ms entre carta y carta, igual que en la mesa. Con movimiento reducido todo
-         * aparece con un fundido corto.
+         * cada uno, con 70 ms entre carta y carta y empezando por el mano, igual que en la mesa. Con
+         * movimiento reducido todo aparece con un fundido corto.
          */
-        repartir() {
+        repartir(soyMano) {
             const reducido = movimientoReducido.matches;
 
             // En el celular la mesa puede haber quedado debajo del borde: se la trae a la vista para que el reparto se vea.
@@ -133,8 +133,8 @@ export default function sala({ estado, mesa, enlace, partida }) {
                 { duration: reducido ? 150 : 260, easing: LLEGADA },
             );
 
-            cartas('lugarPropio').forEach((carta, i) => llegar(carta, i * 2));
-            cartas('lugarRival').forEach((carta, i) => llegar(carta, i * 2 + 1));
+            cartas('lugarPropio').forEach((carta, i) => llegar(carta, i * 2 + (soyMano ? 0 : 1)));
+            cartas('lugarRival').forEach((carta, i) => llegar(carta, i * 2 + (soyMano ? 1 : 0)));
         },
 
         async copiar() {

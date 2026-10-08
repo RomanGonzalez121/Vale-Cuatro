@@ -137,16 +137,16 @@ class SalaPorHttpTest extends TestCase
         $sala = $this->mesa()->crearSala($creador);
 
         $this->actingAs($creador)->getJson(route('sala.estado', $sala->codigo))
-            ->assertOk()->assertExactJson(['empezo' => false, 'cerrada' => false, 'rival' => null]);
+            ->assertOk()->assertExactJson(['empezo' => false, 'cerrada' => false, 'rival' => null, 'mano' => false]);
 
         $this->actingAs($otro)->getJson(route('sala.estado', $sala->codigo))->assertForbidden();
 
         $rival = Jugador::factory()->invitado()->create();
         $this->mesa()->sentarse($sala->codigo, $rival);
 
-        // Cuando se sienta, se sabe quién: solo el apodo.
+        // Cuando se sienta, se sabe quién (solo el apodo) y quién es mano, que se sortea en ese momento.
         $this->actingAs($creador)->getJson(route('sala.estado', $sala->codigo))
-            ->assertOk()->assertExactJson(['empezo' => true, 'cerrada' => false, 'rival' => $rival->apodo]);
+            ->assertOk()->assertExactJson(['empezo' => true, 'cerrada' => false, 'rival' => $rival->apodo, 'mano' => $sala->fresh()->primer_mano === 0]);
     }
 
     public function test_sin_sesion_no_se_ve_ni_se_consulta_una_sala(): void
@@ -185,7 +185,7 @@ class SalaPorHttpTest extends TestCase
         // Y su sala vieja ya no es un lugar al que entrar.
         $this->actingAs($creador)->get(route('sala', $sala->codigo))->assertRedirect(route('modos'));
         $this->actingAs($creador)->getJson(route('sala.estado', $sala->codigo))
-            ->assertOk()->assertExactJson(['empezo' => false, 'cerrada' => true, 'rival' => null]);
+            ->assertOk()->assertExactJson(['empezo' => false, 'cerrada' => true, 'rival' => null, 'mano' => false]);
 
         $this->actingAs($creador)->post('/invitar');
         $this->assertSame(2, Partida::count());

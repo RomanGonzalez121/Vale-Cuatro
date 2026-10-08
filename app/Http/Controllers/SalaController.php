@@ -71,6 +71,9 @@ class SalaController extends Controller
             'cerrada' => ! $partida->estaAbierta(),
             // Quién se sentó, para decírselo a quien espera. Es el apodo, que en este sitio es público.
             'rival' => $partida->invitado?->apodo,
+            // Si quien abrió la sala (el asiento 0) es mano: el reparto de la sala empieza por el mano, igual que en
+            // la mesa. Se sortea al sentarse el rival, así que antes no hay mano. No es un secreto: la mesa lo dice.
+            'mano' => $partida->primer_mano === Mesa::JUGADOR,
         ]);
     }
 
