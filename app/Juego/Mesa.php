@@ -181,14 +181,16 @@ final class Mesa
         $asiento = $this->asientoPara($partida, $asiento);
         $motor = $this->sinJugar($partida);
         $ultimo = 0;
+        $vencio = null;
 
         // El estado y el número salen de la misma lectura: si el rival juega justo ahora, no pueden quedar desparejos.
         foreach ($partida->eventos()->get() as $evento) {
             $motor = $this->aplicarEvento($motor, $evento);
             $ultimo = $evento->numero;
+            $vencio = $this->aQuienSeLeVencio($evento);
         }
 
-        return $this->paso($partida, $motor, $ultimo, $asiento);
+        return $this->paso($partida, $motor, $ultimo, $asiento, $vencio);
     }
 
     /**
@@ -214,7 +216,7 @@ final class Mesa
 
             // Un abandono no cambia lo que hay en la mesa: no es un paso para mostrar.
             if ($evento->numero > $desde && $evento->tipo !== EventoDePartida::ABANDONO) {
-                $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento);
+                $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento, $this->aQuienSeLeVencio($evento));
             }
         }
 
@@ -620,17 +622,28 @@ final class Mesa
      *
      * @return array<string, mixed>
      */
-    private function paso(Partida $partida, Motor $motor, int $evento, int $asiento): array
+    private function paso(Partida $partida, Motor $motor, int $evento, int $asiento, ?int $vencio = null): array
     {
         $paso = [...$motor->vistaPara($asiento), 'partida' => $partida->getKey(), 'evento' => $evento];
 
         // Entre personas, cuántos segundos faltan para que el servidor resuelva la espera: el turno o el reparto.
-        // La mesa lo usa para la cuenta regresiva. Contra el bot no hay plazo y el paso queda como siempre.
+        // La mesa lo usa para la cuenta regresiva. Y si esta jugada la hizo el servidor porque a alguien se le
+        // venció el turno, a qué asiento: así la mesa lo cuenta como lo que fue y no como un mazo elegido.
+        // Contra el bot no hay plazo y el paso queda como siempre.
         if ($partida->entre_personas) {
             $paso['restan'] = $this->restan($partida, $motor);
+            $paso['vencio'] = $vencio;
         }
 
         return $paso;
+    }
+
+    /**
+     * El asiento al que se le venció el turno en este evento, o null si fue una jugada como cualquier otra.
+     */
+    private function aQuienSeLeVencio(EventoDePartida $evento): ?int
+    {
+        return $evento->tipo === EventoDePartida::VENCIMIENTO ? $evento->asiento : null;
     }
 
     /**

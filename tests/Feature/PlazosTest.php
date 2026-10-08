@@ -114,6 +114,34 @@ class PlazosTest extends TestCase
         }
     }
 
+    public function test_el_paso_de_un_vencimiento_dice_a_quien_se_le_vencio_y_el_de_una_jugada_comun_no(): void
+    {
+        [$partida] = $this->partidaEnCurso();
+        $conTurno = $this->quienTieneElTurno($partida);
+
+        // Una jugada elegida por quien tiene el turno: nadie se quedó sin tiempo.
+        $carta = collect($this->mesa()->vista($partida, $conTurno)['acciones'])->firstWhere('tipo', 'jugar');
+        $jugada = $this->mesa()->actuar($partida, Accion::desdeArray($carta), $conTurno);
+        $this->assertNull($jugada[0]['vencio']);
+
+        $siguiente = $this->quienTieneElTurno($partida);
+        $this->assertSame(1 - $conTurno, $siguiente);
+        $antes = $partida->eventos()->count();
+        $this->travelTo($partida->fresh()->plazo_vence_en);
+        $this->mesa()->resolverPlazo($partida->id);
+
+        // Los dos se enteran de lo mismo: al recargar la página y al preguntar qué pasó.
+        foreach ([0, 1] as $asiento) {
+            $this->assertSame($siguiente, $this->mesa()->vista($partida, $asiento)['vencio']);
+            $this->assertSame([$siguiente], array_column($this->mesa()->pasosDesde($partida, $antes, $asiento), 'vencio'));
+        }
+
+        // El reparto siguiente ya no arrastra el vencimiento.
+        $this->travelTo($partida->fresh()->plazo_vence_en);
+        $this->mesa()->resolverPlazo($partida->id);
+        $this->assertNull($this->mesa()->vista($partida->fresh(), $siguiente)['vencio']);
+    }
+
     public function test_con_un_canto_sin_contestar_el_vencimiento_vale_como_no_querer(): void
     {
         [$partida] = $this->partidaEnCurso();
@@ -265,6 +293,7 @@ class PlazosTest extends TestCase
 
         $this->assertNull($partida->fresh()->plazo_vence_en);
         $this->assertArrayNotHasKey('restan', $this->mesa()->vista($partida));
+        $this->assertArrayNotHasKey('vencio', $this->mesa()->vista($partida));
 
         $this->travelTo(now()->addHour());
         $this->assertFalse($this->mesa()->resolverPlazo($partida->id));
