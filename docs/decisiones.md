@@ -643,9 +643,30 @@ La base estaba bien: una sola curva en todo el sitio, duraciones cortas y nada e
 - **Con movimiento reducido se seguían moviendo** los duelos de "Cómo se juega", las pestañas y la barra de avance del historial; y la mesa leía esa preferencia una sola vez, al cargar. Ahora la pregunta cada vez.
 - **Detalles:** los carteles entran con algo de cuerpo y se van más rápido de lo que entran; la carta del botón de modo pasó de 320 a 300 ms; la llama del logo y tres vistas usaban una curva de fábrica en vez de la del sitio.
 
+### El ritmo lo elige quien juega
+
+- **Problema:** entre tirar una carta y poder volver a jugar pasaban unos 2 segundos, y nunca se había ajustado con Román mirando. La idea era dejarle dos velocidades para que eligiera una y quedara fija para todos.
+- **Lo que propuso Román el 8 de octubre de 2026,** y es mejor: un botón en la mesa. No todos juegan igual: quien está aprendiendo necesita leer qué pasó y quien sabe quiere que la mesa no lo frene. Con el botón no hay que elegir por todos.
+- **Qué cambia el ritmo ágil:** las esperas, no el juego. Las reglas, las cartas y cómo juega el bot son los mismos. Las pausas para leer cada carta, baza o canto duran un 30 % menos, la jugada del bot se ve apenas llega en vez de esperar un segundo, y la mesa le pregunta al servidor cada 0,3 segundos en vez de cada 0,6. Medido contra el bot, de tirar una carta a poder jugar de nuevo: 2,5 segundos en tranquilo y 1,5 en ágil (mediana de 14 turnos cada uno).
+- **La pausa del bot pasó del servidor a la pantalla.** Antes el trabajo en cola salía con un segundo de demora; ahora el bot juega apenas le toca y es la mesa la que espera lo que haga falta para que parezca que piensa. Así el ritmo es una preferencia de quien mira y el servidor no necesita saberla: no hay columna, ni sesión, ni caché. El turno del bot sigue saliendo de la cola.
+- **Se guarda en el navegador,** como el modo de día y de noche, y vale también para quien juega sin cuenta. Entre dos personas cada uno elige el suyo y solo cambia lo que ve él.
+- **El botón** va en la barra de arriba, junto al de día y noche, con un ícono propio (dos puntas hacia adelante, con el trazo de los fósforos). Lleno es ágil. Como un ícono solo no explica qué hace, al tocarlo la mesa lo dice en el renglón de avisos ("Ritmo ágil." o "Ritmo tranquilo."), que también lee el lector de pantalla. A 360 px entra con 22 px de sobra.
+- **Las pausas de lectura y las esperas atadas a una animación son cosas distintas** (`leer()` y `esperar()` en `mesa.js`): el ritmo acorta las primeras; el reparto o juntar las cartas duran lo que dura su animación.
+- **Se descartó** ponerlo dentro del cartel de "Salir" (no ocupa lugar, pero nadie lo encuentra) y una sola velocidad para todos.
+
 ### El final de la partida lo cuenta el tanteador
 
 - **Problema:** la regla dice que el gesto fuerte de la mesa se guarda para el final de la partida, pero el final era un cartel chico con un fundido. Y los festejos están fuera del módulo.
 - **Elegido por Román:** un cierre con peso y sin festejo. El paño hondo ocupa toda la mesa, el resultado entra grande y los dos tanteadores se cuentan desde cero, de corrido y al mismo paso: el que perdió se queda en su tanteo y el que ganó sigue hasta completar el último grupo. Lo que se mueve es el tanteo, que es de lo que se trata.
 - **No traba nada:** corre una sola vez, dura cerca de un segundo y los botones se usan desde que aparecen. Con movimiento reducido los dos tanteos están completos de entrada. El resultado va escrito aparte para el lector de pantalla, porque lo que se cuenta es dibujo.
 - **Se descartó** confeti o cualquier cosa en loop, y dejar el cartel como estaba.
+
+### Lo que encontró la revisión de código de M6
+
+Nueve observaciones, ninguna rompía el juego. Se corrigió esto:
+
+- **El test de reglas dejaba pasar más de lo que decía cuidar.** No veía una clase de transición con una variante adelante (`hover:transition-all`), daba por cubierta una regla si el bloque de movimiento reducido nombraba a su contenedor y no a la pieza que se mueve, y fallaba con una curva escrita con paréntesis. Ahora revisa la clase la lleve quien la lleve, exige que esté nombrada la pieza, y entiende las curvas. Lo que sigue sin poder comprobar está dicho en el propio test: que una regla esté nombrada no dice cómo queda, y eso se mira en el navegador.
+- **El final de la partida se cortaba en una ventana muy baja** (un celular acostado): el contenido centrado no se alcanzaba bajando. Se centra con márgenes y lo que no entra se recorre.
+- **El final tapaba la mesa pero no la apagaba:** con el teclado, el foco podía irse a "Salir", que quedaba detrás. Lo de atrás queda inerte mientras el final está a la vista, y el tanteo se anuncia junto con el título.
+- **El reparto de la sala de espera** seguía dándole la primera carta a quien abrió la sala. La consulta de la sala dice ahora quién es mano, y el reparto empieza por ahí, igual que en la mesa.
+- **Queda para M7:** la repetición del historial tiene su propia cuenta para el tamaño de los cantos y todavía los muestra en un renglón. Cuando esa pantalla se conecte a las partidas reales, tiene que usar la misma función que la mesa.
