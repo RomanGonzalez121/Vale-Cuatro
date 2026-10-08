@@ -12,11 +12,12 @@ namespace App\Juego;
  * el botón a su rival: la pantalla reparte la carta sola.
  *
  * Un rival con "niveles" deja elegir contra qué bot se juega antes de entrar.
+ * "ruta" es la ruta a la que va su botón y "icono" el que lleva; si faltan, van a jugar contra el bot.
  */
 final class Modos
 {
     /**
-     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, niveles?: list<Nivel>}>}>
+     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, ruta?: string, icono?: string, niveles?: list<Nivel>}>}>
      */
     public static function juegos(): array
     {
@@ -28,8 +29,8 @@ final class Modos
                 'icono' => 'mano-a-mano',
                 'resumen' => 'Uno contra uno, a 30 puntos y con flor. El truco de siempre.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Entrás sin registrarte y jugás ya.', 'boton' => 'Jugar contra el bot', 'niveles' => Nivel::cases()],
-                    ['clave' => 'personas', 'nombre' => 'Con otra persona', 'detalle' => 'Le mandás un link a alguien y juegan en vivo.', 'boton' => null],
+                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Entrás sin registrarte y jugás ya.', 'boton' => 'Jugar contra el bot', 'ruta' => 'jugar', 'icono' => 'bot', 'niveles' => Nivel::cases()],
+                    ['clave' => 'personas', 'nombre' => 'Con otra persona', 'detalle' => 'Le mandás un link a alguien y juegan en vivo. Entrás sin registrarte.', 'boton' => 'Invitar a jugar', 'ruta' => 'invitar', 'icono' => 'invitar'],
                 ],
             ],
             [

@@ -44,8 +44,9 @@ class ModosTest extends TestCase
         $html = $this->get('/modos')->assertOk()->getContent();
         $botones = array_filter(array_merge(...array_map(fn (array $juego) => array_column($juego['rivales'], 'boton'), Modos::juegos())));
 
-        // Un formulario hacia la mesa por cada rival contra el que se puede jugar, y ninguno más.
-        $this->assertSame(count($botones), preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
+        // Un formulario por cada rival contra el que se puede jugar, y ninguno más: al bot va a /jugar y a una persona, a /invitar.
+        $this->assertSame(count($botones), preg_match_all('/<form[^>]*action="[^"]*\/(?:jugar|invitar)"/', $html));
+        $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/invitar"/', $html), 'Con otra persona se juega por /invitar.');
 
         foreach ($botones as $boton) {
             $this->assertStringContainsString($boton, $html);

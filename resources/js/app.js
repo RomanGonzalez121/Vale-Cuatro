@@ -5,6 +5,7 @@ import mesa from './mesa';
 import { prepararModo } from './modo';
 import { duelo, tantoDeEnvido } from './reglas';
 import repeticion from './repeticion';
+import sala from './sala';
 
 /*
  | x-carta="expresión": dibuja en el elemento la carta que diga la expresión
@@ -38,6 +39,7 @@ Alpine.data('mesa', mesa);
 Alpine.data('duelo', duelo);
 Alpine.data('tantoDeEnvido', tantoDeEnvido);
 Alpine.data('repeticion', repeticion);
+Alpine.data('sala', sala);
 
 window.Alpine = Alpine;
 Alpine.start();

@@ -1359,6 +1359,39 @@ html:has(body.superficie-pano) {
         transform: translateY(-0.14em);
     }
 
+    /*
+     | La sala de espera. El link va en una caja del Paño hondo, con el borde de la tinta del naipe a media tinta.
+     | Los tres lugares del rival son huecos con la forma de una carta: se marcan con una línea fina, como los
+     | lugares de las bazas en la mesa, y cuando se reparten los dorsos la línea ya no hace falta.
+     */
+    .sala-enlace {
+        padding: 0.75rem 1rem;
+        border: 2px solid color-mix(in srgb, var(--color-naipe) 45%, transparent);
+        border-radius: 0.625rem;
+        background-color: var(--color-pano-hondo);
+        color: var(--color-naipe);
+        font-size: 1rem;
+        font-weight: 600;
+        text-overflow: ellipsis;
+    }
+
+    .sala-lugar {
+        flex: none;
+        width: clamp(4.5rem, 21vw, 8.75rem);
+        aspect-ratio: 100 / 156;
+        border: 1.5px solid color-mix(in srgb, var(--color-naipe) 38%, transparent);
+        border-radius: 0.5rem;
+    }
+
+    .sala-lugar:has(.carta) {
+        border-color: transparent;
+    }
+
+    .sala-lugar .carta {
+        display: block;
+        width: 100%;
+    }
+
     /* Reparto de la portada: predeterminado, corre en CSS para no trabarse al cargar. */
     .se-reparte {
         animation: repartir 300ms var(--ease-llegada) both;

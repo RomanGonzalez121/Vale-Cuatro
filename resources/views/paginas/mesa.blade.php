@@ -29,7 +29,7 @@
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa en app.css. --}}
     <div x-data="mesa(@js($vista), @js(['accion' => route('mesa.accion'), 'repartir' => route('mesa.repartir'), 'estado' => route('mesa.estado'), 'bot' => route('mesa.bot'), 'token' => csrf_token()]))" @class(['mesa mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
-        <h1 class="sr-only">Mesa contra el bot, nivel {{ $nivel->nombre() }}</h1>
+        <h1 class="sr-only">{{ $nivel ? "Mesa contra el bot, nivel {$nivel->nombre()}" : "Mesa contra {$rival}" }}</h1>
 
         <header class="mesa-barra relative z-10">
             <a href="{{ route('portada') }}" class="justify-self-start rounded text-lg no-underline [grid-area:logo] lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
@@ -56,11 +56,13 @@
                         <span class="transition-opacity ease-out" :class="pensando ? 'opacity-100 duration-200' : 'opacity-0 duration-100'" aria-hidden="true">
                             <x-icono nombre="tiempo" class="size-4" />
                         </span>
-                        <x-icono nombre="bot" class="size-5" />
-                        {{-- El nivel, con los mismos fósforos que se eligieron en los modos. --}}
-                        <x-nivel-fosforos :nivel="$nivel" class="text-[0.8rem]" />
+                        <x-icono :nombre="$nivel ? 'bot' : 'jugador'" class="size-5" />
+                        {{-- El nivel, con los mismos fósforos que se eligieron en los modos. Una persona no tiene nivel. --}}
+                        @if ($nivel)
+                            <x-nivel-fosforos :nivel="$nivel" class="text-[0.8rem]" />
+                        @endif
                     </span>
-                    Bot {{ mb_strtolower($nivel->nombre()) }}
+                    {{ $nivel ? 'Bot '.mb_strtolower($nivel->nombre()) : $rival }}
                 </p>
                 <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
                 {{-- El mazo, contra el borde del campo para que no parezca una carta más del rival. De acá sale el reparto. --}}
@@ -179,17 +181,22 @@
 
         <div x-show="fin" x-cloak x-transition.opacity.duration.200ms class="absolute inset-0 z-30 flex items-center justify-center bg-pano-hondo/90 p-6">
             <div class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
-                <h2 class="text-3xl font-black tracking-tight" x-text="fin === 'vos' ? 'Ganaste la partida' : 'Ganó el bot'" x-ref="fin" tabindex="-1"></h2>
+                <h2 class="text-3xl font-black tracking-tight" x-text="fin === 'vos' ? 'Ganaste la partida' : @js($nivel ? 'Ganó el bot' : "Ganó {$rival}")" x-ref="fin" tabindex="-1"></h2>
                 <p class="mt-2 text-lg tabular-nums">
                     <span x-text="puntos.vos"></span> a <span x-text="puntos.rival"></span>
                 </p>
                 <div class="mt-6 flex flex-col gap-2.5">
-                    <form method="POST" action="{{ route('jugar') }}" class="flex flex-col">
-                        @csrf
-                        {{-- La partida siguiente es contra el mismo nivel. --}}
-                        <input type="hidden" name="nivel" value="{{ $nivel->value }}">
-                        <button type="submit" class="boton boton-tinta">Jugar otra partida</button>
-                    </form>
+                    @if ($nivel)
+                        <form method="POST" action="{{ route('jugar') }}" class="flex flex-col">
+                            @csrf
+                            {{-- La partida siguiente es contra el mismo nivel. --}}
+                            <input type="hidden" name="nivel" value="{{ $nivel->value }}">
+                            <button type="submit" class="boton boton-tinta">Jugar otra partida</button>
+                        </form>
+                    @else
+                        {{-- Con otra persona, la revancha es de M12: por ahora se vuelve a elegir cómo jugar. --}}
+                        <a href="{{ route('modos') }}" class="boton boton-tinta">Elegir cómo jugar</a>
+                    @endif
                     <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
                 </div>
             </div>

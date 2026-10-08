@@ -94,11 +94,20 @@
                                         @if ($rival['boton'] !== null)
                                             @php
                                                 $niveles = $rival['niveles'] ?? [];
-                                                $sigue = $enCurso !== null && $niveles !== [];
+                                                // Con una partida sin terminar, cualquiera de los botones la sigue: es una sola a la vez.
+                                                $sigue = $enCurso !== null;
                                             @endphp
 
                                             @if ($sigue)
-                                                <p class="mt-4 max-w-[36ch] font-bold leading-relaxed">Tenés una partida sin terminar contra {{ $enCurso->nivel_bot->nombre() }}.</p>
+                                                <p class="mt-4 max-w-[36ch] font-bold leading-relaxed">
+                                                    @if ($enCurso->esperando())
+                                                        Tenés una sala esperando que se siente alguien.
+                                                    @elseif ($enCurso->entre_personas)
+                                                        Tenés una partida sin terminar con otra persona.
+                                                    @else
+                                                        Tenés una partida sin terminar contra {{ $enCurso->nivel_bot->nombre() }}.
+                                                    @endif
+                                                </p>
                                             @endif
 
                                             @if ($niveles !== [])
@@ -128,18 +137,21 @@
                                             @endif
 
                                             {{-- Sin campos a la vista: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
-                                            <form method="POST" action="{{ route('jugar') }}" class="mt-3">
+                                            <form method="POST" action="{{ route($rival['ruta'] ?? 'jugar') }}" class="mt-3">
                                                 @csrf
                                                 @if ($niveles !== [])
                                                     <input type="hidden" name="nivel" value="{{ $nivelElegido->value }}" :value="nivel">
                                                 @endif
                                                 <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
-                                                    <x-icono nombre="bot" /> {{ $sigue ? 'Seguir la partida' : $rival['boton'] }}
+                                                    <x-icono :nombre="$rival['icono'] ?? 'bot'" />
+                                                    {{ $sigue ? ($enCurso->esperando() ? 'Volver a la sala' : 'Seguir la partida') : $rival['boton'] }}
                                                 </button>
                                             </form>
 
                                             @if ($sigue)
-                                                <p class="mt-3 max-w-[36ch] text-[0.95rem] leading-relaxed">Para jugar contra otro nivel, primero abandonala desde la mesa.</p>
+                                                <p class="mt-3 max-w-[36ch] text-[0.95rem] leading-relaxed">
+                                                    {{ $enCurso->esperando() ? 'Para empezar otra, primero cerrá esa sala.' : ($niveles !== [] ? 'Para jugar contra otro nivel, primero abandonala desde la mesa.' : 'Para empezar otra, primero abandonala desde la mesa.') }}
+                                                </p>
                                             @endif
                                         @endif
                                     </div>
