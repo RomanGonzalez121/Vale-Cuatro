@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\InvitacionController;
 use App\Http\Controllers\JugarController;
 use App\Http\Controllers\MesaController;
@@ -12,7 +13,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PaginaController::class, 'portada'])->name('portada');
 Route::get('/ranking', [PaginaController::class, 'ranking'])->name('ranking');
-Route::get('/historial', [PaginaController::class, 'historial'])->name('historial');
+Route::get('/historial', [HistorialController::class, 'lista'])->name('historial');
+Route::get('/historial/{partida}', [HistorialController::class, 'ver'])->whereNumber('partida')->middleware('auth')->name('historial.ver');
+Route::get('/historial/{partida}/cuadros', [HistorialController::class, 'cuadros'])->whereNumber('partida')->middleware(['auth', 'throttle:120,1'])->name('historial.cuadros');
 Route::get('/como-se-juega', [PaginaController::class, 'comoSeJuega'])->name('como-se-juega');
 Route::get('/identidad', [PaginaController::class, 'identidad'])->name('identidad');
 Route::get('/modos', [PaginaController::class, 'modos'])->name('modos');

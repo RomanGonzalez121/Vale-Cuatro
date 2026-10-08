@@ -111,11 +111,50 @@ export function llegarDelMazo(carta, mazo, orden, { reducido = movimientoReducid
     });
 }
 
+/*
+ | Un canto de varias palabras en una mesa angosta queda con letras chicas ("Contraflor al resto" a 360 px
+ | medía 28 px contra los 93 de "Truco"), y el canto es el gesto fuerte de la mesa. Si partido en dos
+ | renglones se lee bastante más grande, se parte por donde los dos queden más parejos; si no, va entero.
+ |
+ | Cada pantalla tiene su propia cuenta del tamaño (la mesa y la repetición miden contra cosas distintas):
+ | pasa en "letra" una función que dice cuántos píxeles tendría la letra con esos renglones.
+ */
+const LARGO_PARA_PARTIR = 9;
+const GANANCIA_PARA_PARTIR = 1.15;
+
+export function cantoEnRenglones(texto, letra) {
+    const palabras = texto.split(' ');
+
+    // Hasta ese largo el canto va siempre en un renglón: "No quiero" se lee bien entero.
+    if (palabras.length < 2 || texto.length <= LARGO_PARA_PARTIR) {
+        return texto;
+    }
+
+    const masLargo = (renglones) => Math.max(...renglones.map((renglon) => renglon.length));
+    const partido = palabras.slice(1)
+        .map((_, corte) => [palabras.slice(0, corte + 1).join(' '), palabras.slice(corte + 1).join(' ')])
+        .reduce((mejor, renglones) => (masLargo(renglones) < masLargo(mejor) ? renglones : mejor));
+
+    return letra(partido) > letra([texto]) * GANANCIA_PARA_PARTIR ? partido.join('\n') : texto;
+}
+
+/*
+ | Lo que se pasa de un cuadro a otro en la repetición sin que nadie lo haya pedido con un clic (las flechas
+ | del teclado, volver atrás, saltar de mano) no se anima: se repite muchas veces y la animación lo haría
+ | sentir lento. Quien cambia el cuadro pone "quieto" en true y lo saca cuando la pantalla ya se dibujó.
+ */
+export const reparto = { quieto: false };
+
 /** Pone una carta en su lugar y la hace llegar como recién repartida. */
 export function repartirEn(lugar, carta, orden = 0) {
     const naipe = plantilla(carta);
 
     lugar.replaceChildren(naipe);
+
+    if (reparto.quieto) {
+        return;
+    }
+
     naipe.animate(
         movimientoReducido.matches
             ? [{ opacity: 0 }, { opacity: 1 }]

@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
-import { plantilla, repartirEn } from './cartas';
+import { repartirEn } from './cartas';
+import historial from './historial';
 import { prepararLogos } from './logo';
 import mesa from './mesa';
 import { prepararModo } from './modo';
@@ -10,7 +11,8 @@ import sala from './sala';
 /*
  | x-carta="expresión": dibuja en el elemento la carta que diga la expresión
  | ('7-oro', 'dorso') o lo vacía si no hay ninguna. Solo vuelve a dibujar
- | cuando la carta cambia, para que las que ya estaban no se muevan.
+ | cuando la carta cambia, para que las que ya estaban no se muevan. Con
+ | data-orden, las que llegan juntas (un reparto) entran de a una.
  */
 Alpine.directive('carta', (elemento, { expression }, { evaluateLater, effect }) => {
     const leer = evaluateLater(expression);
@@ -26,10 +28,8 @@ Alpine.directive('carta', (elemento, { expression }, { evaluateLater, effect }) 
 
             if (! carta) {
                 elemento.replaceChildren();
-            } else if (carta === 'dorso') {
-                elemento.replaceChildren(plantilla('dorso'));
             } else {
-                repartirEn(elemento, carta);
+                repartirEn(elemento, carta, Number(elemento.dataset.orden ?? 0));
             }
         });
     });
@@ -39,6 +39,7 @@ Alpine.data('mesa', mesa);
 Alpine.data('duelo', duelo);
 Alpine.data('tantoDeEnvido', tantoDeEnvido);
 Alpine.data('repeticion', repeticion);
+Alpine.data('historial', historial);
 Alpine.data('sala', sala);
 
 window.Alpine = Alpine;

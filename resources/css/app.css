@@ -1508,6 +1508,139 @@ html:has(body.superficie-pano) {
         transition: opacity 120ms var(--ease-llegada);
     }
 
+    /*
+     | La repetición de una partida. En el celular va una cosa debajo de la otra:
+     | los datos, la mesa y los controles. Desde lg, en dos columnas: la mesa a
+     | la izquierda y, a la derecha, los datos arriba y los controles abajo, para
+     | que entre entera en la ventana sin bajar.
+     */
+    .repeticion {
+        display: grid;
+        gap: 1rem;
+        grid-template-areas: "titulo" "escena" "controles" "detalle";
+    }
+
+    .repeticion-titulo {
+        grid-area: titulo;
+    }
+
+    .repeticion-detalle {
+        grid-area: detalle;
+    }
+
+    .repeticion-escena {
+        grid-area: escena;
+    }
+
+    .repeticion-controles {
+        grid-area: controles;
+    }
+
+    @media (min-width: 64rem) {
+        .repeticion {
+            gap: 1rem 2.5rem;
+            grid-template-columns: minmax(0, 34rem) minmax(0, 1fr);
+            grid-template-rows: auto auto 1fr;
+            grid-template-areas: "escena titulo" "escena detalle" "escena controles";
+            align-items: start;
+        }
+
+        .repeticion-controles {
+            align-self: end;
+        }
+    }
+
+    /*
+     | La mesa de la repetición sale de la misma medida que la de juego, --b, pero
+     | con su propia cuenta: acá además del alto de la ventana tienen que entrar el
+     | marco del cartel y, en el celular, los datos y los controles. Lo que queda se
+     | reparte entre las tres filas de cartas (unas 6,6 veces --b).
+     */
+    .repeticion-mesa {
+        --b: max(2.5rem, min(calc((100dvh - 16rem) / 6.6), 17cqw, 6.25rem));
+    }
+
+    /*
+     | El cartel de la repetición, sobre la lista del historial. Es el <dialog>
+     | del navegador. No lleva sombra (la única del sitio es la de las cartas): lo
+     | separa de la lista el fondo, que la tapa con el Paño hondo. En el celular
+     | ocupa la pantalla entera. Lo mueve historial.js al abrirlo.
+     */
+    .cartel-repeticion {
+        width: min(100% - 2rem, 62rem);
+        max-width: none;
+        max-height: calc(100dvh - 2rem);
+        margin: auto;
+        padding: 0;
+        border: 0;
+        border-radius: 1rem;
+        overflow-y: auto;
+        background-color: var(--color-fondo);
+        color: var(--color-texto);
+    }
+
+    .cartel-repeticion::backdrop {
+        background-color: color-mix(in srgb, var(--color-pano-hondo) 88%, transparent);
+    }
+
+    .cartel-contenido {
+        padding: 1.5rem;
+    }
+
+    /*
+     | En el cartel, a la cuenta de la mesa se le suman su marco y su margen. En
+     | dos columnas entra entero, sin scroll. En una sola (tableta), lo que se
+     | resta es lo que ocupan "Cerrar", el resultado y los controles, para que
+     | queden a la vista junto con la mesa.
+     */
+    @media (min-width: 64rem) {
+        .cartel-repeticion .repeticion-mesa {
+            --b: max(2.5rem, min(calc((100dvh - 17.25rem) / 6.6), 17cqw, 6.25rem));
+        }
+    }
+
+    @media (max-width: 63.99rem) {
+        .cartel-repeticion .repeticion-mesa {
+            --b: max(2.5rem, min(calc((100dvh - 33rem) / 6.6), 17cqw, 6.25rem));
+        }
+    }
+
+    @media (max-width: 39.99rem) {
+        .cartel-repeticion {
+            width: 100%;
+            height: 100dvh;
+            max-height: none;
+            border-radius: 0;
+        }
+
+        .cartel-contenido {
+            padding: 1.25rem 1.25rem 2rem;
+        }
+
+        /*
+         | En el celular el cartel es la pantalla: la mesa se achica lo necesario
+         | para que "Cerrar", el resultado, la mesa y los controles entren juntos.
+         | El detalle queda debajo, deslizando.
+         */
+        .cartel-repeticion .repeticion-mesa {
+            --b: max(2.5rem, min(calc((100dvh - 26.5rem) / 6.6), 17cqw));
+        }
+
+        /* El resultado y "Cerrar" comparten renglón, con "Cerrar" arriba a la derecha. */
+        .cartel-repeticion .repeticion-titulo {
+            display: flex;
+            flex-direction: row-reverse;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+    }
+
+    /* Con el cartel abierto, la página de atrás no se desliza. */
+    html:has(.cartel-repeticion[open]) {
+        overflow: hidden;
+    }
+
     /* Reparto de la portada: predeterminado, corre en CSS para no trabarse al cargar. */
     .se-reparte {
         animation: repartir 300ms var(--ease-llegada) both;

@@ -40,14 +40,6 @@ class PaginaController extends Controller
         ]);
     }
 
-    public function historial(): View
-    {
-        return view('paginas.historial', [
-            'partidas' => DatosDeEjemplo::partidas(),
-            'pasos' => DatosDeEjemplo::pasosDeRepeticion(),
-        ]);
-    }
-
     public function comoSeJuega(): View
     {
         return view('paginas.como-se-juega');

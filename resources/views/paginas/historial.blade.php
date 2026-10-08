@@ -1,133 +1,157 @@
 @php
-    $porDia = collect($partidas)->groupBy('dia');
-    $ganadas = collect($partidas)->filter(fn (array $partida) => $partida['vos'] > $partida['ellos'])->count();
-    $perdidas = count($partidas) - $ganadas;
+    /*
+     | $partidas es una página de partidas ya resumidas, o null si quien entra todavía no tiene jugador.
+     | Cada resumen sale de los eventos de la partida (App\Juego\Historial): acá no hay ningún dato inventado.
+     */
+    $lista = collect($partidas?->items() ?? []);
+    $porDia = $lista->groupBy('dia');
+    $ganadas = $lista->where('gano', true)->count();
+    $perdidas = $lista->count() - $ganadas;
+    $primeraPagina = $partidas === null || $partidas->onFirstPage();
 @endphp
 
 <x-layouts.base titulo="Historial" descripcion="Tus partidas de Vale Cuatro, para volver a verlas jugada por jugada.">
     <x-mazo.plantillas />
 
-    <div class="mx-auto max-w-5xl px-5 pb-24 sm:px-8">
+    <div class="mx-auto max-w-5xl px-5 pb-24 sm:px-8" x-data="historial">
         <header class="grid items-end gap-8 pb-10 pt-10 sm:pt-16 md:grid-cols-[1fr_auto]">
             <div>
                 <h1 class="text-5xl font-black tracking-tight sm:text-7xl">Historial</h1>
                 <p class="mt-5 max-w-[56ch] text-lg leading-relaxed">
                     Cada partida queda guardada jugada por jugada. Por eso se puede volver a ver entera.
                 </p>
+
+                {{-- Quien juega sin cuenta ve lo de su sesión. Se le dice de entrada, con la salida al lado. --}}
+                @if ($esInvitado)
+                    <p class="mt-4 max-w-[56ch] leading-relaxed">
+                        Jugás sin cuenta: acá están las partidas de esta sesión.
+                        <a href="{{ route('registro') }}" class="enlace">Creá una cuenta</a> y te quedan guardadas, también las de antes.
+                    </p>
+                @endif
+
+                @if ($enCurso)
+                    <p class="mt-4 leading-relaxed">
+                        Tenés una partida sin terminar.
+                        <a href="{{ route('mesa') }}" class="enlace">Seguila en la mesa</a>
+                    </p>
+                @endif
             </div>
 
             {{-- La tira: una marca por partida, de la más vieja a la más nueva. Alta si la ganaste, baja si la perdiste. --}}
-            <div>
-                <ul class="flex h-10 items-end gap-1.5" aria-hidden="true">
-                    @foreach (array_reverse($partidas) as $partida)
-                        <li @class(['w-4 rounded-sm', 'h-10 bg-gana' => $partida['vos'] > $partida['ellos'], 'h-4 bg-pierde' => $partida['vos'] < $partida['ellos']])></li>
-                    @endforeach
-                </ul>
-                <p class="mt-2 font-semibold">{{ $ganadas }} ganadas y {{ $perdidas }} perdidas en las últimas {{ count($partidas) }}</p>
-            </div>
+            @if ($lista->isNotEmpty())
+                <div>
+                    <ul class="flex h-10 items-end gap-1.5" aria-hidden="true">
+                        @foreach ($lista->reverse() as $partida)
+                            <li @class(['w-4 rounded-sm', 'h-10 bg-gana' => $partida['gano'], 'h-4 bg-pierde' => ! $partida['gano']])></li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-2 font-semibold">
+                        {{ $ganadas }} {{ $ganadas === 1 ? 'ganada' : 'ganadas' }} y {{ $perdidas }} {{ $perdidas === 1 ? 'perdida' : 'perdidas' }}
+                        @if ($primeraPagina && ! $partidas->hasMorePages())
+                            en total
+                        @else
+                            en esta página
+                        @endif
+                    </p>
+                </div>
+            @endif
         </header>
 
-        @foreach ($porDia as $dia => $delDia)
+        @forelse ($porDia as $dia => $delDia)
             <section aria-labelledby="dia-{{ $loop->index }}" class="border-t-2 border-texto pb-6 pt-5">
                 <h2 id="dia-{{ $loop->index }}" class="text-xl font-extrabold">{{ $dia }}</h2>
 
                 <ul>
                     @foreach ($delDia as $partida)
-                        @php($gano = $partida['vos'] > $partida['ellos'])
                         {{-- En el celular: el resultado y "Ver de nuevo" en un renglón, y debajo contra quién. El tanteo en fósforos entra desde `sm`. --}}
                         <li class="grid grid-cols-[1fr_auto] items-center gap-x-7 gap-y-3 border-b border-texto/15 py-5 last:border-b-0 max-sm:gap-y-2 max-sm:py-4 sm:grid-cols-[9rem_1fr] lg:grid-cols-[9rem_1fr_auto_auto]">
                             <p class="leading-none">
-                                <span @class(['block text-sm font-bold', 'text-gana' => $gano, 'text-pierde' => ! $gano])>{{ $gano ? 'Ganaste' : 'Perdiste' }}</span>
+                                <span @class(['block text-sm font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>{{ $partida['gano'] ? 'Ganaste' : 'Perdiste' }}</span>
                                 <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</span>
                             </p>
-                            <p class="leading-snug max-sm:order-3 max-sm:col-span-2">
-                                <span class="text-lg font-bold max-sm:text-base">Contra {{ $partida['rival'] }}</span>
-                                <span class="block text-[0.95rem]">{{ $partida['hora'] }}. {{ $partida['manos'] }} manos en {{ $partida['minutos'] }} minutos.</span>
+                            <p class="min-w-0 leading-snug max-sm:order-3 max-sm:col-span-2">
+                                <span class="block text-lg font-bold [overflow-wrap:anywhere] max-sm:text-base">Contra {{ $partida['rival'] }}</span>
+                                {{-- De qué juego fue. Hoy hay uno solo; el torneo, los desafíos y el de a cuatro van a decirlo acá. --}}
+                                <span class="block text-[0.95rem]">
+                                    Mano a mano. {{ $partida['hora'] }}. {{ $partida['manos'] }} {{ $partida['manos'] === 1 ? 'mano' : 'manos' }} en {{ $partida['minutos'] }} {{ $partida['minutos'] === 1 ? 'minuto' : 'minutos' }}.
+                                    @if ($partida['cierre'])
+                                        <span class="font-semibold">{{ $partida['cierre'] }}</span>
+                                    @endif
+                                </span>
                             </p>
                             <div class="flex w-fit gap-5 rounded-lg bg-pano-hondo px-3.5 py-2.5 text-[0.66rem] max-sm:hidden sm:col-span-2 lg:col-span-1">
                                 <x-tanteador nombre="Vos" :puntos="$partida['vos']" />
                                 <x-tanteador nombre="Rival" :puntos="$partida['ellos']" />
                             </div>
-                            <a href="#repeticion" class="boton boton-linea min-h-11 w-fit px-4 py-2 text-[0.95rem] max-sm:order-2 sm:col-span-2 lg:col-span-1">
+                            {{-- Un link a la página de la repetición. Con JavaScript se abre en un cartel acá mismo (historial.js). --}}
+                            <a href="{{ route('historial.ver', $partida['id']) }}" data-cuadros="{{ route('historial.cuadros', $partida['id']) }}"
+                                class="boton boton-linea min-h-11 w-fit px-4 py-2 text-[0.95rem] max-sm:order-2 sm:col-span-2 lg:col-span-1"
+                                @click="abrir($event)" :aria-busy="(pidiendo === $el.dataset.cuadros).toString()"
+                                aria-label="Ver de nuevo la partida contra {{ $partida['rival'] }} de {{ mb_strtolower($partida['dia']) }} a las {{ $partida['hora'] }}">
                                 <x-icono nombre="repetir" /> Ver de nuevo
                             </a>
                         </li>
                     @endforeach
                 </ul>
             </section>
-        @endforeach
-
-        <section id="repeticion" aria-labelledby="titulo-repeticion" class="scroll-mt-6 border-t-2 border-texto pt-12">
-            <h2 id="titulo-repeticion" class="text-4xl font-black tracking-tight sm:text-5xl">Repetición</h2>
-            <p class="mt-3 max-w-[56ch] text-lg leading-relaxed">
-                Hoy, 21:40, contra Bot, nivel 2. Las tres últimas manos, jugada por jugada.
-                <span class="max-sm:hidden">También se avanza con las flechas del teclado.</span>
-            </p>
-
-            <div x-data="repeticion(@js($pasos))" class="mt-7 max-w-2xl"
-                @keydown.left.prevent="anterior()" @keydown.right.prevent="pausar(); siguiente()">
-                <div class="mesa superficie-pano relative overflow-hidden rounded-xl">
-                    <div class="relative z-10 grid grid-cols-2 gap-x-4 bg-pano-hondo px-4 py-3 text-[clamp(0.75rem,3.9cqw,1.05rem)]">
-                        <x-tanteador nombre="Vos" :puntos="0" modelo="estado.tanteo[0]" />
-                        <x-tanteador nombre="Bot, nivel 2" :puntos="0" modelo="estado.tanteo[1]" />
-                    </div>
-
-                    <div class="px-4" aria-hidden="true">
-                        <div class="mesa-rival flex justify-center gap-2">
-                            <template x-for="n in estado.rival" :key="n">
-                                <div x-carta="'dorso'"></div>
-                            </template>
-                        </div>
-                    </div>
-
-                    <div class="relative px-4 py-5">
-                        <ol class="mx-auto grid max-w-xl grid-cols-3 gap-3">
-                            @foreach ([0, 1, 2] as $numero)
-                                <li class="flex flex-col items-center">
-                                    <p class="mb-2 text-xs font-semibold sm:text-sm">{{ $numero + 1 }}ª baza<span x-text="rotuloDeBaza({{ $numero }})"></span></p>
-                                    <div class="hueco-baza hueco-rival" :class="{ 'opacity-55': perdio({{ $numero }}, 'rival') }" x-carta="estado.bazas[{{ $numero }}].rival"></div>
-                                    <div class="hueco-baza hueco-propio" :class="{ 'opacity-55': perdio({{ $numero }}, 'vos') }" x-carta="estado.bazas[{{ $numero }}].vos"></div>
-                                </li>
-                            @endforeach
-                        </ol>
-
-                        <div class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" aria-hidden="true">
-                            <p class="voz canto text-center" x-effect="if (estado.canto) voz = estado.canto"
-                                :data-visible="(estado.canto !== null).toString()" :data-quien="voz.quien" :style="{ fontSize: tamanoDeVoz }"
-                                :class="{ 'canto-oro': voz.tono === 'oro', 'canto-ficha canto-copa': voz.tono === 'copa', 'canto-ficha canto-basto': voz.tono === 'basto' }"
-                                x-text="voz.texto"></p>
-                        </div>
-                    </div>
-
-                    <p aria-live="polite" class="min-h-12 px-4 text-center font-semibold leading-snug" x-text="estado.texto"></p>
-
-                    <div class="px-4 pb-5 pt-1">
-                        <div class="abanico mesa-mano">
-                            @foreach ([0, 1, 2] as $lugar)
-                                <div x-carta="estado.mano[{{ $lugar }}]"></div>
-                            @endforeach
-                        </div>
-                    </div>
+        @empty
+            {{--
+                Todavía sin partidas: el tanteador en cero, con los lugares de los fósforos que faltan, y el botón
+                para jugar la primera. No se rellena con partidas de ejemplo.
+            --}}
+            <section aria-labelledby="titulo-vacio" class="grid items-center gap-x-12 gap-y-8 border-t-2 border-texto pt-10 md:grid-cols-[auto_1fr]">
+                <div class="flex w-fit gap-6 rounded-xl bg-pano-hondo px-5 py-4 text-[0.95rem]" aria-hidden="true">
+                    <x-tanteador nombre="Vos" :puntos="0" />
+                    <x-tanteador nombre="Rival" :puntos="0" />
                 </div>
 
-                <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-texto/15" aria-hidden="true">
-                    <div class="h-full origin-left bg-texto transition-transform duration-200 ease-llegada motion-reduce:transition-none" :style="{ transform: `scaleX(${(indice + 1) / pasos.length})` }"></div>
-                </div>
+                <div>
+                    <h2 id="titulo-vacio" class="max-w-[18ch] text-3xl font-black leading-[1.05] tracking-tight sm:text-4xl">
+                        {{ $esInvitado ? 'Todavía no terminaste ninguna partida en esta sesión.' : 'Todavía no terminaste ninguna partida.' }}
+                    </h2>
+                    <p class="mt-3 max-w-[46ch] text-lg leading-relaxed">Cuando termines una, queda acá para volver a verla jugada por jugada.</p>
 
-                {{-- En el celular los tres controles van en un renglón, de igual ancho: no saltan cuando cambia el texto del medio. --}}
-                <div class="mt-4 grid grid-cols-3 items-center gap-2 sm:flex sm:flex-wrap sm:gap-3">
-                    <button type="button" class="boton boton-linea max-sm:px-2 max-sm:text-[0.95rem]" :disabled="indice === 0" @click="anterior()">Anterior</button>
-                    <button type="button" class="boton boton-tinta max-sm:px-2 max-sm:text-[0.95rem]" @click="reproduciendo ? pausar() : reproducir()">
-                        <x-icono nombre="repetir" class="max-sm:hidden" />
-                        <span class="max-sm:hidden" x-text="reproduciendo ? 'Pausar' : (alFinal ? 'Ver desde el principio' : 'Reproducir')">Reproducir</span>
-                        <span class="sm:hidden" x-text="reproduciendo ? 'Pausar' : (alFinal ? 'De nuevo' : 'Reproducir')">Reproducir</span>
-                    </button>
-                    <button type="button" class="boton boton-linea max-sm:px-2 max-sm:text-[0.95rem]" :disabled="alFinal" @click="pausar(); siguiente()">Siguiente</button>
-                    <p class="font-semibold tabular-nums max-sm:col-span-3">
-                        Mano <span x-text="estado.numero">12</span> de 14, jugada <span x-text="indice + 1">1</span> de {{ count($pasos) }}
-                    </p>
+                    <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+                        @if ($enCurso)
+                            <a href="{{ route('mesa') }}" class="boton boton-tinta min-h-12 px-5">Seguir la partida</a>
+                        @else
+                            <form method="POST" action="{{ route('jugar') }}">
+                                @csrf
+                                <button type="submit" class="boton boton-tinta min-h-12 px-5">
+                                    <x-icono nombre="bot" /> Jugar contra el bot
+                                </button>
+                            </form>
+                        @endif
+                        <a href="{{ route('modos') }}" class="enlace-nav text-lg font-bold">Elegir otro modo</a>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        @endforelse
+
+        @if ($partidas && (! $primeraPagina || $partidas->hasMorePages()))
+            <nav aria-label="Más partidas" class="flex flex-wrap gap-3 border-t-2 border-texto pt-6">
+                @if (! $primeraPagina)
+                    <a href="{{ $partidas->previousPageUrl() }}" class="boton boton-linea min-h-11 px-4" rel="prev">Más nuevas</a>
+                @endif
+                @if ($partidas->hasMorePages())
+                    <a href="{{ $partidas->nextPageUrl() }}" class="boton boton-linea min-h-11 px-4" rel="next">Más viejas</a>
+                @endif
+            </nav>
+        @endif
+
+        {{--
+            El cartel de la repetición. Es el <dialog> del navegador: se ocupa del foco, de la tecla Esc y de
+            que la lista de atrás no se pueda tocar. Cerrar (el botón, Esc o un clic en el fondo) es volver
+            atrás en el navegador, porque al abrirlo la dirección pasó a ser la de esa partida.
+        --}}
+        @if ($lista->isNotEmpty())
+            <dialog x-ref="cartel" class="cartel-repeticion" aria-labelledby="titulo-repeticion" @cancel.prevent="cerrar()" @click.self="cerrar()">
+                <template x-if="datos">
+                    <x-repeticion datos="datos" class="cartel-contenido">
+                        <button type="button" class="boton boton-linea mb-5 min-h-10 w-fit shrink-0 px-3 py-1.5 text-sm max-sm:mb-0" @click="cerrar()">Cerrar</button>
+                    </x-repeticion>
+                </template>
+            </dialog>
+        @endif
     </div>
 </x-layouts.base>

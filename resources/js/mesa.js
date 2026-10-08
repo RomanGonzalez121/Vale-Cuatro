@@ -21,7 +21,7 @@
  | le quedan.
  */
 
-import { LLEGADA, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
+import { LLEGADA, cantoEnRenglones, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
 import { escucharPartida } from './echo';
 
 const LADOS = ['vos', 'rival'];
@@ -98,14 +98,11 @@ const SUMA_MAS_LARGA = 1000;
 const ENTRE_FOSFOROS_DEL_FINAL = 32;
 const ANTES_DE_CONTAR_EL_FINAL = 320;
 
-// Un canto de varias palabras se parte en dos renglones cuando así las letras quedan bastante más grandes
-// (en el celular; en una pantalla ancha entra entero). Las medidas son las de .voz en mesa.blade.php.
+// Las medidas de la letra de un canto en la mesa: lo más grande que llega a ser, y el ancho medio de una letra
+// de Piazzolla Black Italic y el relleno de la ficha, las dos en em.
 const REMS_DE_LA_LETRA_MAS_GRANDE = 11;
 const ANCHO_DE_LETRA = 0.56;
 const RELLENO_DEL_CANTO = 0.6;
-const GANANCIA_PARA_PARTIR = 1.15;
-// Hasta este largo el canto va siempre en un renglón: "No quiero" se lee bien entero.
-const LARGO_PARA_PARTIR = 9;
 
 export default (inicial, pedidos) => ({
     vista: inicial,
@@ -232,29 +229,17 @@ export default (inicial, pedidos) => ({
     },
 
     /**
-     * Un canto largo en una mesa angosta queda con letras chicas ("Contraflor al resto" a 360 px medía 28 px
-     * contra los 93 de "Truco"). Si partido en dos renglones se lee bastante más grande, se parte por donde
-     * los dos queden más parejos. En una pantalla ancha entra entero y no se toca.
+     * El canto, partido en dos renglones si en esta mesa así se lee bastante más grande (en el celular; en
+     * una pantalla ancha entra entero). La decisión es la misma que en la repetición (cantoEnRenglones);
+     * lo propio de la mesa es cómo mide la letra: las tres medidas que tamanoDeVoz le pasa a los estilos
+     * (11rem, dvh y cqw), sacadas acá en píxeles.
      */
     enRenglones(texto) {
-        const palabras = texto.split(' ');
-
-        if (palabras.length < 2 || texto.length <= LARGO_PARA_PARTIR) {
-            return texto;
-        }
-
-        const masLargo = (renglones) => Math.max(...renglones.map((renglon) => renglon.length), 4);
-        // Las mismas tres medidas que tamanoDeVoz le pasa a los estilos (11rem, dvh y cqw), sacadas en píxeles.
-        const letra = (renglones) => Math.min(
+        return cantoEnRenglones(texto, (renglones) => Math.min(
             REMS_DE_LA_LETRA_MAS_GRANDE * parseFloat(getComputedStyle(document.documentElement).fontSize),
             (window.innerHeight * 0.24) / renglones.length,
-            (this.$root.clientWidth * 0.88) / (masLargo(renglones) * ANCHO_DE_LETRA + RELLENO_DEL_CANTO),
-        );
-        const partido = palabras.slice(1)
-            .map((_, corte) => [palabras.slice(0, corte + 1).join(' '), palabras.slice(corte + 1).join(' ')])
-            .reduce((mejor, renglones) => (masLargo(renglones) < masLargo(mejor) ? renglones : mejor));
-
-        return letra(partido) > letra([texto]) * GANANCIA_PARA_PARTIR ? partido.join('\n') : texto;
+            (this.$root.clientWidth * 0.88) / (Math.max(...renglones.map((renglon) => renglon.length), 4) * ANCHO_DE_LETRA + RELLENO_DEL_CANTO),
+        ));
     },
 
     resultadoDeBaza(numero) {
