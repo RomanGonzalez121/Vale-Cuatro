@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ConCuenta;
+use App\Http\Middleware\SesionDeInvitado;
 use App\Http\Middleware\SinCuenta;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'con-cuenta' => ConCuenta::class,
             'sin-cuenta' => SinCuenta::class,
         ]);
+
+        // En toda página: la sesión de un invitado recuerda cuándo empezó, que es desde cuándo ve su historial.
+        $middleware->web(append: [SesionDeInvitado::class]);
 
         // Quien abre la mesa sin haber entrado vuelve a la portada, donde está el botón de jugar.
         // Si traía un aviso (por ejemplo, que la página había vencido) se conserva
