@@ -670,3 +670,49 @@ Nueve observaciones, ninguna rompía el juego. Se corrigió esto:
 - **El final tapaba la mesa pero no la apagaba:** con el teclado, el foco podía irse a "Salir", que quedaba detrás. Lo de atrás queda inerte mientras el final está a la vista, y el tanteo se anuncia junto con el título.
 - **El reparto de la sala de espera** seguía dándole la primera carta a quien abrió la sala. La consulta de la sala dice ahora quién es mano, y el reparto empieza por ahí, igual que en la mesa.
 - **Queda para M7:** la repetición del historial tiene su propia cuenta para el tamaño de los cantos y todavía los muestra en un renglón. Cuando esa pantalla se conecte a las partidas reales, tiene que usar la misma función que la mesa.
+
+## M7. Historial y repetición
+
+El historial dejó de ser una maqueta: la lista y la repetición salen de las partidas que se jugaron. Los datos de ejemplo se borraron.
+
+### La repetición no guarda nada: se arma con los eventos
+
+- **Problema:** volver a ver una partida jugada por jugada sin guardar una segunda copia de lo que pasó.
+- **Elegido:** `App\Juego\Repeticion` vuelve a aplicarle los eventos de la partida al motor, uno por uno (`Mesa::pasoAPaso()`), y de cada cosa que el motor cuenta (una carta, un canto, una respuesta, los tantos, un punto, el cierre de la mano) saca un "cuadro": cómo se ve la mesa en ese momento y una frase que lo dice. La pantalla solo muestra el cuadro que toca; no tiene reglas.
+- **Por qué en el servidor:** el navegador recibe cuadros ya filtrados por asiento. Si recibiera los eventos crudos, recibiría las cartas que el rival nunca mostró.
+- **Ir a una mano** es ir al cuadro donde se reparte: ahí el tanteo es el que tuvo la partida al empezar esa mano. Hay un test que juega una partida entera, anota el tanteo de cada reparto mientras se juega y lo compara con el de la repetición. Otro comprueba que armarla no escribe nada en la base y que da siempre lo mismo.
+- **El final:** el motor avisa que la partida terminó apenas se anota el punto que la cierra, antes de cerrar la mano. Al contarla, eso va último: la repetición termina diciendo quién ganó la partida.
+- **Se descartó** guardar los cuadros (sería una segunda verdad que puede desacomodarse) y mandar los eventos al navegador para que los interprete (habría que repetir el reglamento en JavaScript y filtrar cartas del lado equivocado).
+
+### Qué cartas se ven en una repetición
+
+- **Problema:** el criterio del módulo dice que en la repetición "se ven las cartas de los dos". Pero entre dos personas, las cartas que alguien no jugó ni mostró no las vio nadie, y el reglamento dice que vuelven al mazo boca abajo.
+- **Elegido por Román:** contra el bot se ven todas, desde el reparto. Entre personas se ven las propias y, del rival, solo lo que se vio en la mesa: lo que jugó y lo que mostró al cerrar la mano por el envido o la flor. La pantalla lo dice en una frase.
+- **Test:** recorre todos los cuadros de partidas enteras entre personas, desde los dos asientos, y comprueba que del rival no aparece ninguna carta que no haya jugado o mostrado. Otro lo comprueba sobre lo que de verdad recibe el navegador, por las dos puertas (la página y los datos del cartel).
+
+### El historial de quien juega sin cuenta dura lo que dura la sesión
+
+- **Pedido por Román:** un invitado ve las partidas de esa sesión; quien tiene cuenta las tiene todas; y al crear la cuenta se recuperan también las que jugó como invitado.
+- **Cómo:** un middleware (`SesionDeInvitado`) anota en la sesión cuándo empezó. A un invitado se le muestran las partidas terminadas desde ese momento. Las anteriores no se borran: se dejan de mostrar, y tampoco se abren escribiendo la dirección a mano.
+- **Recuperar todo al registrarse no necesitó código:** un invitado es una fila de `jugadores` sin correo, y crear la cuenta le completa los datos a esa misma fila. Las partidas ya eran suyas. Hay un test.
+- **La lista muestra solo partidas cerradas.** Una sin terminar se avisa aparte, con el link a la mesa, y no tiene repetición: pedirla manda a la mesa a quien la está jugando y a cualquier otro le responde que no existe.
+- **Sin partidas no se inventa nada:** un aviso corto, el tanteador en cero y el botón para jugar.
+- **Para los módulos que vienen:** cada renglón dice de qué juego fue ("Mano a mano"). El torneo, los desafíos, la escalera y el de a cuatro tienen que guardar sus partidas como eventos, igual que estas, y decir ahí de qué juego son.
+
+### La repetición se abre en un cartel que tiene dirección propia
+
+- **Problema:** Román pidió que la repetición se abra en un cartel sobre la lista, como el de "Salir" en la mesa, en vez de cambiar de página. Un cartel común tiene costos: no se puede compartir ni guardar el link, "atrás" se va del historial en vez de cerrarlo y al recargar se pierde.
+- **Elegido por Román entre tres opciones:** el cartel con dirección propia. "Ver de nuevo" es un link de verdad a `/historial/{partida}`. Con JavaScript, el clic abre el cartel y cambia la dirección del navegador a la de esa partida (History API). "Atrás" lo cierra, "adelante" lo vuelve a abrir, y recargar o entrar directo muestra la misma repetición como página.
+- **Una sola pieza para los dos lugares:** `<x-repeticion>` se usa en el cartel y en la página. El cartel pide los datos a `/historial/{partida}/cuadros`; la página los trae escritos. Un test comprueba que las dos puertas entregan lo mismo y que las dos están cerradas para quien no jugó esa partida.
+- **El cartel es el `<dialog>` del navegador:** se ocupa del foco, de la tecla Esc y de que la lista de atrás no se pueda tocar. Cerrar (el botón, Esc o un clic en el fondo) es volver atrás en el navegador, así el botón y la flecha hacen lo mismo.
+- **Una trampa que apareció probando:** si se recarga con el cartel abierto, para el navegador esa página y la lista siguen siendo "la misma": con "atrás" cambia la dirección y no carga nada. La página de la repetición escucha ese aviso y pide la carga.
+- **Si algo falla** (sin conexión, o el servidor no contesta), el link hace lo de siempre y abre la página.
+- **Medidas:** en escritorio el cartel entra entero, sin deslizar (probado en 1355 x 638, 1024 x 768 y 1920 x 1080). En el celular ocupa la pantalla, y el resultado, la mesa y los controles entran juntos a 360 x 740; el detalle queda debajo. La mesa de la repetición sale de la misma medida que la de juego, `--b`, con su propia cuenta.
+- **Movimiento:** el cartel entra apenas más chico y con un fundido, 220 ms. Lo que se abre con "adelante" o se cierra con el teclado no se anima. Avanzar de a una jugada mueve las cartas como en la mesa; saltar de mano o retroceder las pone en su lugar sin moverlas. Las flechas del teclado pasan de jugada y, con Mayús, de mano.
+- **Se descartó** el cartel sin dirección (los costos de arriba) y dejar solo la página (era lo que había, y a Román le resultó un salto innecesario).
+
+### Qué no se hizo
+
+- **No pasó por la revisión de código antes de subir:** Román pidió subirlo directo.
+- **No hay tests de navegador automáticos** del cartel ni de la repetición: se probaron a mano con un navegador real (abrir, cerrar por las cuatro puertas, atrás y adelante, recargar, teclado) y quedan para M11.
+- **Capturas** en `docs/capturas/`: `historial.png`, `historial-celular.png`, `repeticion.jpeg` y `repeticion-celular.png`.
