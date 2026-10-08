@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Juego\Mesa;
+use App\Models\EventoDePartida;
 use App\Models\Partida;
 use App\Motor\Accion;
 use App\Motor\AccionInvalida;
@@ -106,6 +107,22 @@ class MesaController extends Controller
         return response()->json(['listo' => true]);
     }
 
+    /**
+     * La red de seguridad del plazo entre personas: la mesa lo pide cuando su cuenta regresiva llegó a cero y el
+     * servidor no resolvió la espera (el proceso de la cola está caído o atrasado). El servidor decide: si el plazo
+     * todavía no se cumplió, o ya lo resolvió otro pedido, no hace nada.
+     */
+    public function resolverPlazo(Request $request): JsonResponse
+    {
+        $partida = $this->mesa->enCursoDe($request->user());
+
+        if ($partida === null) {
+            return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
+        }
+
+        return response()->json(['resolvio' => $this->mesa->resolverPlazo($partida->getKey())]);
+    }
+
     public function accion(Request $request): JsonResponse
     {
         try {
@@ -138,22 +155,48 @@ class MesaController extends Controller
     }
 
     /**
-     * El bot juega aparte, así que puede cerrar la partida mientras el jugador no está mirando
-     * (salió para seguir después, o recargó justo). Al volver a la mesa se le cuenta cómo terminó.
+     * El bot o el otro jugador pueden cerrar la partida mientras uno no está mirando (salió para seguir después,
+     * recargó justo, o se fue el rival). Al volver a la mesa se le cuenta cómo terminó.
      */
     private function comoTermino(Request $request): ?string
     {
         $ultima = $this->mesa->ultimaDe($request->user());
 
-        if ($ultima?->estado !== Partida::TERMINADA) {
+        return match ($ultima?->estado) {
+            Partida::TERMINADA => $this->resultado($ultima, $request),
+            Partida::ABANDONADA => $this->comoSeFueAlguien($ultima, $request),
+            default => null,
+        };
+    }
+
+    private function resultado(Partida $partida, Request $request): string
+    {
+        $asiento = $this->asientoDe($partida, $request);
+        $tanteo = $this->mesa->reconstruir($partida)->tanteo();
+        $rival = $partida->entre_personas ? 'tu rival' : 'el bot';
+
+        return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($partida->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.");
+    }
+
+    /**
+     * Entre personas, quien se quedó se entera de que el otro se fue, y quien perdió por dejar vencer su turno se entera
+     * de por qué. Quien abandonó a propósito ya lo sabe, y una sala cancelada o una partida contra el bot no necesitan aviso.
+     */
+    private function comoSeFueAlguien(Partida $partida, Request $request): ?string
+    {
+        if (! $partida->entre_personas || $partida->ganador === null) {
             return null;
         }
 
-        $asiento = $this->asientoDe($ultima, $request);
-        $tanteo = $this->mesa->reconstruir($ultima)->tanteo();
-        $rival = $ultima->entre_personas ? 'tu rival' : 'el bot';
+        $asiento = $this->asientoDe($partida, $request);
+        $abandono = $partida->eventos()->getQuery()->where('tipo', EventoDePartida::ABANDONO)->reorder('numero', 'desc')->first();
+        $porVencimientos = ($abandono?->datos['motivo'] ?? null) === 'vencimientos';
 
-        return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($ultima->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.");
+        if ($abandono?->asiento === $asiento) {
+            return $porVencimientos ? 'Perdiste la partida: se te venció el turno '.Mesa::VENCIMIENTOS_PARA_PERDER.' veces seguidas.' : null;
+        }
+
+        return $porVencimientos ? 'Tu rival dejó de jugar y perdió la partida.' : 'Tu rival abandonó la partida: ganaste.';
     }
 
     /**

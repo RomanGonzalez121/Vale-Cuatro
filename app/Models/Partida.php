@@ -29,6 +29,7 @@ use Illuminate\Support\Str;
  * @property Nivel|null $nivel_bot
  * @property int|null $ganador
  * @property Carbon|null $terminada_en
+ * @property Carbon|null $plazo_vence_en
  */
 #[Table('partidas')]
 #[Fillable(['jugador_id', 'invitado_id', 'primer_mano', 'puntos', 'entre_personas', 'codigo', 'nivel_bot'])]
@@ -134,6 +135,7 @@ class Partida extends Model
             'nivel_bot' => Nivel::class,
             'ganador' => 'integer',
             'terminada_en' => 'datetime',
+            'plazo_vence_en' => 'datetime',
         ];
     }
 }

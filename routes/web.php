@@ -39,6 +39,7 @@ Route::middleware(['auth', 'throttle:240,1'])->group(function () {
     Route::post('/mesa/repartir', [MesaController::class, 'repartir'])->name('mesa.repartir');
     Route::post('/mesa/abandonar', [MesaController::class, 'abandonar'])->name('mesa.abandonar');
     Route::post('/mesa/bot', [MesaController::class, 'despertarAlBot'])->name('mesa.bot');
+    Route::post('/mesa/plazo', [MesaController::class, 'resolverPlazo'])->name('mesa.plazo');
 });
 
 Route::middleware('sin-cuenta')->group(function () {

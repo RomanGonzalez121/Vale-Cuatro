@@ -25,6 +25,9 @@ class EventoDePartida extends Model
 
     public const ACCION = 'accion';
 
+    /** Lo que hizo el servidor por quien dejó vencer su turno: es una acción más, pero no la eligió esa persona. */
+    public const VENCIMIENTO = 'vencimiento';
+
     public const ABANDONO = 'abandono';
 
     public $timestamps = false;

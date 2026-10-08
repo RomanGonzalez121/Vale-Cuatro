@@ -3,6 +3,7 @@
 namespace App\Juego;
 
 use App\Events\PartidaActualizada;
+use App\Jobs\ResolverPlazo;
 use App\Jobs\TurnoDelBot;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
@@ -45,6 +46,15 @@ final class Mesa
 
     /** Cuánto espera una sala a que se siente alguien antes de cerrarse sola. */
     public const MINUTOS_DE_SALA = 30;
+
+    /** Entre personas: cuánto tiene quien debe jugar o contestar antes de que el servidor lo mande al mazo. */
+    public const SEGUNDOS_DE_TURNO = 45;
+
+    /** Entre personas: cuánto se espera, con la mano cerrada, antes de repartir la siguiente. Tocar la mesa lo apura. */
+    public const SEGUNDOS_PARA_REPARTIR = 6;
+
+    /** Entre personas: con tantos vencimientos seguidos, sin ninguna jugada propia en el medio, se pierde la partida. */
+    public const VENCIMIENTOS_PARA_PERDER = 3;
 
     /**
      * Cada partida juega contra el bot de su nivel. Un bot fijo sirve para los tests, que necesitan mirar qué recibe.
@@ -397,6 +407,108 @@ final class Mesa
     }
 
     /**
+     * Resuelve lo que una partida entre personas estaba esperando, si ya se cumplió el plazo:
+     *
+     * - con la mano cerrada, reparte la siguiente;
+     * - si a alguien le tocaba jugar o contestar y no lo hizo, el servidor lo manda al mazo (la jugada que el
+     *   reglamento ya tiene: con un canto sin contestar vale como no querer y perder la mano). Con
+     *   VENCIMIENTOS_PARA_PERDER seguidos, sin ninguna jugada propia en el medio, pierde la partida.
+     *
+     * Lo llama el trabajo de la cola y también la red de seguridad de la mesa. Con $evento, no hace nada si desde
+     * entonces pasó algo (alguien jugó o apuró el reparto). Antes del plazo tampoco: por eso es seguro llamarlo de más.
+     * Devuelve si resolvió algo.
+     */
+    public function resolverPlazo(int $partidaId, ?int $evento = null): bool
+    {
+        return DB::transaction(function () use ($partidaId, $evento) {
+            $partida = Partida::query()->whereKey($partidaId)->lockForUpdate()->first();
+
+            if ($partida === null || ! $partida->enCurso() || ! $partida->entre_personas || $partida->plazo_vence_en === null) {
+                return false;
+            }
+
+            if (now()->getTimestamp() < $partida->plazo_vence_en->getTimestamp()) {
+                return false;
+            }
+
+            if ($evento !== null && (int) $partida->eventos()->max('numero') !== $evento) {
+                return false;
+            }
+
+            $motor = $this->reconstruir($partida);
+
+            if ($motor->fase() === Fase::PorRepartir) {
+                $this->repartirEn($partida, $motor);
+
+                return true;
+            }
+
+            $asiento = $this->quienTieneElTurno($motor);
+
+            if ($asiento === null) {
+                return false;
+            }
+
+            if ($this->vencimientosSeguidos($partida, $asiento) + 1 >= self::VENCIMIENTOS_PARA_PERDER) {
+                $this->guardar($partida, EventoDePartida::ABANDONO, $asiento, ['motivo' => 'vencimientos']);
+                $this->cerrar($partida, Partida::ABANDONADA, 1 - $asiento);
+
+                return true;
+            }
+
+            $accion = $this->accionPorVencimiento($motor, $asiento);
+            $motor = $motor->aplicar($asiento, $accion);
+            $this->guardar($partida, EventoDePartida::VENCIMIENTO, $asiento, $accion->aArray());
+            $this->despuesDeJugar($partida, $motor);
+
+            return true;
+        });
+    }
+
+    /**
+     * Cuántas veces seguidas dejó vencer su turno un asiento, contando desde su última jugada propia hacia atrás.
+     * Lo que hace el otro asiento en el medio no corta la cuenta: cada uno lleva la suya.
+     */
+    private function vencimientosSeguidos(Partida $partida, int $asiento): int
+    {
+        $tipos = $partida->eventos()->getQuery()->reorder('numero', 'desc')
+            ->where('asiento', $asiento)
+            ->whereIn('tipo', [EventoDePartida::ACCION, EventoDePartida::VENCIMIENTO])
+            ->pluck('tipo');
+
+        $seguidos = 0;
+
+        foreach ($tipos as $tipo) {
+            if ($tipo !== EventoDePartida::VENCIMIENTO) {
+                break;
+            }
+
+            $seguidos++;
+        }
+
+        return $seguidos;
+    }
+
+    /**
+     * Lo que se hace por quien se quedó sin tiempo: irse al mazo. Si en ese momento el mazo no está entre sus
+     * acciones, no querer, y si tampoco, lo primero que el motor le permita: la partida no puede quedar trabada.
+     */
+    private function accionPorVencimiento(Motor $motor, int $asiento): Accion
+    {
+        $validas = $motor->accionesPara($asiento);
+
+        foreach ([TipoDeAccion::Mazo, TipoDeAccion::NoQuiero] as $preferida) {
+            foreach ($validas as $valida) {
+                if ($valida->tipo === $preferida) {
+                    return $valida;
+                }
+            }
+        }
+
+        return $validas[0];
+    }
+
+    /**
      * La red de seguridad: si el turno del bot no salió de la cola (el proceso que la atiende está
      * caído o atrasado), la mesa lo pide y el bot juega en el momento todo lo que le toque.
      * Usa el mismo camino que el job, así que si el job llega después no encuentra nada que hacer.
@@ -436,11 +548,42 @@ final class Mesa
             return;
         }
 
-        if (! $partida->entre_personas && $this->leTocaAlBot($motor)) {
+        if ($partida->entre_personas) {
+            $this->esperarPlazo($partida, $motor);
+
+            return;
+        }
+
+        if ($this->leTocaAlBot($motor)) {
             // El job sale recién cuando la jugada quedó guardada, y con una demora para que parezca que piensa.
             TurnoDelBot::dispatch($partida->getKey())
                 ->delay(now()->addSeconds(self::DEMORA_DEL_BOT))
                 ->afterCommit();
+        }
+    }
+
+    /**
+     * Entre personas, deja anotado cuándo se resuelve solo lo que la partida está esperando (que alguien
+     * juegue, o que se reparta la mano siguiente) y deja en la cola el trabajo que lo resuelve entonces.
+     *
+     * El plazo se guarda en segundos enteros y el trabajo sale exactamente a esa hora: así la base y la cola
+     * miden lo mismo y un redondeo no puede hacer que el trabajo llegue un segundo antes y no encuentre nada.
+     */
+    private function esperarPlazo(Partida $partida, Motor $motor): void
+    {
+        $segundos = match (true) {
+            $motor->fase() === Fase::PorRepartir => self::SEGUNDOS_PARA_REPARTIR,
+            $motor->fase() === Fase::Jugando && $this->quienTieneElTurno($motor) !== null => self::SEGUNDOS_DE_TURNO,
+            default => null,
+        };
+
+        $vence = $segundos === null ? null : now()->addSeconds($segundos)->startOfSecond();
+
+        $partida->plazo_vence_en = $vence;
+        $partida->save();
+
+        if ($vence !== null) {
+            ResolverPlazo::dispatch($partida->getKey(), (int) $partida->eventos()->max('numero'))->delay($vence)->afterCommit();
         }
     }
 
@@ -461,7 +604,8 @@ final class Mesa
                 fn (array $mano) => array_map(Carta::de(...), $mano),
                 $evento->datos['manos'],
             )),
-            EventoDePartida::ACCION => $motor->aplicar($evento->asiento, Accion::desdeArray($evento->datos)),
+            // Un vencimiento es la jugada que hizo el servidor por quien se quedó sin tiempo: para el motor, una acción más.
+            EventoDePartida::ACCION, EventoDePartida::VENCIMIENTO => $motor->aplicar($evento->asiento, Accion::desdeArray($evento->datos)),
             // Un abandono cierra la partida sin cambiar lo que se jugó.
             default => $motor,
         };
@@ -478,7 +622,43 @@ final class Mesa
      */
     private function paso(Partida $partida, Motor $motor, int $evento, int $asiento): array
     {
-        return [...$motor->vistaPara($asiento), 'partida' => $partida->getKey(), 'evento' => $evento];
+        $paso = [...$motor->vistaPara($asiento), 'partida' => $partida->getKey(), 'evento' => $evento];
+
+        // Entre personas, cuántos segundos faltan para que el servidor resuelva la espera: el turno o el reparto.
+        // La mesa lo usa para la cuenta regresiva. Contra el bot no hay plazo y el paso queda como siempre.
+        if ($partida->entre_personas) {
+            $paso['restan'] = $this->restan($partida, $motor);
+        }
+
+        return $paso;
+    }
+
+    /**
+     * Los segundos que faltan para que se resuelva la espera actual, o null si no hay nada que esperar.
+     */
+    private function restan(Partida $partida, Motor $motor): ?int
+    {
+        $espera = $motor->fase() === Fase::PorRepartir || ($motor->fase() === Fase::Jugando && $this->quienTieneElTurno($motor) !== null);
+
+        if (! $espera || $partida->plazo_vence_en === null) {
+            return null;
+        }
+
+        return max(0, $partida->plazo_vence_en->getTimestamp() - now()->getTimestamp());
+    }
+
+    /**
+     * El asiento al que le toca jugar o contestar, o null si nadie (la mano está cerrada o terminó). Es uno solo.
+     */
+    private function quienTieneElTurno(Motor $motor): ?int
+    {
+        foreach ([self::JUGADOR, self::BOT] as $asiento) {
+            if ($motor->accionesPara($asiento) !== []) {
+                return $asiento;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -584,6 +764,8 @@ final class Mesa
         $partida->estado = $estado;
         $partida->ganador = $ganador;
         $partida->terminada_en = now();
+        // Una partida cerrada no espera nada.
+        $partida->plazo_vence_en = null;
         $partida->save();
     }
 }
