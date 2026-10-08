@@ -2,6 +2,7 @@
 
 namespace App\Juego;
 
+use App\Events\PartidaActualizada;
 use App\Jobs\TurnoDelBot;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
@@ -568,6 +569,12 @@ final class Mesa
             'datos' => $datos,
             'creado_en' => now(),
         ]);
+
+        // Entre personas, el otro se entera por un aviso que sale recién cuando se confirma la transacción.
+        // Contra el bot no hace falta: la mesa le pregunta al servidor mientras juega.
+        if ($partida->entre_personas) {
+            PartidaActualizada::avisar($partida->getKey(), $numero);
+        }
 
         return $numero;
     }

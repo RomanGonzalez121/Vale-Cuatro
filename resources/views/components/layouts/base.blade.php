@@ -17,6 +17,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ $descripcion }}">
     <meta name="theme-color" content="{{ $superficie === 'pano' ? '#1f5a46' : '#fbfaf5' }}">
+    {{-- Echo lo manda al autorizar un canal privado: sin este token el servidor rechaza el pedido. --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $titulo ? "{$titulo} | Vale Cuatro" : 'Vale Cuatro, truco argentino online' }}</title>
     {{-- El modo se decide antes de pintar: lo que eligió el visitante o, si no eligió, lo que pide su sistema. --}}
     <script>

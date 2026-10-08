@@ -49,6 +49,8 @@ class SalaController extends Controller
         }
 
         return view('paginas.sala', [
+            // El id va en la página para suscribirse al canal privado: no sirve de nada sin ser de la partida.
+            'partida' => $partida->id,
             'codigo' => $codigo,
             'enlace' => route('invitacion', $codigo),
             'minutos' => Mesa::MINUTOS_DE_SALA,

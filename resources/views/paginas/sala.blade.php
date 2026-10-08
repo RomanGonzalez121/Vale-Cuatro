@@ -1,6 +1,6 @@
 <x-layouts.base titulo="Invitá a alguien" descripcion="Mandale el link de tu partida a quien quieras y jueguen al truco en vivo." superficie="pano">
     <div class="sala-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-10 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:items-center lg:pb-24 lg:pt-14"
-        x-data="sala({ estado: @js(route('sala.estado', $codigo)), mesa: @js(route('mesa')), enlace: @js($enlace) })">
+        x-data="sala({ estado: @js(route('sala.estado', $codigo)), mesa: @js(route('mesa')), enlace: @js($enlace), partida: @js($partida) })">
         <section aria-labelledby="titulo-sala">
             <h1 id="titulo-sala" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                 Invitá a alguien

@@ -541,6 +541,18 @@ El reglamento no decía qué pasa en estos casos y el motor necesitaba una respu
 - **Probado una partida entera,** jugada al azar por los dos asientos y repetida hasta revisar 400 pasos: ningún paso que recibe un asiento nombra una carta del otro que no se haya jugado ni mostrado, ni lo que recibe quien juega ni lo que se entera el otro. Es el mismo criterio del test de M3, ahora en las dos direcciones.
 - **Se descartó:** guardar el asiento en la sesión o mandarlo desde el navegador (se puede falsificar), y dos clases de mesa, una por tipo de partida (duplicaba toda la lógica de eventos).
 
+### El WebSocket avisa, no cuenta
+
+- **Problema:** el criterio del módulo es que las cartas del rival nunca lleguen al navegador del otro, ni por HTTP ni por los eventos emitidos. Mandar la vista de cada asiento por el WebSocket habría obligado a probar y vigilar dos caminos por donde pueden filtrarse cartas.
+- **Se eligió:** el evento `PartidaActualizada` lleva solo el número del último evento, por un canal privado `partida.{id}`. Quien lo recibe pide lo que pasó por la consulta HTTP de siempre, que ya arma la vista de su asiento. Las cartas viajan por un solo camino, el que ya estaba probado.
+- **Un canal por partida y no por asiento** (cambio respecto de lo que se le contó a Román al empezar): como el aviso no lleva nada que un jugador no deba ver, un canal para los dos alcanza y es más simple. Entran los dos asientos (quien abrió la sala, desde que espera, y quien se sentó) y nadie más: se prueba por la ruta de autorización con quien creó, quien se sentó, un tercero, sin sesión, una partida contra el bot y una que no existe. Para las señas de M19 se va a necesitar un canal por equipo, pero eso es otra cosa.
+- **Medido en un navegador real:** por el WebSocket pasaron solo `pusher:subscribe` (con la firma de autorización) y `partida.actualizada` con `{"evento":1}`. Quien espera en la sala ve llegar al rival a los 1,2 segundos; sin el aviso, la consulta cada 4 segundos tardaba cerca de 4.
+- **Un fallo del tiempo real no puede romper una jugada.** Sin cuidado, si Reverb está caído el aviso falla después de guardar la jugada y quien jugó ve un error aunque su jugada entró. `PartidaActualizada::avisar()` lo manda cuando se confirma la transacción y dentro de un `try`: si falla, se anota con `report()` y la jugada sigue. Test con un emisor que siempre falla. También se prueba que un aviso de una transacción que se deshizo nunca sale.
+- **Un aviso por evento guardado,** y solo entre personas: contra el bot no se emite nada. Test: en partidas enteras, la cantidad de avisos es igual a la de eventos guardados, y ninguno trae una carta.
+- **La sala sigue preguntando por su cuenta:** cada 15 segundos con el WebSocket andando y cada 4 si no, y apenas se conecta o vuelve a estar a la vista. Así funciona también sin Reverb.
+- **Se descartó:** mandar la vista de cada asiento por el WebSocket, y la cola para los avisos (sumaba la demora del proceso de la cola a algo que tiene que ser inmediato; con `ShouldBroadcastNow` sale en el momento).
+- **En los tests,** el emisor de avisos es el nulo (`phpunit.xml`). Las pruebas de autorización cambian a Reverb con claves de mentira y vuelven a registrar los canales, que se asocian al emisor que está activo al arrancar la aplicación.
+
 ### Detalles del arranque
 
 - **Sin claves, ningún comando arranca.** Con `BROADCAST_CONNECTION=reverb` y las claves vacías, Laravel falla al crear el emisor y también falla el comando que genera las claves. Se resuelve corriendo `reverb:install` con la conexión en `null` solo para ese comando. Está explicado en `.env.example`, que deja la conexión en `log` para que la integración continua y quien clone el proyecto sin Reverb sigan arrancando.
