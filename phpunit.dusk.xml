@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Las pruebas de navegador (php artisan dusk). Van aparte de las demás porque necesitan un sitio prendido.
+    El proceso que las corre no toca ninguna base: todo lo hace por la pantalla. Igual se lo deja apuntando
+    a una base propia y en memoria, para que nunca pueda escribir en la de quien desarrolla.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Navegador">
+            <directory>tests/Browser</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="BROADCAST_CONNECTION" value="null" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+    </php>
+</phpunit>

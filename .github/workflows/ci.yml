@@ -43,3 +43,80 @@ jobs:
 
       - name: Tests (PHPUnit)
         run: php artisan test
+
+  # Un Chrome de verdad usa el sitio como una persona: entra sin cuenta, se registra, ingresa y juega
+  # una mano entera contra el bot. Lo que los otros tests no ven es la pantalla, y esto la prueba.
+  navegador:
+    name: Pruebas en un navegador real
+    runs-on: ubuntu-latest
+
+    # El sitio de prueba y las pruebas comparten estas variables. La base es un archivo SQLite vacío,
+    # y la cola corre en el momento: el bot juega apenas le toca, sin un proceso aparte.
+    env:
+      APP_ENV: testing
+      APP_DEBUG: "true"
+      APP_URL: http://127.0.0.1:8010
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ${{ github.workspace }}/database/dusk.sqlite
+      QUEUE_CONNECTION: sync
+      BROADCAST_CONNECTION: log
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      DUSK_URL: http://127.0.0.1:8010
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependencias de PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Dependencias y compilación del frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Entorno y base de prueba
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/dusk.sqlite
+          php artisan migrate --force
+
+      - name: Controlador de Chrome, para la versión instalada
+        run: php artisan dusk:chrome-driver --detect
+
+      - name: Sitio de prueba
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8010 > storage/logs/servidor.log 2>&1 &
+          for intento in $(seq 1 30); do
+            curl --silent --fail http://127.0.0.1:8010/up > /dev/null && exit 0
+            sleep 1
+          done
+          echo "El sitio de prueba no respondió." && cat storage/logs/servidor.log && exit 1
+
+      - name: Pruebas de navegador (Dusk)
+        run: php artisan dusk
+
+      # Si algo falla, queda lo que el navegador tenía en pantalla y lo que escribió el sitio.
+      - name: Capturas y registros, si falló
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: navegador
+          path: |
+            tests/Browser/screenshots
+            tests/Browser/console
+            storage/logs
