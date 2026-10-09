@@ -40,7 +40,7 @@ Proyecto de portfolio de Román Gonzalez.
 
 ## Estado
 
-El proyecto se construye por módulos. Hoy están terminados los nueve primeros, de M0 a M8.
+El proyecto se construye por módulos. Hoy están terminados los nueve primeros, de M0 a M8, y el sitio está publicado.
 
 **El juego mano a mano**
 
@@ -60,7 +60,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 
 | Módulo | Qué es | Estado |
 |---|---|---|
-| M11a | Publicación del sitio y pruebas automáticas en un navegador real | El sitio ya está publicado; faltan las pruebas de navegador |
+| M11a | Publicación del sitio y pruebas automáticas en un navegador real | Listo |
 | M12 | Revancha y series al mejor de tres | Pendiente |
 | M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
 | M14 | Sonido de cartas, fósforos y cantos | Pendiente |
@@ -121,10 +121,10 @@ La página `/identidad` muestra logo, colores con su contraste medido, tipograf�
 - Blade, Tailwind CSS 4 y Alpine.js
 - Laravel Reverb y Echo para el tiempo real, y colas para el turno del bot y los plazos
 - Animaciones con CSS y la Web Animations API, sin librerías
-- PHPUnit y Laravel Pint, corridos por GitHub Actions en cada subida
+- PHPUnit, Laravel Dusk (pruebas en un navegador real) y Laravel Pint, corridos por GitHub Actions en cada subida
 - Tipografías Chivo y Piazzolla, alojadas en el proyecto
 
-Más adelante se suman Sanctum con OpenAPI para la API, Laravel Dusk para las pruebas de navegador y Web Push para los avisos.
+Más adelante se suman Sanctum con OpenAPI para la API y Web Push para los avisos.
 
 ## Cómo correrlo
 
@@ -205,6 +205,23 @@ vendor/bin/phpunit --testsuite Motor
 ```
 
 Tienen un test por cada fila de las tablas de pardas y de envido, y partidas enteras jugadas al azar con semilla.
+
+### En un navegador de verdad
+
+Además hay pruebas que manejan un Chrome y usan el sitio como una persona (Laravel Dusk): entran sin cuenta con un solo botón, crean una cuenta, salen, vuelven a ingresar y juegan una mano entera contra el bot tocando la pantalla. Corren solas en cada subida, junto con las demás, y el sitio se publica recién cuando pasan todas.
+
+Necesitan un sitio prendido aparte, con su propia base vacía, para no tocar la de desarrollo. Las variables de entorno le ganan al `.env`, así que alcanza con definirlas en la terminal:
+
+```bash
+export APP_ENV=testing APP_URL=http://127.0.0.1:8010 DUSK_URL=http://127.0.0.1:8010
+export DB_CONNECTION=sqlite DB_DATABASE="$PWD/database/dusk.sqlite" QUEUE_CONNECTION=sync BROADCAST_CONNECTION=log
+
+touch database/dusk.sqlite && php artisan migrate --force
+php artisan serve --port=8010 &
+php artisan dusk
+```
+
+Con `QUEUE_CONNECTION=sync` el bot juega apenas le toca, sin el proceso de la cola. Si no hay Chrome instalado, `DUSK_CHROME` puede apuntar a cualquier Chromium.
 
 ## Decisiones
 

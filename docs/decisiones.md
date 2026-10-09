@@ -781,7 +781,7 @@ Las partidas regaladas entre dos sesiones se le consultaron a Román y quedó la
 
 ## M11a. Publicación
 
-El sitio está publicado en Render, en el plan gratuito, con la base MySQL en Aiven. Lo que sigue es cómo se hizo entrar todo ahí y qué se midió. Las pruebas automáticas de navegador, la otra mitad de M11a, se anotan cuando estén.
+El sitio está publicado en Render, en el plan gratuito, con la base MySQL en Aiven. Lo que sigue es cómo se hizo entrar todo ahí y qué se midió. Al final están las pruebas automáticas de navegador, la otra mitad de M11a.
 
 ### Todo el sitio en un solo contenedor
 
@@ -824,3 +824,12 @@ El sitio está publicado en Render, en el plan gratuito, con la base MySQL en Ai
 - **En el sitio publicado, desde Buenos Aires:** las páginas contestan entre 0,3 y 0,8 segundos; se jugó una partida entera contra el bot en un celular de 360 px (32 manos, sin errores); dos navegadores jugaron entre sí con el tiempo real conectado en los dos; el ranking se sembró solo y quedó con la misma tabla que en desarrollo, porque sale de una semilla.
 - **Seguridad, comprobado en el sitio publicado:** HTTP redirige a HTTPS; las cookies van marcadas como seguras y la de sesión no es legible desde JavaScript; un nombre de sitio falso en el pedido no aparece en los links; los archivos que empiezan con punto y los de configuración no se entregan.
 - **Queda por medir:** la memoria real en el panel de Render, cuánto tarda en despertar el servicio dormido y que la limpieza programada corre.
+
+### Pruebas en un navegador real
+
+- **Problema:** los tests comprueban el reglamento y el servidor, pero ninguno miraba la pantalla. La mesa es casi todo JavaScript, y los módulos que vienen (revancha, de a cuatro) la van a tocar.
+- **Elegido:** Laravel Dusk, que maneja un Chrome sin ventana. Tres pruebas: entrar sin cuenta y llegar a la mesa con un solo botón; crear una cuenta, salir y volver a ingresar; y jugar una mano entera contra el bot tocando la pantalla, hasta repartir la siguiente.
+- **Cómo juega la prueba:** tira cartas y a cada canto contesta "no quiero". Con cartas al azar no se puede saber qué va a pasar, pero así la mano se cierra siempre y la partida no puede terminarse en la primera mano. Lo que comprueba es que la pantalla responde: hay tres cartas, al tocarlas se juegan, la mano se cierra, alguien suma y se puede repartir.
+- **No tocan la base por su cuenta:** todo lo hacen por la pantalla. El sitio contra el que corren se levanta aparte, con un archivo SQLite vacío y la cola en el momento (el bot juega apenas le toca). En la máquina de desarrollo eso va por variables de entorno, que le ganan al `.env`: el `.env` y la base de desarrollo no se tocan.
+- **Están en la integración continua, como un trabajo aparte,** y el sitio se publica recién cuando pasan los dos. Si un cambio rompe la mesa, no llega al sitio publicado. Si fallan, quedan guardadas las capturas de lo que el navegador tenía en pantalla.
+- **Se descartó** usar el reemplazo de `.env` que trae Dusk (pisa el `.env` mientras corre y, si se corta, lo deja cambiado) y probar contra el sitio publicado (las pruebas crean cuentas y partidas).
