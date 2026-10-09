@@ -1,0 +1,39 @@
+# Lo que no entra a la imagen: se instala o se compila adentro, o no hace falta para que el sitio corra.
+.git
+.github
+node_modules
+vendor
+public/build
+# Con este archivo adentro, las páginas pedirían los estilos al servidor de desarrollo de Vite.
+public/hot
+public/storage
+
+# Nunca: claves y configuración de cada máquina.
+.env
+.env.*
+!.env.example
+auth.json
+
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+storage/pail
+bootstrap/cache/*.php
+database/*.sqlite
+
+tests
+docs
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+
+# Archivos locales de trabajo.
+CLAUDE.md
+prompt-truco-online.md
+.claude
+graphify-out
+.playwright-mcp
+.vscode
+.idea

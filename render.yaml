@@ -1,0 +1,72 @@
+# Cómo se publica Vale Cuatro en Render. Render lee este archivo y arma el servicio solo:
+# en el panel, "New" y después "Blueprint", eligiendo este repositorio.
+#
+# Es un solo servicio, en el plan gratis, que corre la imagen del Dockerfile. La base MySQL está afuera
+# (en Aiven): Render no ofrece MySQL gratis.
+
+services:
+  - type: web
+    name: vale-cuatro
+    runtime: docker
+    plan: free
+    # La más cercana a la base, que está en San Francisco: cada pedido hace varias consultas.
+    region: oregon
+    healthCheckPath: /up
+    # Se publica solo con cada subida a la rama principal, pero recién cuando pasaron los tests y Pint.
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: APP_NAME
+        value: Vale Cuatro
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_LOCALE
+        value: es
+      # La clave con la que el sitio cifra las sesiones. La sortea Render la primera vez y no cambia más.
+      - key: APP_KEY
+        generateValue: true
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: info
+
+      # La base. Los cuatro datos de conexión no van escritos acá porque el repositorio es público:
+      # Render los pide al crear el servicio y quedan guardados solo en su panel.
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_DATABASE
+        value: defaultdb
+      # Aiven exige conexión cifrada. Este es su certificado público, que viene en la imagen.
+      - key: MYSQL_ATTR_SSL_CA
+        value: /var/www/html/docker/aiven-ca.pem
+
+      # Las sesiones y la cola viven en la base: sobreviven a cada publicación. El caché, en el disco
+      # del contenedor: si se pierde no pasa nada.
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: CACHE_STORE
+        value: file
+
+      # El tiempo real. El sitio le habla a Reverb por adentro del contenedor; adónde entra el navegador
+      # y las claves de Reverb las resuelve docker/arranque.sh.
+      - key: BROADCAST_CONNECTION
+        value: reverb
+      - key: REVERB_HOST
+        value: 127.0.0.1
+      - key: REVERB_PORT
+        value: "8080"
+      - key: REVERB_SCHEME
+        value: http
