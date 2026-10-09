@@ -8,36 +8,44 @@ use App\Http\Controllers\PaginaController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\RegistroController;
+use App\Http\Controllers\RevanchaController;
 use App\Http\Controllers\SalaController;
 use App\Http\Controllers\SesionController;
 use Illuminate\Support\Facades\Route;
+
+/*
+ | Los límites de pedidos por minuto llevan un nombre al final (throttle:10,1,entrar). Sin él, Laravel
+ | cuenta todos los pedidos de una misma persona en una sola cuenta, sea cual sea la ruta: los que hace
+ | la mesa mientras se juega gastaban los diez de "Jugar" e "Invitar", y tocar esos botones justo después
+ | de una partida contestaba "demasiados pedidos". Con nombre, cada grupo lleva su propia cuenta.
+ */
 
 Route::get('/', [PaginaController::class, 'portada'])->name('portada');
 Route::get('/ranking', [RankingController::class, 'ver'])->name('ranking');
 Route::get('/historial', [HistorialController::class, 'lista'])->name('historial');
 Route::get('/historial/{partida}', [HistorialController::class, 'ver'])->whereNumber('partida')->middleware('auth')->name('historial.ver');
-Route::get('/historial/{partida}/cuadros', [HistorialController::class, 'cuadros'])->whereNumber('partida')->middleware(['auth', 'throttle:120,1'])->name('historial.cuadros');
+Route::get('/historial/{partida}/cuadros', [HistorialController::class, 'cuadros'])->whereNumber('partida')->middleware(['auth', 'throttle:120,1,historial'])->name('historial.cuadros');
 Route::get('/como-se-juega', [PaginaController::class, 'comoSeJuega'])->name('como-se-juega');
 Route::get('/identidad', [PaginaController::class, 'identidad'])->name('identidad');
 Route::get('/modos', [PaginaController::class, 'modos'])->name('modos');
 
 // Entrar a jugar: con cuenta, o como invitado creado en el momento.
-Route::post('/jugar', JugarController::class)->middleware('throttle:10,1')->name('jugar');
+Route::post('/jugar', JugarController::class)->middleware('throttle:10,1,entrar')->name('jugar');
 Route::get('/mesa', [MesaController::class, 'ver'])->middleware('auth')->name('mesa');
 
 // Jugar con otra persona: se abre una sala y se le manda el link. El código tiene 16 caracteres sorteados.
-Route::post('/invitar', [SalaController::class, 'crear'])->middleware('throttle:10,1')->name('invitar');
-Route::get('/invitacion/{codigo}', [InvitacionController::class, 'ver'])->where('codigo', '[a-z0-9]{16}')->middleware('throttle:60,1')->name('invitacion');
-Route::post('/invitacion/{codigo}', [InvitacionController::class, 'entrar'])->where('codigo', '[a-z0-9]{16}')->middleware('throttle:10,1')->name('invitacion.entrar');
+Route::post('/invitar', [SalaController::class, 'crear'])->middleware('throttle:10,1,entrar')->name('invitar');
+Route::get('/invitacion/{codigo}', [InvitacionController::class, 'ver'])->where('codigo', '[a-z0-9]{16}')->middleware('throttle:60,1,invitacion')->name('invitacion');
+Route::post('/invitacion/{codigo}', [InvitacionController::class, 'entrar'])->where('codigo', '[a-z0-9]{16}')->middleware('throttle:10,1,entrar')->name('invitacion.entrar');
 
-Route::middleware(['auth', 'throttle:240,1'])->where(['codigo' => '[a-z0-9]{16}'])->group(function () {
+Route::middleware(['auth', 'throttle:240,1,sala'])->where(['codigo' => '[a-z0-9]{16}'])->group(function () {
     Route::get('/sala/{codigo}', [SalaController::class, 'ver'])->name('sala');
     Route::get('/sala/{codigo}/estado', [SalaController::class, 'estado'])->name('sala.estado');
     Route::post('/sala/{codigo}/cancelar', [SalaController::class, 'cancelar'])->name('sala.cancelar');
 });
 
 // Lo que se hace desde la mesa: siempre sobre la partida en curso de quien hace el pedido.
-Route::middleware(['auth', 'throttle:240,1'])->group(function () {
+Route::middleware(['auth', 'throttle:240,1,mesa'])->group(function () {
     Route::get('/mesa/estado', [MesaController::class, 'estado'])->name('mesa.estado');
     Route::post('/mesa/accion', [MesaController::class, 'accion'])->name('mesa.accion');
     Route::post('/mesa/repartir', [MesaController::class, 'repartir'])->name('mesa.repartir');
@@ -47,9 +55,18 @@ Route::middleware(['auth', 'throttle:240,1'])->group(function () {
     Route::post('/mesa/presente', [MesaController::class, 'presente'])->name('mesa.presente');
 });
 
+// La revancha, desde el final de una partida. Cada pedido dice de qué partida habla, y tiene que ser de quien lo hace.
+Route::middleware(['auth', 'throttle:240,1,revancha'])->group(function () {
+    Route::get('/revancha', [RevanchaController::class, 'estado'])->name('revancha.estado');
+    Route::post('/revancha/pedir', [RevanchaController::class, 'pedir'])->name('revancha.pedir');
+    Route::post('/revancha/aceptar', [RevanchaController::class, 'aceptar'])->name('revancha.aceptar');
+    Route::post('/revancha/rechazar', [RevanchaController::class, 'rechazar'])->name('revancha.rechazar');
+    Route::post('/revancha/cancelar', [RevanchaController::class, 'cancelar'])->name('revancha.cancelar');
+});
+
 Route::middleware('sin-cuenta')->group(function () {
     Route::get('/registro', [RegistroController::class, 'formulario'])->name('registro');
-    Route::post('/registro', [RegistroController::class, 'registrar'])->middleware('throttle:10,1');
+    Route::post('/registro', [RegistroController::class, 'registrar'])->middleware('throttle:10,1,registro');
     Route::get('/ingresar', [SesionController::class, 'formulario'])->name('ingresar');
     Route::post('/ingresar', [SesionController::class, 'ingresar']);
 });
