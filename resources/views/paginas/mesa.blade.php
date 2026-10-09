@@ -53,7 +53,8 @@
 
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
         <header class="mesa-barra relative z-10" :inert="fin !== null">
-            <a href="{{ route('portada') }}" class="justify-self-start rounded text-lg no-underline [grid-area:logo] lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
+            {{-- En el celular el logo va sin el nombre: con los cuatro fósforos alcanza, y ese ancho lo necesitan los botones. --}}
+            <a href="{{ route('portada') }}" class="justify-self-start rounded text-lg no-underline [grid-area:logo] max-sm:text-2xl max-sm:[&_.logo-nombre]:hidden lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
 
             <section aria-label="Tanteador" class="grid grid-cols-2 gap-x-4 text-[clamp(0.8rem,4.1cqw,1.3rem)] [grid-area:tanteo] lg:gap-x-12">
                 {{-- El asiento propio va siempre primero: quien se sentó por invitación es el 1. --}}
@@ -63,20 +64,52 @@
                     clase-nombre="min-w-0 truncate text-sm font-semibold" />
             </section>
 
-            <div class="flex items-center gap-2 justify-self-end [grid-area:acciones]">
-                <x-modo />
-                {{--
-                    El ritmo de la mesa: tranquilo o ágil. No cambia el juego, cambia cuánto se detiene la mesa para
-                    que se lea cada jugada. Lleno es ágil. La elección queda en el navegador, como el modo de día y
-                    de noche, y al cambiarla la mesa lo dice en el renglón de avisos.
-                --}}
-                <button type="button" class="boton size-10 min-h-0 p-0" :class="agil ? 'boton-naipe' : 'boton-linea'"
-                    :aria-pressed="agil.toString()" aria-label="Ritmo ágil" title="Ritmo ágil" @click="cambiarRitmo()">
-                    <x-icono nombre="ritmo" class="size-5" />
+            {{--
+                Los botones de la barra: los ajustes y salir. Los ajustes (el modo, el sonido y el ritmo) son
+                preferencias que se eligen una vez, así que no ocupan la barra: se despliegan en una ventanita
+                debajo, sin tapar la mesa ni detener nada. Se cierra tocando afuera, con Esc o con el mismo botón.
+                El toque de afuera se escucha antes que nadie (capture): una carta, al jugarse, frena su propio toque.
+            --}}
+            <div class="relative flex items-center gap-2 justify-self-end [grid-area:acciones]" @click.outside.capture="cerrarAjustes(false)" @keydown.escape.window="cerrarAjustes()">
+                <button type="button" x-ref="botonDeAjustes" class="boton min-h-10 gap-1.5 px-3 py-1.5 text-sm" :class="ajustando ? 'boton-naipe' : 'boton-linea'"
+                    @click="ajustando ? cerrarAjustes() : abrirAjustes()" aria-controls="ajustes-de-la-mesa" :aria-expanded="ajustando.toString()">
+                    <x-icono nombre="ajustes" class="size-5" /> Ajustes
                 </button>
-                <button type="button" class="boton boton-linea min-h-10 gap-1.5 px-3 py-1.5 text-sm" @click="saliendo = true" aria-label="Salir de la mesa">
+                <button type="button" class="boton boton-linea min-h-10 gap-1.5 px-3 py-1.5 text-sm" @click="cerrarAjustes(false); saliendo = true" aria-label="Salir de la mesa">
                     <x-icono nombre="salir" class="size-5" /> Salir
                 </button>
+
+                {{--
+                    Cada ajuste es un renglón entero que se toca: a la izquierda qué es y cómo está, con palabras;
+                    a la derecha su llave. La del modo es la carta que se da vuelta, la misma del resto del sitio.
+                    Las otras dos son un fósforo en su carril: apagado descansa a un lado, prendido cruza y se
+                    le enciende la cabeza.
+                --}}
+                <div id="ajustes-de-la-mesa" x-ref="ajustes" x-show="ajustando" x-cloak
+                    x-transition:enter="aparece" x-transition:enter-start="desde-chico" x-transition:leave="se-va" x-transition:leave-end="opacity-0"
+                    class="ajustes superficie-naipe" role="dialog" aria-label="Ajustes de la mesa">
+                    <button type="button" class="ajuste" data-cambiar-modo>
+                        <span>
+                            <span class="block font-bold">Modo</span>
+                            <span class="text-sm" data-nombre-del-modo>De día</span>
+                        </span>
+                        <span class="ajuste-carta"><x-modo.carta /></span>
+                    </button>
+                    <button type="button" role="switch" class="ajuste" :aria-checked="sonido.toString()" aria-label="Sonido" data-boton-sonido @click="cambiarSonido()">
+                        <span>
+                            <span class="block font-bold">Sonido</span>
+                            <span class="text-sm" x-text="sonido ? 'Prendido' : 'Apagado'">Apagado</span>
+                        </span>
+                        <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
+                    </button>
+                    <button type="button" role="switch" class="ajuste" :aria-checked="agil.toString()" aria-label="Ritmo ágil" data-boton-ritmo @click="cambiarRitmo()">
+                        <span>
+                            <span class="block font-bold">Ritmo</span>
+                            <span class="text-sm" x-text="agil ? 'Ágil, sin pausas largas' : 'Tranquilo, da tiempo a leer'">Tranquilo, da tiempo a leer</span>
+                        </span>
+                        <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
+                    </button>
+                </div>
             </div>
         </header>
 

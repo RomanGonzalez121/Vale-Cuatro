@@ -34,6 +34,8 @@ final class Iconos
         'repetir' => ['M18.5 11.5V18.5H5.5V5.5H13', [[15.4, 5.5, 2.2]]],
         'jugador' => ['M5.5 20.5 8 13.5H16L18.5 20.5', [[12, 7.6, 2.8]]],
         'salir' => ['M14 3.5H19.5V20.5H14M10 20 8 11.5M8.8 15 5.5 20M8.2 12.6 12.2 13.8', [[7.4, 8.6, 2.4]]],
+        // Los ajustes de la mesa: tres fósforos acostados de distinto largo, como tres perillas.
+        'ajustes' => ['M4 6.5H12.6M4 12H17.6M4 17.5H8.6', [[15, 6.5, 2.2], [20, 12, 2.2], [11, 17.5, 2.2]]],
         'sonido' => ['M4.5 9.5H8L12.5 5.5V18.5L8 14.5H4.5ZM15.5 12H18.3M15.5 9 17.2 7.3M15.5 15 17.2 16.7', [[20.4, 12, 1.8], [18.6, 5.9, 1.8], [18.6, 18.1, 1.8]]],
         'flor' => ['M12 20.5V8M12 20.5 6.9 10.4M12 20.5 17.1 10.4', [[12, 5.6, 2.2], [5.8, 8.2, 2.2], [18.2, 8.2, 2.2]]],
         // Los juegos: dos fósforos (uno por jugador), cuatro en la mesa, las llaves del torneo, un fósforo de bandera y los escalones.

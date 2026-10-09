@@ -63,7 +63,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | M11a | Publicación del sitio y pruebas automáticas en un navegador real | Listo |
 | M12 | Revancha y series al mejor de tres | Pendiente |
 | M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
-| M14 | Sonido de cartas, fósforos y cantos | Pendiente |
+| M14 | Sonido de cartas, fósforos y cantos, fabricado en el navegador y apagado de fábrica | Listo |
 | M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
 | M16 | Panel de administración | Pendiente |
 | M17 | Modos de juego, desafíos y una escalera de niveles | Adelantada la pantalla para elegir modo; el resto, pendiente |

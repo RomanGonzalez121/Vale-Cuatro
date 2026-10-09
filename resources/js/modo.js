@@ -22,6 +22,11 @@ function aplicar(modo) {
         boton.setAttribute('aria-label', modo === 'noche' ? 'Pasar a modo claro' : 'Pasar a modo oscuro');
     });
 
+    // Donde el modo se dice con palabras (los ajustes de la mesa).
+    document.querySelectorAll('[data-nombre-del-modo]').forEach((texto) => {
+        texto.textContent = modo === 'noche' ? 'De noche' : 'De día';
+    });
+
     // El color de la barra del navegador acompaña al fondo de la página.
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.body).backgroundColor);
 }
@@ -47,7 +52,8 @@ function cambiar(boton) {
         return;
     }
 
-    const { left, top, width, height } = boton.getBoundingClientRect();
+    // El círculo sale de la carta, no del botón entero: en los ajustes de la mesa el botón es un renglón.
+    const { left, top, width, height } = (boton.querySelector('.modo-carta') ?? boton).getBoundingClientRect();
     const x = left + width / 2;
     const y = top + height / 2;
     const radio = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));

@@ -1094,6 +1094,129 @@ html:has(body.superficie-pano) {
         }
     }
 
+    /*
+     | Los ajustes de la mesa: una ventanita que se despliega debajo de sus botones, sobre el paño.
+     | No lleva sombra (la única del sitio es la de las cartas): la recorta un contorno, como a un naipe.
+     | Crece desde el botón que la abre, que queda justo arriba de su centro.
+     */
+    .ajustes {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        z-index: 20;
+        width: min(19.5rem, calc(100vw - 2rem));
+        border: 2px solid currentColor;
+        border-radius: 0.875rem;
+        transform-origin: top center;
+        /* La cabeza de un fósforo encendido: Copa sobre naipe y, de noche, Oro sobre tinta. */
+        --cabeza: var(--color-copa);
+    }
+
+    :root[data-modo='noche'] .ajustes {
+        --cabeza: var(--color-oro);
+    }
+
+    /* Cada ajuste es un renglón entero que se toca: qué es y cómo está a la izquierda, su llave a la derecha. */
+    .ajuste {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        width: 100%;
+        min-height: 3.75rem;
+        padding: 0.625rem 1rem;
+        text-align: left;
+        line-height: 1.25;
+        cursor: pointer;
+    }
+
+    .ajuste + .ajuste {
+        border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+    }
+
+    /* El marco del foco va por dentro del renglón, para no salirse de la ventanita. */
+    .ajuste:focus-visible {
+        outline-offset: -5px;
+        border-radius: 0.625rem;
+    }
+
+    /* La carta del modo, en su renglón: del ancho de las llaves, y con la profundidad que necesita para girar. */
+    .ajuste-carta {
+        display: flex;
+        flex: none;
+        justify-content: center;
+        width: 3.5rem;
+        perspective: 10rem;
+    }
+
+    /*
+     | La llave de un ajuste es un fósforo en su carril. Apagado descansa a la izquierda, a media tinta;
+     | prendido cruza a la derecha y se le enciende la cabeza, como a los del logo y el tanteador.
+     */
+    .llave {
+        position: relative;
+        flex: none;
+        width: 3.5rem;
+        height: 1.875rem;
+        border: 2px solid currentColor;
+        border-radius: 999px;
+    }
+
+    .llave-fosforo {
+        position: absolute;
+        top: 50%;
+        left: 0.45rem;
+        width: 1.25rem;
+        height: 2px;
+        margin-top: -1px;
+        border-radius: 1px;
+        background-color: currentColor;
+        opacity: 0.4;
+        transition:
+            transform 200ms var(--ease-llegada),
+            opacity 200ms var(--ease-llegada);
+    }
+
+    /* La cabeza: un punto del color del palito y, encima, el mismo punto encendido, que aparece al prender. */
+    .llave-fosforo::before,
+    .llave-cabeza {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -0.3rem;
+        width: 0.5rem;
+        height: 0.5rem;
+        margin-top: -0.25rem;
+        border-radius: 50%;
+        background-color: currentColor;
+    }
+
+    .llave-cabeza {
+        background-color: var(--cabeza);
+        opacity: 0;
+        transition: opacity 120ms var(--ease-llegada);
+    }
+
+    .ajuste[aria-checked='true'] .llave-fosforo {
+        transform: translateX(1rem);
+        opacity: 1;
+    }
+
+    /* La cabeza se enciende cuando el fósforo ya casi llegó. */
+    .ajuste[aria-checked='true'] .llave-cabeza {
+        opacity: 1;
+        transition-delay: 120ms;
+    }
+
+    /* Al apretar, el fósforo se asoma hacia donde va a ir. Con el mouse hace lo mismo al pasar por encima. */
+    .ajuste:active .llave-fosforo {
+        transform: translateX(0.18rem);
+    }
+
+    .ajuste[aria-checked='true']:active .llave-fosforo {
+        transform: translateX(0.82rem);
+    }
+
     /* El campo de juego, con una línea que marca el borde de la mesa. */
     .mesa-campo {
         position: relative;
@@ -1863,6 +1986,23 @@ html:has(body.superficie-pano) {
 }
 
 @media (hover: hover) and (pointer: fine) {
+    /* Los ajustes de la mesa: el fósforo de la llave se asoma hacia donde va a ir, y la carta del modo se entreabre. */
+    .ajuste:hover .llave-fosforo {
+        transform: translateX(0.18rem);
+    }
+
+    .ajuste[aria-checked='true']:hover .llave-fosforo {
+        transform: translateX(0.82rem);
+    }
+
+    .ajuste:hover .modo-carta {
+        transform: rotateY(24deg);
+    }
+
+    :root[data-modo='noche'] .ajuste:hover .modo-carta {
+        transform: rotateY(156deg);
+    }
+
     /* El botón se levanta como una carta que se agarra de la mesa y el ícono acompaña. */
     .boton:not([disabled]):hover {
         transform: translateY(-2px) rotate(-1deg);
@@ -2014,6 +2154,11 @@ html:has(body.superficie-pano) {
     /* Lo que entraba apenas más chico entra solo con el fundido. */
     .desde-chico {
         transform: none;
+    }
+
+    /* El fósforo de una llave cambia de lado sin deslizarse; se nota porque se enciende. */
+    .llave-fosforo {
+        transition: opacity 150ms ease;
     }
 
     .fosforo,

@@ -851,3 +851,44 @@ El sitio está publicado en Render, en el plan gratuito, con la base MySQL en Ai
 - **Se sacaron doce tests repetidos:** lo mismo comprobado dos veces, una llamando a la clase y otra por la pantalla (se dejó el de la pantalla, que recorre también la clase), y un par que no decían nada que otro test no dijera.
 - **Lo que no se sacó, y por qué:** los 246 tests del motor. Son los que cumplen el criterio del módulo ("un test por cada fila de las tablas de pardas y de envido, por cada regla de flor y truco y por cada caso borde"), tardan menos de diez segundos entre todos y son lo que permite cambiar el motor sin miedo. Tampoco los que nacieron de un error encontrado: cada uno cuida que ese error no vuelva.
 - **Resultado:** de 694 tests a 622, y la corrida completa de unos tres minutos y medio a dos. Ningún test depende ya de la suerte del reparto para tener una partida con qué trabajar.
+
+## M14. Sonido
+
+La mesa suena: cartas, fósforos y cantos. Arranca apagada, y con este módulo la barra de la mesa pasó de cuatro botones a dos.
+
+### Los sonidos los fabrica el navegador
+
+- **Problema:** hacer sonar la mesa sin molestar a quien no lo quiere, y sin sumarle peso ni licencias al sitio.
+- **Elegido por Román:** sin archivos de audio. Cada sonido se arma en el momento (Web Audio) con dos ingredientes: un soplo de ruido filtrado, para lo que roza o golpea, y un tono corto que baja, para lo que tiene cuerpo.
+- **Con el sonido apagado no existe nada de audio:** ni un contexto abierto, ni una descarga. Lo prende quien juega y la elección queda en su navegador. Una partida que sigue en otra pestaña no suena.
+- **El sonido acompaña, nunca avisa solo:** todo lo que suena también se ve en la mesa y se lee en el renglón de avisos.
+- **Se descartó usar grabaciones.** Hay un paquete libre de sonidos de cartas (Kenney, licencia CC0, unos 100 KB) que suena más real; Román prefirió seguir sin archivos y mejorar los fabricados.
+
+### Qué hace agradable a un sonido corto
+
+La primera versión cumplía pero sonaba plana. Román pidió investigar qué hace satisfactorio a un sonido, y de ahí salió la segunda:
+
+- **Capas.** Una carta que se apoya son cuatro cosas: el chasquido, el cartón, el golpe sordo en el paño y un rebote chico.
+- **Nunca dos veces igual.** Cada vez que suena, cambia apenas de tono y de volumen, y el ruido arranca en otro punto. Una carta se juega tres veces por mano: idéntica, cansa.
+- **Los fósforos suben.** En una suma, cada fósforo suena un semitono más arriba que el anterior, y el que completa un grupo de cinco lleva un golpe aparte. Se oye que el tanteo sube.
+- **Cada canto tiene su golpe de nudillos:** el truco pega dos veces, "quiero" suena más claro y "no quiero" más grave y apagado. No hay voces: la palabra está en la pantalla.
+- **El final son tres golpes,** el último más grave y más largo. Sobrio, como el cierre de la partida.
+- **Límite:** cómo suenan lo juzgó Román escuchando. Lo que se comprueba solo es que se disparen donde corresponde y que cumplan las reglas.
+
+### Los ajustes de la mesa, en una ventanita
+
+- **Problema:** con el sonido, la barra de arriba iba a tener cuatro botones (modo, sonido, ritmo y salir). A 360 px quedaban 22 px libres, y Román marcó que ya se veía apretada: cuatro controles con cuatro aspectos distintos, tres de ellos preferencias que se eligen una vez y uno solo que se usa durante la partida.
+- **Elegido por Román:** un botón "Ajustes" al lado de "Salir". Despliega debajo una ventanita con las tres preferencias, cada una dicha con palabras y con su estado ("Sonido, apagado").
+- **Ventanita y no cartel:** la primera versión era un cartel como el de "Salir". Román propuso la ventanita y es mejor: no tapa la mesa (entre dos personas el reloj del turno sigue corriendo), y un cartel a pantalla completa es mucho gesto para cambiar el sonido. Se cierra tocando afuera, con Esc o con el mismo botón; la mesa de atrás sigue viva.
+- **La llave de cada ajuste es un fósforo en su carril:** apagado descansa a un lado, a media tinta; prendido cruza y se le enciende la cabeza, como a los del logo y el tanteador. El modo usa la carta que se da vuelta, la misma del resto del sitio.
+- **Sin sombra:** la única sombra del sitio es la de las cartas. A la ventanita la recorta un contorno.
+- **En el celular, el logo de la mesa va sin el nombre:** quedan los cuatro fósforos.
+- **Una trampa que apareció probando:** una carta, al jugarse, frena su propio toque para que no apure además a la mesa. Por eso tocar una carta no cerraba la ventanita. El toque de afuera se escucha ahora antes que nadie.
+- **Ícono nuevo, propio:** tres fósforos acostados de distinto largo, como tres perillas.
+- **Queda lugar para lo que viene:** los mazos y las mesas para elegir (M20) entran ahí como un renglón más.
+
+### Qué se comprueba y qué no
+
+- **Con tests:** ningún sonido llega al segundo y medio, nada queda en loop, no hay archivos de audio ni etiquetas que los pidan, y el audio se abre en un solo lugar, al prenderlo. Las reglas de movimiento alcanzan a la ventanita y a sus llaves.
+- **En un navegador real, a 360 px:** arranca apagado y sin abrir audio; jugando apagado no suena nada; al prenderlo suena la muestra; suenan las jugadas y un roce por carta al repartir; los fósforos de una suma suben de tono; la elección sobrevive a recargar; todo se maneja con el teclado y el foco vuelve al botón.
+- **Falta:** pasar esas comprobaciones de navegador a las pruebas automáticas de la integración continua. Captura en `docs/capturas/mesa-ajustes-celular.png`.

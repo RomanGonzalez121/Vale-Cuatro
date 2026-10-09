@@ -23,6 +23,7 @@
 
 import { LLEGADA, cantoEnRenglones, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
 import { escucharPartida } from './echo';
+import { apagarSonido, audioAbierto, guardarSonido, prenderSonido, sonar, sonidoGuardado } from './sonido';
 
 const LADOS = ['vos', 'rival'];
 
@@ -125,6 +126,8 @@ export default (inicial, pedidos) => ({
     presentado: false,
     // El ritmo que eligió quien juega: ágil o tranquilo.
     agil: ritmoGuardado() === 'agil',
+    // Si la mesa suena. Arranca apagada, salvo que quien juega la haya dejado prendida.
+    sonido: sonidoGuardado(),
     // De qué lado arde el fósforo de la cuenta regresiva ('vos', 'rival' o ninguno) y sus animaciones.
     plazo: null,
     llamas: [],
@@ -143,11 +146,18 @@ export default (inicial, pedidos) => ({
     // El final de la partida: los puntos que van contando los dos tanteadores del cartel.
     cuenta: { vos: 0, rival: 0 },
     saliendo: false,
+    // La ventanita de los ajustes (modo, sonido y ritmo) está desplegada.
+    ajustando: false,
     prisa: false,
     relojDeVoz: null,
 
     init() {
         this.sellar(this.vista);
+
+        // Si venía prendido de antes, el audio se abre ya, y arranca a sonar con el primer toque.
+        if (this.sonido) {
+            prenderSonido();
+        }
 
         if (this.pedidos.entrePersonas) {
             this.escuchar();
@@ -899,6 +909,66 @@ export default (inicial, pedidos) => ({
     },
 
     /**
+     * El botón de sonido de la barra. Prendido, abre el audio y da una muestra (una carta que se apoya), que
+     * además es la respuesta del botón; apagado, cierra todo. Se recuerda en este navegador y la mesa lo dice
+     * con palabras.
+     */
+    cambiarSonido() {
+        this.sonido = ! this.sonido;
+        this.aviso = this.sonido ? 'Sonido prendido.' : 'Sonido apagado.';
+        guardarSonido(this.sonido);
+
+        if (this.sonido) {
+            prenderSonido();
+            // La muestra: una carta que se apoya y un fósforo que cae. El audio puede tardar un instante en arrancar.
+            setTimeout(() => sonar('carta'), 60);
+            setTimeout(() => sonar('punto'), 320);
+        } else {
+            apagarSonido();
+        }
+    },
+
+    /**
+     * Si hay audio abierto. Con el sonido apagado no hay nada: lo miran las pruebas de navegador.
+     */
+    get audioAbierto() {
+        // Se lee "sonido" para que la pantalla vuelva a preguntar cuando cambia.
+        return this.sonido !== null && audioAbierto();
+    },
+
+    /**
+     * Hace sonar algo de la mesa, si el sonido está prendido. Acompaña a lo que se ve; nunca avisa solo.
+     */
+    sonar(nombre, enMilisegundos = 0, opciones = {}) {
+        if (this.sonido) {
+            sonar(nombre, enMilisegundos, opciones);
+        }
+    },
+
+    /**
+     * Los ajustes de la mesa: una ventanita con el modo, el sonido y el ritmo, que se despliega debajo de
+     * su botón. No traba nada: la mesa sigue a la vista y se puede seguir jugando. Al abrirla el foco va a
+     * su primer renglón; al cerrarla con el botón o con Esc vuelve al botón. Si se cierra por tocar afuera,
+     * el foco se queda donde la persona tocó.
+     */
+    abrirAjustes() {
+        this.ajustando = true;
+        this.$nextTick(() => this.$refs.ajustes?.querySelector('button')?.focus({ preventScroll: true }));
+    },
+
+    cerrarAjustes(devolverElFoco = true) {
+        if (! this.ajustando) {
+            return;
+        }
+
+        this.ajustando = false;
+
+        if (devolverElFoco) {
+            this.$nextTick(() => this.$refs.botonDeAjustes?.focus({ preventScroll: true }));
+        }
+    },
+
+    /**
      * Una pausa para leer lo que acaba de pasar. Su largo depende del ritmo de la mesa; las esperas que
      * acompañan a una animación (el reparto, juntar las cartas) no pasan por acá y duran lo que la animación.
      */
@@ -1005,6 +1075,7 @@ export default (inicial, pedidos) => ({
 
             case 'partida_terminada':
                 this.fin = quien;
+                this.sonar('final');
                 this.contarElFinal();
                 break;
         }
@@ -1036,6 +1107,8 @@ export default (inicial, pedidos) => ({
      */
     llegar(elemento, orden) {
         llegarDelMazo(elemento, this.$refs.origen, orden, { reducido: this.reducido });
+        // Cada carta suena cuando sale, con los mismos 70 ms entre una y otra que tiene el reparto.
+        this.sonar('reparto', orden * 70);
     },
 
     /**
@@ -1080,6 +1153,8 @@ export default (inicial, pedidos) => ({
             ];
 
         carta.animate(cuadros, { duration: this.reducido ? 150 : 260, easing: LLEGADA });
+        // Suena cuando la carta está llegando al paño, no cuando sale de la mano.
+        this.sonar('carta', this.reducido ? 0 : 150);
     },
 
     /**
@@ -1104,6 +1179,8 @@ export default (inicial, pedidos) => ({
 
     cantar(texto, tono, quien) {
         clearTimeout(this.relojDeVoz);
+        // Cada canto tiene su golpe: el truco pega dos veces, "quiero" suena más claro y "no quiero" más apagado.
+        this.sonar(texto === 'Quiero' ? 'quiero' : texto === 'No quiero' ? 'noQuiero' : tono === 'copa' ? 'truco' : 'canto');
         this.voz = { texto: this.enRenglones(texto), tono, quien, visible: true };
         this.relojDeVoz = setTimeout(() => (this.voz.visible = false), 1250 * this.ritmo.pausas);
     },
@@ -1132,6 +1209,8 @@ export default (inicial, pedidos) => ({
             if (orden > 0) {
                 await this.leer(800);
             }
+
+            this.sonar('canto');
 
             if (dicho.tanto === null) {
                 this.tantos[quien] = { numero: '', frase: 'Son buenas', visible: true };
@@ -1166,6 +1245,9 @@ export default (inicial, pedidos) => ({
         // Un punto o dos caen con su tiempo; una suma grande (un falta envido) se aprieta para entrar en un segundo.
         const entreFosforos = Math.min(ENTRE_FOSFOROS, SUMA_MAS_LARGA / Math.max(hasta - this.puntos[quien], 1));
 
+        // Cuántos fósforos cayeron en esta suma: cada uno suena un semitono más arriba que el anterior.
+        let caidos = 0;
+
         return new Promise((listo) => {
             const caer = () => {
                 if (this.puntos[quien] >= hasta) {
@@ -1175,6 +1257,12 @@ export default (inicial, pedidos) => ({
                 }
 
                 this.puntos[quien]++;
+                this.sonar('punto', 0, { tono: 2 ** (Math.min(caidos++, 12) / 12) });
+
+                // El que cruza y completa un grupo de cinco lleva un golpe aparte.
+                if (this.puntos[quien] % 5 === 0) {
+                    this.sonar('grupo');
+                }
                 setTimeout(caer, this.prisa ? Math.min(entreFosforos, 40) : entreFosforos);
             };
 
