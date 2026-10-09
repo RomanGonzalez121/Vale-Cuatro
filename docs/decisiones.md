@@ -823,7 +823,14 @@ El sitio está publicado en Render, en el plan gratuito, con la base MySQL en Ai
 - **En una máquina, con los límites del plan gratuito y un MySQL 8.4 igual al de producción:** las migraciones corren sin cambios (en desarrollo se usa MariaDB 10.4); unos 150 MB de los 512; 52 segundos de arranque; páginas entre 0,1 y 0,5 segundos.
 - **En el sitio publicado, desde Buenos Aires:** las páginas contestan entre 0,3 y 0,8 segundos; se jugó una partida entera contra el bot en un celular de 360 px (32 manos, sin errores); dos navegadores jugaron entre sí con el tiempo real conectado en los dos; el ranking se sembró solo y quedó con la misma tabla que en desarrollo, porque sale de una semilla.
 - **Seguridad, comprobado en el sitio publicado:** HTTP redirige a HTTPS; las cookies van marcadas como seguras y la de sesión no es legible desde JavaScript; un nombre de sitio falso en el pedido no aparece en los links; los archivos que empiezan con punto y los de configuración no se entregan.
-- **Queda por medir:** la memoria real en el panel de Render, cuánto tarda en despertar el servicio dormido y que la limpieza programada corre.
+- **Queda por medir,** y Román eligió dejarlo para más adelante: la memoria real en el panel de Render y que la limpieza programada corre en el sitio publicado. Las dos cosas se midieron en la máquina con los mismos límites.
+
+### El servicio se duerme, y se deja así
+
+- **Problema:** en el plan gratuito, el servicio se apaga a los 15 minutos sin visitas y tarda cerca de un minuto en volver. Quien abre el link después de un rato espera ese minuto.
+- **Elegido por Román:** dejarlo dormir. Es un sitio de portfolio: alcanza con que el README avise que la primera carga puede tardar.
+- **Se descartó** un monitor externo que lo visite cada diez minutos para mantenerlo despierto. Funciona y entra en las horas gratuitas del mes, pero Render no lo garantiza y es una cuenta más que mantener.
+- **Qué pasa mientras duerme:** no corre nada (ni la cola ni la limpieza), pero tampoco hay nadie jugando. Al despertar, el contenedor arranca de cero: migra si hace falta, y la cola retoma lo que haya quedado pendiente en la base.
 
 ### Pruebas en un navegador real
 
