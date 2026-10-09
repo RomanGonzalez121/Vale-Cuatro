@@ -15,6 +15,32 @@ import Pusher from 'pusher-js';
 let conexion = null;
 
 /**
+ * Adónde conectarse. Lo dice la página (la etiqueta "tiempo-real" del encabezado, que escribe el servidor)
+ * y no viene compilado acá adentro: así el mismo JavaScript sirve en cualquier dirección donde se publique
+ * el sitio. Sin clave no hay tiempo real configurado, y se avisa con un error para que quien llama siga
+ * preguntando por su cuenta.
+ */
+function dondeConectarse() {
+    const datos = JSON.parse(document.querySelector('meta[name="tiempo-real"]')?.content || '{}');
+
+    if (! datos.clave) {
+        throw new Error('El tiempo real no está configurado.');
+    }
+
+    const seguro = datos.esquema === 'https';
+    const puerto = Number(datos.puerto) || (seguro ? 443 : 80);
+
+    return {
+        key: datos.clave,
+        // Sin host, es el mismo servidor que entregó la página.
+        wsHost: datos.host || window.location.hostname,
+        wsPort: puerto,
+        wssPort: puerto,
+        forceTLS: seguro,
+    };
+}
+
+/**
  * La conexión, creada la primera vez que se pide.
  */
 export function conectarEcho() {
@@ -22,15 +48,13 @@ export function conectarEcho() {
         return conexion;
     }
 
+    const destino = dondeConectarse();
+
     window.Pusher = Pusher;
 
     conexion = new Echo({
         broadcaster: 'reverb',
-        key: import.meta.env.VITE_REVERB_APP_KEY,
-        wsHost: import.meta.env.VITE_REVERB_HOST,
-        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        ...destino,
         enabledTransports: ['ws', 'wss'],
     });
 

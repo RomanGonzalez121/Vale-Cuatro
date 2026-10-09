@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // El sitio publicado no recibe al navegador directo: delante hay un servidor (el de Render) que
+        // atiende el HTTPS y le pasa el pedido. Se le cree lo que dice de ese pedido original; si no,
+        // el sitio pensaría que lo visitan por HTTP y armaría mal los links y las cookies.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'con-cuenta' => ConCuenta::class,
             'sin-cuenta' => SinCuenta::class,

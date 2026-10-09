@@ -19,6 +19,8 @@
     <meta name="theme-color" content="{{ $superficie === 'pano' ? '#1f5a46' : '#fbfaf5' }}">
     {{-- Echo lo manda al autorizar un canal privado: sin este token el servidor rechaza el pedido. --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Adónde se conecta el navegador para el tiempo real (config/tiempo_real.php). La clave es pública. --}}
+    <meta name="tiempo-real" content="{{ json_encode(config('tiempo_real.navegador')) }}">
     <title>{{ $titulo ? "{$titulo} | Vale Cuatro" : 'Vale Cuatro, truco argentino online' }}</title>
     {{-- El modo se decide antes de pintar: lo que eligió el visitante o, si no eligió, lo que pide su sistema. --}}
     <script>
