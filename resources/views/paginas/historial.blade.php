@@ -62,9 +62,33 @@
                 <h2 id="dia-{{ $loop->index }}" class="text-xl font-extrabold">{{ $dia }}</h2>
 
                 <ul>
-                    @foreach ($delDia as $partida)
+                    {{--
+                        Las partidas de una misma serie quedan una atrás de la otra (mientras dura una serie no se juega
+                        otra cosa): se agrupan bajo un renglón que dice cómo quedó.
+                    --}}
+                    @foreach ($delDia->chunkWhile(fn (array $partida, int $clave, $tanda) => $partida['serie'] !== null && ($tanda->last()['serie']['id'] ?? null) === $partida['serie']['id']) as $tanda)
+                        @php($serie = $tanda->first()['serie'])
+
+                        @if ($serie)
+                            <li class="pt-5 leading-snug max-sm:pt-4">
+                                <span class="block text-lg font-extrabold [overflow-wrap:anywhere] max-sm:text-base">Al mejor de tres contra {{ $tanda->first()['rival'] }}</span>
+                                @if ($serie['gano'] === null)
+                                    <span class="block text-[0.95rem] font-semibold">La serie sigue: va {{ $serie['vos'] }} a {{ $serie['ellos'] }}.</span>
+                                @else
+                                    <span @class(['block text-[0.95rem] font-bold', 'text-gana' => $serie['gano'], 'text-pierde' => ! $serie['gano']])>
+                                        {{ $serie['gano'] ? 'Ganaste la serie' : 'Perdiste la serie' }}{{ $serie['completa'] ? ' '.max($serie['vos'], $serie['ellos']).' a '.min($serie['vos'], $serie['ellos']) : '' }}.
+                                    </span>
+                                @endif
+                            </li>
+                        @endif
+
+                    @foreach ($tanda as $partida)
                         {{-- En el celular: el resultado y "Ver de nuevo" en un renglón, y debajo contra quién. El tanteo en fósforos entra desde `sm`. --}}
-                        <li class="grid grid-cols-[1fr_auto] items-center gap-x-7 gap-y-3 border-b border-texto/15 py-5 last:border-b-0 max-sm:gap-y-2 max-sm:py-4 sm:grid-cols-[9rem_1fr] lg:grid-cols-[9rem_1fr_auto_auto]">
+                        <li @class([
+                            'grid grid-cols-[1fr_auto] items-center gap-x-7 gap-y-3 border-b border-texto/15 py-5 last:border-b-0 max-sm:gap-y-2 max-sm:py-4 sm:grid-cols-[9rem_1fr] lg:grid-cols-[9rem_1fr_auto_auto]',
+                            // La línea al costado, del color del texto: las de una serie se leen como un grupo.
+                            'ml-0.5 border-l-2 border-l-texto pl-4 sm:pl-6' => $serie,
+                        ])>
                             <p class="leading-none">
                                 <span @class(['block text-sm font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>{{ $partida['gano'] ? 'Ganaste' : 'Perdiste' }}</span>
                                 <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</span>
@@ -73,7 +97,12 @@
                                 <span class="block text-lg font-bold [overflow-wrap:anywhere] max-sm:text-base">Contra {{ $partida['rival'] }}</span>
                                 {{-- De qué juego fue. Hoy hay uno solo; el torneo, los desafíos y el de a cuatro van a decirlo acá. --}}
                                 <span class="block text-[0.95rem]">
-                                    Mano a mano. {{ $partida['hora'] }}. {{ $partida['manos'] }} {{ $partida['manos'] === 1 ? 'mano' : 'manos' }} en {{ $partida['minutos'] }} {{ $partida['minutos'] === 1 ? 'minuto' : 'minutos' }}.
+                                    @if ($serie)
+                                        {{ $partida['serie']['numero'] }}ª de la serie{{ $partida['revancha'] ? ', revancha' : '' }}.
+                                    @else
+                                        Mano a mano{{ $partida['revancha'] ? ', revancha' : '' }}.
+                                    @endif
+                                    {{ $partida['hora'] }}. {{ $partida['manos'] }} {{ $partida['manos'] === 1 ? 'mano' : 'manos' }} en {{ $partida['minutos'] }} {{ $partida['minutos'] === 1 ? 'minuto' : 'minutos' }}.
                                     @if ($partida['cierre'])
                                         <span class="font-semibold">{{ $partida['cierre'] }}</span>
                                     @endif
@@ -91,6 +120,7 @@
                                 <x-icono nombre="repetir" /> Ver de nuevo
                             </a>
                         </li>
+                    @endforeach
                     @endforeach
                 </ul>
             </section>

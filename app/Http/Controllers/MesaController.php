@@ -15,8 +15,12 @@ use InvalidArgumentException;
 
 /**
  * Lo que el navegador le pide a la mesa mientras se juega. Siempre trabaja
- * sobre la partida en curso de quien hace el pedido: no recibe un número de
- * partida, así que nadie puede tocar la de otro.
+ * sobre una partida en curso de quien hace el pedido: la busca solo entre las
+ * suyas, así que nadie puede tocar la de otro.
+ *
+ * La mesa manda el número de la partida que está mostrando. Hace falta desde
+ * que existen las series: cuando termina una partida la siguiente ya está
+ * repartida, y un pedido de la pantalla vieja no puede caer en la nueva.
  *
  * Cada respuesta trae el paso de la jugada propia, y cada paso es la vista del
  * asiento del jugador. El bot juega aparte, desde la cola: sus pasos se piden
@@ -54,7 +58,26 @@ class MesaController extends Controller
             'rival' => $this->apodoDelRival($partida, $asiento),
             // Quien abrió la sala todavía no avisó que llegó: la mesa lo hace apenas está a la vista.
             'faltaLlegar' => $this->mesa->faltaLlegar($partida, $asiento),
+            // Si es parte de una serie al mejor de tres, cómo va antes de esta partida.
+            'serie' => $this->serieDe($partida, $asiento),
         ]);
+    }
+
+    /**
+     * El marcador de la serie visto desde un asiento, o null si la partida es suelta: las que ganó cada
+     * uno hasta ahora y cuántas hacen falta para llevársela.
+     *
+     * @return array{vos: int, rival: int, necesarias: int}|null
+     */
+    private function serieDe(Partida $partida, int $asiento): ?array
+    {
+        if ($partida->serie === null) {
+            return null;
+        }
+
+        [$propias, $ajenas] = $partida->serie->marcadorDesde($asiento);
+
+        return ['vos' => $propias, 'rival' => $ajenas, 'necesarias' => $partida->serie->necesarias()];
     }
 
     /**
@@ -65,7 +88,7 @@ class MesaController extends Controller
     public function presente(Request $request): JsonResponse
     {
         $datos = $request->validate(['desde' => ['required', 'integer', 'min:0']]);
-        $partida = $this->mesa->enCursoDe($request->user());
+        $partida = $this->enJuego($request);
 
         if ($partida === null) {
             return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
@@ -91,7 +114,7 @@ class MesaController extends Controller
         $sinPartida = response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
 
         if (! isset($datos['desde'])) {
-            $partida = $this->mesa->enCursoDe($request->user());
+            $partida = $this->enJuego($request);
 
             return $partida === null ? $sinPartida : response()->json(['vista' => $this->mesa->vista($partida, $this->asientoDe($partida, $request))]);
         }
@@ -117,7 +140,7 @@ class MesaController extends Controller
      */
     public function despertarAlBot(Request $request): JsonResponse
     {
-        $partida = $this->mesa->enCursoDe($request->user());
+        $partida = $this->enJuego($request);
 
         if ($partida === null) {
             return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
@@ -135,7 +158,7 @@ class MesaController extends Controller
      */
     public function resolverPlazo(Request $request): JsonResponse
     {
-        $partida = $this->mesa->enCursoDe($request->user());
+        $partida = $this->enJuego($request);
 
         if ($partida === null) {
             return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);
@@ -177,7 +200,13 @@ class MesaController extends Controller
 
     public function abandonar(Request $request): RedirectResponse
     {
-        $partida = $this->mesa->enCursoDe($request->user());
+        $partida = $this->enJuego($request);
+
+        // La mesa que lo pide mostraba una partida que ya no se juega: no se abandona otra en su lugar.
+        // Se vuelve a la mesa, y ahí el servidor muestra la que sigue o cuenta cómo terminó.
+        if ($partida === null && $request->filled('partida')) {
+            return redirect()->route('mesa');
+        }
 
         if ($partida !== null) {
             try {
@@ -187,7 +216,29 @@ class MesaController extends Controller
             }
         }
 
-        return redirect()->route('modos')->with('aviso', 'Abandonaste la partida.');
+        return redirect()->route('modos')->with('aviso', $partida?->serie_id === null ? 'Abandonaste la partida.' : 'Abandonaste la partida y, con ella, la serie.');
+    }
+
+    /**
+     * La partida en curso de la que habla el pedido. Con el número de partida que manda la mesa, es esa y
+     * ninguna otra: si ya no se juega, no hay partida (y la mesa se recarga). Sin número, vale la que el
+     * jugador tenga en curso.
+     */
+    private function enJuego(Request $request): ?Partida
+    {
+        $numero = $request->input('partida');
+
+        if ($numero === null || $numero === '') {
+            return $this->mesa->enCursoDe($request->user());
+        }
+
+        if (! is_int($numero) && ! (is_string($numero) && ctype_digit($numero))) {
+            return null;
+        }
+
+        $partida = $this->mesa->deJugador($request->user(), (int) $numero);
+
+        return $partida?->enCurso() ? $partida : null;
     }
 
     /**
@@ -211,7 +262,24 @@ class MesaController extends Controller
         $tanteo = $this->mesa->reconstruir($partida)->tanteo();
         $rival = $partida->entre_personas ? 'tu rival' : 'el bot';
 
-        return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($partida->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.");
+        return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($partida->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.").$this->comoQuedoLaSerie($partida, $asiento);
+    }
+
+    /**
+     * Si con esa partida se cerró una serie, cómo quedó: va al final del aviso, como una frase más.
+     */
+    private function comoQuedoLaSerie(Partida $partida, int $asiento): string
+    {
+        $serie = $partida->serie;
+
+        if ($serie === null || ! $serie->cerrada()) {
+            return '';
+        }
+
+        [$propias, $ajenas] = $serie->marcadorDesde($asiento);
+        $rival = $partida->entre_personas ? 'tu rival' : 'el bot';
+
+        return " La serie quedó {$propias} a {$ajenas}: ".($serie->ganador === $asiento ? 'la ganaste.' : "la ganó {$rival}.");
     }
 
     /**
@@ -228,11 +296,18 @@ class MesaController extends Controller
         $abandono = $partida->eventos()->getQuery()->where('tipo', EventoDePartida::ABANDONO)->reorder('numero', 'desc')->first();
         $porVencimientos = ($abandono?->datos['motivo'] ?? null) === 'vencimientos';
 
+        // En una serie, irse de una partida es perder la serie entera.
+        $enSerie = $partida->serie_id !== null;
+
         if ($abandono?->asiento === $asiento) {
-            return $porVencimientos ? 'Perdiste la partida: se te venció el turno '.Mesa::VENCIMIENTOS_PARA_PERDER.' veces seguidas.' : null;
+            return $porVencimientos ? 'Perdiste la partida'.($enSerie ? ' y la serie' : '').': se te venció el turno '.Mesa::VENCIMIENTOS_PARA_PERDER.' veces seguidas.' : null;
         }
 
-        return $porVencimientos ? 'Tu rival dejó de jugar y perdió la partida.' : 'Tu rival abandonó la partida: ganaste.';
+        if ($porVencimientos) {
+            return $enSerie ? 'Tu rival dejó de jugar: perdió la partida y la serie.' : 'Tu rival dejó de jugar y perdió la partida.';
+        }
+
+        return $enSerie ? 'Tu rival abandonó la partida: ganaste la serie.' : 'Tu rival abandonó la partida: ganaste.';
     }
 
     /**
@@ -261,7 +336,7 @@ class MesaController extends Controller
      */
     private function conLaPartida(Request $request, callable $hacer): JsonResponse
     {
-        $partida = $this->mesa->enCursoDe($request->user());
+        $partida = $this->enJuego($request);
 
         if ($partida === null) {
             return response()->json(['motivo' => 'No tenés una partida en curso.'], 409);

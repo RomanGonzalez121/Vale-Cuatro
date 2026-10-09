@@ -24,7 +24,7 @@
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
         <div class="modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:pb-24 lg:pt-14"
-            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }} }">
+            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                     ¿Cómo querés jugar?
@@ -131,10 +131,32 @@
                                                     @endforeach
                                                 </div>
 
-                                                {{-- El nombre completo, dicho igual que en la mesa, y cómo juega. Siempre son dos renglones: el botón no salta al cambiar de nivel. --}}
-                                                @foreach ($niveles as $opcion)
-                                                    <p class="mt-1 max-w-[36ch] leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Bot {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalle() }}</p>
-                                                @endforeach
+                                                {{--
+                                                    El nombre completo, dicho igual que en la mesa, y cómo juega. Siempre son dos renglones: el botón no salta al cambiar de nivel.
+                                                    En el renglón del nombre, a la derecha, va la casilla de la serie: contra quién se juega y a cuántas
+                                                    partidas, en un mismo lugar. Ahí no agrega un renglón, y el botón queda donde estaba.
+                                                --}}
+                                                <div class="relative mt-1 max-w-[36ch]">
+                                                    @foreach ($niveles as $opcion)
+                                                        <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Bot {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalle() }}</p>
+                                                    @endforeach
+
+                                                    @unless ($sigue)
+                                                        {{-- Mide un renglón, pero se toca en un área más alta (el ::before), para que el dedo no le erre. --}}
+                                                        <label class="absolute right-0 top-0 flex h-[1.625rem] cursor-pointer items-center gap-2 font-semibold before:absolute before:-inset-x-2 before:-inset-y-2.5 before:content-['']" data-formato>
+                                                            <input type="checkbox" class="casilla sr-only" x-model="serie">
+                                                            <span class="casilla-caja" aria-hidden="true"><x-icono nombre="quiero" /></span>
+                                                            Al mejor de tres
+                                                        </label>
+                                                    @endunless
+                                                </div>
+                                            @elseif (! $sigue)
+                                                {{-- Con otra persona no hay nivel que elegir: la casilla de la serie va sola, arriba del botón. --}}
+                                                <label class="mt-3 flex min-h-11 w-fit cursor-pointer items-center gap-3 font-semibold" data-formato>
+                                                    <input type="checkbox" class="casilla sr-only" x-model="serie">
+                                                    <span class="casilla-caja" aria-hidden="true"><x-icono nombre="quiero" /></span>
+                                                    Al mejor de tres
+                                                </label>
                                             @endif
 
                                             {{-- Sin campos a la vista: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
@@ -144,6 +166,8 @@
                                                     @if ($niveles !== [])
                                                         <input type="hidden" name="nivel" value="{{ $nivelElegido->value }}" :value="nivel">
                                                     @endif
+                                                    {{-- Una partida, o una serie al mejor de tres: lo dice la casilla de arriba. --}}
+                                                    <input type="hidden" name="serie" value="0" :value="serie ? 1 : 0">
                                                     <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
                                                         <x-icono :nombre="$rival['icono'] ?? 'bot'" />
                                                         {{ $sigue ? ($enCurso->esperando() ? 'Volver a la sala' : 'Seguir la partida') : $rival['boton'] }}

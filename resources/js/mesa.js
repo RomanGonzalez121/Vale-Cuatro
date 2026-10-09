@@ -19,6 +19,11 @@
  | La pantalla habla de "vos" y del "rival": qué asiento es cada uno lo dice la
  | vista. Las cartas del rival no llegan nunca: de su mano solo se sabe cuántas
  | le quedan.
+ |
+ | Al terminar la partida, lo que sigue también lo decide el servidor. En una
+ | serie al mejor de tres, la partida siguiente ya está repartida y se va a ella.
+ | Si no, queda la revancha: con otra persona se pide y el otro la contesta, y la
+ | mesa se entera igual que de una jugada, por un aviso sin datos y preguntando.
  */
 
 import { LLEGADA, cantoEnRenglones, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
@@ -95,6 +100,14 @@ const LECTURA_DEL_CIERRE = 2500;
 // Anotar puntos: cuánto hay entre un fósforo y el siguiente, y lo máximo que tarda en caer una suma entera.
 const ENTRE_FOSFOROS = 150;
 const SUMA_MAS_LARGA = 1000;
+// La revancha: cuánto se espera, cumplida la hora de un pedido, antes de preguntarle al servidor en qué quedó.
+const TRAS_EL_PEDIDO = 400;
+// En estos estados ya no va a cambiar nada: se deja de preguntar.
+const REVANCHA_CERRADA = ['aceptada', 'rechazada', 'no_disponible'];
+// Sin ningún pedido a la vista, la pregunta de respaldo se hace solo durante este rato: una pestaña olvidada
+// en el final de una partida no le pregunta al servidor para siempre. Un aviso en vivo sigue llegando igual.
+const ATENCION_A_LA_REVANCHA = 180000;
+
 // El final de la partida: los dos tanteadores se cuentan de corrido, a un fósforo cada tanto, después de que entra el cartel.
 const ENTRE_FOSFOROS_DEL_FINAL = 32;
 const ANTES_DE_CONTAR_EL_FINAL = 320;
@@ -145,6 +158,16 @@ export default (inicial, pedidos) => ({
     fin: null,
     // El final de la partida: los puntos que van contando los dos tanteadores del cartel.
     cuenta: { vos: 0, rival: 0 },
+    // La revancha entre dos personas: en qué está (lo dice el servidor), cuántos segundos le quedan a un
+    // pedido a la vista y a qué hora de este navegador se cumple. "pidiendo" es que hay un pedido propio en viaje.
+    revancha: { estado: null, restan: null, por: null, vence: null, pidiendo: false },
+    // Cuántos pedidos propios y cuántas preguntas salieron: una respuesta que no es de lo último que salió es vieja.
+    pedidosDeRevancha: 0,
+    preguntasDeRevancha: 0,
+    // Hasta cuándo se pregunta por las dudas, sin que llegue un aviso.
+    atentaHasta: 0,
+    relojDeRevancha: null,
+    segunderoDeRevancha: null,
     saliendo: false,
     // La ventanita de los ajustes (modo, sonido y ritmo) está desplegada.
     ajustando: false,
@@ -167,6 +190,74 @@ export default (inicial, pedidos) => ({
     },
 
     // Lo que lee la pantalla
+
+    /**
+     * Cómo queda la serie con esta partida: lo que traía, más la que se acaba de ganar. Sin serie, null.
+     */
+    get marcadorDeLaSerie() {
+        const serie = this.pedidos.serie;
+
+        if (! serie) {
+            return null;
+        }
+
+        return { vos: serie.vos + (this.fin === 'vos' ? 1 : 0), rival: serie.rival + (this.fin === 'rival' ? 1 : 0) };
+    },
+
+    /**
+     * La partida terminó y la serie no: nadie llegó a las que hacen falta, y la siguiente ya está repartida.
+     */
+    get sigueLaSerie() {
+        const marcador = this.marcadorDeLaSerie;
+
+        return Boolean(this.fin && marcador) && Math.max(marcador.vos, marcador.rival) < this.pedidos.serie.necesarias;
+    },
+
+    get fraseDeLaSerie() {
+        const marcador = this.marcadorDeLaSerie;
+
+        if (! this.fin || ! marcador) {
+            return '';
+        }
+
+        if (this.sigueLaSerie) {
+            return `La serie va ${marcador.vos} a ${marcador.rival}.`;
+        }
+
+        // Quien la ganó va primero, como se dice hablando: "ganaste 2 a 1", "ganó 2 a 1".
+        return marcador.vos > marcador.rival
+            ? `Ganaste la serie ${marcador.vos} a ${marcador.rival}.`
+            : `${this.rivalAlEmpezar} ganó la serie ${marcador.rival} a ${marcador.vos}.`;
+    },
+
+    /**
+     * Hay un pedido de revancha esperando respuesta, propio o del rival: mientras tanto no se ofrece otra cosa.
+     */
+    get revanchaALaVista() {
+        return ['pedida', 'te_piden'].includes(this.revancha.estado);
+    },
+
+    get avisoDeRevancha() {
+        const { estado, por } = this.revancha;
+
+        switch (estado) {
+            case 'pedida':
+                return `Le pediste la revancha a ${this.rival}.`;
+            case 'te_piden':
+                return `${this.rivalAlEmpezar} te pide la revancha.`;
+            case 'aceptada':
+                return 'Hay revancha.';
+            case 'rechazada':
+                return por === 'vos' ? 'No quisiste la revancha.' : `${this.rivalAlEmpezar} no quiso la revancha.`;
+            case 'agotada':
+                // Sin "por", no la canceló nadie ni faltó respuesta: alguno de los dos ya estaba en otra partida.
+                return { vos: 'Cancelaste el pedido.', rival: `${this.rivalAlEmpezar} no contestó.` }[por] ?? 'Ya no se puede jugar la revancha.';
+            case 'no_disponible':
+                return 'Ya no se puede jugar la revancha.';
+            default:
+                return '';
+        }
+    },
 
     get enJuego() {
         return this.vista.fase === 'jugando';
@@ -370,8 +461,13 @@ export default (inicial, pedidos) => ({
      * Toda jugada va con el último evento que mostró la mesa. Si en el servidor ya pasó algo más (se venció el
      * turno, se repartió), la rechaza: lo que se tocó mirando una mano no puede entrar en otra.
      */
-    conDesde(cuerpo) {
-        return { ...cuerpo, desde: this.vista.evento };
+    /**
+     * Lo que acompaña a todo pedido de la mesa: de qué partida habla y cuál fue el último evento que mostró.
+     * Con eso el servidor rechaza lo que se decidió mirando una pantalla atrasada, y nunca aplica en una
+     * partida lo que se tocó mirando otra (en una serie, la siguiente se reparte apenas termina la anterior).
+     */
+    conDesde(cuerpo = {}) {
+        return { ...cuerpo, partida: this.vista.partida, desde: this.vista.evento };
     },
 
     async pedirReparto() {
@@ -548,7 +644,7 @@ export default (inicial, pedidos) => ({
             const respuesta = await fetch(this.pedidos.presente, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
-                body: JSON.stringify({ desde: this.vista.evento }),
+                body: JSON.stringify(this.conDesde()),
                 credentials: 'same-origin',
             });
 
@@ -582,13 +678,26 @@ export default (inicial, pedidos) => ({
             alConectar: () => {
                 this.enVivo = true;
                 this.ponerseAlDia();
+                this.consultarRevancha();
             },
             alCaer: () => (this.enVivo = false),
+            // Con la partida terminada, por el mismo canal llega que alguien pidió o contestó la revancha.
+            alRevancha: () => this.consultarRevancha(),
         });
+
+        // Quien pidió la revancha y se va de la pantalla la retira: el otro no se queda contestando a nadie.
+        window.addEventListener('pagehide', () => this.retirarLaRevancha());
 
         // Si la pestaña estaba dormida, se entera apenas vuelve. Y si era la primera vez que se la ve, avisa que llegó.
         document.addEventListener('visibilitychange', async () => {
             if (document.hidden) {
+                return;
+            }
+
+            if (this.fin) {
+                this.atentaHasta = Date.now() + ATENCION_A_LA_REVANCHA;
+                this.consultarRevancha();
+
                 return;
             }
 
@@ -681,6 +790,188 @@ export default (inicial, pedidos) => ({
         await this.contarLoQuePaso(pasos);
     },
 
+    // La revancha
+
+    /**
+     * Con la partida terminada entre dos personas, la mesa queda atenta a la revancha: pregunta en qué está
+     * y vuelve a preguntar cuando llega un aviso, cuando se cumple la hora de un pedido y, por las dudas, cada
+     * tanto. Contra el bot no hay nada que atender (el botón del final la juega en el momento), y en una serie
+     * que sigue tampoco: la partida siguiente ya está repartida.
+     */
+    atenderLaRevancha() {
+        if (! this.pedidos.entrePersonas || ! this.fin || this.sigueLaSerie) {
+            return;
+        }
+
+        this.atentaHasta = Date.now() + ATENCION_A_LA_REVANCHA;
+        this.consultarRevancha();
+    },
+
+    async consultarRevancha() {
+        // Con la pestaña tapada no se pregunta: al volver a estar a la vista se pregunta de nuevo.
+        if (! this.pedidos.entrePersonas || ! this.fin || this.sigueLaSerie || document.hidden || REVANCHA_CERRADA.includes(this.revancha.estado)) {
+            return;
+        }
+
+        clearTimeout(this.relojDeRevancha);
+
+        const pedidos = this.pedidosDeRevancha;
+        const pregunta = ++this.preguntasDeRevancha;
+
+        try {
+            const respuesta = await fetch(`${this.pedidos.revancha.estado}?partida=${this.vista.partida}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+
+            // Sesión vencida: la página se vuelve a cargar y el servidor decide.
+            if ([401, 419].includes(respuesta.status)) {
+                window.location.reload();
+
+                return;
+            }
+
+            const datos = respuesta.ok ? await respuesta.json() : null;
+
+            // Mientras se preguntaba salió un pedido propio (pedir, contestar) u otra pregunta más nueva:
+            // lo que vale es esa respuesta, no esta.
+            if (pedidos !== this.pedidosDeRevancha || pregunta !== this.preguntasDeRevancha) {
+                return;
+            }
+
+            if (datos) {
+                this.ponerLaRevancha(datos);
+
+                return;
+            }
+
+            // El servidor contestó que esa partida no es de quien pregunta: no hay nada más que preguntar.
+            if (respuesta.status === 404) {
+                this.ponerLaRevancha({ estado: 'no_disponible', restan: null, por: null });
+
+                return;
+            }
+        } catch {
+            // Sin conexión por un rato: se vuelve a preguntar.
+        }
+
+        this.volverAPreguntarPorLaRevancha();
+    },
+
+    /**
+     * Deja la revancha como dice el servidor. Si ya hay partida nueva, va a ella; si no, deja puesto el
+     * reloj de la próxima pregunta.
+     */
+    ponerLaRevancha({ estado, restan, por }) {
+        this.revancha = { ...this.revancha, estado, restan, por, vence: restan === null ? null : Date.now() + restan * 1000 };
+
+        if (estado === 'aceptada') {
+            window.location.assign(this.pedidos.mesa);
+
+            return;
+        }
+
+        this.volverAPreguntarPorLaRevancha();
+    },
+
+    volverAPreguntarPorLaRevancha() {
+        clearTimeout(this.relojDeRevancha);
+        clearInterval(this.segunderoDeRevancha);
+
+        if (REVANCHA_CERRADA.includes(this.revancha.estado)) {
+            return;
+        }
+
+        const { vence } = this.revancha;
+        let espera = this.enVivo ? RESPALDO_EN_VIVO : RESPALDO_SIN_AVISOS;
+
+        if (vence !== null) {
+            // Con un pedido a la vista corre la cuenta, y se pregunta apenas se cumple su hora: el servidor dice que se venció.
+            this.segunderoDeRevancha = setInterval(() => this.descontarLaRevancha(), 1000);
+            espera = Math.min(espera, Math.max(0, vence - Date.now()) + TRAS_EL_PEDIDO);
+        } else if (Date.now() > this.atentaHasta) {
+            // Pasó el rato sin que nadie pidiera nada: ya no se pregunta por las dudas. Si el otro la pide,
+            // llega el aviso en vivo; y al volver a mirar la pestaña se pregunta una vez más.
+            return;
+        }
+
+        this.relojDeRevancha = setTimeout(() => this.consultarRevancha(), espera);
+    },
+
+    /**
+     * Los segundos que le quedan al pedido a la vista, contados contra la hora que se anotó al recibirlo.
+     */
+    descontarLaRevancha() {
+        const { vence } = this.revancha;
+
+        if (vence !== null) {
+            this.revancha.restan = Math.max(0, Math.ceil((vence - Date.now()) / 1000));
+        }
+    },
+
+    /**
+     * Pedir, querer, no querer o cancelar. El servidor contesta en qué quedó, y eso es lo que se muestra.
+     */
+    async revanchar(que) {
+        if (this.revancha.pidiendo) {
+            return;
+        }
+
+        this.revancha.pidiendo = true;
+        this.pedidosDeRevancha++;
+        clearTimeout(this.relojDeRevancha);
+
+        try {
+            const respuesta = await fetch(this.pedidos.revancha[que], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                body: JSON.stringify({ partida: this.vista.partida }),
+                credentials: 'same-origin',
+            });
+
+            // Sesión vencida: la página se vuelve a cargar y el servidor decide.
+            if ([401, 419].includes(respuesta.status)) {
+                window.location.reload();
+
+                return;
+            }
+
+            if (respuesta.ok) {
+                this.revancha.pidiendo = false;
+                this.ponerLaRevancha(await respuesta.json());
+
+                return;
+            }
+        } catch {
+            // Sin conexión: queda como estaba y se puede volver a tocar.
+        }
+
+        this.revancha.pidiendo = false;
+        this.volverAPreguntarPorLaRevancha();
+    },
+
+    /**
+     * Al irse de la página con un pedido propio sin contestar, se lo retira. Sale con "keepalive" para que
+     * el navegador lo mande aunque la página ya se esté cerrando. Si no llegara, el pedido se vence solo.
+     */
+    retirarLaRevancha() {
+        if (this.revancha.estado !== 'pedida') {
+            return;
+        }
+
+        try {
+            fetch(this.pedidos.revancha.cancelar, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                body: JSON.stringify({ partida: this.vista.partida }),
+                credentials: 'same-origin',
+                keepalive: true,
+            }).catch(() => {});
+        } catch {
+            // Un navegador sin "keepalive": el pedido se vence solo al minuto.
+        }
+    },
+
     plazoSinResolver() {
         const vence = this.vista.vence ?? null;
 
@@ -694,7 +985,8 @@ export default (inicial, pedidos) => ({
         try {
             await fetch(this.pedidos.plazo, {
                 method: 'POST',
-                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                body: JSON.stringify({ partida: this.vista.partida }),
                 credentials: 'same-origin',
             });
         } catch {
@@ -805,7 +1097,8 @@ export default (inicial, pedidos) => ({
         try {
             await fetch(this.pedidos.bot, {
                 method: 'POST',
-                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.pedidos.token },
+                body: JSON.stringify({ partida: this.vista.partida }),
                 credentials: 'same-origin',
             });
         } catch {
@@ -836,7 +1129,14 @@ export default (inicial, pedidos) => ({
         let vista = this.vista;
 
         try {
-            const respuesta = await fetch(this.pedidos.estado, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            const respuesta = await fetch(`${this.pedidos.estado}?partida=${this.vista.partida}`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+
+            // Sesión vencida, o la partida que se mostraba ya no se juega (la jugada sí había entrado y la cerró):
+            // la página se vuelve a cargar y el servidor decide qué mostrar.
+            if ([401, 409, 419].includes(respuesta.status)) {
+                window.location.reload();
+                await new Promise(() => {});
+            }
 
             if (respuesta.ok) {
                 vista = this.sellar((await respuesta.json()).vista);
@@ -1077,6 +1377,7 @@ export default (inicial, pedidos) => ({
                 this.fin = quien;
                 this.sonar('final');
                 this.contarElFinal();
+                this.atenderLaRevancha();
                 break;
         }
     },
@@ -1413,6 +1714,7 @@ export default (inicial, pedidos) => ({
         this.cerrarMano(vista, false);
         this.fin = vista.ganador === null ? null : this.quien(vista.ganador);
         this.cuenta = { ...this.puntos };
+        this.atenderLaRevancha();
         this.aviso = aviso ?? this.aviso;
 
         // Quien abrió la sala también avisa que llegó si cargó la página entre dos manos. Contra el bot no hace nada.

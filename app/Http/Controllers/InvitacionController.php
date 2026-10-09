@@ -34,6 +34,7 @@ class InvitacionController extends Controller
             'codigo' => $codigo,
             'quienInvita' => $partida->jugador->apodo,
             'disponible' => $partida->esperando(),
+            'enSerie' => $partida->serie_id !== null,
             'motivo' => $partida->enCurso() ? 'Esa partida ya tiene sus dos jugadores.' : 'Esa partida ya terminó.',
         ]);
     }

@@ -16,7 +16,7 @@
             </h1>
 
             @if ($disponible)
-                <p class="mt-4 max-w-[34ch] leading-relaxed sm:text-lg">Un truco mano a mano, a 30 puntos y con flor. Entrás sin registrarte.</p>
+                <p class="mt-4 max-w-[34ch] leading-relaxed sm:text-lg">{{ ($enSerie ?? false) ? 'Una serie al mejor de tres, mano a mano, a 30 puntos y con flor.' : 'Un truco mano a mano, a 30 puntos y con flor.' }} Entrás sin registrarte.</p>
 
                 <form method="POST" action="{{ route('invitacion.entrar', $codigo) }}" class="mt-6">
                     @csrf

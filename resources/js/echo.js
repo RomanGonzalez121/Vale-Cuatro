@@ -67,17 +67,22 @@ export function conectarEcho() {
  * - alAvisar recibe lo que manda el servidor, que es solo el número del último evento;
  * - alConectar corre al conectar y cada vez que se reconecta: ahí conviene ponerse al día, por si un aviso
  *   pasó mientras no había conexión;
- * - alCaer corre cuando la conexión se pierde o no se puede abrir.
+ * - alCaer corre cuando la conexión se pierde o no se puede abrir;
+ * - alRevancha, si se pasa, corre cuando cambia algo de la revancha de esa partida. Tampoco trae datos.
  *
  * Si no hay tiempo real (Reverb apagado o sin configurar) no falla: avisa con alCaer y quien llama sigue
  * preguntando por su cuenta.
  */
-export function escucharPartida(partida, { alAvisar, alConectar, alCaer }) {
+export function escucharPartida(partida, { alAvisar, alConectar, alCaer, alRevancha = null }) {
     try {
         const echo = conectarEcho();
         const enlace = echo.connector.pusher.connection;
+        const canal = echo.private(`partida.${partida}`).listen('.partida.actualizada', alAvisar);
 
-        echo.private(`partida.${partida}`).listen('.partida.actualizada', alAvisar);
+        if (alRevancha) {
+            canal.listen('.revancha.actualizada', alRevancha);
+        }
+
         enlace.bind('connected', alConectar);
 
         for (const caida of ['disconnected', 'unavailable', 'failed']) {

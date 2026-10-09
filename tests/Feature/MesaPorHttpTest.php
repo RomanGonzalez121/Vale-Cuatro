@@ -81,17 +81,18 @@ class MesaPorHttpTest extends TestCase
         $this->assertSame(41, substr_count($html, '<template data-plantilla='));
     }
 
-    public function test_la_mesa_dice_contra_que_nivel_se_juega_y_la_partida_siguiente_es_contra_el_mismo(): void
+    public function test_la_mesa_dice_contra_que_nivel_se_juega_y_al_final_ofrece_la_revancha_de_esa_partida(): void
     {
         $jugador = Jugador::factory()->invitado()->create();
-        $this->app->make(Mesa::class)->abrir($jugador, Nivel::Dificil);
+        $partida = $this->app->make(Mesa::class)->abrir($jugador, Nivel::Dificil);
 
         $html = $this->actingAs($jugador)->get('/mesa')->assertOk()
             ->assertSee('Mesa contra el bot, nivel Difícil')
             ->assertSee('Bot difícil')
             ->getContent();
 
-        $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/jugar"[^>]*>.*?name="nivel" value="3".*?Jugar otra partida/s', $html);
+        // El botón del final pide la revancha de esta partida: el servidor la arma contra el mismo nivel.
+        $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/revancha\/pedir"[^>]*>.*?name="partida" value="'.$partida->id.'".*?Jugar la revancha/s', $html);
 
         // Junto al rival van los fósforos de su nivel: tres para Difícil.
         preg_match('/<section aria-label="Rival".*?<\/section>/s', $html, $rival);
@@ -465,13 +466,15 @@ class MesaPorHttpTest extends TestCase
     }
 
     /**
-     * La primera acción que la mesa le ofrece al jugador. Si el bot es mano, ya jugó al repartir: siempre le toca al jugador.
+     * La primera acción que la mesa le ofrece al jugador y que no puede cerrar la partida. Si el bot es mano, ya jugó al repartir: siempre le toca al jugador.
      *
      * @return array{tipo: string, carta?: string}
      */
     private function unaAccionValida(Partida $partida): array
     {
-        return $this->app->make(Mesa::class)->vista($partida)['acciones'][0];
+        // Cualquiera menos "quiero": si el bot arrancó cantando falta envido, quererlo cierra la partida ahí
+        // mismo, y el test que la sigue usando falla una vez cada tanto, según las cartas que toquen.
+        return collect($this->app->make(Mesa::class)->vista($partida)['acciones'])->first(fn (array $accion) => $accion['tipo'] !== 'quiero');
     }
 
     /**

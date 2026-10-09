@@ -22,11 +22,14 @@ class SalaController extends Controller
 
     /**
      * Abre una sala. Quien llega sin sesión recibe un jugador invitado en el momento, igual que al
-     * jugar contra el bot. Si ya tenía una partida sin terminar, vuelve a esa.
+     * jugar contra el bot. Si ya tenía una partida sin terminar, vuelve a esa. Con "serie", lo que
+     * se abre es una serie al mejor de tres.
      */
     public function crear(Request $request): RedirectResponse
     {
-        $partida = $this->mesa->crearSala($this->jugadorOInvitado($request));
+        $request->validate(['serie' => ['nullable', 'boolean']]);
+
+        $partida = $this->mesa->crearSala($this->jugadorOInvitado($request), $request->boolean('serie'));
 
         return $partida->esperando() ? redirect()->route('sala', $partida->codigo) : redirect()->route('mesa');
     }
@@ -54,6 +57,7 @@ class SalaController extends Controller
             'codigo' => $codigo,
             'enlace' => route('invitacion', $codigo),
             'minutos' => Mesa::MINUTOS_DE_SALA,
+            'enSerie' => $partida->serie_id !== null,
         ]);
     }
 

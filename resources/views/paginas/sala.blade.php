@@ -5,7 +5,7 @@
             <h1 id="titulo-sala" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                 Invitá a alguien
             </h1>
-            <p class="mt-4 max-w-[34ch] text-lg leading-relaxed">Mandale este link. Cuando se siente, se reparte la primera mano.</p>
+            <p class="mt-4 max-w-[34ch] text-lg leading-relaxed">Mandale este link. Cuando se siente, {{ ($enSerie ?? false) ? 'arranca el mejor de tres.' : 'se reparte la primera mano.' }}</p>
 
             <div class="mt-5 max-w-xl sm:mt-7">
                 {{-- En el celular el título y el renglón de arriba ya lo dicen: el rótulo queda para el lector de pantalla y la mesa sube. --}}

@@ -22,7 +22,20 @@
         'rival' => $rival,
         'turno' => \App\Juego\Mesa::SEGUNDOS_DE_TURNO,
         'reparto' => \App\Juego\Mesa::SEGUNDOS_PARA_REPARTIR,
+        // Si la partida es de una serie al mejor de tres: cómo iba al empezar esta y cuántas hacen falta.
+        'serie' => $serie ?? null,
+        // Adónde ir cuando ya hay otra partida esperando: la siguiente de la serie, o la revancha.
+        'mesa' => route('mesa'),
+        'revancha' => [
+            'estado' => route('revancha.estado'),
+            'pedir' => route('revancha.pedir'),
+            'aceptar' => route('revancha.aceptar'),
+            'rechazar' => route('revancha.rechazar'),
+            'cancelar' => route('revancha.cancelar'),
+        ],
     ];
+
+    $serie ??= null;
 
     $botones = [
         ['quiero', 'Quiero', null, 'boton-basto', 'quiero'],
@@ -54,7 +67,20 @@
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
         <header class="mesa-barra relative z-10" :inert="fin !== null">
             {{-- En el celular el logo va sin el nombre: con los cuatro fósforos alcanza, y ese ancho lo necesitan los botones. --}}
-            <a href="{{ route('portada') }}" class="justify-self-start rounded text-lg no-underline [grid-area:logo] max-sm:text-2xl max-sm:[&_.logo-nombre]:hidden lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
+            <div class="flex min-w-0 items-center gap-3 justify-self-start [grid-area:logo] lg:gap-5">
+                <a href="{{ route('portada') }}" class="rounded text-lg no-underline max-sm:text-2xl max-sm:[&_.logo-nombre]:hidden lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
+
+                {{--
+                    El marcador de la serie, junto al logo: ahí no agrega una fila y la mesa mide lo mismo.
+                    Dice cómo iba la serie al empezar esta partida, con lo propio primero, igual que el tanteador.
+                --}}
+                @if ($serie)
+                    <p class="whitespace-nowrap text-sm font-semibold leading-none">
+                        <span class="sr-only">Serie al mejor de tres: vos {{ $serie['vos'] }}, {{ $rival ?? 'el bot' }} {{ $serie['rival'] }}.</span>
+                        <span aria-hidden="true">Serie <span class="font-black tabular-nums text-oro">{{ $serie['vos'] }}</span> a <span class="font-black tabular-nums text-oro">{{ $serie['rival'] }}</span></span>
+                    </p>
+                @endif
+            </div>
 
             <section aria-label="Tanteador" class="grid grid-cols-2 gap-x-4 text-[clamp(0.8rem,4.1cqw,1.3rem)] [grid-area:tanteo] lg:gap-x-12">
                 {{-- El asiento propio va siempre primero: quien se sentó por invitación es el 1. --}}
@@ -290,19 +316,60 @@
                     <x-tanteador :nombre="$rival ?? 'Bot'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" />
                 </div>
 
-                <div class="mt-8 flex flex-col gap-2.5 sm:flex-row">
+                {{-- En una serie, cómo quedó con esta partida: si sigue, o quién se la llevó. --}}
+                @if ($serie)
+                    <p class="mt-6 text-lg font-bold leading-snug" x-text="fraseDeLaSerie"></p>
+                @endif
+
+                {{--
+                    Lo que sigue. Si la serie no terminó, la partida siguiente ya está repartida: se va a ella.
+                    Si no, la revancha: contra el bot se juega en el momento (el bot quiere siempre); con otra
+                    persona se pide, y el otro contesta como se contesta un canto, con "quiero" o "no quiero".
+                --}}
+                @if ($serie)
+                    <div class="mt-6 flex flex-col gap-2.5 sm:flex-row" x-show="sigueLaSerie" x-cloak>
+                        <a href="{{ route('mesa') }}" class="boton boton-naipe"><x-icono nombre="repartir" /> Jugar la siguiente partida</a>
+                        <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
+                    </div>
+                @endif
+
+                <div @class(['mt-8' => ! $serie, 'mt-6' => $serie]) x-show="! sigueLaSerie">
                     @if ($nivel)
-                        <form method="POST" action="{{ route('jugar') }}" class="flex flex-col">
-                            @csrf
-                            {{-- La partida siguiente es contra el mismo nivel. --}}
-                            <input type="hidden" name="nivel" value="{{ $nivel->value }}">
-                            <button type="submit" class="boton boton-naipe">Jugar otra partida</button>
-                        </form>
+                        <div class="flex flex-col gap-2.5 sm:flex-row">
+                            <form method="POST" action="{{ route('revancha.pedir') }}" class="flex flex-col">
+                                @csrf
+                                {{-- La revancha es contra el mismo nivel, y el mano cambia de lado. --}}
+                                <input type="hidden" name="partida" value="{{ $vista['partida'] }}">
+                                <button type="submit" class="boton boton-naipe"><x-icono nombre="repetir" /> Jugar la revancha</button>
+                            </form>
+                            <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
+                        </div>
                     @else
-                        {{-- Con otra persona, la revancha es de M12: por ahora se vuelve a elegir cómo jugar. --}}
-                        <a href="{{ route('modos') }}" class="boton boton-naipe">Elegir cómo jugar</a>
+                        {{-- Guarda siempre su renglón: cuando llega el pedido del otro, los botones no saltan. --}}
+                        <p role="status" aria-live="polite" class="min-h-[1.4em] font-semibold leading-snug" x-text="avisoDeRevancha"></p>
+                        {{-- La cuenta se ve pero no se anuncia: un lector de pantalla no tiene que leer cada segundo. --}}
+                        <p class="text-[0.95rem] leading-snug" aria-hidden="true" x-show="revancha.restan !== null" x-cloak>
+                            Se vence en <span class="font-bold tabular-nums" x-text="revancha.restan"></span> <span x-text="revancha.restan === 1 ? 'segundo' : 'segundos'"></span>.
+                        </p>
+
+                        <div class="mt-3 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+                            <button type="button" class="boton boton-naipe" x-show="revancha.estado === 'disponible'" x-cloak :disabled="revancha.pidiendo" @click="revanchar('pedir')">
+                                <x-icono nombre="repetir" /> Pedir revancha
+                            </button>
+                            <button type="button" class="boton boton-linea" x-show="revancha.estado === 'pedida'" x-cloak :disabled="revancha.pidiendo" @click="revanchar('cancelar')">
+                                Cancelar el pedido
+                            </button>
+                            <button type="button" class="boton boton-basto" x-show="revancha.estado === 'te_piden'" x-cloak :disabled="revancha.pidiendo" @click="revanchar('aceptar')">
+                                <x-icono nombre="quiero" /> Quiero la revancha
+                            </button>
+                            <button type="button" class="boton boton-copa" x-show="revancha.estado === 'te_piden'" x-cloak :disabled="revancha.pidiendo" @click="revanchar('rechazar')">
+                                <x-icono nombre="no-quiero" /> No quiero
+                            </button>
+                            {{-- Mientras hay un pedido a la vista, lo único que se hace es contestarlo o esperarlo. --}}
+                            <a href="{{ route('modos') }}" class="boton boton-linea" x-show="! revanchaALaVista">Elegir cómo jugar</a>
+                            <a href="{{ route('historial') }}" class="boton boton-linea" x-show="! revanchaALaVista">Ver el historial</a>
+                        </div>
                     @endif
-                    <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
                 </div>
             </div>
         </div>
@@ -319,11 +386,11 @@
                 class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
                 <h2 id="titulo-salir" class="text-3xl font-black tracking-tight">¿Salir de la mesa?</h2>
                 @if ($rival === null)
-                    <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés.</p>
+                    <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés{{ $serie ? ', y con ella la serie' : '' }}.</p>
                 @else
                     <p class="mt-2 leading-relaxed">
                         Con otra persona la partida no se detiene. Si salís, cada turno tuyo se vence a los {{ \App\Juego\Mesa::SEGUNDOS_DE_TURNO }} segundos,
-                        y con {{ \App\Juego\Mesa::VENCIMIENTOS_PARA_PERDER }} vencidos seguidos la perdés.
+                        y con {{ \App\Juego\Mesa::VENCIMIENTOS_PARA_PERDER }} vencidos seguidos la perdés{{ $serie ? ', y con ella la serie' : '' }}.
                     </p>
                 @endif
                 <div class="mt-6 flex flex-col gap-2.5">
@@ -331,6 +398,8 @@
                     <a href="{{ route('portada') }}" class="boton boton-linea">{{ $rival === null ? 'Salir y seguir después' : 'Salir un momento' }}</a>
                     <form method="POST" action="{{ route('mesa.abandonar') }}" class="flex flex-col">
                         @csrf
+                        {{-- Se abandona la partida que esta mesa muestra, y ninguna otra. --}}
+                        <input type="hidden" name="partida" value="{{ $vista['partida'] }}">
                         <button type="submit" class="boton boton-linea">Abandonar la partida</button>
                     </form>
                 </div>

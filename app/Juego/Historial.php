@@ -21,6 +21,13 @@ final class Historial
     /** Cuántas partidas entran en una página de la lista. */
     public const POR_PAGINA = 12;
 
+    /**
+     * Lo que ya se contó de cada serie en este pedido: una serie tiene varias partidas en la misma lista.
+     *
+     * @var array<int, array{marcador: array{0: int, 1: int}, partidas: list<int>, cortada: bool}>
+     */
+    private array $series = [];
+
     public function __construct(private readonly Mesa $mesa) {}
 
     /**
@@ -39,7 +46,7 @@ final class Historial
             ->whereIn('estado', [Partida::TERMINADA, Partida::ABANDONADA])
             ->whereNotNull('ganador')
             ->when($desde !== null, fn (Builder $consulta) => $consulta->where('terminada_en', '>=', $desde))
-            ->with(['jugador', 'invitado'])
+            ->with(['jugador', 'invitado', 'serie'])
             ->latest('terminada_en')
             ->latest('id');
     }
@@ -67,7 +74,7 @@ final class Historial
     /**
      * Lo que la lista dice de una partida, visto desde un asiento.
      *
-     * @return array{id: int, gano: bool, vos: int, ellos: int, rival: string, bot: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int}
+     * @return array{id: int, gano: bool, vos: int, ellos: int, rival: string, bot: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, gano: ?bool, completa: bool}, revancha: bool}
      */
     public function resumen(Partida $partida, int $asiento): array
     {
@@ -89,6 +96,41 @@ final class Historial
             'manos' => $estado['numeroDeMano'],
             // Una partida que dura menos de un minuto se cuenta como de uno: "0 minutos" no dice nada.
             'minutos' => max(1, (int) round(Carbon::parse($empezo)->diffInSeconds($cuando, true) / 60)),
+            'serie' => $serie = $this->serie($partida, $asiento),
+            // Una revancha es la que sigue a otra sin ser la continuación de una serie: la primera de una serie nueva también lo es.
+            'revancha' => $partida->esContinuacion() && ($serie === null || $serie['numero'] === 1),
+        ];
+    }
+
+    /**
+     * Si la partida es de una serie al mejor de tres: cuál es, qué número de partida fue y cómo quedó la
+     * serie vista desde ese asiento. "gano" es null mientras la serie sigue en juego, y "completa" dice si
+     * se jugó hasta que alguien ganó las que hacían falta. Si alguno se fue en el medio no lo es, aunque la
+     * partida abandonada le haya dejado dos al otro: ese marcador no se jugó.
+     *
+     * @return array{id: int, numero: int, vos: int, ellos: int, gano: ?bool, completa: bool}|null
+     */
+    private function serie(Partida $partida, int $asiento): ?array
+    {
+        $serie = $partida->serie;
+
+        if ($serie === null) {
+            return null;
+        }
+
+        $contada = $this->series[$serie->id] ??= [
+            'marcador' => $serie->marcador(),
+            'partidas' => $serie->partidas()->pluck('id')->all(),
+            'cortada' => $serie->cortada(),
+        ];
+
+        return [
+            'id' => $serie->id,
+            'numero' => (int) array_search($partida->getKey(), $contada['partidas'], true) + 1,
+            'vos' => $contada['marcador'][$asiento],
+            'ellos' => $contada['marcador'][1 - $asiento],
+            'gano' => $serie->cerrada() ? $serie->ganador === $asiento : null,
+            'completa' => $serie->cerrada() && ! $contada['cortada'],
         ];
     }
 
