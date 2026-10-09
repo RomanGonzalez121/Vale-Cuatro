@@ -38,7 +38,7 @@ Proyecto de portfolio de Román Gonzalez.
 
 ## Estado
 
-El proyecto se construye por módulos. Hoy están terminados los dos primeros y hay un adelanto del sexto.
+El proyecto se construye por módulos. Hoy están terminados los nueve primeros, de M0 a M8.
 
 **El juego mano a mano**
 
@@ -48,11 +48,11 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 | M1 | Cuentas y modo invitado | Listo |
 | M2 | Motor de reglas en PHP puro, pensado por asientos y equipos | Listo |
 | M3 | Mesa contra el bot, con la partida guardada como eventos | Listo |
-| M4 | Bot con tres niveles | Pendiente |
-| M5 | Dos personas en tiempo real | Pendiente |
-| M6 | Tanteador, cantos y movimiento | En curso: el envido se canta y la mano tiene su cierre |
-| M7 | Historial y repetición | Pendiente |
-| M8 | Ranking y estadísticas | Pendiente |
+| M4 | Bot con cuatro niveles, del Fácil al Ultra difícil, que juega desde una cola | Listo |
+| M5 | Dos personas en tiempo real, por un link de invitación | Listo |
+| M6 | Tanteador, cantos y movimiento | Listo |
+| M7 | Historial y repetición jugada por jugada | Listo |
+| M8 | Ranking y estadísticas, calculadas desde los eventos de cada partida | Listo |
 | M9 | API pública | Pendiente |
 | M10 | Cómo se juega | Pendiente |
 | M11 | Calidad y publicación | En curso desde el primer commit |
@@ -72,7 +72,8 @@ El proyecto se construye por módulos. Hoy están terminados los dos primeros y 
 | M20 | Mazos y mesas para elegir | Pendiente |
 
 Las pantallas ya son las definitivas. Las cuentas son reales: se puede registrarse, ingresar, cambiar el apodo o entrar a la mesa como invitado con un solo botón, sin llenar nada.
-La mesa ya juega de verdad: reparte con el motor de reglas, valida cada jugada en el servidor y guarda la partida como una lista de eventos. El rival es un bot sencillo, provisional hasta M4. El ranking y el historial siguen mostrando datos de ejemplo fijos.
+La mesa juega de verdad: reparte con el motor de reglas, valida cada jugada en el servidor y guarda la partida como una lista de eventos. Se juega contra un bot de cuatro niveles o contra otra persona por un link, en vivo.
+De esos mismos eventos salen el historial, la repetición de cada partida y el ranking: ninguna pantalla muestra datos escritos a mano. Los jugadores de ejemplo del ranking están marcados como bots, y sus números salen de partidas que jugaron entre ellos con el motor.
 
 ## Lo que viene
 
@@ -108,11 +109,12 @@ La página `/identidad` muestra logo, colores con su contraste medido, tipograf�
 
 - Laravel 13, PHP 8.3 y MySQL
 - Blade, Tailwind CSS 4 y Alpine.js
+- Laravel Reverb y Echo para el tiempo real, y colas para el turno del bot y los plazos
 - Animaciones con CSS y la Web Animations API, sin librerías
 - PHPUnit y Laravel Pint, corridos por GitHub Actions en cada subida
 - Tipografías Chivo y Piazzolla, alojadas en el proyecto
 
-Más adelante se suman Laravel Reverb y Echo para el tiempo real, colas, Sanctum con OpenAPI para la API, Laravel Dusk para las pruebas de navegador y Web Push para los avisos.
+Más adelante se suman Sanctum con OpenAPI para la API, Laravel Dusk para las pruebas de navegador y Web Push para los avisos.
 
 ## Cómo correrlo
 
@@ -128,19 +130,23 @@ php artisan migrate
 
 El `.env.example` trae los datos de un MySQL local sin contraseña; si el tuyo es distinto, cambiá las líneas `DB_` del `.env` antes de migrar.
 
-Después, en tres terminales:
+Después, en cuatro terminales:
 
 ```bash
 php artisan serve
 npm run dev
 php artisan queue:work --sleep=0.2
+php artisan reverb:start
 ```
 
 El tercero atiende la cola: de ahí sale el turno del bot. Sin él la mesa igual avanza, pero el bot tarda unos cinco segundos por jugada, porque recién ahí la mesa le pide que juegue.
+El cuarto es el servidor de tiempo real: con él, quien juega con otra persona se entera al instante de cada jugada. Antes de prenderlo hay que generar sus claves; el `.env.example` dice cómo. Sin él el sitio anda igual, y la mesa entre dos personas se pone al día cada pocos segundos.
 
 El sitio queda en `http://127.0.0.1:8000`.
 
 Para entrar sin registrarse cada vez, `php artisan db:seed` crea tres cuentas de prueba (por ejemplo `roman@valecuatro.test`, contraseña `valecuatro`). Solo existen fuera de producción.
+
+El mismo comando crea los jugadores de ejemplo del ranking y les hace jugar sus partidas simuladas (tarda cerca de medio minuto). Se puede hacer aparte con `php artisan ranking:ejemplo`, que no repite lo ya jugado. `php artisan ranking:recalcular` vuelve a armar el ranking leyendo los eventos de todas las partidas.
 
 ## Tests y estilo
 

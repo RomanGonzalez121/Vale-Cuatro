@@ -716,3 +716,55 @@ El historial dejó de ser una maqueta: la lista y la repetición salen de las pa
 - **No pasó por la revisión de código antes de subir:** Román pidió subirlo directo.
 - **No hay tests de navegador automáticos** del cartel ni de la repetición: se probaron a mano con un navegador real (abrir, cerrar por las cuatro puertas, atrás y adelante, recargar, teclado) y quedan para M11.
 - **Capturas** en `docs/capturas/`: `historial.png`, `historial-celular.png`, `repeticion.jpeg` y `repeticion-celular.png`.
+
+## M8. Ranking y estadísticas
+
+El ranking dejó de ser una maqueta: la tabla sale de las partidas que se jugaron. Con esto se borró el último archivo de datos de ejemplo escritos a mano.
+
+### Las estadísticas salen de los eventos, y se guarda un resumen por partida
+
+- **Problema:** el ranking necesita saber, de cada partida, quién la ganó y cómo le fue a cada uno en los envidos. Eso está en los eventos, pero sacarlo es volver a pasar la partida por el motor. Hacerlo con todas las partidas cada vez que alguien abre la tabla no escala.
+- **Elegido:** cuando una partida se cierra, `App\Juego\Estadisticas` la recorre con el motor (igual que la repetición) y guarda un renglón por persona en la tabla `resultados`: si ganó, cuántos envidos se quisieron y cuántos de esos ganó. La tabla del ranking se arma sumando esos renglones.
+- **No es una segunda verdad:** el renglón no agrega nada que no esté en los eventos. `php artisan ranking:recalcular` borra todos y los escribe de nuevo desde ahí, y un test rompe a propósito lo guardado y comprueba que recalcular lo deja igual que antes. Sirve también para las partidas jugadas antes de que existiera el ranking: después de migrar hay que correrlo una vez.
+- **Qué es un envido jugado:** el que se quiso y se compararon los tantos. El que no se quiso no cuenta. El ganador de la partida también se lee de los eventos (quién llegó a los puntos, o quién abandonó), no de la columna de la partida.
+- **Si anotar fallara, la partida se cierra igual.** El ranking se puede rehacer; una partida no puede quedar abierta por un error de la tabla. Hay un test.
+- **Se descartó** recorrer todas las partidas en cada visita, y guardar contadores por jugador (ganadas, racha) que se van sumando: un contador no se puede comprobar contra nada, y si un día se desacomoda no hay cómo saberlo.
+
+### Qué partidas cuentan y cómo se ordena
+
+- **Decidido por Román:** se ordena por partidas ganadas; si empatan, mejor porcentaje y después racha más larga. Si todo es igual, va antes quien llegó antes al sitio, para que el orden no cambie de una visita a otra.
+- **Contra el bot cuenta desde Intermedio.** Sin las partidas contra el bot el ranking quedaría vacío (un sitio de portfolio no tiene gente conectada), y dejar afuera al Fácil evita subir ganándole cien veces. Entre personas cuentan todas. Abandonar es perder.
+- **La racha** son las ganadas después de la última perdida, leídas por la fecha en que se cerró cada partida. Se calcula en la misma consulta que las sumas.
+- **Límite conocido:** la tabla trae un renglón por jugador y ordena en PHP, sin caché. Alcanza de sobra para este sitio; con miles de cuentas habría que paginar en la base.
+- **Límite conocido, a decidir con Román:** como abandonar es perder, dos sesiones de una misma persona pueden regalarse partidas (una abre la sala, la otra se sienta y abandona). Hoy esa victoria cuenta entera.
+
+### Los jugadores de ejemplo juegan de verdad
+
+- **Problema:** la tabla no puede arrancar vacía, y el proyecto dice que se simula el mundo, no la tecnología. Once jugadores con números escritos a mano serían justo lo contrario.
+- **Elegido por Román:** los jugadores de ejemplo son filas de `jugadores` marcadas (`de_ejemplo`), cada una con un nivel de bot. `php artisan ranking:ejemplo` los hace jugar todos contra todos, tres vueltas (30 partidas cada uno, 165 en total), con `App\Juego\Simulacion`: el mismo motor y los mismos bots que una partida real, cada bot mirando solo su asiento. Las partidas quedan guardadas como eventos y sus estadísticas se calculan igual que las de cualquier persona.
+- **Todo sale de una semilla:** la misma semilla da la misma partida, carta por carta (test). Por eso la tabla de ejemplo es siempre la misma, en cualquier máquina.
+- **El orden no está puesto a mano:** quedan arriba los que juegan con bots más fuertes porque ganan más. Un test comprueba que entre todos ganaron tantas partidas como se jugaron.
+- **No pasa por la mesa.** La mesa es para personas: lleva plazos, trabajos en cola y avisos en vivo. La simulación juega en memoria y guarda al final. Un test comprueba que los eventos guardados, aplicados por el camino de siempre, llegan al mismo resultado.
+- **Lo simulado va marcado también en la base:** las partidas simuladas llevan `simulada`, además de que sus dos jugadores son de ejemplo. Así lo que venga después (la API, la administración, las categorías) puede dejarlas afuera sin adivinar.
+- **Cuidados:** un jugador de ejemplo no tiene correo ni contraseña, así que nadie ingresa como él; ningún formulario puede crear uno; la limpieza diaria de invitados no se los lleva; si una persona ya usa uno de esos apodos, ese jugador de ejemplo no se crea. La siembra es todo o nada y no repite lo ya jugado: se puede correr en cada publicación.
+- **Se descartó** dejar números fijos, y hacerlos jugar por la mesa (habría dejado miles de trabajos en la cola y avisos a nadie).
+
+### Quién aparece y qué ve cada uno
+
+- **Decidido por Román:** en la tabla están las cuentas y los jugadores de ejemplo. Quien juega sin cuenta no aparece (la tabla se llenaría de "Invitado 48213"), pero en "Tu puesto" lee en qué lugar estaría, con el link para crear la cuenta. Como al registrarse conserva su fila, entra a la tabla con todo lo que ya jugó.
+- **La pantalla es la de la maqueta, conectada.** Se sumaron los casos que la maqueta no tenía: la tabla vacía, no tener partidas que cuenten, ir primero, estar entre los cuatro de arriba (lleva la marca "vos") y tener una partida sin terminar (el botón la retoma).
+
+### Lo que encontró la revisión de código de M8
+
+Diez observaciones. Se corrigió esto:
+
+- **La limpieza de invitados se podía llevar partidas ajenas.** Si un invitado abría una sala y se sentaba alguien con cuenta, al borrarse el invitado (30 días sin volver) se iba la partida entera, y con ella la victoria del otro. Ahora ese invitado no se borra. El mismo problema lo tiene borrar una cuenta, que se resuelve en M11.
+- **Una siembra cortada por la mitad quedaba como si estuviera completa.** Ahora es una sola transacción.
+- **La racha se leía por el orden en que se escribieron los renglones,** y volver a anotar una partida vieja la cambiaba. Se lee por la fecha de cierre.
+- **Un error al anotar deshacía el cierre de la partida.** Ahora se anota el error y la partida se cierra.
+- **Para no contar dos veces un envido se salteaban dos tipos de evento por nombre.** Ahora se mira si el motor avanzó: vale para cualquier evento nuevo que no pase por el motor.
+- **Las partidas simuladas no se distinguían en la base** de una entre dos personas. Llevan su marca.
+
+Quedó anotado como límite: lo de las partidas regaladas entre dos sesiones y que la tabla no tiene caché. Y como paso de publicación (M11): después de migrar, `ranking:ejemplo` y `ranking:recalcular`.
+
+- **Capturas** en `docs/capturas/`: `ranking.jpeg`, `ranking-celular.jpeg`, `ranking-tu-puesto.png` y `ranking-tu-puesto-celular.png`.
