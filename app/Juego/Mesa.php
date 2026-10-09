@@ -897,5 +897,14 @@ final class Mesa
         // Una partida cerrada no espera nada.
         $partida->plazo_vence_en = null;
         $partida->save();
+
+        // Lo que esta partida le cuenta al ranking se anota acá, con todos sus eventos ya guardados.
+        // Si eso fallara, la partida se cierra igual: el ranking se puede rehacer desde los eventos
+        // (ranking:recalcular) y una partida no puede quedar abierta por un error de la tabla.
+        try {
+            (new Estadisticas)->anotar($partida, $this);
+        } catch (Throwable $falla) {
+            report($falla);
+        }
     }
 }

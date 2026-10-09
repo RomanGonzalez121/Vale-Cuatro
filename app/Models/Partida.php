@@ -18,6 +18,9 @@ use Illuminate\Support\Str;
  * Contra el bot, el jugador ocupa el asiento 0 y el bot el 1. Entre dos personas,
  * quien la creó ocupa el asiento 0 y quien se sienta con el link, el 1.
  *
+ * Una partida simulada tiene la misma forma que una entre dos personas (dos jugadores,
+ * uno en cada asiento), pero la jugaron dos bots: sus jugadores son de ejemplo.
+ *
  * @property int $id
  * @property int $jugador_id
  * @property int|null $invitado_id
@@ -25,6 +28,7 @@ use Illuminate\Support\Str;
  * @property int|null $primer_mano
  * @property int $puntos
  * @property bool $entre_personas
+ * @property bool $simulada
  * @property string|null $codigo
  * @property Nivel|null $nivel_bot
  * @property int|null $ganador
@@ -52,6 +56,7 @@ class Partida extends Model
         'estado' => self::EN_CURSO,
         'nivel_bot' => Nivel::Intermedio->value,
         'entre_personas' => false,
+        'simulada' => false,
     ];
 
     /**
@@ -132,6 +137,7 @@ class Partida extends Model
             'primer_mano' => 'integer',
             'puntos' => 'integer',
             'entre_personas' => 'boolean',
+            'simulada' => 'boolean',
             'nivel_bot' => Nivel::class,
             'ganador' => 'integer',
             'terminada_en' => 'datetime',

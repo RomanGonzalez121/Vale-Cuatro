@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\MassPrunable;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use RuntimeException;
@@ -18,9 +19,14 @@ use RuntimeException;
  * el que tiene cuenta (email y contraseña) y el invitado, que solo tiene un
  * apodo sorteado. Un invitado que se registra conserva su fila y lo que jugó.
  *
+ * Y hay una tercera fila que no es de nadie: el jugador de ejemplo del ranking.
+ * Juega partidas simuladas contra los otros de ejemplo y el sitio lo marca como bot.
+ * No tiene email ni contraseña, así que nadie puede ingresar como él.
+ *
  * @property int $id
  * @property string $apodo
  * @property string|null $email
+ * @property bool $de_ejemplo
  */
 #[Table('jugadores')]
 #[Fillable(['apodo', 'email', 'password'])]
@@ -57,15 +63,27 @@ class Jugador extends Authenticatable
 
     /**
      * No hay una marca aparte que pueda quedar desactualizada: es invitado
-     * quien no cargó un email.
+     * quien no cargó un email. Un jugador de ejemplo tampoco tiene, pero no es una persona.
      */
     public function esInvitado(): bool
     {
-        return $this->email === null;
+        return $this->email === null && ! $this->esDeEjemplo();
+    }
+
+    /**
+     * Un jugador de ejemplo del ranking: simulado, y dicho así en cada lugar donde aparece.
+     */
+    public function esDeEjemplo(): bool
+    {
+        return (bool) $this->de_ejemplo;
     }
 
     /**
      * Lo que borra `model:prune` cada día: los invitados que no volvieron.
+     * Los jugadores de ejemplo no se tocan: no vuelven nunca, y la tabla los necesita.
+     *
+     * Tampoco el invitado que abrió una partida que jugó otra persona. Esa partida es de los dos: con
+     * él se irían sus eventos, y el otro la perdería de su historial y del ranking.
      *
      * @return Builder<static>
      */
@@ -73,6 +91,11 @@ class Jugador extends Authenticatable
     {
         return static::query()
             ->whereNull('email')
+            ->where('de_ejemplo', false)
+            ->whereNotExists(fn (QueryBuilder $consulta) => $consulta
+                ->from('partidas')
+                ->whereColumn('partidas.jugador_id', 'jugadores.id')
+                ->whereNotNull('partidas.invitado_id'))
             ->where('updated_at', '<', now()->subDays(self::DIAS_DE_INVITADO));
     }
 
@@ -83,6 +106,7 @@ class Jugador extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'de_ejemplo' => 'boolean',
         ];
     }
 }

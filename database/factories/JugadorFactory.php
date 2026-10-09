@@ -43,4 +43,17 @@ class JugadorFactory extends Factory
             'password' => null,
         ]);
     }
+
+    /**
+     * Un jugador de ejemplo del ranking: sin email ni contraseña, y marcado.
+     */
+    public function deEjemplo(): static
+    {
+        return $this->state(fn (array $atributos) => [
+            'apodo' => 'Ejemplo '.fake()->unique()->numberBetween(10000, 99999),
+            'email' => null,
+            'password' => null,
+            'de_ejemplo' => true,
+        ]);
+    }
 }
