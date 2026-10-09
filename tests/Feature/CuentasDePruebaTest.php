@@ -13,7 +13,9 @@ class CuentasDePruebaTest extends TestCase
 
     public function test_con_las_cuentas_sembradas_se_puede_ingresar(): void
     {
-        $this->seed();
+        // Solo las cuentas: la siembra entera también simula las partidas de los jugadores de ejemplo
+        // (JugadoresDeEjemploTest), que acá no hacen falta.
+        $this->seed(CuentasDePruebaSeeder::class);
 
         foreach (CuentasDePruebaSeeder::CUENTAS as $apodo => $email) {
             $this->post('/ingresar', ['email' => $email, 'password' => CuentasDePruebaSeeder::PASSWORD])->assertRedirect('/');
@@ -26,8 +28,8 @@ class CuentasDePruebaTest extends TestCase
 
     public function test_sembrar_dos_veces_no_duplica_las_cuentas(): void
     {
-        $this->seed();
-        $this->seed();
+        $this->seed(CuentasDePruebaSeeder::class);
+        $this->seed(CuentasDePruebaSeeder::class);
 
         $this->assertSame(count(CuentasDePruebaSeeder::CUENTAS), Jugador::count());
     }
