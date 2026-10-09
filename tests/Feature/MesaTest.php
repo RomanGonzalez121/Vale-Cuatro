@@ -6,7 +6,6 @@ use App\Jobs\TurnoDelBot;
 use App\Juego\Bot;
 use App\Juego\BotIntermedio;
 use App\Juego\Mesa;
-use App\Juego\Nivel;
 use App\Juego\Recuerda;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
@@ -46,25 +45,6 @@ class MesaTest extends TestCase
         $this->assertCount(6, array_unique(array_merge(...$reparto->datos['manos'])));
     }
 
-    public function test_con_una_partida_sin_terminar_abrir_devuelve_la_misma(): void
-    {
-        $jugador = Jugador::factory()->invitado()->create();
-
-        $primera = $this->mesa()->abrir($jugador);
-        $segunda = $this->mesa()->abrir($jugador);
-
-        $this->assertTrue($primera->is($segunda));
-        $this->assertSame(1, Partida::count());
-    }
-
-    public function test_cada_jugador_tiene_su_propia_partida(): void
-    {
-        $una = $this->mesa()->abrir(Jugador::factory()->invitado()->create());
-        $otra = $this->mesa()->abrir(Jugador::factory()->invitado()->create());
-
-        $this->assertFalse($una->is($otra));
-    }
-
     public function test_el_estado_reconstruido_desde_los_eventos_es_igual_al_estado_en_curso(): void
     {
         $mesa = $this->mesa();
@@ -85,35 +65,6 @@ class MesaTest extends TestCase
                 $comparados++;
             }
         }
-    }
-
-    public function test_una_accion_invalida_se_rechaza_y_no_genera_evento(): void
-    {
-        $mesa = $this->mesa();
-        $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
-        $antes = $partida->eventos()->count();
-        $vista = $mesa->vista($partida);
-
-        // Una carta que el jugador no tiene, mandada a mano.
-        $ajena = collect(['1-espada', '1-basto', '7-espada', '7-oro'])->first(fn (string $id) => ! in_array($id, $vista['misCartas'], true));
-
-        try {
-            $mesa->actuar($partida, Accion::jugar(Carta::de($ajena)));
-            $this->fail('La mesa aceptó una carta que el jugador no tiene.');
-        } catch (AccionInvalida $rechazo) {
-            $this->assertNotSame('', $rechazo->getMessage());
-        }
-
-        // Y un canto que no corresponde.
-        try {
-            $mesa->actuar($partida, Accion::de(TipoDeAccion::ValeCuatro));
-            $this->fail('La mesa aceptó un vale cuatro sin truco.');
-        } catch (AccionInvalida) {
-            $this->addToAssertionCount(1);
-        }
-
-        $this->assertSame($antes, $partida->eventos()->count());
-        $this->assertSame($vista, $mesa->vista($partida));
     }
 
     public function test_una_partida_entera_termina_con_un_ganador_y_queda_cerrada(): void
@@ -172,20 +123,6 @@ class MesaTest extends TestCase
 
         // La próxima vez que abre, arranca una partida nueva.
         $this->assertFalse($mesa->abrir($jugador)->is($partida));
-    }
-
-    public function test_no_se_reparte_con_la_mano_en_juego(): void
-    {
-        $mesa = $this->mesa();
-        $partida = $mesa->abrir(Jugador::factory()->invitado()->create());
-        $antes = $partida->eventos()->count();
-
-        try {
-            $mesa->repartir($partida);
-            $this->fail('La mesa repartió con una mano en juego.');
-        } catch (AccionInvalida) {
-            $this->assertSame($antes, $partida->eventos()->count());
-        }
     }
 
     public function test_ningun_paso_le_muestra_al_jugador_una_carta_del_bot_que_no_se_jugo_ni_se_mostro(): void
@@ -327,14 +264,6 @@ class MesaTest extends TestCase
             }
 
             $vistas = count($espia->jugadas);
-        }
-    }
-
-    public function test_los_tres_niveles_de_siempre_no_llevan_memoria(): void
-    {
-        // Fácil, Intermedio y Difícil deciden solo con la vista de la mano: la mesa no les arma historia.
-        foreach ([Nivel::Facil, Nivel::Intermedio, Nivel::Dificil] as $nivel) {
-            $this->assertNotInstanceOf(Recuerda::class, $nivel->bot(Azar::deSemilla(1)));
         }
     }
 

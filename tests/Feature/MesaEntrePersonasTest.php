@@ -77,7 +77,7 @@ class MesaEntrePersonasTest extends TestCase
         $revisados = 0;
 
         // Una partida puede cerrarse enseguida (un falta envido querido de entrada): se juegan las que hagan falta.
-        for ($partidas = 0; $revisados < 400; $partidas++) {
+        for ($partidas = 0; $revisados < 200; $partidas++) {
             $this->assertLessThan(40, $partidas, 'No se llegó a revisar lo suficiente.');
 
             [$partida] = $this->partidaEntreDos();

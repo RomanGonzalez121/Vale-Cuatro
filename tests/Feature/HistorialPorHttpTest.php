@@ -45,7 +45,7 @@ class HistorialPorHttpTest extends TestCase
             ->assertOk()
             ->assertSee($resumen['gano'] ? 'Ganaste' : 'Perdiste')
             ->assertSee("{$resumen['vos']} a {$resumen['ellos']}")
-            ->assertSee('Contra Bot fácil')
+            ->assertSee('Contra Bot intermedio')
             ->assertSee('href="'.route('historial.ver', $partida->id).'"', false)
             ->assertDontSee('href="'.route('historial.ver', $ajena->id).'"', false)
             ->assertDontSee('Jugás sin cuenta');

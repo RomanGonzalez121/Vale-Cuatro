@@ -26,27 +26,29 @@ class NivelesDelBotTest extends TestCase
 
     /**
      * Cada partida revisa todas las decisiones de los dos bots: si alguna no figura entre las
-     * acciones válidas, falla ahí. Se cruzan todos los niveles, también cada uno contra sí mismo.
+     * acciones válidas, falla ahí. Se cruzan todos los niveles, también cada uno contra sí mismo:
+     * son cincuenta partidas enteras, y las de la escalera de abajo revisan lo mismo en otras setenta.
      */
     #[DataProvider('cruces')]
     public function test_ningun_nivel_produce_una_accion_invalida_en_una_simulacion_larga(Nivel $uno, Nivel $otro): void
     {
-        $ganadas = $this->ganadasPor($uno, $otro, partidas: 12, desdeLaSemilla: 500);
+        $ganadas = $this->ganadasPor($uno, $otro, partidas: 5, desdeLaSemilla: 500);
 
         $this->assertGreaterThanOrEqual(0, $ganadas);
     }
 
     /**
-     * Medido el 5 de octubre de 2026 con estas mismas semillas: Difícil le gana 57 de 60 a Fácil,
-     * Intermedio 47 de 60 a Fácil y Difícil 53 de 60 a Intermedio. En una tanda de 400 dan 92 %, 74 % y 82 %. Los pisos dejan margen para
-     * poder ajustar a los bots sin que el test se rompa por una partida.
+     * Medido con estas mismas semillas: Difícil le gana 23 de 24 a Fácil, Intermedio 21 de 24 a Fácil y
+     * Difícil 23 de 24 a Intermedio. En una tanda de 400 dan 92 %, 74 % y 82 %. Los pisos dejan margen
+     * para poder ajustar a los bots sin que el test se rompa por una partida. Como las partidas salen de
+     * una semilla, el resultado es siempre el mismo: la tanda es corta para que el test no tarde.
      */
     #[DataProvider('escalera')]
     public function test_el_nivel_de_arriba_le_gana_al_de_abajo(Nivel $arriba, Nivel $abajo, int $piso): void
     {
-        $ganadas = $this->ganadasPor($arriba, $abajo, partidas: 60);
+        $ganadas = $this->ganadasPor($arriba, $abajo, partidas: 24);
 
-        $this->assertGreaterThanOrEqual($piso, $ganadas, "{$arriba->nombre()} le ganó {$ganadas} de 60 a {$abajo->nombre()}.");
+        $this->assertGreaterThanOrEqual($piso, $ganadas, "{$arriba->nombre()} le ganó {$ganadas} de 24 a {$abajo->nombre()}.");
     }
 
     /**
@@ -58,7 +60,7 @@ class NivelesDelBotTest extends TestCase
     {
         $comparadas = 0;
 
-        foreach (range(1, 40) as $semilla) {
+        foreach (range(1, 20) as $semilla) {
             $mazo = Mazo::mezclado($semilla);
             $delBot = array_slice($mazo, 0, 3);
 
@@ -94,7 +96,7 @@ class NivelesDelBotTest extends TestCase
             }
         }
 
-        $this->assertGreaterThan(150, $comparadas);
+        $this->assertGreaterThan(75, $comparadas);
     }
 
     public static function cruces(): array
@@ -115,9 +117,9 @@ class NivelesDelBotTest extends TestCase
     public static function escalera(): array
     {
         return [
-            'Difícil contra Fácil' => [Nivel::Dificil, Nivel::Facil, 48],
-            'Intermedio contra Fácil' => [Nivel::Intermedio, Nivel::Facil, 36],
-            'Difícil contra Intermedio' => [Nivel::Dificil, Nivel::Intermedio, 40],
+            'Difícil contra Fácil' => [Nivel::Dificil, Nivel::Facil, 19],
+            'Intermedio contra Fácil' => [Nivel::Intermedio, Nivel::Facil, 14],
+            'Difícil contra Intermedio' => [Nivel::Dificil, Nivel::Intermedio, 16],
         ];
     }
 

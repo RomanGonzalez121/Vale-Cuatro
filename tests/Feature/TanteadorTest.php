@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\Concerns\InteractsWithViews;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -17,38 +16,36 @@ class TanteadorTest extends TestCase
     /** La raya que separa las malas de las buenas. */
     private const string SEPARADOR = 'w-px';
 
-    #[DataProvider('tanteos')]
-    public function test_dibuja_un_fosforo_por_punto_con_las_malas_separadas_de_las_buenas(int $puntos): void
+    public function test_dibuja_un_fosforo_por_punto_con_las_malas_separadas_de_las_buenas(): void
     {
-        $html = (string) $this->blade('<x-tanteador nombre="Vos" :puntos="$puntos" />', ['puntos' => $puntos]);
+        foreach ($this->tanteadores() as $puntos => $html) {
+            [$malas, $buenas] = $this->mitades($html);
 
-        [$malas, $buenas] = $this->mitades($html);
+            // Hay lugar para los treinta: quince de cada lado, en tres grupos de cinco.
+            $this->assertSame(3, substr_count($malas, '<svg'), "Con {$puntos} puntos");
+            $this->assertSame(3, substr_count($buenas, '<svg'), "Con {$puntos} puntos");
+            $this->assertSame(15, $this->fosforos($malas), "Con {$puntos} puntos");
+            $this->assertSame(15, $this->fosforos($buenas), "Con {$puntos} puntos");
 
-        // Hay lugar para los treinta: quince de cada lado, en tres grupos de cinco.
-        $this->assertSame(3, substr_count($malas, '<svg'));
-        $this->assertSame(3, substr_count($buenas, '<svg'));
-        $this->assertSame(15, $this->fosforos($malas));
-        $this->assertSame(15, $this->fosforos($buenas));
+            // Los puntos llenan primero las malas y recién después las buenas.
+            $this->assertSame(min($puntos, 15), $this->puestos($malas), "Malas con {$puntos} puntos");
+            $this->assertSame(max($puntos - 15, 0), $this->puestos($buenas), "Buenas con {$puntos} puntos");
 
-        // Los puntos llenan primero las malas y recién después las buenas.
-        $this->assertSame(min($puntos, 15), $this->puestos($malas), "Malas con {$puntos} puntos");
-        $this->assertSame(max($puntos - 15, 0), $this->puestos($buenas), "Buenas con {$puntos} puntos");
-
-        // El número va escrito, para quien no cuenta fósforos y para el lector de pantalla.
-        $this->assertMatchesRegularExpression('/>\s*'.$puntos.'\s*<\/span>\s*<span class="sr-only">puntos<\/span>/', $html);
+            // El número va escrito, para quien no cuenta fósforos y para el lector de pantalla.
+            $this->assertMatchesRegularExpression('/>\s*'.$puntos.'\s*<\/span>\s*<span class="sr-only">puntos<\/span>/', $html);
+        }
     }
 
-    #[DataProvider('tanteos')]
-    public function test_los_fosforos_se_ponen_en_orden_sin_saltear_lugares(int $puntos): void
+    public function test_los_fosforos_se_ponen_en_orden_sin_saltear_lugares(): void
     {
-        $html = (string) $this->blade('<x-tanteador nombre="Vos" :puntos="$puntos" />', ['puntos' => $puntos]);
+        foreach ($this->tanteadores() as $puntos => $html) {
+            // Uno por uno, en el orden en que están dibujados: primero todos los puestos, después todos los vacíos.
+            preg_match_all('/<g class="fosforo( puesto)?"/', $html, $encontrados);
+            $estados = array_map(fn (string $puesto) => $puesto !== '', $encontrados[1]);
 
-        // Uno por uno, en el orden en que están dibujados: primero todos los puestos, después todos los vacíos.
-        preg_match_all('/<g class="fosforo( puesto)?"/', $html, $encontrados);
-        $estados = array_map(fn (string $puesto) => $puesto !== '', $encontrados[1]);
-
-        $this->assertCount(30, $estados);
-        $this->assertSame(array_merge(array_fill(0, $puntos, true), array_fill(0, 30 - $puntos, false)), $estados);
+            $this->assertCount(30, $estados, "Con {$puntos} puntos");
+            $this->assertSame(array_merge(array_fill(0, $puntos, true), array_fill(0, 30 - $puntos, false)), $estados, "Con {$puntos} puntos");
+        }
     }
 
     public function test_con_un_modelo_cada_fosforo_sabe_desde_que_punto_se_pone(): void
@@ -62,13 +59,19 @@ class TanteadorTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{0: int}>
+     * El tanteador dibujado con cada tanteo de una partida, del 0 al 30. Se dibujan todos en una sola
+     * plantilla: compilar una por tanteo era lo que hacía lento a este archivo.
+     *
+     * @return array<int, string>
      */
-    public static function tanteos(): iterable
+    private function tanteadores(): array
     {
-        foreach (range(0, 30) as $puntos) {
-            yield "{$puntos} puntos" => [$puntos];
-        }
+        $html = (string) $this->blade('@foreach (range(0, 30) as $puntos)<x-tanteador nombre="Vos" :puntos="$puntos" /><!--corte-->@endforeach');
+        $tanteadores = array_slice(explode('<!--corte-->', $html), 0, 31);
+
+        $this->assertCount(31, $tanteadores);
+
+        return $tanteadores;
     }
 
     /**

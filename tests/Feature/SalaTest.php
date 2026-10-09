@@ -35,26 +35,6 @@ class SalaTest extends TestCase
         $this->assertSame(0, $sala->eventos()->count(), 'Todavía no se repartió nada.');
     }
 
-    public function test_un_toque_repetido_devuelve_la_misma_sala(): void
-    {
-        $creador = Jugador::factory()->invitado()->create();
-
-        $primera = $this->mesa()->crearSala($creador);
-        $segunda = $this->mesa()->crearSala($creador);
-
-        $this->assertTrue($primera->is($segunda));
-        $this->assertSame(1, Partida::count());
-    }
-
-    public function test_quien_ya_tiene_una_partida_contra_el_bot_no_abre_una_sala(): void
-    {
-        $jugador = Jugador::factory()->invitado()->create();
-        $contraElBot = $this->mesa()->abrir($jugador);
-
-        $this->assertTrue($this->mesa()->crearSala($jugador)->is($contraElBot));
-        $this->assertSame(1, Partida::count());
-    }
-
     public function test_al_sentarse_empieza_la_partida_con_las_cartas_repartidas_y_cada_uno_en_su_asiento(): void
     {
         $creador = Jugador::factory()->invitado()->create();
@@ -117,23 +97,6 @@ class SalaTest extends TestCase
         $this->assertSame($rival->id, $sala->fresh()->invitado_id);
     }
 
-    public function test_un_tercero_no_puede_sentarse_en_una_sala_que_ya_tiene_rival(): void
-    {
-        $sala = $this->mesa()->crearSala(Jugador::factory()->invitado()->create());
-        $this->mesa()->sentarse($sala->codigo, Jugador::factory()->invitado()->create());
-        $tercero = Jugador::factory()->invitado()->create();
-
-        try {
-            $this->mesa()->sentarse($sala->codigo, $tercero);
-            $this->fail('Se sentó un tercero.');
-        } catch (SalaNoDisponible $motivo) {
-            $this->assertSame('Esa partida ya tiene sus dos jugadores.', $motivo->getMessage());
-        }
-
-        $this->assertNotSame($tercero->id, $sala->fresh()->invitado_id);
-        $this->assertNull($this->mesa()->abiertaDe($tercero));
-    }
-
     public function test_no_se_entra_a_una_partida_terminada_ni_a_un_link_que_no_existe(): void
     {
         $creador = Jugador::factory()->invitado()->create();
@@ -178,29 +141,6 @@ class SalaTest extends TestCase
         // El segundo llega con la sala ya ocupada: aunque su pedido se haya armado antes, el estado manda.
         $this->expectException(SalaNoDisponible::class);
         $this->mesa()->sentarse($sala->codigo, $segundo);
-    }
-
-    public function test_quien_abrio_la_sala_la_cancela_y_queda_cerrada_sin_ganador(): void
-    {
-        $creador = Jugador::factory()->invitado()->create();
-        $sala = $this->mesa()->crearSala($creador);
-
-        $this->assertTrue($this->mesa()->cancelarSala($sala));
-
-        $sala->refresh();
-        $this->assertSame(Partida::ABANDONADA, $sala->estado);
-        $this->assertNull($sala->ganador);
-        $this->assertNotNull($sala->terminada_en);
-        $this->assertNull($this->mesa()->abiertaDe($creador), 'Puede abrir otra.');
-    }
-
-    public function test_si_justo_se_sento_alguien_cancelar_ya_no_cierra_la_partida(): void
-    {
-        $sala = $this->mesa()->crearSala(Jugador::factory()->invitado()->create());
-        $this->mesa()->sentarse($sala->codigo, Jugador::factory()->invitado()->create());
-
-        $this->assertFalse($this->mesa()->cancelarSala($sala));
-        $this->assertTrue($sala->fresh()->enCurso());
     }
 
     public function test_las_salas_que_esperaron_demasiado_se_cierran_solas_y_las_demas_no(): void

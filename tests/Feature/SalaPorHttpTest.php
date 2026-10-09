@@ -181,6 +181,7 @@ class SalaPorHttpTest extends TestCase
             ->assertSessionHas('aviso', 'Cerraste la sala.');
 
         $this->assertSame(Partida::ABANDONADA, $sala->fresh()->estado);
+        $this->assertNull($sala->fresh()->ganador, 'Una sala que se cancela no la ganó nadie.');
 
         // Y su sala vieja ya no es un lugar al que entrar.
         $this->actingAs($creador)->get(route('sala', $sala->codigo))->assertRedirect(route('modos'));

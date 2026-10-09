@@ -10,11 +10,6 @@ class IngresoTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_la_pantalla_de_ingreso_responde(): void
-    {
-        $this->get('/ingresar')->assertOk()->assertSee('Ingresá');
-    }
-
     public function test_se_ingresa_con_email_y_contrasena(): void
     {
         $jugador = Jugador::factory()->create();

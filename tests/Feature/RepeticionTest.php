@@ -23,15 +23,8 @@ class RepeticionTest extends TestCase
 
     public function test_al_empezar_cada_mano_muestra_el_tanteo_que_tuvo_la_partida(): void
     {
-        // Hace falta una partida de varias manos, y una puede cerrarse en la primera (un falta envido
-        // querido de entrada): se juega otra si pasa eso.
-        for ($jugadas = 0; $jugadas < 20; $jugadas++) {
-            [$partida, $alRepartir] = $this->partidaContraElBot(Jugador::factory()->invitado()->create());
-
-            if (count($alRepartir) > 1) {
-                break;
-            }
-        }
+        // Una partida de varias manos: con esta semilla son más de veinte.
+        [$partida, $alRepartir] = $this->partidaContraElBot(Jugador::factory()->invitado()->create(), semilla: 100);
 
         $final = $this->laMesa()->reconstruir($partida)->tanteo();
 
@@ -97,10 +90,9 @@ class RepeticionTest extends TestCase
     {
         $revisados = 0;
 
-        // Una partida puede terminar en un par de manos (un falta envido querido de entrada): se juegan
-        // las que hagan falta para revisar una cantidad de cuadros que valga la pena.
-        for ($jugadas = 0; $revisados <= 200 && $jugadas < 20; $jugadas++) {
-            $partida = $this->partidaEntrePersonas(Jugador::factory()->invitado()->create(), Jugador::factory()->invitado()->create());
+        // Dos partidas largas, miradas desde los dos asientos: son varios cientos de cuadros.
+        foreach ([100, 101] as $semilla) {
+            $partida = $this->partidaEntrePersonas(Jugador::factory()->invitado()->create(), Jugador::factory()->invitado()->create(), $semilla);
             $revisados += $this->revisarLoQueSeVeDelRival($partida);
         }
 

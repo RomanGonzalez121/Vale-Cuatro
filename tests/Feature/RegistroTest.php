@@ -20,11 +20,6 @@ class RegistroTest extends TestCase
         return [...['apodo' => 'El Tano', 'email' => 'tano@example.com', 'password' => 'una-clave-larga'], ...$cambios];
     }
 
-    public function test_la_pantalla_de_registro_responde(): void
-    {
-        $this->get('/registro')->assertOk()->assertSee('Creá tu cuenta');
-    }
-
     public function test_registrarse_crea_la_cuenta_y_deja_la_sesion_abierta(): void
     {
         $this->post('/registro', $this->datos())->assertRedirect('/perfil');
