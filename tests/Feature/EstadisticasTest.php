@@ -22,7 +22,7 @@ class EstadisticasTest extends TestCase
     use JugandoPartidas;
     use RefreshDatabase;
 
-    public function test_entre_personas_anota_quien_gano_y_el_envido_que_se_quiso(): void
+    public function test_entre_personas_anota_al_que_se_va_y_el_envido_que_se_quiso(): void
     {
         [$uno, $dos] = [Jugador::factory()->create(), Jugador::factory()->create()];
         // El asiento 0 es mano y tiene 33 de envido; el 1 tiene 29.
@@ -41,19 +41,17 @@ class EstadisticasTest extends TestCase
         // Mientras se juega no hay nada anotado.
         $this->assertSame(0, Resultado::count());
 
-        // Quien se va pierde, con lo jugado hasta ahí.
+        // Quien se va pierde, con lo jugado hasta ahí: un envido jugado, que no ganó.
         $mesa->abandonar($partida->fresh(), 1);
 
-        $this->assertSame(
-            ['gano' => true, 'envidos_jugados' => 1, 'envidos_ganados' => 1],
-            $this->anotadoA($uno, $partida),
-        );
         $this->assertSame(
             ['gano' => false, 'envidos_jugados' => 1, 'envidos_ganados' => 0],
             $this->anotadoA($dos, $partida),
         );
-        $this->assertSame(2, Resultado::count());
-        $this->assertSame(0, $partida->fresh()->ganador, 'El ganador que sale de los eventos es el que quedó en la partida.');
+
+        // Al otro, que iba 2 a 0, no se le anota nada: ganar porque el rival se fue cuenta desde las buenas.
+        $this->assertSame(0, $partida->fresh()->ganador);
+        $this->assertSame(1, Resultado::count());
     }
 
     public function test_un_envido_que_no_se_quiso_no_cuenta_como_jugado(): void
@@ -66,9 +64,9 @@ class EstadisticasTest extends TestCase
         $mesa->actuar($partida, Accion::desdeArray(['tipo' => 'no_quiero']), 1);
         $mesa->abandonar($partida->fresh(), 0);
 
-        // Esta vez se fue el asiento 0: gana el 1. Nadie jugó un envido.
+        // Esta vez se fue el asiento 0. Nadie jugó un envido: el que se cantó no se quiso.
         $this->assertSame(['gano' => false, 'envidos_jugados' => 0, 'envidos_ganados' => 0], $this->anotadoA($uno, $partida));
-        $this->assertSame(['gano' => true, 'envidos_jugados' => 0, 'envidos_ganados' => 0], $this->anotadoA($dos, $partida));
+        $this->assertSame(1, Resultado::count());
     }
 
     public function test_contra_el_bot_cuenta_desde_intermedio_y_abandonar_es_perder(): void
@@ -117,6 +115,34 @@ class EstadisticasTest extends TestCase
         $this->assertSame($partida->ganador === 0, $deUno['gano']);
         $this->assertSame($deUno['envidos_jugados'], $deDos['envidos_jugados']);
         $this->assertSame($deUno['envidos_jugados'], $deUno['envidos_ganados'] + $deDos['envidos_ganados']);
+    }
+
+    public function test_si_el_rival_se_va_cuando_ya_ibas_en_las_buenas_la_partida_ganada_cuenta(): void
+    {
+        [$uno, $dos] = [Jugador::factory()->create(), Jugador::factory()->create()];
+        [$partida, $puntero] = $this->partidaEntrePersonasHasta($uno, $dos, 15);
+        $jugadores = [$uno, $dos];
+
+        // Se va el que va perdiendo.
+        $this->laMesa()->abandonar($partida, 1 - $puntero);
+
+        $this->assertTrue($this->anotadoA($jugadores[$puntero], $partida)['gano']);
+        $this->assertFalse($this->anotadoA($jugadores[1 - $puntero], $partida)['gano']);
+        $this->assertSame(2, Resultado::query()->where('partida_id', $partida->id)->count());
+    }
+
+    public function test_si_se_va_el_que_iba_ganando_el_otro_no_suma_una_victoria_que_no_jugo(): void
+    {
+        [$uno, $dos] = [Jugador::factory()->create(), Jugador::factory()->create()];
+        [$partida, $puntero] = $this->partidaEntrePersonasHasta($uno, $dos, 15);
+        $jugadores = [$uno, $dos];
+        $delOtro = $this->laMesa()->reconstruir($partida)->tanteo()[1 - $puntero];
+
+        // Se va el puntero. Pierde igual; el otro la gana solo si también había llegado a las buenas.
+        $this->laMesa()->abandonar($partida, $puntero);
+
+        $this->assertFalse($this->anotadoA($jugadores[$puntero], $partida)['gano']);
+        $this->assertSame($delOtro >= 15 ? 1 : 0, Resultado::query()->where('partida_id', $partida->id)->where('gano', true)->count());
     }
 
     public function test_una_sala_que_se_cancela_no_anota_nada(): void

@@ -38,8 +38,11 @@ final class Estadisticas
     /**
      * Lo que dicen los eventos de una partida sobre cada persona sentada. Vacío si la partida no cuenta.
      *
-     * Abandonar es perder: gana el otro asiento, con lo jugado hasta ahí. El asiento del bot no tiene
-     * renglón, y tampoco el de alguien cuya fila de jugador ya no existe.
+     * Abandonar es perder, siempre. Para el otro asiento, ganar así cuenta solo si ya iba en las buenas
+     * (la mitad de los puntos de la partida, 15 de 30): si no, no se le anota nada. Así no sirve abrir
+     * una sala, sentarse desde otra ventana y abandonar para regalarse partidas.
+     *
+     * El asiento del bot no tiene renglón, y tampoco el de alguien cuya fila de jugador ya no existe.
      *
      * @return list<array{jugador_id: int, gano: bool, envidos_jugados: int, envidos_ganados: int}>
      */
@@ -50,6 +53,8 @@ final class Estadisticas
         }
 
         $ganador = null;
+        // Ganó porque el otro se fue, sin haber llegado a las buenas: esa victoria no se anota.
+        $regalada = false;
         $jugados = 0;
         $ganados = [0, 0];
         $anterior = null;
@@ -57,6 +62,7 @@ final class Estadisticas
         foreach ($mesa->pasoAPaso($partida) as [$evento, $motor]) {
             if ($evento->tipo === EventoDePartida::ABANDONO) {
                 $ganador = 1 - $evento->asiento;
+                $regalada = $motor->tanteo()[$ganador] < intdiv($partida->puntos, 2);
             }
 
             // El motor es inmutable: cada jugada devuelve otro. Si es el mismo de antes, este evento no pasó
@@ -88,7 +94,7 @@ final class Estadisticas
         $renglones = [];
 
         foreach ($personas as $asiento => $jugador) {
-            if ($jugador !== null) {
+            if ($jugador !== null && ! ($regalada && $asiento === $ganador)) {
                 $renglones[] = [
                     'jugador_id' => $jugador,
                     'gano' => $ganador === $asiento,

@@ -736,7 +736,7 @@ El ranking dejó de ser una maqueta: la tabla sale de las partidas que se jugaro
 - **Contra el bot cuenta desde Intermedio.** Sin las partidas contra el bot el ranking quedaría vacío (un sitio de portfolio no tiene gente conectada), y dejar afuera al Fácil evita subir ganándole cien veces. Entre personas cuentan todas. Abandonar es perder.
 - **La racha** son las ganadas después de la última perdida, leídas por la fecha en que se cerró cada partida. Se calcula en la misma consulta que las sumas.
 - **Límite conocido:** la tabla trae un renglón por jugador y ordena en PHP, sin caché. Alcanza de sobra para este sitio; con miles de cuentas habría que paginar en la base.
-- **Límite conocido, a decidir con Román:** como abandonar es perder, dos sesiones de una misma persona pueden regalarse partidas (una abre la sala, la otra se sienta y abandona). Hoy esa victoria cuenta entera.
+- **Ganar por abandono cuenta solo desde las buenas.** Problema: como abandonar es perder, una persona con dos ventanas podía regalarse partidas (abre una sala, se sienta desde la otra y abandona), a una victoria cada pocos segundos. Elegido por Román: a quien abandona le cuenta siempre como perdida; al otro le cuenta como ganada solo si ya iba en las buenas (15 de 30). Si no, no se le anota nada. Quien iba ganando bien conserva su victoria aunque el rival se vaya. Se descartó dejarlo como estaba y que ganar por abandono no contara nunca (castiga a quien le abandonan una partida casi ganada). No cierra el hueco del todo: dos ventanas pueden jugar hasta 15 y recién ahí abandonar, pero ya es jugar media partida por cada victoria.
 
 ### Los jugadores de ejemplo juegan de verdad
 
@@ -765,6 +765,6 @@ Diez observaciones. Se corrigió esto:
 - **Para no contar dos veces un envido se salteaban dos tipos de evento por nombre.** Ahora se mira si el motor avanzó: vale para cualquier evento nuevo que no pase por el motor.
 - **Las partidas simuladas no se distinguían en la base** de una entre dos personas. Llevan su marca.
 
-Quedó anotado como límite: lo de las partidas regaladas entre dos sesiones y que la tabla no tiene caché. Y como paso de publicación (M11): después de migrar, `ranking:ejemplo` y `ranking:recalcular`.
+Las partidas regaladas entre dos sesiones se le consultaron a Román y quedó la regla de las buenas (arriba). Quedó anotado como límite que la tabla no tiene caché. Y como paso de publicación (M11): después de migrar, `ranking:ejemplo` y `ranking:recalcular`.
 
 - **Capturas** en `docs/capturas/`: `ranking.jpeg`, `ranking-celular.jpeg`, `ranking-tu-puesto.png` y `ranking-tu-puesto-celular.png`.

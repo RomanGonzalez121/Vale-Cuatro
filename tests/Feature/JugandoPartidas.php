@@ -91,6 +91,55 @@ trait JugandoPartidas
     }
 
     /**
+     * Una partida entre dos personas jugada hasta que uno de los dos llega a esos puntos, todavía sin terminar.
+     * Devuelve la partida y el asiento que va adelante. Si una partida se termina antes (un falta envido
+     * querido la puede cerrar de un salto), se juega otra.
+     *
+     * @return array{0: Partida, 1: int}
+     */
+    private function partidaEntrePersonasHasta(Jugador $uno, Jugador $dos, int $puntos): array
+    {
+        $mesa = $this->laMesa();
+
+        for ($intento = 0; $intento < 20; $intento++) {
+            $partida = $mesa->sentarse($mesa->crearSala($uno)->codigo, $dos);
+            $mesa->llegar($partida, 0);
+
+            for ($paso = 0; $paso < 6000; $paso++) {
+                $partida->refresh();
+
+                if (! $partida->enCurso()) {
+                    break;
+                }
+
+                $tanteo = $mesa->reconstruir($partida)->tanteo();
+
+                if (max($tanteo) >= $puntos) {
+                    return [$partida, $tanteo[0] >= $tanteo[1] ? 0 : 1];
+                }
+
+                foreach ([0, 1] as $asiento) {
+                    $vista = $mesa->vista($partida, $asiento);
+
+                    if ($vista['fase'] === 'por_repartir') {
+                        $mesa->repartir($partida, $asiento);
+
+                        break;
+                    }
+
+                    if ($vista['acciones'] !== []) {
+                        $mesa->actuar($partida, Accion::desdeArray($this->elegir($vista['acciones'], $paso)), $asiento);
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        $this->fail('Ninguna partida llegó a esos puntos sin terminar.');
+    }
+
+    /**
      * Una partida entre dos personas con las cartas que se indiquen y el asiento 0 de mano, sin jugar todavía.
      *
      * @param  array{0: list<string>, 1: list<string>}  $manos  Las del asiento 0 y las del 1.

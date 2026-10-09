@@ -22,6 +22,7 @@
             </p>
             <p class="mt-3 max-w-[60ch] leading-relaxed">
                 Cuentan las partidas entre personas y las de contra el bot desde Intermedio.
+                Abandonar es perder; si el que se va es tu rival, la ganás solo si ya ibas en las buenas.
                 Los jugadores marcados como bot son de ejemplo: juegan entre ellos para que la tabla no arranque vacía.
             </p>
         </header>
