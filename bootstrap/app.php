@@ -18,9 +18,17 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // El sitio publicado no recibe al navegador directo: delante hay un servidor (el de Render) que
-        // atiende el HTTPS y le pasa el pedido. Se le cree lo que dice de ese pedido original; si no,
-        // el sitio pensaría que lo visitan por HTTP y armaría mal los links y las cookies.
-        $middleware->trustProxies(at: '*');
+        // atiende el HTTPS y le pasa el pedido. Se le cree lo que dice de ese pedido original (que entró
+        // por HTTPS, y desde qué dirección); si no, el sitio pensaría que lo visitan por HTTP y armaría
+        // mal los links y las cookies.
+        //
+        // Lo que no se le cree es el nombre del sitio (X-Forwarded-Host): esa cabecera la puede escribir
+        // cualquiera en su pedido, y con ella los links saldrían apuntando a donde esa persona quiera.
+        // El nombre se toma del pedido mismo, que es por donde Render decide a qué servicio entregarlo.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO | Request::HEADER_X_FORWARDED_PORT,
+        );
 
         $middleware->alias([
             'con-cuenta' => ConCuenta::class,

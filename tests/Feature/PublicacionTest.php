@@ -15,14 +15,27 @@ class PublicacionTest extends TestCase
 
     public function test_detras_de_un_servidor_con_https_los_links_del_sitio_salen_con_https(): void
     {
-        // El servidor de adelante avisa con estas cabeceras por dónde entró de verdad el visitante.
-        $pagina = $this->withHeaders(['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'vale-cuatro.example'])
-            ->get('/')
+        // El servidor de adelante avisa con esta cabecera que el visitante entró por HTTPS.
+        $pagina = $this->withHeaders(['X-Forwarded-Proto' => 'https'])
+            ->get('http://vale-cuatro.example/')
             ->assertOk()
             ->getContent();
 
         $this->assertStringContainsString('action="https://vale-cuatro.example/jugar"', $pagina);
         $this->assertStringNotContainsString('http://vale-cuatro.example', $pagina);
+    }
+
+    public function test_nadie_puede_hacer_que_los_links_del_sitio_apunten_a_otro_lado(): void
+    {
+        // Esta cabecera la puede mandar cualquiera en su pedido. Si el sitio le creyera, sus links (el de
+        // invitación, y el de recuperar la contraseña cuando exista) saldrían con el nombre que diga ella.
+        $pagina = $this->withHeaders(['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'sitio-trucho.example'])
+            ->get('http://vale-cuatro.example/')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('sitio-trucho.example', $pagina);
+        $this->assertStringContainsString('action="https://vale-cuatro.example/jugar"', $pagina);
     }
 
     public function test_la_pagina_le_dice_al_navegador_adonde_conectarse_para_el_tiempo_real(): void
