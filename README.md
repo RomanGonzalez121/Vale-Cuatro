@@ -3,6 +3,8 @@
 Truco argentino online, mano a mano: contra un bot o contra otra persona por un link de invitación.
 La idea es que cualquiera que entre pueda jugar una mano contra el bot en menos de 30 segundos, sin registrarse.
 
+**Se puede jugar en [vale-cuatro.onrender.com](https://vale-cuatro.onrender.com).** Está en un plan gratuito que se duerme cuando pasa un rato sin visitas: si la primera carga tarda cerca de un minuto, es que se está despertando.
+
 Proyecto de portfolio de Román Gonzalez.
 
 ![La mesa de juego: el bot cantó truco y hay que contestar](docs/capturas/mesa.jpeg)
@@ -58,7 +60,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 
 | Módulo | Qué es | Estado |
 |---|---|---|
-| M11a | Publicación del sitio y pruebas automáticas en un navegador real | Es lo próximo |
+| M11a | Publicación del sitio y pruebas automáticas en un navegador real | El sitio ya está publicado; faltan las pruebas de navegador |
 | M12 | Revancha y series al mejor de tres | Pendiente |
 | M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
 | M14 | Sonido de cartas, fósforos y cantos | Pendiente |
@@ -92,7 +94,7 @@ El plan no es solo terminar el mano a mano: el proyecto crece en cuatro direccio
 - **Jugar mucho se nota.** Categorías ganadas jugando, calculadas desde las partidas igual que el ranking. Destraban cosas solo estéticas: la carta de tu perfil, dorsos (que es lo que ve tu rival), otros mazos y mesas de otro color. Nada da ventaja en el juego, y la identidad se respeta: tintas planas y contraste medido, sin brillos ni degradados.
 - **Calidad y publicación.** Pruebas automáticas en un navegador real dentro de la integración continua (jugar una mano, registrarse, entrar como invitado), manejo completo de la cuenta (cambiar la contraseña, recuperarla y borrarla), sonido opcional, instalación en el celular con aviso de turno, un panel de administración y, al final, una API pública documentada.
 
-La publicación está pensada para un plan gratuito: todo el sitio en un solo contenedor (la web, el tiempo real, las colas y las tareas programadas) y la base MySQL en un servicio aparte. Las razones están en [docs/decisiones.md](docs/decisiones.md).
+El sitio está publicado en un plan gratuito: todo en un solo contenedor (la web, el tiempo real, las colas y las tareas programadas) y la base MySQL en un servicio aparte. Cómo se armó y por qué está en [Publicación](#publicación) y en [docs/decisiones.md](docs/decisiones.md).
 
 ## Cuentas e invitados
 
@@ -155,6 +157,37 @@ El sitio queda en `http://127.0.0.1:8000`.
 Para entrar sin registrarse cada vez, `php artisan db:seed` crea tres cuentas de prueba (por ejemplo `roman@valecuatro.test`, contraseña `valecuatro`). Solo existen fuera de producción.
 
 El mismo comando crea los jugadores de ejemplo del ranking y les hace jugar sus partidas simuladas (tarda cerca de medio minuto). Se puede hacer aparte con `php artisan ranking:ejemplo`, que no repite lo ya jugado. `php artisan ranking:recalcular` vuelve a armar el ranking leyendo los eventos de todas las partidas.
+
+## Publicación
+
+El sitio corre en [Render](https://render.com), en el plan gratuito, y la base MySQL en [Aiven](https://aiven.io). El plan gratuito da un solo contenedor con 512 MB y una décima de procesador, así que todo va adentro de una imagen:
+
+- **nginx y PHP** atienden las páginas.
+- **Reverb** es el tiempo real. Escucha solo adentro del contenedor y nginx le pasa los navegadores, así el sitio y el WebSocket entran por la misma dirección y con el mismo HTTPS.
+- **La cola** juega el turno del bot y resuelve los plazos de las partidas entre personas.
+- **Las tareas programadas** hacen la limpieza de salas y de invitados.
+
+Un programa (supervisor) arranca los cuatro y los vuelve a levantar si alguno se cae. Qué hace cada archivo:
+
+| Archivo | Para qué |
+|---|---|
+| `Dockerfile` | Arma la imagen: compila los estilos con Vite, instala PHP con lo justo y deja resueltas las rutas y las vistas |
+| `docker/arranque.sh` | Lo primero que corre: migra la base, lee la configuración y prende los procesos |
+| `docker/supervisord.conf` | Qué procesos hay y en qué orden arrancan |
+| `docker/nginx.conf` | Qué se entrega como archivo, qué va a PHP y qué va al tiempo real |
+| `render.yaml` | Le dice a Render cómo crear el servicio. Los datos de la base no están ahí: se cargan en su panel |
+
+Se publica solo con cada subida a la rama principal, después de que pasan los tests. Los datos no se pierden al volver a publicar: las partidas, las cuentas, las sesiones y la cola viven en la base.
+
+Medido con los límites del plan gratuito: usa unos 150 MB de memoria, tarda cerca de un minuto en arrancar y entrega las páginas en menos de medio segundo.
+
+Para probar la imagen en una máquina con Docker:
+
+```bash
+docker build -t vale-cuatro .
+```
+
+Necesita un MySQL al lado y las variables de `render.yaml`; los detalles están en [docs/decisiones.md](docs/decisiones.md).
 
 ## Tests y estilo
 

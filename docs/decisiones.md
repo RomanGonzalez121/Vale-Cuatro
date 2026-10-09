@@ -778,3 +778,49 @@ Las partidas regaladas entre dos sesiones se le consultaron a Román y quedó la
 - **Por qué las pruebas de navegador antes:** la pantalla de la mesa no tiene ningún test automático, y la revancha y el juego de a cuatro la van a tocar.
 - **Mientras no exista la API, el sitio no dice que es real.** Se sacó del pie, de la portada y del README; vuelve cuando esté hecha.
 - **Se descartó** mover M11 entero al final (se descubriría tarde si el hosting gratis alcanza) y dejar todo como estaba.
+
+## M11a. Publicación
+
+El sitio está publicado en Render, en el plan gratuito, con la base MySQL en Aiven. Lo que sigue es cómo se hizo entrar todo ahí y qué se midió. Las pruebas automáticas de navegador, la otra mitad de M11a, se anotan cuando estén.
+
+### Todo el sitio en un solo contenedor
+
+- **Problema:** el plan gratuito de Render da un solo contenedor, con 512 MB de memoria y una décima de procesador, sin procesos de fondo ni tareas programadas aparte. Y el sitio necesita cuatro cosas corriendo a la vez: la web, el tiempo real, la cola y las tareas programadas.
+- **Elegido:** una imagen de Docker con nginx, PHP y supervisor, que es el programa que arranca los procesos y los vuelve a levantar si se caen. No son agregados al código del sitio: son herramientas del contenedor.
+- **El tiempo real entra por la misma puerta que las páginas.** Render publica un solo puerto. Reverb escucha solo adentro del contenedor y nginx le pasa los navegadores que piden `/app/`. La otra puerta de Reverb, por donde el sitio le avisa qué pasó, no se publica: desde afuera responde que no existe.
+- **Las tareas programadas son un bucle** que corre cada cinco minutos, alineado al reloj, y no el proceso de Laravel que se queda esperando. Ninguna tarea es más frecuente que eso, y un proceso de PHP esperando todo el día son 40 MB que le faltan a otro.
+- **Se descartó** repartir el sitio en varios servicios (el plan gratuito alcanza para uno) y pasar la cola o las tareas a otro proveedor (más cuentas y más partes que pueden fallar).
+
+### El navegador lee de la página adónde conectarse
+
+- **Problema:** la dirección del tiempo real iba compilada adentro del JavaScript. Para publicar había que saber la dirección final del sitio antes de armar la imagen, y pasarla como dato al compilar.
+- **Elegido:** va escrita en cada página, en una etiqueta del encabezado que arma el servidor. El JavaScript la lee de ahí. La misma imagen sirve en cualquier dirección donde se publique, y la dirección la da Render al arrancar.
+- **Dos direcciones distintas:** el sitio le habla a Reverb por adentro del contenedor, sin cifrar; el navegador entra por la dirección pública, con HTTPS. En una máquina de desarrollo las dos coinciden.
+
+### Qué carga a mano quien publica: cuatro datos
+
+- **Problema:** el repositorio es público y Román publica por primera vez. Cuanto menos haya que generar y pegar a mano, menos se puede equivocar.
+- **Elegido:** en el panel de Render se cargan solo los cuatro datos de la base (servidor, puerto, usuario y contraseña). La clave del sitio la sortea Render. Las tres claves del tiempo real salen de la clave del sitio, cada una con una mezcla distinta: no cambian entre un arranque y otro, y conocer la pública no dice nada de la secreta. La dirección del sitio la toma de lo que informa Render.
+- **El certificado de la base va en el repositorio.** Aiven exige conexión cifrada, y ese certificado es público: sirve para comprobar que el servidor es el de Aiven, no para entrar.
+- **La base queda abierta a cualquier dirección,** porque el plan gratuito de Render no da una dirección fija para autorizar. La protegen la contraseña y el cifrado obligatorio.
+- **Lo que pasó la primera vez:** el servicio no arrancó porque en dos casillas quedaron escritas las palabras "Host" y "Port" en vez de sus valores (la tabla de instrucciones era ambigua). El registro lo decía con todas las letras, se corrigieron y arrancó. El arranque está escrito para eso: si la base no responde, el contenedor no se prende y el motivo queda en el registro.
+
+### El arranque con una décima de procesador
+
+- **Problema:** probando la imagen con los límites del plan gratuito, el sitio tardaba 182 segundos en contestar su primer pedido. Eso es lo que esperaría alguien cada vez que el servicio se despierta.
+- **Qué se encontró:** cada comando de Laravel arranca de cero y vuelve a leer y compilar todo el código. Al arrancar corrían cuatro seguidos, y después cuatro procesos de fondo a la vez, repartiéndose la décima de procesador con la web.
+- **Elegido, tres cosas:** las rutas y las vistas se dejan resueltas al armar la imagen y no en cada arranque; el código compilado se guarda también en disco y viene en la imagen, así cada comando lo levanta ya hecho; y los procesos de fondo arrancan de a uno, después de la web. Quedó en 52 segundos.
+- **Los jugadores de ejemplo del ranking se siembran de fondo,** al final, para que el sitio no los espere.
+
+### Detrás del servidor de Render
+
+- **Problema:** el navegador no le habla al sitio directo: delante está el servidor de Render, que atiende el HTTPS. Si el sitio no le cree lo que dice del pedido original, piensa que lo visitan por HTTP y arma mal los links y las cookies.
+- **Elegido:** se le cree que el pedido entró por HTTPS y desde qué dirección. No se le cree el nombre del sitio.
+- **Lo que encontró la revisión de seguridad:** en la primera versión también se le creía el nombre, y esa cabecera la puede escribir cualquiera en su pedido: con ella los links del sitio salían apuntando a donde esa persona quisiera. Hoy no hacía daño, pero cuando exista el correo para recuperar la contraseña, ese link habría salido con el nombre del atacante. Hay un test.
+
+### Lo que se midió
+
+- **En una máquina, con los límites del plan gratuito y un MySQL 8.4 igual al de producción:** las migraciones corren sin cambios (en desarrollo se usa MariaDB 10.4); unos 150 MB de los 512; 52 segundos de arranque; páginas entre 0,1 y 0,5 segundos.
+- **En el sitio publicado, desde Buenos Aires:** las páginas contestan entre 0,3 y 0,8 segundos; se jugó una partida entera contra el bot en un celular de 360 px (32 manos, sin errores); dos navegadores jugaron entre sí con el tiempo real conectado en los dos; el ranking se sembró solo y quedó con la misma tabla que en desarrollo, porque sale de una semilla.
+- **Seguridad, comprobado en el sitio publicado:** HTTP redirige a HTTPS; las cookies van marcadas como seguras y la de sesión no es legible desde JavaScript; un nombre de sitio falso en el pedido no aparece en los links; los archivos que empiezan con punto y los de configuración no se entregan.
+- **Queda por medir:** la memoria real en el panel de Render, cuánto tarda en despertar el servicio dormido y que la limpieza programada corre.
