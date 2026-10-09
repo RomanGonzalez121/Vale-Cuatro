@@ -8,6 +8,7 @@ use App\Jobs\TurnoDelBot;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
+use App\Models\Serie;
 use App\Motor\Accion;
 use App\Motor\AccionInvalida;
 use App\Motor\Azar;
@@ -68,10 +69,12 @@ final class Mesa
     /**
      * La partida en curso del jugador. Si no tiene ninguna, crea una contra ese nivel y reparte la primera mano.
      * Con una partida sin terminar se retoma esa, con su nivel, aunque se pida otro.
+     *
+     * Con $enSerie, la partida nueva es la primera de una serie al mejor de tres contra ese nivel.
      */
-    public function abrir(Jugador $jugador, ?Nivel $nivel = null): Partida
+    public function abrir(Jugador $jugador, ?Nivel $nivel = null, bool $enSerie = false): Partida
     {
-        return DB::transaction(function () use ($jugador, $nivel) {
+        return DB::transaction(function () use ($jugador, $nivel, $enSerie) {
             // Se bloquea al jugador: dos toques seguidos en "Jugar" no pueden abrir dos partidas.
             Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
 
@@ -83,12 +86,16 @@ final class Mesa
             }
 
             // El primer mano se sortea acá, con el azar seguro: el motor lo recibe como dato.
-            $partida = Partida::create([
+            $partida = new Partida([
                 'jugador_id' => $jugador->getKey(),
                 'primer_mano' => Azar::seguro()->entero(self::JUGADOR, self::BOT),
                 'puntos' => 30,
                 'nivel_bot' => $nivel ?? Nivel::porDefecto(),
             ]);
+
+            // La serie no se asigna en masa: solo la decide el código de la mesa.
+            $partida->serie_id = $enSerie ? Serie::create()->getKey() : null;
+            $partida->save();
 
             $this->repartirEn($partida, $this->reconstruir($partida));
 
@@ -340,10 +347,12 @@ final class Mesa
      * Abre una sala para jugar con otra persona: queda esperando, con un link para mandarle.
      * Si el jugador ya tiene una partida sin terminar (esta misma sala u otra), devuelve esa:
      * un toque repetido no abre dos salas, igual que con la partida contra el bot.
+     *
+     * Con $enSerie, lo que se abre es una serie al mejor de tres: la sala es su primera partida.
      */
-    public function crearSala(Jugador $jugador): Partida
+    public function crearSala(Jugador $jugador, bool $enSerie = false): Partida
     {
-        return DB::transaction(function () use ($jugador) {
+        return DB::transaction(function () use ($jugador, $enSerie) {
             // Se bloquea al jugador: dos toques seguidos no pueden abrir dos salas.
             Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
 
@@ -363,6 +372,7 @@ final class Mesa
 
             // El estado no se asigna en masa: solo lo cambia el código de la mesa.
             $sala->estado = Partida::ESPERANDO;
+            $sala->serie_id = $enSerie ? Serie::create()->getKey() : null;
             $sala->save();
 
             return $sala;
@@ -432,10 +442,102 @@ final class Mesa
      */
     public function cerrarSalasVencidas(): int
     {
-        return Partida::query()
+        $cerradas = Partida::query()
             ->where('estado', Partida::ESPERANDO)
             ->where('created_at', '<', now()->subMinutes(self::MINUTOS_DE_SALA))
             ->update(['estado' => Partida::ABANDONADA, 'terminada_en' => now()]);
+
+        // Una sala al mejor de tres que nadie ocupó no llegó a ser una serie: se va. Se buscan las series sin
+        // ninguna partida viva ni jugada, y no "las de las salas que se cerraron": así, si alguien se sentó
+        // justo ahora, su serie no se toca. De paso se van las que quedaron sin ninguna partida: al borrarse
+        // un invitado que no volvió se borran sus partidas, y la serie que las agrupaba queda sola.
+        Serie::query()
+            ->where(fn (Builder $sinNada) => $sinNada
+                ->whereDoesntHave('partidas')
+                ->orWhere(fn (Builder $abierta) => $abierta
+                    ->whereNull('terminada_en')
+                    ->whereDoesntHave('partidas', fn (Builder $partidas) => $partidas->where(
+                        fn (Builder $viva) => $viva->whereIn('estado', [Partida::ESPERANDO, Partida::EN_CURSO])->orWhereNotNull('ganador'),
+                    ))))
+            ->delete();
+
+        return $cerradas;
+    }
+
+    /**
+     * La revancha de una partida que ya terminó: otra entre los mismos dos, en los mismos asientos, contra
+     * el mismo nivel si era contra el bot, y ya repartida. Si la anterior cerró una serie, la revancha es
+     * otra serie igual. Quién puede pedirla y cuándo lo decide Revanchas: esto solo la crea.
+     */
+    public function revancha(Partida $anterior): Partida
+    {
+        return DB::transaction(function () use ($anterior) {
+            $serie = $anterior->serie === null ? null : Serie::create(['al_mejor_de' => $anterior->serie->al_mejor_de]);
+
+            return $this->siguiente($anterior, $serie);
+        });
+    }
+
+    /**
+     * La partida que sigue a otra entre los mismos dos: la próxima de una serie, o una revancha.
+     * Cada uno conserva su asiento, y arranca siendo mano quien no lo fue al empezar la anterior.
+     */
+    private function siguiente(Partida $anterior, ?Serie $serie): Partida
+    {
+        $partida = new Partida([
+            'jugador_id' => $anterior->jugador_id,
+            'invitado_id' => $anterior->invitado_id,
+            'primer_mano' => 1 - $anterior->primer_mano,
+            'puntos' => $anterior->puntos,
+            'entre_personas' => $anterior->entre_personas,
+            // El código es el del link de invitación. Acá nadie lo usa, pero toda partida entre personas tiene el suyo.
+            'codigo' => $anterior->entre_personas ? Partida::codigoNuevo() : null,
+            'nivel_bot' => $anterior->nivel_bot,
+        ]);
+
+        $partida->serie_id = $serie?->getKey();
+        $partida->anterior_id = $anterior->getKey();
+        $partida->save();
+
+        $this->repartirEn($partida, $this->reconstruir($partida));
+
+        return $partida;
+    }
+
+    /**
+     * Lo que le pasa a una serie cuando se cierra una de sus partidas: si alguien ya ganó las que hacen
+     * falta, se cierra; si no, se reparte la partida siguiente en el momento, sin que nadie la pida.
+     *
+     * Quien abandona una partida pierde la serie entera: no va a estar para la siguiente, y el otro no
+     * se queda esperando una partida que no empieza. Vale igual para quien deja vencer sus turnos.
+     */
+    private function seguirLaSerie(Partida $partida): void
+    {
+        $serie = $partida->serie;
+
+        if ($serie === null || $serie->cerrada()) {
+            return;
+        }
+
+        // Una sala que se cerró sin rival no llegó a ser una serie.
+        if ($partida->ganador === null) {
+            $serie->delete();
+
+            return;
+        }
+
+        $abandonada = $partida->estado === Partida::ABANDONADA;
+        $marcador = $serie->marcador();
+
+        if (! $abandonada && max($marcador) < $serie->necesarias()) {
+            $this->siguiente($partida, $serie);
+
+            return;
+        }
+
+        $serie->ganador = $abandonada ? $partida->ganador : ($marcador[self::JUGADOR] > $marcador[self::BOT] ? self::JUGADOR : self::BOT);
+        $serie->terminada_en = now();
+        $serie->save();
     }
 
     /**
@@ -529,8 +631,9 @@ final class Mesa
     }
 
     /**
-     * Quien abrió la sala tiene la mesa a la vista por primera vez. Hasta ahora su turno corría con el plazo de
-     * espera (SEGUNDOS_DE_LLEGADA); desde acá corre con el de siempre, y si justo le toca, arranca de cero.
+     * Quien abrió la sala tiene la mesa a la vista por primera vez (o cualquiera de los dos, en una partida que
+     * sigue a otra). Hasta ahora su turno corría con el plazo de espera (SEGUNDOS_DE_LLEGADA); desde acá corre
+     * con el de siempre, y si justo le toca, arranca de cero.
      *
      * Queda como un evento de la partida: así el rival se entera por el mismo camino que de una jugada, y los
      * números de evento siguen diciendo qué vio cada mesa. Llamarlo de más no hace nada. Devuelve si anotó algo.
@@ -561,18 +664,20 @@ final class Mesa
     }
 
     /**
-     * Si a ese asiento todavía le falta llegar a la mesa. Solo le puede faltar a quien abrió la sala, que
-     * espera en otra pantalla: quien se sienta con el link entra directo a la mesa. Cuenta como haber llegado
-     * avisarlo, haber jugado o que ya se le haya vencido un turno: la espera larga es una sola.
+     * Si a ese asiento todavía le falta llegar a la mesa. En una partida que nace de una sala solo le puede
+     * faltar a quien la abrió, que espera en otra pantalla: quien se sienta con el link entra directo a la mesa.
+     * En la que sigue a otra (la siguiente de una serie, o una revancha) le puede faltar a cualquiera de los
+     * dos: se reparte sola y cada uno llega cuando deja de mirar el final de la anterior. Cuenta como haber
+     * llegado avisarlo, haber jugado o que ya se le haya vencido un turno: la espera larga es una sola.
      */
     public function faltaLlegar(Partida $partida, int $asiento): bool
     {
-        if (! $partida->entre_personas || $asiento !== self::JUGADOR) {
+        if (! $partida->entre_personas || ($asiento !== self::JUGADOR && ! $partida->esContinuacion())) {
             return false;
         }
 
         return ! $partida->eventos()->getQuery()
-            ->where('asiento', self::JUGADOR)
+            ->where('asiento', $asiento)
             ->whereIn('tipo', [EventoDePartida::LLEGADA, EventoDePartida::ACCION, EventoDePartida::VENCIMIENTO])
             ->exists();
     }
@@ -855,12 +960,26 @@ final class Mesa
             }
 
             // Con la fila bloqueada nadie más puede sumar un evento: lo que la mesa mostró es lo último, o no lo es.
-            if ($desde !== null && (int) $bloqueada->eventos()->max('numero') !== $desde) {
+            // Que el otro haya llegado a la mesa en el medio no cuenta: una llegada no cambia nada de lo que se ve.
+            if ($desde !== null && $this->pasoAlgoDesde($bloqueada, $desde)) {
                 throw new AccionInvalida('La mesa cambió mientras jugabas.');
             }
 
             return $hacer($bloqueada, $this->reconstruir($bloqueada));
         });
+    }
+
+    /**
+     * Si después de ese evento pasó algo en la mesa: una jugada, un reparto, un turno vencido. También si el
+     * número no es de esta partida (uno más alto que el último).
+     */
+    private function pasoAlgoDesde(Partida $partida, int $desde): bool
+    {
+        if ($desde > (int) $partida->eventos()->max('numero')) {
+            return true;
+        }
+
+        return $partida->eventos()->getQuery()->where('numero', '>', $desde)->where('tipo', '!=', EventoDePartida::LLEGADA)->exists();
     }
 
     /**
@@ -906,5 +1025,7 @@ final class Mesa
         } catch (Throwable $falla) {
             report($falla);
         }
+
+        $this->seguirLaSerie($partida);
     }
 }

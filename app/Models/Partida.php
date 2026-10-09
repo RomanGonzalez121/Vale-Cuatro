@@ -30,6 +30,9 @@ use Illuminate\Support\Str;
  * @property bool $entre_personas
  * @property bool $simulada
  * @property string|null $codigo
+ * @property int|null $serie_id
+ * @property int|null $anterior_id
+ * @property Serie|null $serie
  * @property Nivel|null $nivel_bot
  * @property int|null $ganador
  * @property Carbon|null $terminada_en
@@ -88,6 +91,16 @@ class Partida extends Model
     }
 
     /**
+     * La serie al mejor de tres de la que es parte, si lo es.
+     *
+     * @return BelongsTo<Serie, $this>
+     */
+    public function serie(): BelongsTo
+    {
+        return $this->belongsTo(Serie::class);
+    }
+
+    /**
      * @return HasMany<EventoDePartida, $this>
      */
     public function eventos(): HasMany
@@ -114,6 +127,14 @@ class Partida extends Model
     }
 
     /**
+     * Si sigue a otra entre los mismos dos: es la siguiente de una serie, o una revancha.
+     */
+    public function esContinuacion(): bool
+    {
+        return $this->anterior_id !== null;
+    }
+
+    /**
      * El asiento que ocupa un jugador en esta partida, o null si no es de ella.
      */
     public function asientoDe(Jugador $jugador): ?int
@@ -134,6 +155,8 @@ class Partida extends Model
             // Siempre enteros: asientoDe() los compara con ===, y una diferencia de tipo dejaría a un jugador sin asiento.
             'jugador_id' => 'integer',
             'invitado_id' => 'integer',
+            'serie_id' => 'integer',
+            'anterior_id' => 'integer',
             'primer_mano' => 'integer',
             'puntos' => 'integer',
             'entre_personas' => 'boolean',

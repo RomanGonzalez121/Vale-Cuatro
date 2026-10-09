@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Juego\Mesa;
+use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
 use App\Motor\Accion;
@@ -75,7 +76,8 @@ class MesaAlDiaTest extends TestCase
         $ultimo = $partida->eventos()->count();
         $carta = collect($this->mesa()->vista($partida, $conTurno)['acciones'])->firstWhere('tipo', 'jugar');
 
-        $this->actingAs($jugador)->postJson('/mesa/accion', [...$carta, 'desde' => $ultimo - 1])
+        // El último evento es la llegada de quien abrió la sala, que no cambia la mesa: el anterior es el reparto.
+        $this->actingAs($jugador)->postJson('/mesa/accion', [...$carta, 'desde' => $ultimo - 2])
             ->assertStatus(422)
             ->assertJsonPath('motivo', 'La mesa cambió mientras jugabas.');
         $this->assertSame($ultimo, $partida->eventos()->count());
@@ -83,6 +85,24 @@ class MesaAlDiaTest extends TestCase
         // Con el último evento, entra.
         $this->actingAs($jugador)->postJson('/mesa/accion', [...$carta, 'desde' => $ultimo])->assertOk();
         $this->assertSame($ultimo + 1, $partida->eventos()->count());
+    }
+
+    public function test_que_el_otro_llegue_a_la_mesa_no_hace_rebotar_la_jugada(): void
+    {
+        [$partida, $uno, $dos] = $this->partidaEnCurso();
+        $conTurno = $this->quienTieneElTurno($partida);
+        $jugador = [$uno, $dos][$conTurno];
+        $ultimo = $partida->eventos()->count();
+        $carta = collect($this->mesa()->vista($partida, $conTurno)['acciones'])->firstWhere('tipo', 'jugar');
+
+        $this->assertSame(EventoDePartida::LLEGADA, $partida->eventos()->get()->last()->tipo);
+
+        // La mesa todavía no se enteró de la llegada: lo último que mostró es el reparto. La jugada entra igual.
+        $this->actingAs($jugador)->postJson('/mesa/accion', [...$carta, 'desde' => $ultimo - 1])->assertOk();
+        $this->assertSame($ultimo + 1, $partida->eventos()->count());
+
+        // Un número que la partida no tiene no vale.
+        $this->actingAs([$uno, $dos][1 - $conTurno])->postJson('/mesa/accion', ['tipo' => 'mazo', 'desde' => $ultimo + 5])->assertStatus(422);
     }
 
     public function test_un_canto_tocado_mirando_una_mano_no_entra_en_la_siguiente(): void
@@ -144,7 +164,7 @@ class MesaAlDiaTest extends TestCase
         $carta = Accion::desdeArray(collect($this->mesa()->vista($partida, $conTurno)['acciones'])->firstWhere('tipo', 'jugar'));
 
         try {
-            $this->mesa()->actuar($partida, $carta, $conTurno, $ultimo - 1);
+            $this->mesa()->actuar($partida, $carta, $conTurno, $ultimo - 2);
             $this->fail('Una jugada sobre un evento viejo tenía que rechazarse.');
         } catch (AccionInvalida $rechazo) {
             $this->assertSame('La mesa cambió mientras jugabas.', $rechazo->getMessage());
