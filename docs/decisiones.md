@@ -892,3 +892,79 @@ La primera versión cumplía pero sonaba plana. Román pidió investigar qué ha
 - **Con tests:** ningún sonido llega al segundo y medio, nada queda en loop, no hay archivos de audio ni etiquetas que los pidan, y el audio se abre en un solo lugar, al prenderlo. Las reglas de movimiento alcanzan a la ventanita y a sus llaves.
 - **En un navegador real, a 360 px:** arranca apagado y sin abrir audio; jugando apagado no suena nada; al prenderlo suena la muestra; suenan las jugadas y un roce por carta al repartir; los fósforos de una suma suben de tono; la elección sobrevive a recargar; todo se maneja con el teclado y el foco vuelve al botón.
 - **Falta:** pasar esas comprobaciones de navegador a las pruebas automáticas de la integración continua. Captura en `docs/capturas/mesa-ajustes-celular.png`.
+
+## M12. Revancha y mejor de tres
+
+Dos jugadores siguen jugando entre sí sin volver a invitarse: al terminar una partida se pide la revancha, y al armar la partida se puede elegir una serie al mejor de tres. Vale contra el bot y entre dos personas.
+
+### Lo que decidió Román
+
+- **Quién es mano:** se alterna. En la revancha, y en cada partida de una serie, arranca siendo mano quien no lo fue al empezar la anterior. Cada uno conserva su asiento.
+- **Cuánto se espera la respuesta:** un minuto. Después el pedido se vence solo.
+- **Para el ranking cuenta cada partida por separado,** como hasta ahora. Ganar la serie no suma nada aparte.
+- **Quien abandona una partida de una serie pierde la serie entera.** Si se fue, no va a estar para la siguiente, y el otro no se queda esperando una partida que no empieza. Vale igual para quien pierde por dejar vencer sus turnos.
+
+### La serie solo agrupa partidas
+
+- **Problema:** jugar al mejor de tres sin que una serie sea "una partida más larga". Cada partida tiene que seguir siendo su propia lista de eventos, con su repetición y su renglón en el ranking.
+- **Elegido:** una tabla `series` con casi nada adentro (a cuántas partidas se juega, quién la ganó y cuándo), y cada partida apunta a su serie. Cuántas ganó cada uno no está guardado: se cuenta mirando las partidas.
+- **La partida siguiente se reparte sola,** en el mismo momento en que se cierra la anterior, y no cuando alguien la pide. Así no existe una serie "a medias sin partida": o alguien ganó dos y está cerrada, o hay una partida en juego. Si los dos se van, esa partida se resuelve como cualquier otra (turnos vencidos) y la serie se cierra. Y como cada persona tiene una sola partida abierta a la vez, mientras dura una serie no se puede jugar otra cosa: sus partidas quedan una atrás de la otra en el historial.
+- **Se descartó** crear la siguiente recién cuando alguno toca un botón: dejaba series colgadas sin fecha de cierre, y había que inventar reglas para cuándo dejar de esperar.
+- **La espera de llegada vale para los dos.** La partida siguiente nace mientras los dos miran el final de la anterior. A quien tenga el turno y todavía no llegó a la mesa se lo espera tres minutos, una sola vez, igual que a quien abre una sala (M5). El otro lee "Esperando que Fulano llegue a la mesa".
+- **Una sala al mejor de tres que nadie ocupa** no deja una serie guardada: se borra al cancelarla, y la limpieza de salas se lleva las que quedaron sin ninguna partida.
+
+### La revancha es un pedido, no una partida
+
+- **Problema:** "rechazarla o irse no crea nada". El pedido no puede ser un evento de la partida vieja (ya terminó) ni una partida nueva a medio crear.
+- **Elegido:** una tabla `revanchas` con quién la pidió, sobre qué partida y en qué quedó. La partida nueva nace recién con el "quiero", ya repartida. Si la partida vieja cerró una serie, la revancha es otra serie igual.
+- **Contra el bot no hay pedido:** el bot quiere siempre y la partida se crea al tocar el botón, contra el mismo nivel.
+- **El minuto se mide al leer, no con un reloj del servidor:** un pedido pendiente con la hora cumplida está vencido. Nadie tiene que marcarlo ni hay un trabajo en cola para eso.
+- **Cada jugador la pide una sola vez por partida,** y un "no quiero" la cierra para los dos. Sin esa regla, pedir y cancelar en fila le hace parpadear la pantalla al otro. Si los dos la piden, la segunda vale como aceptar.
+- **Quien la pidió y se va de la pantalla la retira:** la mesa manda la cancelación al cerrarse. Si no llegara, el pedido se vence al minuto.
+- **Si al contestar "quiero" alguno ya está en otra partida,** no se crea nada y el pedido deja de estar a la vista. A quien lo pidió no se le dice que lo canceló ni que no le contestaron, porque no pasó ninguna de las dos: lee "Ya no se puede jugar la revancha".
+- **De una partida que alguien abandonó no hay revancha.**
+- **Dos toques a la vez no crean dos partidas:** todo corre con la fila de la partida vieja y las de los dos jugadores bloqueadas, igual que abrir una partida o una sala.
+- **Se contesta como un canto:** los botones son "Quiero la revancha" (Basto) y "No quiero" (Copa), con los mismos íconos que en la mesa.
+
+### El aviso en vivo no lleva datos
+
+- Cuando cambia algo de la revancha, el servidor manda un aviso por el canal privado de la partida, el mismo de M5. No dice quién pidió ni qué se contestó: la mesa pregunta por HTTP, donde el servidor arma la respuesta para ese jugador.
+- Sin tiempo real anda igual: la mesa pregunta cada pocos segundos. Medido con dos navegadores: el otro ve el pedido en medio segundo, y los dos están en la partida nueva unos dos segundos y medio después del "quiero".
+- **La mesa no pregunta para siempre:** con un pedido a la vista pregunta hasta que se vence; sin ninguno, tres minutos; con la pestaña tapada, nada. Al volver a mirarla pregunta de nuevo.
+
+### Dónde se elige y dónde se ve
+
+- **Se elige en la pantalla de modos,** con la casilla propia del sitio, "Al mejor de tres", para los dos rivales. En el plan se había dicho que entre personas se elegía en la sala; quedó en los modos porque ahí no hay carrera: quien abre el link de invitación lee de entrada si es una partida o una serie, y eso no puede cambiar mientras lo lee.
+- **La casilla contra el bot va en el renglón del nombre del nivel,** a la derecha. Esa pantalla tiene 5 px libres a 360 x 740: en un renglón propio empujaba el botón de jugar debajo de la barra. Medido: el botón termina donde terminaba (671 px en el celular, 588 px en 1355 x 638). Con otra persona no hay niveles y la casilla va sola, arriba del botón.
+- **El marcador de la serie va en la barra de la mesa, junto al logo** ("Serie 1 a 0"). No agrega una fila, así que la mesa mide lo mismo. A 360 px quedan 19 px entre el marcador y el botón de ajustes.
+- **El final de la partida dice cómo quedó la serie** y ofrece lo que corresponde: la partida siguiente si la serie sigue, la revancha si no.
+- **El historial agrupa las partidas de una serie** bajo un renglón que dice cómo quedó, con una línea al costado. Una serie que se cortó porque alguno se fue dice quién la ganó, sin marcador: ese marcador no se jugó. La revancha de una partida suelta lo dice en su renglón.
+
+### Dos arreglos que salieron probando
+
+- **Los límites de pedidos se pisaban entre sí.** Laravel cuenta los pedidos por minuto de una persona en una sola cuenta, sea cual sea la ruta, salvo que se le ponga nombre al límite. Los que hace la mesa mientras se juega (más de uno por segundo contra el bot) gastaban los diez por minuto de "Jugar" e "Invitar": tocar esos botones justo después de una partida contestaba "demasiados pedidos". Venía de M5 y apareció acá, al invitar de nuevo después de una revancha. Ahora cada grupo de rutas lleva su nombre y su propia cuenta, con un test.
+- **La llegada del otro hacía rebotar una jugada.** Cada jugada dice cuál fue el último evento que la mesa mostró, y el servidor la rechaza si después pasó algo. Que el otro llegara a la mesa contaba como "algo", aunque no cambia nada de lo que se ve. Con la revancha y las series los dos llegan casi juntos, así que pasaba seguido. Una llegada ya no cuenta.
+- De paso se arregló un test que fallaba una vez cada tanto según las cartas (quería el primer canto del bot, y si era un falta envido la partida terminaba ahí). Puede ser el que puso en rojo la integración continua en M6.
+
+### Lo que encontró la revisión de código de M12
+
+Diez observaciones. Corregidas:
+
+- **La mesa no decía de qué partida hablaba.** Sus pedidos iban sobre "la partida en curso del jugador", que en una serie pasa a ser la siguiente apenas termina la anterior. Una pantalla atrasada podía pedirle algo a la partida equivocada, o saltar a la nueva sin mostrar el final de la vieja. Ahora cada pedido lleva el número de la partida que la mesa está mostrando, y si esa ya no se juega el servidor contesta que no y la mesa se recarga.
+- **El historial mostraba "Ganaste la serie 2 a 0"** cuando el otro había abandonado la segunda. Una serie cortada no muestra marcador, la haya abandonado quien iba ganando o quien iba perdiendo.
+- **"Cancelaste el pedido" a quien no canceló nada** (el caso de la otra partida, más arriba).
+- **Una respuesta vieja podía tapar a una más nueva** al preguntar por la revancha: las respuestas se toman en el orden en que salieron las preguntas.
+- **Las preguntas sin fin** de una pestaña olvidada en el final de una partida.
+- **Las series de un invitado que se borra** quedaban guardadas sin partidas: se las lleva la limpieza.
+- **Consultas de más al pedir la revancha:** el estado se leía cuatro veces con todo bloqueado; ahora dos.
+- **El marcador visto desde un asiento** estaba escrito en tres lugares: quedó en la serie.
+
+Anotado como límite: la mesa del navegador calcula cómo queda la serie sumándole la partida que se acaba de ganar a lo que traía al cargar la página. El servidor es quien decide qué partida sigue; esa cuenta solo elige qué botón mostrar.
+
+### Qué se probó
+
+- **Con tests (679 en total):** una revancha aceptada crea una partida nueva con los mismos dos jugadores, en sus asientos y con el mano alternado; rechazarla, cancelarla, dejarla vencer o irse no crea nada; la serie se cierra cuando alguien gana dos y no admite una tercera si va 2 a 0; con 1 a 1 se juega la tercera; abandonar cierra la serie; cada partida cuenta por separado para el ranking; nadie pide ni contesta la revancha de una partida ajena; el canal de una partida terminada sigue siendo solo de sus dos jugadores.
+- **Para probar una serie entera sin jugar 90 manos,** los tests usan partidas a un punto: el motor recibe los puntos como dato y la partida siguiente copia los de la anterior. Se cierran por la mesa de verdad, en una o dos jugadas, y gana quien el test diga.
+- **Con dos navegadores reales,** a 360 x 740, 360 x 640 y 1355 x 638: pedir y querer; pedir y no querer; cancelar; irse de la pantalla; dejar vencer el minuto; una serie entera a tres partidas y su revancha. Sin errores ni scroll en la mesa.
+- **En la integración continua,** una prueba de navegador nueva elige la serie en los modos, juega la primera partida hasta el final y pasa a la segunda desde el botón del final.
+- Capturas en `docs/capturas/`: `modos-mejor-de-tres-celular.png`, `mesa-serie-celular.png`, `final-de-partida-en-serie-celular.png`, `final-de-serie-celular.png`, `final-con-revancha-celular.png`, `revancha-pedida-celular.png`, `revancha-te-piden-celular.png`, `historial-serie.png` y `historial-serie-celular.png`.

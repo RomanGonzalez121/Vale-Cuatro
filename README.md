@@ -61,7 +61,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | Módulo | Qué es | Estado |
 |---|---|---|
 | M11a | Publicación del sitio y pruebas automáticas en un navegador real | Listo |
-| M12 | Revancha y series al mejor de tres | Pendiente |
+| M12 | Revancha y series al mejor de tres, contra el bot y entre dos personas | Listo |
 | M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
 | M14 | Sonido de cartas, fósforos y cantos, fabricado en el navegador y apagado de fábrica | Listo |
 | M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
@@ -82,14 +82,14 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 Los módulos no se hacen en el orden de su número. La API y la página de reglas van al final porque dependen de todo lo anterior: hechas antes, habría que rehacerlas con cada modo nuevo. La publicación se adelanta porque es el mayor riesgo técnico que queda y porque cada módulo nuevo se suma a un sitio que ya se puede ver. Los tests y el estilo de código se corren solos en cada subida desde el primer commit.
 
 Las pantallas ya son las definitivas. Las cuentas son reales: se puede registrarse, ingresar, cambiar el apodo o entrar a la mesa como invitado con un solo botón, sin llenar nada.
-La mesa juega de verdad: reparte con el motor de reglas, valida cada jugada en el servidor y guarda la partida como una lista de eventos. Se juega contra un bot de cuatro niveles o contra otra persona por un link, en vivo.
+La mesa juega de verdad: reparte con el motor de reglas, valida cada jugada en el servidor y guarda la partida como una lista de eventos. Se juega contra un bot de cuatro niveles o contra otra persona por un link, en vivo. Al terminar se puede pedir la revancha, y cualquier partida se puede armar como una serie al mejor de tres.
 De esos mismos eventos salen el historial, la repetición de cada partida y el ranking: ninguna pantalla muestra datos escritos a mano. Los jugadores de ejemplo del ranking están marcados como bots, y sus números salen de partidas que jugaron entre ellos con el motor.
 
 ## Lo que viene
 
 El plan no es solo terminar el mano a mano: el proyecto crece en cuatro direcciones, y el motor se escribe desde el principio para aguantarlas.
 
-- **Más formas de jugar.** Revancha y series al mejor de tres, torneos relámpago por link, desafíos (manos armadas con un objetivo, como "hacé que el bot no quiera"), una escalera de niveles para ir pasando y, al final, truco de a cuatro con señas entre compañeros por un canal privado.
+- **Más formas de jugar.** Torneos relámpago por link, desafíos (manos armadas con un objetivo, como "hacé que el bot no quiera"), una escalera de niveles para ir pasando y, al final, truco de a cuatro con señas entre compañeros por un canal privado.
 - **Un motor preparado para eso.** Piensa en asientos y equipos, así el mano a mano y el dos contra dos usan las mismas reglas. Reparte con una semilla, para que un desafío o una repetición den siempre las mismas cartas. Puede arrancar desde una situación armada. Y dice qué puede ver cada asiento: de ahí salen el test de que las cartas ajenas nunca llegan al navegador, el bot que no hace trampa y los espectadores del torneo.
 - **Jugar mucho se nota.** Categorías ganadas jugando, calculadas desde las partidas igual que el ranking. Destraban cosas solo estéticas: la carta de tu perfil, dorsos (que es lo que ve tu rival), otros mazos y mesas de otro color. Nada da ventaja en el juego, y la identidad se respeta: tintas planas y contraste medido, sin brillos ni degradados.
 - **Calidad y publicación.** Pruebas automáticas en un navegador real dentro de la integración continua (jugar una mano, registrarse, entrar como invitado), manejo completo de la cuenta (cambiar la contraseña, recuperarla y borrarla), sonido opcional, instalación en el celular con aviso de turno, un panel de administración y, al final, una API pública documentada.
@@ -208,7 +208,7 @@ Tienen un test por cada fila de las tablas de pardas y de envido, y partidas ent
 
 ### En un navegador de verdad
 
-Además hay pruebas que manejan un Chrome y usan el sitio como una persona (Laravel Dusk): entran sin cuenta con un solo botón, crean una cuenta, salen, vuelven a ingresar y juegan una mano entera contra el bot tocando la pantalla. Corren solas en cada subida, junto con las demás, y el sitio se publica recién cuando pasan todas.
+Además hay pruebas que manejan un Chrome y usan el sitio como una persona (Laravel Dusk): entran sin cuenta con un solo botón, crean una cuenta, salen, vuelven a ingresar, juegan una mano entera contra el bot tocando la pantalla y juegan la primera partida de una serie al mejor de tres hasta pasar a la segunda. Corren solas en cada subida, junto con las demás, y el sitio se publica recién cuando pasan todas.
 
 Necesitan un sitio prendido aparte, con su propia base vacía, para no tocar la de desarrollo. Las variables de entorno le ganan al `.env`, así que alcanza con definirlas en la terminal:
 
