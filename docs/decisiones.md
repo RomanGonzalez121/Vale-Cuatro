@@ -768,3 +768,13 @@ Diez observaciones. Se corrigió esto:
 Las partidas regaladas entre dos sesiones se le consultaron a Román y quedó la regla de las buenas (arriba). Quedó anotado como límite que la tabla no tiene caché. Y como paso de publicación (M11): después de migrar, `ranking:ejemplo` y `ranking:recalcular`.
 
 - **Capturas** en `docs/capturas/`: `ranking.jpeg`, `ranking-celular.jpeg`, `ranking-tu-puesto.png` y `ranking-tu-puesto-celular.png`.
+
+## El orden de los módulos (9 de octubre de 2026)
+
+- **Problema:** la API (M9), la página de reglas (M10) y la calidad y publicación (M11) eran los tres últimos módulos del plan original. Cuando se sumaron M12 a M20 quedaron en el medio. Román planteó que así no tenían sentido: una API o una página de reglas hechas ahora habría que rehacerlas con cada modo nuevo.
+- **Elegido por Román:** M9 y M10 pasan al final, después de M20. La API muestra partidas, ranking y perfil, y los tres cambian con lo que falta (series, torneos, categorías, de a cuatro). La página de reglas ya explica el mano a mano; se completa en una sola pasada cuando existan los demás modos.
+- **M11 se parte en dos, sin sumar módulos.** La publicación y las pruebas automáticas de navegador (M11a) se adelantan y son lo próximo. El pulido final (M11b: accesibilidad, rendimiento medido y manejo de la cuenta) cierra el proyecto.
+- **Por qué publicar antes:** es el mayor riesgo técnico que queda. Todo el sitio tiene que entrar en un solo contenedor gratis (la web, el tiempo real, la cola y las tareas programadas) y todavía no se midió si entra en memoria; conviene saberlo ahora y no después de nueve módulos. Además el módulo de instalación en el celular necesita el sitio publicado con HTTPS, y un portfolio sin link no se puede mostrar.
+- **Por qué las pruebas de navegador antes:** la pantalla de la mesa no tiene ningún test automático, y la revancha y el juego de a cuatro la van a tocar.
+- **Mientras no exista la API, el sitio no dice que es real.** Se sacó del pie, de la portada y del README; vuelve cuando esté hecha.
+- **Se descartó** mover M11 entero al final (se descubriría tarde si el hosting gratis alcanza) y dejar todo como estaba.

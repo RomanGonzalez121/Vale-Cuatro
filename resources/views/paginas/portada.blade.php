@@ -128,7 +128,7 @@
                     <h3 class="text-xl font-extrabold">Real</h3>
                     <p class="mt-2 max-w-[46ch] text-lg leading-relaxed">
                         El motor de reglas, las partidas en vivo entre dos personas,
-                        el historial que se puede volver a ver mano por mano y la API pública.
+                        el historial que se puede volver a ver mano por mano y el ranking.
                     </p>
                 </div>
             </div>

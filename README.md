@@ -34,7 +34,7 @@ Proyecto de portfolio de Román Gonzalez.
 ## Qué es real y qué es simulado
 
 - **Simulado, y dicho abiertamente en el sitio:** los rivales bot y los jugadores de ejemplo del ranking, que aparecen marcados como bots.
-- **Real:** el motor de reglas, el tiempo real por WebSockets, las colas, la API, el historial de partidas y los tests.
+- **Real:** el motor de reglas, el tiempo real por WebSockets, las colas, el historial de partidas, el ranking y los tests.
 
 ## Estado
 
@@ -53,14 +53,12 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | M6 | Tanteador, cantos y movimiento | Listo |
 | M7 | Historial y repetición jugada por jugada | Listo |
 | M8 | Ranking y estadísticas, calculadas desde los eventos de cada partida | Listo |
-| M9 | API pública | Pendiente |
-| M10 | Cómo se juega | Pendiente |
-| M11 | Calidad y publicación | En curso desde el primer commit |
 
-**Lo que se suma después**
+**Lo que sigue**
 
 | Módulo | Qué es | Estado |
 |---|---|---|
+| M11a | Publicación del sitio y pruebas automáticas en un navegador real | Es lo próximo |
 | M12 | Revancha y series al mejor de tres | Pendiente |
 | M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
 | M14 | Sonido de cartas, fósforos y cantos | Pendiente |
@@ -70,6 +68,16 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | M18 | Perfil con categorías ganadas jugando | Pendiente |
 | M19 | Truco de a cuatro con señas: primero con bots, después entre personas | Pendiente |
 | M20 | Mazos y mesas para elegir | Pendiente |
+
+**El cierre**
+
+| Módulo | Qué es | Estado |
+|---|---|---|
+| M9 | API pública para consultar partidas, ranking y perfil | Pendiente |
+| M10 | Cómo se juega | La página ya explica el mano a mano; se completa con los modos nuevos |
+| M11b | Pulido final: accesibilidad, rendimiento medido y manejo completo de la cuenta | Pendiente |
+
+Los módulos no se hacen en el orden de su número. La API y la página de reglas van al final porque dependen de todo lo anterior: hechas antes, habría que rehacerlas con cada modo nuevo. La publicación se adelanta porque es el mayor riesgo técnico que queda y porque cada módulo nuevo se suma a un sitio que ya se puede ver. Los tests y el estilo de código se corren solos en cada subida desde el primer commit.
 
 Las pantallas ya son las definitivas. Las cuentas son reales: se puede registrarse, ingresar, cambiar el apodo o entrar a la mesa como invitado con un solo botón, sin llenar nada.
 La mesa juega de verdad: reparte con el motor de reglas, valida cada jugada en el servidor y guarda la partida como una lista de eventos. Se juega contra un bot de cuatro niveles o contra otra persona por un link, en vivo.
@@ -82,7 +90,7 @@ El plan no es solo terminar el mano a mano: el proyecto crece en cuatro direccio
 - **Más formas de jugar.** Revancha y series al mejor de tres, torneos relámpago por link, desafíos (manos armadas con un objetivo, como "hacé que el bot no quiera"), una escalera de niveles para ir pasando y, al final, truco de a cuatro con señas entre compañeros por un canal privado.
 - **Un motor preparado para eso.** Piensa en asientos y equipos, así el mano a mano y el dos contra dos usan las mismas reglas. Reparte con una semilla, para que un desafío o una repetición den siempre las mismas cartas. Puede arrancar desde una situación armada. Y dice qué puede ver cada asiento: de ahí salen el test de que las cartas ajenas nunca llegan al navegador, el bot que no hace trampa y los espectadores del torneo.
 - **Jugar mucho se nota.** Categorías ganadas jugando, calculadas desde las partidas igual que el ranking. Destraban cosas solo estéticas: la carta de tu perfil, dorsos (que es lo que ve tu rival), otros mazos y mesas de otro color. Nada da ventaja en el juego, y la identidad se respeta: tintas planas y contraste medido, sin brillos ni degradados.
-- **Calidad y publicación.** Pruebas automáticas en un navegador real dentro de la integración continua (jugar una mano, registrarse, entrar como invitado), manejo completo de la cuenta (cambiar la contraseña, recuperarla y borrarla), sonido opcional, instalación en el celular con aviso de turno y un panel de administración.
+- **Calidad y publicación.** Pruebas automáticas en un navegador real dentro de la integración continua (jugar una mano, registrarse, entrar como invitado), manejo completo de la cuenta (cambiar la contraseña, recuperarla y borrarla), sonido opcional, instalación en el celular con aviso de turno, un panel de administración y, al final, una API pública documentada.
 
 La publicación está pensada para un plan gratuito: todo el sitio en un solo contenedor (la web, el tiempo real, las colas y las tareas programadas) y la base MySQL en un servicio aparte. Las razones están en [docs/decisiones.md](docs/decisiones.md).
 

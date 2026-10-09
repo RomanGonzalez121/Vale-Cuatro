@@ -4,7 +4,7 @@
             <x-logo class="text-xl" />
             <p class="mt-3 text-sm leading-relaxed opacity-90">
                 Los rivales bot y los jugadores de ejemplo del ranking son simulados, y están marcados.
-                El motor de reglas, el tiempo real, el historial y la API son reales.
+                El motor de reglas, el tiempo real, el historial y el ranking son reales.
             </p>
         </div>
 
