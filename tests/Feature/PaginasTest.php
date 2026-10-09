@@ -51,15 +51,6 @@ class PaginasTest extends TestCase
         }
     }
 
-    public function test_el_ranking_marca_a_los_jugadores_de_ejemplo_como_bots(): void
-    {
-        $html = $this->get('/ranking')->assertOk()->getContent();
-
-        // Once jugadores de ejemplo y una sola fila sin marca: la del visitante.
-        $this->assertSame(11, preg_match_all('/<\/svg>\s*bot\s*<\/span>/', $html));
-        $this->assertSame(1, substr_count($html, 'invitado'));
-    }
-
     public function test_en_la_portada_un_solo_boton_entra_a_la_mesa_y_los_demas_modos_van_a_su_pantalla(): void
     {
         $html = $this->get('/')->assertOk()->getContent();

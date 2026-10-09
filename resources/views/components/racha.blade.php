@@ -13,7 +13,7 @@
 
 {{-- Una racha dibujada con fósforos. El palito toma el color del texto; la cabeza va en Copa. --}}
 <span {{ $attributes->class('inline-flex items-center gap-[0.2em] align-middle') }}>
-    <span class="sr-only">{{ $cantidad > 0 ? "{$cantidad} ganadas seguidas" : 'Sin racha' }}</span>
+    <span class="sr-only">{{ match (true) { $cantidad === 0 => 'Sin racha', $cantidad === 1 => '1 ganada seguida', default => "{$cantidad} ganadas seguidas" } }}</span>
     @if ($cantidad === 0)
         <span aria-hidden="true" class="text-sm opacity-70">sin racha</span>
     @endif

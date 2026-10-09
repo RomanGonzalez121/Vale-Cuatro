@@ -6,13 +6,14 @@ use App\Http\Controllers\JugarController;
 use App\Http\Controllers\MesaController;
 use App\Http\Controllers\PaginaController;
 use App\Http\Controllers\PerfilController;
+use App\Http\Controllers\RankingController;
 use App\Http\Controllers\RegistroController;
 use App\Http\Controllers\SalaController;
 use App\Http\Controllers\SesionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PaginaController::class, 'portada'])->name('portada');
-Route::get('/ranking', [PaginaController::class, 'ranking'])->name('ranking');
+Route::get('/ranking', [RankingController::class, 'ver'])->name('ranking');
 Route::get('/historial', [HistorialController::class, 'lista'])->name('historial');
 Route::get('/historial/{partida}', [HistorialController::class, 'ver'])->whereNumber('partida')->middleware('auth')->name('historial.ver');
 Route::get('/historial/{partida}/cuadros', [HistorialController::class, 'cuadros'])->whereNumber('partida')->middleware(['auth', 'throttle:120,1'])->name('historial.cuadros');

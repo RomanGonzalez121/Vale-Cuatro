@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Identidad\Paleta;
 use App\Juego\Mesa;
 use App\Juego\Modos;
-use App\Maqueta\DatosDeEjemplo;
 use App\View\Components\Carta;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -30,13 +29,6 @@ class PaginaController extends Controller
             // Con una partida sin terminar (contra el bot, con otra persona o una sala esperando rival),
             // la pantalla lo avisa y ofrece seguirla en vez de empezar otra.
             'enCurso' => $jugador === null ? null : $mesa->abiertaDe($jugador),
-        ]);
-    }
-
-    public function ranking(): View
-    {
-        return view('paginas.ranking', [
-            'jugadores' => DatosDeEjemplo::ranking(),
         ]);
     }
 
