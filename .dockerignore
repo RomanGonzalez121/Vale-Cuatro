@@ -1,17 +1,15 @@
 # Lo que no entra a la imagen: se instala o se compila adentro, o no hace falta para que el sitio corra.
-.git
-.github
+
+# Todo lo que empieza con punto en la raíz: el historial de git, la integración continua, la configuración
+# de cada editor y, sobre todo, el .env con las claves de cada máquina. Nada de eso lo usa el sitio.
+.*
+
 node_modules
 vendor
 public/build
 # Con este archivo adentro, las páginas pedirían los estilos al servidor de desarrollo de Vite.
 public/hot
 public/storage
-
-# Nunca: claves y configuración de cada máquina.
-.env
-.env.*
-!.env.example
 auth.json
 
 storage/logs/*
@@ -23,17 +21,8 @@ storage/pail
 bootstrap/cache/*.php
 database/*.sqlite
 
+# Los tests y la documentación no corren en producción.
 tests
 docs
 phpunit.xml
-.phpunit.cache
-.phpunit.result.cache
-
-# Archivos locales de trabajo.
-CLAUDE.md
-prompt-truco-online.md
-.claude
-graphify-out
-.playwright-mcp
-.vscode
-.idea
+*.md
