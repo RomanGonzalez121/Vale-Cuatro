@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * El truco de a cuatro con las reglas fijadas hasta ahora. Los asientos 0 y 2 son un equipo
- * y los asientos 1 y 3 el otro. Lo que falta fijar se completa en M19.
+ * y los asientos 1 y 3 el otro. Lo que faltaba fijar lo completó Román al empezar M19.
  */
 class CuatroAsientosTest extends TestCase
 {
@@ -118,6 +118,41 @@ class CuatroAsientosTest extends TestCase
             [['asiento' => 0, 'tanto' => 33], ['asiento' => 1, 'tanto' => null], ['asiento' => 3, 'tanto' => null]],
             $partida->aArray()['envido']['tantos'],
         );
+    }
+
+    public function test_el_tanto_de_quien_se_fue_al_mazo_no_cuenta_para_el_envido_de_su_equipo(): void
+    {
+        // El 0 tiene 33, el mejor tanto de la mesa, y se va al mazo antes de que se cante el envido.
+        $partida = $this->armada([
+            ['7-oro', '6-oro', '4-basto'],       // 33, y se va
+            ['12-copa', '5-copa', '3-basto'],    // 25
+            ['10-espada', '11-espada', '1-oro'], // 20
+            ['7-copa', '10-copa', '2-basto'],    // 27
+        ]);
+
+        $partida = $this->jugar($partida, '0 mazo', '1 envido', '2 quiero');
+
+        // Sus cartas están muertas: no canta, y su equipo juega el envido con los 20 del que sigue.
+        // Los tantos arrancan por el que le sigue al mano, que ya no está.
+        $this->assertSame(
+            [['asiento' => 1, 'tanto' => 25], ['asiento' => 2, 'tanto' => null], ['asiento' => 3, 'tanto' => 27]],
+            $partida->aArray()['envido']['tantos'],
+        );
+        $this->assertSame(3, $partida->aArray()['envido']['ganador'], 'Gana el asiento del mejor tanto cantado.');
+        $this->assertSame([0, 2], $partida->tanteo(), 'Con los 33 del que se fue habría ganado su equipo.');
+        $this->assertSame(Fase::Jugando, $partida->fase(), 'La mano sigue: al equipo le queda un jugador.');
+    }
+
+    public function test_la_contraflor_vale_lo_de_siempre_aunque_un_equipo_tenga_dos_flores(): void
+    {
+        // El 0 (29) y el 2 (32) cantan flor; el 3 (31) contesta con contraflor y nadie la quiere.
+        $manos = [self::FLOR_DE_COPA, ['3-basto', '10-espada', '4-espada'], self::FLOR_DE_ORO, ['7-basto', '4-basto', '11-basto']];
+        $cantada = $this->jugar($this->armada($manos), '0 flor', '0 5-copa', '1 4-espada', '2 flor', '2 10-oro', '3 contraflor');
+
+        // No querida vale 4 para quien la cantó, y las dos flores del otro equipo no se suman aparte.
+        $this->assertSame([0, 4], $this->jugar($cantada, '0 no_quiero')->tanteo());
+        // Querida vale 6 para el equipo de la mejor flor: la contraflor reemplaza todo.
+        $this->assertSame([6, 0], $this->jugar($cantada, '2 quiero')->tanteo());
     }
 
     public function test_un_canto_al_equipo_lo_contesta_cualquiera_de_los_dos_y_vale_la_primera_respuesta(): void
