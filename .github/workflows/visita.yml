@@ -1,0 +1,38 @@
+name: Visita al sitio publicado
+
+# El sitio está en un plan gratis que se duerme sin visitas, y mientras duerme nadie toca la base de
+# datos. La base también es gratis, y su proveedor apaga las que pasan mucho tiempo sin uso: apagada no
+# vuelve sola, y el sitio no arranca hasta que alguien la prende a mano. Esta tarea entra al sitio cada
+# tres horas, como una visita más: lo despierta y le hace leer la base.
+#
+# Si el sitio no contesta, la tarea falla y GitHub avisa por correo: así se sabe que está caído.
+
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+jobs:
+  visita:
+    name: Entrar al ranking
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # El ranking se arma con una consulta a la base. Despertar el servicio tarda cerca de un minuto,
+      # así que se insiste un rato antes de darlo por caído.
+      - name: Pedir la página hasta que conteste
+        run: |
+          for intento in 1 2 3 4 5 6 7 8; do
+            estado=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 90 https://vale-cuatro.onrender.com/ranking || true)
+            echo "Intento ${intento}: ${estado}"
+
+            if [ "${estado}" = "200" ]; then
+              exit 0
+            fi
+
+            sleep 30
+          done
+
+          echo "El sitio no contestó." >&2
+          exit 1

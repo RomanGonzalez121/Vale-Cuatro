@@ -181,6 +181,8 @@ La cuenta que administra el sitio tampoco está escrita en el repositorio: sale 
 
 Se publica solo con cada subida a la rama principal, después de que pasan los tests. Los datos no se pierden al volver a publicar: las partidas, las cuentas, las sesiones y la cola viven en la base.
 
+La base también es gratuita, y su proveedor apaga las que pasan un tiempo sin uso. Para que eso no pase, una tarea programada de GitHub (`.github/workflows/visita.yml`) entra al sitio cada tres horas; si no le contesta, avisa por correo.
+
 Medido con los límites del plan gratuito: usa unos 150 MB de memoria, tarda cerca de un minuto en arrancar y entrega las páginas en menos de medio segundo.
 
 Para probar la imagen en una máquina con Docker:

@@ -832,6 +832,15 @@ El sitio está publicado en Render, en el plan gratuito, con la base MySQL en Ai
 - **Se descartó** un monitor externo que lo visite cada diez minutos para mantenerlo despierto. Funciona y entra en las horas gratuitas del mes, pero Render no lo garantiza y es una cuenta más que mantener.
 - **Qué pasa mientras duerme:** no corre nada (ni la cola ni la limpieza), pero tampoco hay nadie jugando. Al despertar, el contenedor arranca de cero: migra si hace falta, y la cola retoma lo que haya quedado pendiente en la base.
 
+### La base se apaga sola, y una tarea la mantiene en uso (10 de octubre de 2026)
+
+- **Problema:** al día de publicado, el sitio dejó de cargar. La base gratuita de Aiven se había apagado sola: su proveedor apaga las que pasan un tiempo sin uso (avisa por correo, pero no publica cuánto tiempo es), y cuando el servicio de Render duerme nadie la toca. Apagada no vuelve sola. El contenedor migra al arrancar, no encontraba la base, se cerraba y Render lo volvía a prender, sin fin. Se arregló prendiéndola a mano en el panel de Aiven y volviendo a publicar.
+- **Cómo se reconoce:** el nombre del servidor de la base deja de existir (no resuelve), y el registro de Render muestra el error de conexión en la migración.
+- **Elegido por Román:** una tarea programada de GitHub (`.github/workflows/visita.yml`) entra al ranking del sitio cada tres horas. Despierta el servicio, que al arrancar migra y deja la cola y las tareas leyendo la base un cuarto de hora. Si el sitio no contesta, la tarea falla y GitHub avisa por correo: sirve además de alarma.
+- **Límites, dichos de entrada:** no hay garantía de que ese uso le alcance a Aiven, porque no dice cuánto pide. GitHub puede demorar una tarea programada, y las desactiva en un repositorio que pasa 60 días sin cambios. Son unas dos horas por día de servicio prendido, que entran en las horas gratuitas del mes.
+- **No cambia lo decidido sobre el sueño del servicio:** el sitio sigue durmiendo entre visita y visita, y la primera carga puede tardar. Esto no es un monitor para tenerlo despierto: es para que la base no se quede sin uso.
+- **Se descartó:** mudar la base a TiDB Cloud (se despierta sola, pero es "compatible con MySQL" y no MySQL: habría que probar las migraciones y los tests contra ella), pagar el plan de Aiven que no se apaga, y dejarlo así y prenderla a mano. Si la base se vuelve a apagar con la tarea andando, lo siguiente a probar es TiDB Cloud.
+
 ### Pruebas en un navegador real
 
 - **Problema:** los tests comprueban el reglamento y el servidor, pero ninguno miraba la pantalla. La mesa es casi todo JavaScript, y los módulos que vienen (revancha, de a cuatro) la van a tocar.
