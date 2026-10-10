@@ -87,18 +87,19 @@ final class Simulacion
     }
 
     /**
-     * La partida sobre el motor, sin tocar la base: quién fue mano, los eventos en orden y quién ganó.
+     * La partida sobre el motor, sin tocar la base: quién fue mano, los eventos en orden, quién ganó y
+     * cómo quedó el tanteo. $puntos es a cuánto se juega: 30, o los 15 de una partida de torneo.
      *
-     * @return array{0: int, 1: list<array{0: string, 1: int|null, 2: array<string, mixed>}>, 2: int}
+     * @return array{0: int, 1: list<array{0: string, 1: int|null, 2: array<string, mixed>}>, 2: int, 3: array{0: int, 1: int}}
      */
-    public function enElMotor(Nivel $nivelDeUno, Nivel $nivelDeDos, int $semilla): array
+    public function enElMotor(Nivel $nivelDeUno, Nivel $nivelDeDos, int $semilla, int $puntos = 30): array
     {
         $azar = Azar::deSemilla($semilla);
         // Cada bot tiene su propio azar, que también sale de la semilla de la partida.
         $bots = [$nivelDeUno->bot(Azar::deSemilla($semilla * 7 + 1)), $nivelDeDos->bot(Azar::deSemilla($semilla * 7 + 2))];
 
         $primerMano = $azar->entero(Mesa::JUGADOR, Mesa::BOT);
-        $motor = Motor::nueva(2, $primerMano, 30);
+        $motor = Motor::nueva(2, $primerMano, $puntos);
         $eventos = [];
         // Lo que cada asiento vio al cerrarse cada mano, para el bot que lleva la cuenta: igual que en la mesa.
         $cerradas = [[], []];
@@ -132,6 +133,6 @@ final class Simulacion
             $eventos[] = [EventoDePartida::ACCION, $asiento, $accion->aArray()];
         }
 
-        return [$primerMano, $eventos, (int) $motor->ganador()];
+        return [$primerMano, $eventos, (int) $motor->ganador(), $motor->tanteo()];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Juego;
 
 use App\Events\PartidaActualizada;
+use App\Jobs\AvanzarTorneo;
 use App\Jobs\ResolverPlazo;
 use App\Jobs\TurnoDelBot;
 use App\Models\EventoDePartida;
@@ -106,6 +107,46 @@ final class Mesa
 
             // La serie no se asigna en masa: solo la decide el código de la mesa.
             $partida->serie_id = $enSerie ? Serie::create()->getKey() : null;
+            $partida->save();
+
+            $this->repartirEn($partida, $this->reconstruir($partida));
+
+            return $partida;
+        });
+    }
+
+    /**
+     * La partida de una ronda de un torneo contra bots: contra el bot de ese nivel y a los puntos del
+     * torneo, ya repartida. Qué torneo, qué rival y cuándo lo decide Torneos: esto solo la crea.
+     *
+     * Si el jugador ya está jugando la de ese torneo, devuelve esa.
+     *
+     * @throws TorneoNoDisponible si tiene otra partida sin terminar: una persona juega una sola a la vez.
+     */
+    public function abrirEnTorneo(Jugador $jugador, Nivel $nivel, int $puntos, int $torneoId): Partida
+    {
+        return DB::transaction(function () use ($jugador, $nivel, $puntos, $torneoId) {
+            Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
+
+            $abierta = $this->abiertaDe($jugador);
+
+            if ($abierta !== null && $abierta->torneo_id === $torneoId) {
+                return $abierta;
+            }
+
+            if ($abierta !== null) {
+                throw new TorneoNoDisponible('Tenés otra partida sin terminar. Terminala o abandonala antes de jugar la del torneo.');
+            }
+
+            $partida = new Partida([
+                'jugador_id' => $jugador->getKey(),
+                'primer_mano' => Azar::seguro()->entero(self::JUGADOR, self::BOT),
+                'puntos' => $puntos,
+                'nivel_bot' => $nivel,
+            ]);
+
+            // El torneo no se asigna en masa: solo lo decide el código de la mesa.
+            $partida->torneo_id = $torneoId;
             $partida->save();
 
             $this->repartirEn($partida, $this->reconstruir($partida));
@@ -1150,5 +1191,11 @@ final class Mesa
         }
 
         $this->seguirLaSerie($partida);
+
+        // Si era de un torneo, las llaves se ponen al día aparte, cuando esto ya quedó guardado: hay que
+        // anotar el resultado y jugar las partidas entre bots de la ronda, y eso no puede demorar la jugada.
+        if ($partida->torneo_id !== null) {
+            AvanzarTorneo::dispatch($partida->torneo_id)->afterCommit();
+        }
     }
 }

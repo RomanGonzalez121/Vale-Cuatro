@@ -32,6 +32,7 @@ use Illuminate\Support\Str;
  * @property string|null $codigo
  * @property int|null $serie_id
  * @property int|null $anterior_id
+ * @property int|null $torneo_id
  * @property Serie|null $serie
  * @property Nivel|null $nivel_bot
  * @property int|null $ganador
@@ -107,6 +108,16 @@ class Partida extends Model
     }
 
     /**
+     * El torneo del que es parte, si lo es.
+     *
+     * @return BelongsTo<Torneo, $this>
+     */
+    public function torneo(): BelongsTo
+    {
+        return $this->belongsTo(Torneo::class);
+    }
+
+    /**
      * @return HasMany<EventoDePartida, $this>
      */
     public function eventos(): HasMany
@@ -163,6 +174,7 @@ class Partida extends Model
             'invitado_id' => 'integer',
             'serie_id' => 'integer',
             'anterior_id' => 'integer',
+            'torneo_id' => 'integer',
             'primer_mano' => 'integer',
             'puntos' => 'integer',
             'entre_personas' => 'boolean',
