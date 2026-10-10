@@ -1092,13 +1092,30 @@ Es la mesa de siempre, con cuatro diferencias:
 
 ### La pantalla de las llaves
 
-Diseñada con la skill de diseño, con las piezas del sitio:
-
-- **Arriba, en una frase, qué toca ahora:** "Jugás la semifinal contra El Zurdo Medina", con el botón que lo hace. Es lo primero porque es lo único que hay que decidir.
-- **Las llaves se dibujan con el ícono del torneo:** cada par de cruces se une con una llave hecha con un fósforo, que termina en su cabeza donde empieza el cruce siguiente. Está tenue mientras el cruce no se jugó y plena cuando ya pasó alguien; la cabeza se enciende en Oro cuando llegaron los dos, como la del logo sobre el paño. No se mueve nada.
-- **Cada cruce son dos renglones, sin caja:** quien pasó, a pleno y con su tanteo en Oro; quien perdió, a media tinta, como la carta que pierde una baza.
+- **Problema:** la primera versión era prolija y podía ser de cualquier sitio: nombres en gris sobre verde, unidos por líneas. Román la vio y dijo que se podía ver mil veces mejor. Tenía además un defecto de lectura: sin una caja por cruce, la llave parecía agrupar la mitad de un cruce con la mitad del siguiente. No usaba ninguna de las piezas propias del sitio.
+- **Elegido por Román, entre tres opciones:** las llaves con naipes. Cada jugador se ve como una carta del mazo propio.
+- **La carta de un bot dice su nivel con la jerarquía del truco:** el más difícil es el ancho de espada; los difíciles, el ancho de basto y los dos sietes bravos; los intermedios, los tres; los fáciles, cuatros. Está en `JugadoresDeEjemplo::cartas()` y hay un test que comprueba que ningún bot le gana con la carta a uno de un nivel más alto.
+- **La persona es el 4 de copas** (elegido por Román). M18 ya decía que la carta de perfil empieza por los cuatros: queda encaminado sin adelantar nada más.
+- **Cada cruce es una baza:** las dos cartas pisándose en diagonal, con los mismos estilos que la baza de la mesa, y al lado quiénes son y cuánto hicieron. Quien pasa queda arriba y con su tanteo en Oro; **quien pierde queda boca abajo**. Un cruce que todavía espera jugadores muestra el lugar marcado, como una baza vacía.
+- **Arriba, la partida propia puesta sobre la mesa:** la carta del rival y la de la persona, en grande, con cada nombre a la altura de su carta, y la frase que dice qué toca ("Jugás la semifinal contra Don Anselmo") con su botón.
+- **Las llaves siguen dibujadas con el ícono del torneo:** un fósforo que une cada par de cruces y enciende la cabeza en Oro cuando llegaron los dos, como la del logo sobre el paño.
+- **La partida propia lleva la misma marca que "Sos mano"** en la mesa, con "Te toca".
 - **En el celular las rondas van una debajo de la otra** y no se dibujan llaves: el orden ya dice quién se cruza con quién.
-- **Contraste:** el texto a media tinta es Naipe al 70 % sobre Paño (4,7:1). El tanteo en Oro va en 20 px y negro, que es texto grande (Oro sobre Paño da 4,3:1 y solo vale para eso). La línea y la cabeza de las llaves son dibujo, no texto.
+- **Contraste:** el texto a media tinta es Naipe al 70 % sobre Paño (4,7:1). El tanteo en Oro va en 20 px y negro, que es texto grande (Oro sobre Paño da 4,3:1 y solo vale para eso). Las cartas no cambian con el modo de día y de noche.
+- **Se descartó:** la planilla del club (las llaves en una hoja color naipe, con el tanteo en fósforos), más sobria; y arreglar solo los defectos de la primera versión.
+
+### El movimiento de las llaves
+
+Hecho con la skill de animación y el criterio de `emil-design-eng`. La pantalla se abre pocas veces por torneo, así que admite movimiento; cada cosa que se mueve tiene un motivo.
+
+- **Al entrar, las dos cartas de arriba se reparten.** Es el reparto del resto del sitio, con su misma clase: el único movimiento que no responde a una acción.
+- **Al volver de jugar, los resultados nuevos se cuentan** en vez de aparecer de golpe: la carta de quien perdió se da vuelta, aparece el tanteo, se enciende la llave y las cartas de quienes pasaron llegan al cruce siguiente. Sirve para que se entienda qué cambió mientras uno no miraba. Si quedó afuera, se cuenta el resto del torneo, ronda por ronda, hasta la carta del campeón.
+- **Cada cruce cuenta lo suyo cuando está a la vista.** Las llaves empiezan debajo de la primera pantalla y en el celular las rondas van apiladas: si el relato arrancara al cargar, pasaría sin que nadie lo viera. Lo que está a la vista a la vez se cuenta en orden.
+- **Qué resultados ya se mostraron lo recuerda el navegador.** La primera vez que se abre un torneo no se cuenta nada, y recargar no lo repite.
+- **Ingredientes:** solo `transform` y `opacity`, con la curva del sitio; cada movimiento dura entre 160 y 300 ms; la carta que se da vuelta usa la pieza que ya existía para eso. La llave encendida va en piezas aparte de la tenue, para poder dibujarla sin animar colores.
+- **Se corta con un toque o con Escape.** Se escucha el toque entero y no el dedo que apoya: en el celular, bajar hasta las llaves no puede cortarlo.
+- **Con movimiento reducido no se cuenta nada:** la página ya dice cómo quedó, y las cartas de arriba aparecen con un fundido.
+- **Lo que no se puede juzgar leyendo el código** es si el ritmo se siente bien. Se miró cuadro por cuadro en el navegador, pero cómo se siente lo dice quien lo usa.
 
 ### La pantalla de modos, con dos cartas en la mano
 
@@ -1117,7 +1134,7 @@ Diseñada con la skill de diseño, con las piezas del sitio:
 
 ### Qué se probó y qué no
 
-- **Con tests (749 en total):** las llaves no repiten jugador; cada ronda empareja a los ganadores de la anterior; un torneo de ocho termina en siete partidas con un solo campeón (y uno de cuatro, en tres); la misma semilla da el mismo sorteo y los mismos resultados entre bots; quien abandona su partida queda eliminado; todo bot se ve marcado como bot, con su nivel; las partidas entre bots no dejan nada en el ranking; el torneo de otro no existe; y cada pantalla en cada estado.
+- **Con tests (751 en total):** las llaves no repiten jugador; cada ronda empareja a los ganadores de la anterior; un torneo de ocho termina en siete partidas con un solo campeón (y uno de cuatro, en tres); la misma semilla da el mismo sorteo y los mismos resultados entre bots; quien abandona su partida queda eliminado; todo bot se ve marcado como bot, con su nivel; las partidas entre bots no dejan nada en el ranking; el torneo de otro no existe; y cada pantalla en cada estado.
 - **En un navegador real,** a 360 x 740, 360 x 640 y 1355 x 638: se armó un torneo desde los modos, se jugó en la mesa (sin scroll en ningún tamaño), se quedó afuera y se salió campeón; de día y de noche; sin errores ni scroll horizontal. El turno del bot y el avance de las llaves salieron de la cola.
 - **En la integración continua** se sumó una prueba de navegador corta: arma un torneo desde los modos, ve las llaves y entra a la mesa de la semifinal.
 - **No se jugó un torneo entero a mano, carta por carta:** las partidas de las pruebas se cerraron con un bot que se va al mazo o se armaron con partidas simuladas a 15.

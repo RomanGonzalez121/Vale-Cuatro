@@ -26,8 +26,8 @@ class ArmarUnTorneoTest extends DuskTestCase
                 ->waitForText('Las llaves', 15)
                 ->assertPathBeginsWith('/torneo/')
                 ->assertSee('Jugás la semifinal contra')
-                ->assertSee('Te toca jugarla.')
-                ->assertSee('Se juega a la par de la tuya.');
+                ->assertSee('Te toca')
+                ->assertPresent('.torneo-duelo [data-carta="4-copa"]');
 
             // De las llaves a la mesa: la partida va contra un bot con apodo y la barra dice qué partido es.
             $navegador->press('Jugar la semifinal')

@@ -7,6 +7,7 @@ import { prepararModo } from './modo';
 import { duelo, tantoDeEnvido } from './reglas';
 import repeticion from './repeticion';
 import sala from './sala';
+import { prepararLlaves } from './torneo';
 
 /*
  | x-carta="expresión": dibuja en el elemento la carta que diga la expresión
@@ -47,3 +48,4 @@ Alpine.start();
 
 prepararLogos();
 prepararModo();
+prepararLlaves();

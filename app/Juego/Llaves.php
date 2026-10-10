@@ -29,7 +29,7 @@ final class Llaves
      * @return array{
      *     rondas: list<array{numero: int, nombre: string, cruces: list<array<string, mixed>>}>,
      *     campeon: array<string, mixed>|null,
-     *     vos: array{estado: string, partido: string|null, rival: array<string, mixed>|null, ronda: string|null}
+     *     vos: array{estado: string, partido: string|null, rival: array<string, mixed>|null, ronda: string|null, carta: array{0: string, 1: int}}
      * }
      */
     public function de(Torneo $torneo): array
@@ -57,7 +57,7 @@ final class Llaves
         return [
             'rondas' => $rondas,
             'campeon' => $torneo->campeon === null ? null : $this->lado($torneo, $torneo->campeon, $persona),
-            'vos' => $this->vos($torneo, $suyo, $ultimoSuyo, $persona),
+            'vos' => [...$this->vos($torneo, $suyo, $ultimoSuyo, $persona), 'carta' => $torneo->cartaDe($persona)],
         ];
     }
 
@@ -81,9 +81,9 @@ final class Llaves
 
         return [
             'estado' => $campeon ? 'campeon' : 'afuera',
-            // Dónde quedó: la partida que perdió y contra quién.
+            // Dónde quedó: la partida que perdió y contra quién. Si salió campeona, contra quién jugó la final.
             'partido' => $campeon || $ultimoSuyo === null ? null : $this->conArticulo($torneo->nombreDePartido($ultimoSuyo->ronda)),
-            'rival' => $campeon || $ultimoSuyo === null ? null : $this->lado($torneo, $ultimoSuyo->rivalDe($persona), $persona),
+            'rival' => $ultimoSuyo === null ? null : $this->lado($torneo, $ultimoSuyo->rivalDe($persona), $persona),
             'ronda' => null,
         ];
     }
@@ -151,15 +151,17 @@ final class Llaves
     /**
      * Quién ocupa un lugar: la persona, o un bot con su apodo y su nivel.
      *
-     * @return array{lugar: int, apodo: string, vos: bool, nivel: Nivel|null}
+     * @return array{lugar: int, apodo: string, vos: bool, nivel: Nivel|null, carta: array{0: string, 1: int}}
      */
-    private function lado(Torneo $torneo, int $lugar, int $persona): array
+    public function lado(Torneo $torneo, int $lugar, ?int $persona = null): array
     {
         return [
             'lugar' => $lugar,
             'apodo' => $torneo->apodoDe($lugar),
-            'vos' => $lugar === $persona,
+            'vos' => $lugar === ($persona ?? $torneo->lugarDeLaPersona()),
             'nivel' => $torneo->nivelDe($lugar),
+            // La carta con la que se lo ve: la de un bot dice su nivel; la de la persona es el 4 de copas.
+            'carta' => $torneo->cartaDe($lugar),
         ];
     }
 }

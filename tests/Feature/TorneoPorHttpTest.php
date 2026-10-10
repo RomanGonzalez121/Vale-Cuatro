@@ -49,13 +49,47 @@ class TorneoPorHttpTest extends TestCase
             ->assertSeeInOrder(['Las llaves', 'Cuartos de final', 'Semifinales', 'Final', 'Campeón'])
             ->assertSee('Jugás los cuartos de final contra')
             ->assertSee('Jugar los cuartos de final')
-            ->assertSee('Te toca jugarla.')
-            ->assertSee('Se juega a la par de la tuya.')
+            ->assertSee('Te toca')
+            ->assertSee('se juegan a la par de la tuya')
             ->getContent();
 
-        // Siete cruces, y la persona está una sola vez.
+        // Siete cruces. La persona está una sola vez en las llaves, y otra arriba, en la partida que le toca.
         $this->assertSame(7, substr_count($html, 'class="llave-lugar"') - 1);
-        $this->assertSame(1, preg_match_all('/>\s*Vos\s*</', $html));
+        $this->assertSame(2, preg_match_all('/>\s*Vos\s*</', $html));
+    }
+
+    public function test_cada_jugador_se_ve_con_su_carta_y_quien_pierde_queda_boca_abajo(): void
+    {
+        $jugador = Jugador::factory()->create();
+        $torneo = $this->torneoCorto($jugador);
+        $rival = $this->torneos()->cruceDeLaPersona($torneo)->rivalDe($torneo->lugarDeLaPersona());
+        [$palo, $numero] = $torneo->cartaDe($rival);
+
+        // Antes de jugar: las cuatro cartas de la primera ronda boca arriba, y arriba otra vez la propia y la del rival.
+        $html = $this->actingAs($jugador)->get(route('torneo', $torneo))->assertOk()->getContent();
+
+        $this->assertSame(0, substr_count($html, 'aria-label="Carta boca abajo"'));
+        $this->assertSame(6, substr_count($html, 'data-carta="'));
+        // La persona es el 4 de copas; el rival, la carta que le corresponde por su nivel.
+        $this->assertSame(2, substr_count($html, 'data-carta="4-copa"'));
+        $this->assertSame(2, substr_count($html, "data-carta=\"{$numero}-{$palo}\""));
+        $this->assertSame(JugadoresDeEjemplo::cartas()[$torneo->apodoDe($rival)], "{$numero}-{$palo}");
+
+        // Pierde la semifinal: su carta queda boca abajo en el cruce y arriba, y los perdedores de cada cruce también.
+        $this->post(route('torneo.jugar', $torneo));
+        $this->cerrarContraElBot(Partida::query()->sole(), ganaLaPersona: false);
+
+        $html = $this->get(route('torneo', $torneo))->assertOk()->getContent();
+
+        // Tres cruces jugados, cada uno con su perdedor boca abajo, y uno más arriba: la carta de la persona.
+        // De cada una viaja también la cara, guardada, para mostrar cómo se da vuelta: la del 4 de copas, dos veces.
+        $this->assertSame(4, substr_count($html, 'aria-label="Carta boca abajo"'));
+        $this->assertSame(4, substr_count($html, '<template data-cara>'));
+        $this->assertSame(2, substr_count($html, 'data-carta="4-copa"'));
+        $this->assertSame(2, preg_match_all('/<template data-cara>\s*<svg[^>]*data-carta="4-copa"/', $html));
+        // El campeón se ve con su carta al final de las llaves.
+        [$palo, $numero] = $torneo->fresh()->cartaDe($torneo->fresh()->campeon);
+        $this->assertMatchesRegularExpression('/class="carta-campeon[^"]*"[^>]*>\s*<svg[^>]*data-carta="'.$numero.'-'.$palo.'"/', $html);
     }
 
     public function test_todo_bot_de_las_llaves_se_ve_marcado_como_bot_con_su_nivel(): void
@@ -152,7 +186,7 @@ class TorneoPorHttpTest extends TestCase
         $this->assertSame(6, substr_count($tanteador[0], '<svg'));
         $this->assertStringNotContainsString('w-px', $tanteador[0]);
         // Con la partida empezada, las llaves ofrecen seguirla.
-        $this->get(route('torneo', $torneo))->assertOk()->assertSee('Estás jugando la semifinal')->assertSee('Seguir la partida')->assertSee('La estás jugando.');
+        $this->get(route('torneo', $torneo))->assertOk()->assertSee('Estás jugando la semifinal')->assertSee('Seguir la partida')->assertSee('La estás jugando');
     }
 
     public function test_con_otra_partida_abierta_la_del_torneo_no_empieza_y_las_llaves_dicen_por_que(): void
@@ -181,7 +215,7 @@ class TorneoPorHttpTest extends TestCase
         $this->get(route('torneo', $torneo))->assertOk()
             ->assertSee('Jugás la final contra')
             ->assertSee('Jugar la final')
-            ->assertDontSee('Se juega a la par de la tuya.');
+            ->assertSee('Te toca');
 
         $this->post(route('torneo.jugar', $torneo))->assertRedirect(route('mesa'));
         $this->cerrarContraElBot(Partida::query()->latest('id')->first(), ganaLaPersona: true);

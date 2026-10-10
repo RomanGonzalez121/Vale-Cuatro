@@ -1570,45 +1570,96 @@ html:has(body.superficie-pano) {
     }
 
     /*
-     | Las llaves del torneo. En el celular las rondas van una debajo de la otra: el orden ya dice quién
-     | se cruza con quién, y no se dibuja nada.
+     | El torneo. Cada jugador se ve como una carta del mazo, y cada cruce de las llaves es una baza: dos
+     | cartas que se pisan en diagonal (<x-duelo>, con los estilos de la baza de la mesa) y, al lado,
+     | quiénes son y cuánto hicieron. Quien pierde queda boca abajo; mientras no se sabe quién llega, se
+     | ve el lugar marcado, como en la mesa.
+     */
+    .duelo {
+        flex: none;
+        width: calc(var(--ancho-baza) * 1.6);
+    }
+
+    /*
+     | La carta de quien perdió se da vuelta cuando se cuentan los resultados nuevos (torneo.js), con la
+     | pieza del sitio para eso (.giro). Dentro de una baza hay que decirlo de nuevo: ahí las cartas solo
+     | tienen la transición con la que se apagan.
+     */
+    .hueco-baza > .giro {
+        transition: transform 300ms var(--ease-llegada);
+    }
+
+    /* Arriba, la partida propia: las dos cartas en grande. */
+    .torneo-duelo {
+        --ancho-baza: clamp(4.75rem, 21vw, 8rem);
+    }
+
+    /*
+     | Las llaves. En el celular las rondas van una debajo de la otra: el orden ya dice quién se cruza
+     | con quién, y no se dibuja nada entre ellas.
      |
-     | Desde lg van de izquierda a derecha, una columna por ronda. Cada columna reparte su alto en partes
-     | iguales entre sus cruces, así el cruce de la ronda siguiente queda justo entre los dos de los que
-     | sale. Cada par se une con el dibujo del ícono del torneo: una llave hecha con un fósforo, que
-     | termina en su cabeza donde empieza el cruce siguiente. La línea está tenue mientras el cruce no
-     | tiene ganador y plena cuando ya pasó alguien; la cabeza se enciende cuando llegaron los dos, en Oro,
-     | como la del logo sobre el paño. Nada de esto se mueve.
+     | Desde lg van de izquierda a derecha, una columna por ronda y una más, angosta, para el campeón.
+     | Cada columna reparte su alto en partes iguales entre sus cruces, así el cruce de la ronda siguiente
+     | queda justo entre los dos de los que sale. Cada par se une con el dibujo del ícono del torneo: una
+     | llave hecha con un fósforo, que termina en su cabeza donde empieza el cruce siguiente.
+     |
+     | La llave tenue está siempre, dibujada con ::before y ::after. La encendida va encima, en piezas
+     | aparte que solo existen cuando corresponde: el brazo (.llave-brazo) cuando el cruce ya tiene ganador,
+     | y el palito y la llama de la cabeza (.llave-palito, .cruce-llama) cuando al cruce ya llegaron los dos.
+     | La llama es Oro, como la del logo sobre el paño. Son piezas para que torneo.js pueda contarlas
+     | cuando hay resultados nuevos, moviendo solo transform y opacity.
      */
     .llaves {
+        --ancho-baza: 3.25rem;
         --llave-hueco: 3.5rem;
-        --llave-tenue: color-mix(in srgb, var(--color-naipe) 22%, transparent);
+        --llave-tenue: color-mix(in srgb, var(--color-naipe) 28%, transparent);
 
         display: grid;
         gap: 2.25rem;
     }
 
+    /* El lugar vacío de un cruce que espera: más visible que en la mesa, porque acá es lo único que hay. */
+    .llaves .baza-lugar::before {
+        border-color: var(--llave-tenue);
+    }
+
     .llave-lugares {
-        margin-top: 0.75rem;
+        margin-top: 0.5rem;
     }
 
     .llave-lugar {
         position: relative;
-        padding-block: 0.625rem;
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        padding-block: 1.125rem;
     }
 
     /* En el celular los cruces de una ronda se separan con una línea fina. */
     .llave-lugar + .llave-lugar {
-        border-top: 2px solid var(--llave-tenue);
+        border-top: 1.5px solid var(--llave-tenue);
     }
 
-    .cruce-cabeza {
+    .cruce-cabeza,
+    .llave-palito,
+    .llave-brazo {
         display: none;
+    }
+
+    /* La carta de quien gana el torneo, o su lugar marcado mientras no se sabe. */
+    .carta-campeon {
+        width: 4.75rem;
+        aspect-ratio: 100 / 156;
+        border-radius: 8% / 5.13%;
+    }
+
+    .carta-campeon:empty {
+        border: 1.5px solid var(--llave-tenue);
     }
 
     @media (min-width: 64rem) {
         .llaves {
-            grid-template-columns: repeat(var(--rondas), minmax(0, 1fr));
+            grid-template-columns: repeat(var(--rondas), minmax(0, 1fr)) auto;
             gap: 0 var(--llave-hueco);
         }
 
@@ -1623,45 +1674,59 @@ html:has(body.superficie-pano) {
         }
 
         .llave-lugar {
-            display: flex;
-            align-items: center;
-            padding-block: 0.875rem;
+            padding-block: 0.75rem;
         }
 
         .llave-lugar + .llave-lugar {
             border-top: 0;
         }
 
+        /* El campeón va con su nombre debajo de la carta: la columna es angosta. */
+        .llave-campeon .llave-lugar {
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            max-width: 9.5rem;
+        }
+
         /* El brazo que sale de cada cruce: va hasta la mitad del hueco y dobla hacia su pareja. */
-        .llave-lugar::after {
+        .llave-lugar::after,
+        .llave-brazo {
             position: absolute;
             left: 100%;
+            display: block;
             width: calc(var(--llave-hueco) / 2);
             border: 0 solid var(--llave-tenue);
             border-right-width: 2px;
+        }
+
+        .llave-lugar::after {
             content: '';
         }
 
-        .llave-lugar:nth-child(odd)::after {
+        .llave-lugar:nth-child(odd)::after,
+        .llave-lugar:nth-child(odd) > .llave-brazo {
             top: calc(50% - 1px);
             bottom: 0;
             border-top-width: 2px;
             border-top-right-radius: 3px;
         }
 
-        .llave-lugar:nth-child(even)::after {
+        .llave-lugar:nth-child(even)::after,
+        .llave-lugar:nth-child(even) > .llave-brazo {
             top: 0;
             bottom: calc(50% - 1px);
             border-bottom-width: 2px;
             border-bottom-right-radius: 3px;
         }
 
-        .llave-lugar[data-resuelto]::after {
+        .llave-lugar > .llave-brazo {
             border-color: var(--color-fosforo);
         }
 
         /* La final no tiene pareja: su brazo va derecho hasta el campeón. Y del campeón no sale nada. */
-        .llave-final .llave-lugar::after {
+        .llave-final .llave-lugar::after,
+        .llave-final .llave-lugar > .llave-brazo {
             top: calc(50% - 1px);
             bottom: auto;
             height: 2px;
@@ -1670,23 +1735,36 @@ html:has(body.superficie-pano) {
             background-color: var(--llave-tenue);
         }
 
-        .llave-final .llave-lugar[data-resuelto]::after {
+        .llave-final .llave-lugar > .llave-brazo {
             background-color: var(--color-fosforo);
+            /* Se dibuja desde el cruce hacia el campeón. */
+            transform-origin: left;
         }
 
         .llave-campeon .llave-lugar::after {
             content: none;
         }
 
-        /* El palito que entra al cruce siguiente, y su cabeza. Dejan libre el borde del texto. */
-        .llave-ronda:not(:first-child) .llave-lugar::before {
+        /* El palito que entra al cruce siguiente, y su cabeza. Dejan libre el borde de las cartas. */
+        .llave-ronda:not(:first-child) .llave-lugar::before,
+        .llave-palito {
             position: absolute;
             top: calc(50% - 1px);
             left: calc(var(--llave-hueco) / -2);
+            display: block;
             width: calc(var(--llave-hueco) / 2 - 1.125rem);
             height: 2px;
             background-color: var(--llave-tenue);
+        }
+
+        .llave-ronda:not(:first-child) .llave-lugar::before {
             content: '';
+        }
+
+        .llave-palito {
+            background-color: var(--color-fosforo);
+            /* Se dibuja desde la llave hacia el cruce. */
+            transform-origin: left;
         }
 
         .cruce-cabeza {
@@ -1700,11 +1778,11 @@ html:has(body.superficie-pano) {
             background-color: var(--llave-tenue);
         }
 
-        .llave-ronda:not(:first-child) .llave-lugar[data-completo]::before {
-            background-color: var(--color-fosforo);
-        }
-
-        .llave-lugar[data-completo] > .cruce-cabeza {
+        .cruce-llama {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
             background-color: var(--color-oro);
         }
     }

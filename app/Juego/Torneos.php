@@ -34,6 +34,9 @@ final class Torneos
     /** A cuántos puntos va cada partida: corta, para que un torneo se juegue en una sentada. */
     public const PUNTOS = 15;
 
+    /** La carta con la que se ve a la persona en las llaves: la más baja del mazo, por donde se empieza. */
+    public const CARTA_DE_LA_PERSONA = '4-copa';
+
     public function __construct(private readonly Mesa $mesa) {}
 
     /**
@@ -260,23 +263,24 @@ final class Torneos
      * Quién ocupa cada lugar: la persona y los bots, mezclados. Los bots salen de los jugadores de
      * ejemplo del ranking, elegidos con la semilla.
      *
-     * @return list<array{apodo: string|null, nivel: int|null}>
+     * @return list<array{apodo: string|null, nivel: int|null, carta: string}>
      */
     private function sortear(Jugador $jugador, int $lugares, int $semilla): array
     {
         $azar = Azar::deSemilla($semilla);
+        $cartas = JugadoresDeEjemplo::cartas();
         $bots = [];
 
         foreach (JugadoresDeEjemplo::lista() as $apodo => $nivel) {
             // Si la persona eligió el apodo de uno de ellos, ese no entra: no puede haber dos con el mismo nombre.
             if ($apodo !== $jugador->apodo) {
-                $bots[] = ['apodo' => $apodo, 'nivel' => $nivel->value];
+                $bots[] = ['apodo' => $apodo, 'nivel' => $nivel->value, 'carta' => $cartas[$apodo]];
             }
         }
 
         $inscriptos = array_slice($this->mezclar($bots, $azar), 0, $lugares - 1);
-        // El lugar de la persona no guarda nada: es el dueño del torneo.
-        $inscriptos[] = ['apodo' => null, 'nivel' => null];
+        // El lugar de la persona no guarda apodo ni nivel: es el dueño del torneo. Su carta es siempre la misma.
+        $inscriptos[] = ['apodo' => null, 'nivel' => null, 'carta' => self::CARTA_DE_LA_PERSONA];
 
         return $this->mezclar($inscriptos, $azar);
     }

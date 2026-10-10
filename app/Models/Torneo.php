@@ -14,15 +14,15 @@ use Illuminate\Support\Carbon;
  * Un torneo relámpago contra bots: eliminación directa entre una persona y tres o siete bots.
  *
  * Cada uno ocupa un "lugar", que es su número en la lista de inscriptos. Las llaves, los ganadores y el
- * campeón se dicen por lugar. De un bot se guardan el apodo y el nivel con el que juega; el lugar de la
- * persona no guarda nada: es el dueño del torneo.
+ * campeón se dicen por lugar. De un bot se guardan el apodo, el nivel con el que juega y la carta con la
+ * que se lo ve en las llaves; el lugar de la persona no guarda apodo ni nivel: es el dueño del torneo.
  *
  * @property int $id
  * @property int $jugador_id
  * @property int $lugares
  * @property int $puntos
  * @property int $semilla
- * @property list<array{apodo: string|null, nivel: int|null}> $inscriptos
+ * @property list<array{apodo: string|null, nivel: int|null, carta: string}> $inscriptos
  * @property string $estado
  * @property int|null $campeon
  * @property Carbon|null $terminado_en
@@ -92,6 +92,18 @@ class Torneo extends Model
         $nivel = $this->inscriptos[$lugar]['nivel'] ?? null;
 
         return $nivel === null ? null : Nivel::from($nivel);
+    }
+
+    /**
+     * La carta con la que se ve a quien ocupa ese lugar, como [palo, número].
+     *
+     * @return array{0: string, 1: int}
+     */
+    public function cartaDe(int $lugar): array
+    {
+        [$numero, $palo] = explode('-', $this->inscriptos[$lugar]['carta']);
+
+        return [$palo, (int) $numero];
     }
 
     /**

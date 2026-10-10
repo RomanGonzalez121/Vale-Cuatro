@@ -14,6 +14,7 @@ use App\Models\Jugador;
 use App\Models\Partida;
 use App\Models\Resultado;
 use App\Models\Torneo;
+use App\Motor\Carta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use InvalidArgumentException;
@@ -69,6 +70,41 @@ class TorneoTest extends TestCase
 
             $this->assertArrayHasKey($inscripto['apodo'], $deEjemplo);
             $this->assertSame($deEjemplo[$inscripto['apodo']], $torneo->nivelDe($lugar));
+        }
+    }
+
+    public function test_la_carta_de_cada_bot_dice_su_nivel_y_la_de_la_persona_es_el_cuatro_de_copas(): void
+    {
+        $cartas = JugadoresDeEjemplo::cartas();
+        $niveles = JugadoresDeEjemplo::lista();
+
+        // Cada jugador de ejemplo tiene su carta, ninguna se repite y ninguno tiene la de la persona.
+        $this->assertSame(array_keys($niveles), array_keys($cartas));
+        $this->assertCount(count($cartas), array_unique($cartas));
+        $this->assertNotContains(Torneos::CARTA_DE_LA_PERSONA, $cartas);
+
+        // Cuanto más difícil el bot, más alta su carta en el truco: ninguno de un nivel le gana con la carta a uno de un nivel más alto.
+        foreach ($cartas as $apodo => $carta) {
+            foreach ($cartas as $otro => $otra) {
+                if ($niveles[$apodo]->value > $niveles[$otro]->value) {
+                    $this->assertTrue(Carta::de($carta)->leGanaA(Carta::de($otra)), "La carta de {$apodo} tiene que ganarle a la de {$otro}.");
+                }
+            }
+        }
+
+        // La persona empieza de abajo: su carta no le gana a la de ningún bot.
+        foreach ($cartas as $carta) {
+            $this->assertFalse(Carta::de(Torneos::CARTA_DE_LA_PERSONA)->leGanaA(Carta::de($carta)));
+        }
+
+        // Y en un torneo, cada lugar tiene la suya.
+        $torneo = $this->torneos()->crear(Jugador::factory()->create(), 8, 3);
+
+        foreach ($torneo->inscriptos as $lugar => $inscripto) {
+            $esperada = $lugar === $torneo->lugarDeLaPersona() ? Torneos::CARTA_DE_LA_PERSONA : $cartas[$inscripto['apodo']];
+            [$palo, $numero] = $torneo->cartaDe($lugar);
+
+            $this->assertSame($esperada, "{$numero}-{$palo}");
         }
     }
 

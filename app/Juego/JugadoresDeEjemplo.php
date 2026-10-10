@@ -50,6 +50,31 @@ final class JugadoresDeEjemplo
     }
 
     /**
+     * La carta de cada uno, que es como se lo ve en las llaves de un torneo. Dice su nivel con la
+     * jerarquía del truco: cuanto más difícil el bot, más alta la carta. El de nivel más alto es el
+     * ancho de espada; los fáciles son cuatros. El 4 de copas no es de ninguno: es la carta con la
+     * que empieza una persona.
+     *
+     * @return array<string, string>
+     */
+    public static function cartas(): array
+    {
+        return [
+            'Don Anselmo' => '1-espada',
+            'La Tana Rossi' => '1-basto',
+            'El Zurdo Medina' => '7-espada',
+            'Doña Elvira' => '7-oro',
+            'Cacho de Lanús' => '3-espada',
+            'El Gringo Bauer' => '3-basto',
+            'Tito Pereyra' => '3-oro',
+            'La Colorada' => '3-copa',
+            'Pichón Ibarra' => '4-espada',
+            'El Mudo Gómez' => '4-basto',
+            'Negrita Luna' => '4-oro',
+        ];
+    }
+
+    /**
      * Crea los jugadores de ejemplo y les hace jugar sus partidas. Si ya jugaron no hace nada, así
      * que se puede llamar en cada publicación del sitio. Devuelve cuántas partidas jugó.
      *
