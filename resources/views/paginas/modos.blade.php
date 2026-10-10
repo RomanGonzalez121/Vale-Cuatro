@@ -25,26 +25,42 @@
     $lugaresElegidos = 4;
     // Lo que se juega con cada tamaño, dicho en una línea.
     $recorrido = [
-        4 => 'Semifinal y final: dos partidas si llegás hasta el final.',
-        8 => 'Cuartos, semifinal y final: tres partidas si llegás hasta el final.',
+        4 => 'Dos rondas, a 15 puntos.',
+        8 => 'Tres rondas, a 15 puntos.',
     ];
+
+    /*
+     | Con varias cartas, en pantallas anchas la mano va al lado del detalle y no arriba: así el botón de
+     | jugar se ve sin bajar en una ventana baja. Hasta dos cartas van en una fila; desde tres, en dos filas
+     | y más chicas, para que la mano no sea más alta que el detalle.
+     */
+    $cartas = count($enLaMano);
+    $columnas = $cartas <= 2 ? max(1, $cartas) : (int) ceil($cartas / 2);
+    $anchoDeVarias = match (true) {
+        $cartas <= 2 => '7.75rem',
+        $cartas <= 4 => '7rem',
+        default => '5.5rem',
+    };
 @endphp
 
 <x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
-        <div class="modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:pb-24 lg:pt-14"
+        <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]'])
             x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false, lugares: {{ $lugaresElegidos }} }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                     ¿Cómo querés jugar?
                 </h1>
 
-                {{-- Con una sola carta, el detalle va al lado. Con varias, la mano ocupa el ancho y el detalle va debajo. --}}
-                <div @class(['modos-mano mt-7 grid items-start gap-y-5 lg:mt-10', $unaSola ? 'grid-cols-[auto_minmax(0,1fr)] gap-x-5 sm:gap-x-9' : 'grid-cols-1'])>
+                {{--
+                    Con una sola carta, el detalle va al lado. Con varias, la mano va arriba y el detalle debajo;
+                    en pantallas anchas vuelve a ir al lado, para que el botón de jugar se vea sin bajar.
+                --}}
+                <div @class(['modos-mano mt-7 grid items-start gap-y-5 lg:mt-10', $unaSola ? 'grid-cols-[auto_minmax(0,1fr)] gap-x-5 sm:gap-x-9' : 'grid-cols-1 max-sm:gap-y-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-x-9'])>
                     {{-- La mano: una carta por juego que ya se juega. El reparto es el único movimiento que no responde a una acción. --}}
-                    <div @class(['mano-juegos', $unaSola ? 'mano-de-una sm:row-span-2' : 'mano-de-varias'])
-                        style="--ancho-carta: clamp(6.25rem, 27vw, 13rem); --medio: {{ (count($enLaMano) - 1) / 2 }}">
+                    <div @class(['mano-juegos', $unaSola ? 'mano-de-una sm:row-span-2' : 'mano-de-varias lg:row-span-2'])
+                        style="--ancho-carta: clamp(6.25rem, 27vw, 13rem); --medio: {{ (count($enLaMano) - 1) / 2 }}; --columnas: {{ $columnas }}; --ancho-de-varias: {{ $anchoDeVarias }}">
                         @foreach ($enLaMano as $i => $juego)
                             @if ($unaSola)
                                 <div style="--i: {{ $i }}">
@@ -75,10 +91,11 @@
                         <div class="contents" x-show="juego === '{{ $juego['clave'] }}'" @if ($juego['clave'] !== $juegoElegido) x-cloak @endif>
                             <div @class(['self-center sm:self-end' => $unaSola])>
                                 <h2 class="text-2xl font-black leading-[1.02] tracking-tight sm:text-4xl">{{ $juego['nombre'] }}</h2>
-                                <p class="mt-2 max-w-[36ch] leading-relaxed sm:mt-3 sm:text-lg">{{ $juego['resumen'] }}</p>
+                                {{-- Con varias cartas, en el celular el resumen no va: la carta y el nombre ya dicen qué juego es, y así el botón entra en la pantalla. --}}
+                                <p @class(['mt-2 max-w-[36ch] leading-relaxed sm:mt-3 sm:text-lg', 'max-sm:hidden' => ! $unaSola])>{{ $juego['resumen'] }}</p>
                             </div>
 
-                            <div @class(['col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola])>
+                            <div @class(['col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola, 'lg:col-start-2' => ! $unaSola])>
                                 @if (count($juego['rivales']) > 1)
                                     <div class="flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Contra quién">
                                         @foreach ($juego['rivales'] as $rival)
@@ -182,8 +199,7 @@
                                                     @endforeach
                                                 </div>
 
-                                                {{-- Siempre mide dos renglones: el botón no salta al cambiar de tamaño. --}}
-                                                <div class="mt-1 min-h-[3.25rem] max-w-[36ch]">
+                                                <div class="mt-1 max-w-[36ch]">
                                                     @foreach ($lugares as $opcion)
                                                         <p class="leading-relaxed" x-show="lugares === {{ $opcion }}" @if ($opcion !== $lugaresElegidos) x-cloak @endif>{{ $recorrido[$opcion] }}</p>
                                                     @endforeach

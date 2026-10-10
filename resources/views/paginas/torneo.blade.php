@@ -40,21 +40,27 @@
             <div class="mt-4 max-w-[52ch] text-lg leading-relaxed">
                 @if ($vos['rival'] && $torneo->enCurso())
                     {{-- Contra quién: un bot, dicho con su marca, su nivel y cómo juega. --}}
-                    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold">
-                        <x-icono nombre="bot" class="size-5" />
-                        <x-nivel-fosforos :nivel="$vos['rival']['nivel']" class="text-[0.8rem]" />
-                        <span>{{ $vos['rival']['apodo'] }} es un bot {{ mb_strtolower($vos['rival']['nivel']->nombre()) }}.</span>
+                    <p class="font-semibold">
+                        <span class="mr-1 inline-flex items-center gap-2 align-[-0.2em]">
+                            <x-icono nombre="bot" class="size-5" />
+                            <x-nivel-fosforos :nivel="$vos['rival']['nivel']" class="text-[0.8rem]" />
+                        </span>
+                        {{ $vos['rival']['apodo'] }} es un bot {{ mb_strtolower($vos['rival']['nivel']->nombre()) }}.
                     </p>
                     <p class="mt-1">{{ $vos['rival']['nivel']->detalle() }} La partida va a {{ $torneo->puntos }} puntos.</p>
                 @elseif ($vos['estado'] === 'campeon')
                     <p>Ganaste {{ $partidas === 2 ? 'las dos partidas' : 'las tres partidas' }}, cada una a {{ $torneo->puntos }} puntos.</p>
                 @else
                     <p>
-                        @if ($vos['rival'])
-                            Pasó {{ $vos['rival']['apodo'] }}.
-                        @endif
-                        @if ($campeon)
-                            El campeón es {{ $campeon['apodo'] }}.
+                        @if ($vos['rival'] && $campeon && $vos['rival']['lugar'] === $campeon['lugar'])
+                            {{ $vos['partido'] === 'la final' ? "El campeón es {$campeon['apodo']}." : "Pasó {$campeon['apodo']}, que terminó ganando el torneo." }}
+                        @else
+                            @if ($vos['rival'])
+                                Pasó {{ $vos['rival']['apodo'] }}.
+                            @endif
+                            @if ($campeon)
+                                El campeón es {{ $campeon['apodo'] }}.
+                            @endif
                         @endif
                     </p>
                 @endif
@@ -114,10 +120,11 @@
                             @foreach ($ronda['cruces'] as $cruce)
                                 <li class="llave-lugar" @if ($cruce['estado'] === Llaves::RESUELTO) data-resuelto @endif @if ($cruce['estado'] !== Llaves::ESPERA) data-completo @endif>
                                     @unless ($loop->parent->first)
-                                        <span class="llave-cabeza" aria-hidden="true"></span>
+                                        <span class="cruce-cabeza" aria-hidden="true"></span>
                                     @endunless
 
-                                    <div class="w-full">
+                                    {{-- En pantallas anchas la nota va por fuera, debajo: así los dos renglones quedan centrados donde llega la llave. --}}
+                                    <div class="relative w-full">
                                         @foreach ($cruce['lados'] as $lado)
                                             @if ($lado === null)
                                                 {{-- Todavía no se sabe quién llega a este lado: Naipe al 70 % sobre Paño da 4,7:1. --}}
@@ -147,9 +154,9 @@
                                         @endforeach
 
                                         @if (isset($notas[$cruce['estado']]))
-                                            <p @class(['mt-1 text-[0.9rem] leading-snug', 'font-bold' => $cruce['tuyo'], 'text-naipe/70' => ! $cruce['tuyo']])>{{ $notas[$cruce['estado']] }}</p>
+                                            <p @class(['mt-1 text-[0.9rem] leading-snug lg:absolute lg:top-full lg:mt-0.5', 'font-bold' => $cruce['tuyo'], 'text-naipe/70' => ! $cruce['tuyo']])>{{ $notas[$cruce['estado']] }}</p>
                                         @elseif ($cruce['porAbandono'])
-                                            <p class="mt-1 text-[0.9rem] leading-snug text-naipe/70">{{ $cruce['sinJugar'] ? 'Pasó sin jugar.' : 'La dejaste antes del final.' }}</p>
+                                            <p class="mt-1 text-[0.9rem] leading-snug text-naipe/70 lg:absolute lg:top-full lg:mt-0.5">{{ $cruce['sinJugar'] ? 'Pasó sin jugar.' : 'La dejaste antes del final.' }}</p>
                                         @endif
                                     </div>
                                 </li>
@@ -164,16 +171,20 @@
 
                     <div class="llave-lugares">
                         <div class="llave-lugar" @if ($campeon) data-completo @endif>
-                            <span class="llave-cabeza" aria-hidden="true"></span>
+                            <span class="cruce-cabeza" aria-hidden="true"></span>
 
                             @if ($campeon)
-                                <p class="flex min-w-0 items-center gap-2.5">
-                                    <x-icono :nombre="$campeon['vos'] ? 'jugador' : 'bot'" class="size-6 flex-none" />
-                                    <span class="min-w-0 text-[clamp(1.5rem,3vw,2rem)] font-black leading-[1.02] tracking-tight [overflow-wrap:anywhere]">{{ $campeon['vos'] ? 'Vos' : $campeon['apodo'] }}</span>
+                                <p class="flex min-w-0 items-center gap-2">
+                                    <x-icono :nombre="$campeon['vos'] ? 'jugador' : 'bot'" class="size-5 flex-none" />
                                     @unless ($campeon['vos'])
-                                        <span class="sr-only">, bot {{ mb_strtolower($campeon['nivel']->nombre()) }}</span>
-                                        <x-nivel-fosforos :nivel="$campeon['nivel']" class="flex-none text-[0.8rem]" />
+                                        <x-nivel-fosforos :nivel="$campeon['nivel']" class="flex-none text-[0.7rem]" />
                                     @endunless
+                                    <span class="min-w-0 text-2xl font-black leading-[1.05] tracking-tight">
+                                        {{ $campeon['vos'] ? 'Vos' : $campeon['apodo'] }}
+                                        @unless ($campeon['vos'])
+                                            <span class="sr-only">, bot {{ mb_strtolower($campeon['nivel']->nombre()) }}</span>
+                                        @endunless
+                                    </span>
                                 </p>
                             @else
                                 <p class="text-[0.95rem] text-naipe/70">Sale de la final</p>

@@ -77,7 +77,7 @@ class MesaController extends Controller
      * Lo que la mesa necesita saber cuando la partida es de un torneo: el bot que tocó, con su apodo, qué
      * partido es y qué viene si se gana. Null si la partida no es de un torneo.
      *
-     * @return array{llaves: string, rival: string, partido: string, esFinal: bool, sigue: string|null}|null
+     * @return array{llaves: string, rival: string, partido: string, corto: string, esFinal: bool, sigue: string|null}|null
      */
     private function torneoDe(Partida $partida): ?array
     {
@@ -93,7 +93,9 @@ class MesaController extends Controller
         return [
             'llaves' => route('torneo', $torneo),
             'rival' => $torneo->apodoDe($cruce->rivalDe($torneo->lugarDeLaPersona())),
-            'partido' => $torneo->nombreDePartido($cruce->ronda),
+            'partido' => $partido = $torneo->nombreDePartido($cruce->ronda),
+            // En la barra de la mesa va en una palabra: "Cuartos", que es lo que entra en un celular.
+            'corto' => explode(' ', $partido)[0],
             'esFinal' => $esFinal,
             // Cómo se dice adónde pasa quien gana: "a la final", "a las semifinales".
             'sigue' => $esFinal ? null : ($cruce->ronda + 1 === $torneo->rondas() ? 'a la final' : 'a las '.mb_strtolower($torneo->nombreDeRonda($cruce->ronda + 1))),

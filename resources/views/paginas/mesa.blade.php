@@ -89,7 +89,10 @@
                     </p>
                 @elseif ($torneo)
                     {{-- En un torneo, en ese mismo lugar va qué partido es. --}}
-                    <p class="whitespace-nowrap text-sm font-semibold leading-none"><span class="sr-only">Torneo: </span>{{ $torneo['partido'] }}</p>
+                    <p class="whitespace-nowrap text-sm font-semibold leading-none">
+                        <span class="sr-only">Torneo, {{ mb_strtolower($torneo['partido']) }}.</span>
+                        <span aria-hidden="true">{{ $torneo['corto'] }}</span>
+                    </p>
                 @endif
             </div>
 

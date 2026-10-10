@@ -123,8 +123,6 @@ final class Llaves
             'porAbandono' => $cruce->por_abandono,
             // La persona dejó el torneo antes de sentarse a jugar este cruce: su rival pasó sin jugar.
             'sinJugar' => $cruce->por_abandono && $cruce->partida_id === null,
-            // La partida que jugó la persona, para volver a verla en el historial. Las de bots no se guardan.
-            'partida' => $cruce->resuelto() && $cruce->partida?->ganador !== null ? $cruce->partida_id : null,
             'lados' => [
                 $this->ladoDelCruce($torneo, $cruce, $cruce->uno, $cruce->puntos_uno, $persona),
                 $this->ladoDelCruce($torneo, $cruce, $cruce->dos, $cruce->puntos_dos, $persona),

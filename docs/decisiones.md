@@ -1049,3 +1049,77 @@ Diez observaciones, corregidas salvo las dos del final:
 - **Falta:** una prueba de navegador automática del panel en la integración continua. No se sumó para no alargar esa corrida.
 - **Pendiente para la API (M9):** que un apodo ocultado tampoco se vea ahí. Hoy la API no existe.
 - Capturas en `docs/capturas/`: `administracion.png`, `administracion-celular.png`, `administracion-cuaderno.png` y `administracion-cuaderno-celular.png`.
+
+## M13a. Torneo relámpago contra bots
+
+Un torneo corto de eliminación directa que se juega solo: una persona y, en los demás lugares, bots. La versión entre personas (M13b) viene después.
+
+### Lo que decidió Román
+
+- **De cuatro o de ocho,** a elegir al armarlo. Entra elegido el de cuatro, que es el más corto.
+- **Cada partida va a 15 puntos.** Un torneo de ocho son tres partidas si se llega a la final: a 30 no se termina en una sentada.
+- **Los bots son los jugadores de ejemplo del ranking,** cada uno con su nivel. Ya tienen nombre y el sitio ya los marca como bots.
+- **De las partidas entre bots se ve solo el resultado.**
+- **Para el ranking cuentan las partidas de la persona,** con la regla de siempre (contra un bot Intermedio o más). Las de bot contra bot no cuentan.
+
+### Cómo se guarda
+
+- **Problema:** un torneo es una persona, unos bots sorteados, unas llaves que se van llenando y varias partidas, de las que solo algunas las juega alguien.
+- **El torneo guarda quién ocupa cada lugar.** Es una lista fija que se decide al armarlo: de cada bot, el apodo y el nivel; el lugar de la persona no guarda nada, porque es la dueña del torneo. Las llaves, los ganadores y el campeón se dicen por número de lugar.
+- **Los bots no necesitan su fila de jugador.** Alcanza con el apodo y el nivel, que salen de la misma lista que arma el ranking de ejemplo. Así un torneo no depende de que el ranking esté sembrado, y si esa siembra se rehace las llaves viejas no pierden los nombres.
+- **Cada cruce es una fila:** qué dos lugares se cruzan, cuánto hizo cada uno y quién pasó. Se crean todos al armar el torneo; los de las rondas que vienen esperan vacíos. El ganador del cruce 0 y el del 1 se encuentran en el cruce 0 de la ronda siguiente, y así.
+- **La partida de la persona es una partida común contra el bot,** guardada como eventos, con el número de su torneo. Por eso aparece sola en el historial y cuenta para el ranking sin ningún código aparte.
+- **Las partidas entre bots no se guardan: se guarda su resultado.** Se juegan sobre el motor con los mismos bots que una partida de verdad (el simulador que ya armaba el ranking de ejemplo), y todo su azar sale de la semilla del torneo y del lugar del cruce en las llaves. La misma semilla da siempre el mismo sorteo y los mismos resultados. No se guardan como partidas porque no son de nadie: ocuparían la base, y habría que sacarlas a mano del ranking y del panel de administración.
+- **Se descartó** guardar los inscriptos en una tabla aparte con una fila por lugar: es una lista que no cambia nunca y siempre se lee entera.
+
+### Cómo avanzan las llaves
+
+- **Una sola función las pone al día** (`Torneos::avanzar`). Ronda por ronda: si la persona todavía tiene su partida por jugar o jugándose, se detiene. Si ya la cerró, anota cómo le fue, juega las partidas entre bots de esa ronda y arma la siguiente. Con la final resuelta hay campeón.
+- **Los resultados de una ronda aparecen cuando la persona termina la suya.** Las demás partidas "se juegan a la par": hasta entonces nadie sabe contra quién le va a tocar después.
+- **Si la persona queda afuera, lo que falta se juega de corrido** hasta que hay campeón: las llaves nunca quedan a medio llenar.
+- **Se puede llamar de más.** Bloquea la fila del torneo, así dos pedidos a la vez no juegan dos veces la misma partida; con las llaves al día no hace nada. La llama un trabajo de la cola cuando se cierra una partida del torneo (jugar tres partidas entre bots no puede demorar la última carta de la persona) y también la pantalla de las llaves, por si ese trabajo todavía no corrió.
+- **Pasa solo quien gana su partida.** Abandonarla es quedar afuera. Si quedó tanto tiempo sin jugarse que la cerró la administración, también pasa el bot. Y dejar el torneo entre dos rondas hace pasar al rival sin jugar.
+- **Una persona juega un torneo a la vez,** y la partida del torneo es su única partida abierta: con otra sin terminar no empieza, y la pantalla dice por qué.
+
+### La partida de torneo en la mesa
+
+Es la mesa de siempre, con cuatro diferencias:
+
+- **El bot va con su apodo.** Que es un bot lo dicen su ícono y los fósforos de su nivel, igual que en las llaves.
+- **El tanteador va a 15:** tres grupos de cinco y sin la raya del medio. Las malas y las buenas son de la partida a 30.
+- **En la barra, donde iría el marcador de una serie, dice qué partido es** ("Cuartos", "Semifinal", "Final"). Va en una palabra porque "Cuartos de final" no entra en un celular.
+- **Al terminar no hay revancha.** El final dice si se pasa de ronda, si se es campeón o si se quedó afuera, y lleva a las llaves.
+
+### La pantalla de las llaves
+
+Diseñada con la skill de diseño, con las piezas del sitio:
+
+- **Arriba, en una frase, qué toca ahora:** "Jugás la semifinal contra El Zurdo Medina", con el botón que lo hace. Es lo primero porque es lo único que hay que decidir.
+- **Las llaves se dibujan con el ícono del torneo:** cada par de cruces se une con una llave hecha con un fósforo, que termina en su cabeza donde empieza el cruce siguiente. Está tenue mientras el cruce no se jugó y plena cuando ya pasó alguien; la cabeza se enciende en Oro cuando llegaron los dos, como la del logo sobre el paño. No se mueve nada.
+- **Cada cruce son dos renglones, sin caja:** quien pasó, a pleno y con su tanteo en Oro; quien perdió, a media tinta, como la carta que pierde una baza.
+- **En el celular las rondas van una debajo de la otra** y no se dibujan llaves: el orden ya dice quién se cruza con quién.
+- **Contraste:** el texto a media tinta es Naipe al 70 % sobre Paño (4,7:1). El tanteo en Oro va en 20 px y negro, que es texto grande (Oro sobre Paño da 4,3:1 y solo vale para eso). La línea y la cabeza de las llaves son dibujo, no texto.
+
+### La pantalla de modos, con dos cartas en la mano
+
+- **Problema:** con el torneo ya son dos los juegos que se juegan. La pantalla tenía previsto ese caso (la mano arriba y el detalle debajo), pero así el botón de jugar quedaba a 896 px en una ventana de 638 de alto.
+- **Elegido:** en pantallas anchas la mano va al lado del detalle, en una grilla; en el celular las cartas son chicas y van en una fila, y el resumen del juego no se muestra (la carta y el título ya lo dicen). Medido: el botón termina a 588 px en 1355 x 638, igual que antes, y a 656 px en 360 x 740, donde la barra de abajo empieza a los 676.
+- **El tamaño del torneo se elige con el mismo molde que el nivel del bot:** el cuadrado de cuatro fósforos, uno para el torneo de cuatro y dos para el de ocho.
+- **Queda para cuando haya tres cartas o más** (el de a cuatro, los desafíos): la grilla ya lo contempla, en dos filas y más chicas, pero no se midió en el navegador.
+
+### Lo que encontró la revisión
+
+- **La cabeza de los fósforos de las llaves no se veía.** Su clase se llamaba igual que la cabeza de la llave de los ajustes de la mesa, que arranca transparente. Se le cambió el nombre.
+- **"Cuartos de final" se montaba sobre el botón de ajustes** en la barra de la mesa, a 360 px. Va en una palabra.
+- **Quien ganaba el torneo podía leer dos veces el mismo nombre** ("Pasó Doña Elvira. El campeón es Doña Elvira."). Se dice una sola vez.
+- **Dejar el torneo justo después de ganar una partida** podía encontrar las llaves sin anotar. Ahora primero se ponen al día.
+- **Un tanteador de una partida a menos de cinco puntos no dibujaba ningún fósforo.** Solo pasa en las pruebas, pero se corrigió.
+
+### Qué se probó y qué no
+
+- **Con tests (749 en total):** las llaves no repiten jugador; cada ronda empareja a los ganadores de la anterior; un torneo de ocho termina en siete partidas con un solo campeón (y uno de cuatro, en tres); la misma semilla da el mismo sorteo y los mismos resultados entre bots; quien abandona su partida queda eliminado; todo bot se ve marcado como bot, con su nivel; las partidas entre bots no dejan nada en el ranking; el torneo de otro no existe; y cada pantalla en cada estado.
+- **En un navegador real,** a 360 x 740, 360 x 640 y 1355 x 638: se armó un torneo desde los modos, se jugó en la mesa (sin scroll en ningún tamaño), se quedó afuera y se salió campeón; de día y de noche; sin errores ni scroll horizontal. El turno del bot y el avance de las llaves salieron de la cola.
+- **En la integración continua** se sumó una prueba de navegador corta: arma un torneo desde los modos, ve las llaves y entra a la mesa de la semifinal.
+- **No se jugó un torneo entero a mano, carta por carta:** las partidas de las pruebas se cerraron con un bot que se va al mazo o se armaron con partidas simuladas a 15.
+- **Límites:** la repetición del historial y el panel de administración dibujan el tanteador a 30 también para una partida de torneo. Un torneo que su dueño no vuelve a abrir queda "en curso" para siempre: no molesta, y al volver puede seguirlo o dejarlo. No hay una lista de torneos jugados: se llega a las llaves de uno desde el final de su partida o mientras está en curso.
+- Capturas en `docs/capturas/`: `torneo-llaves.png`, `torneo-llaves-celular.png`, `torneo-campeon.png`, `torneo-afuera-celular.png`, `torneo-llaves-de-noche.png`, `mesa-torneo-celular.png`, `modos-torneo.png` y `modos-torneo-celular.png`.

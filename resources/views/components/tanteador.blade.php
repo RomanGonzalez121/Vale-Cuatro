@@ -9,7 +9,7 @@
 --}}
 
 @php
-    $grupos = intdiv((int) $hasta, 5);
+    $grupos = max(1, (int) ceil((int) $hasta / 5));
     // La raya va justo en la mitad, y solo si la mitad cae entre dos grupos.
     $raya = $grupos % 2 === 0 ? intdiv($grupos, 2) : null;
 @endphp

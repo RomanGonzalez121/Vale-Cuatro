@@ -62,7 +62,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 |---|---|---|
 | M11a | Publicación del sitio y pruebas automáticas en un navegador real | Listo |
 | M12 | Revancha y series al mejor de tres, contra el bot y entre dos personas | Listo |
-| M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
+| M13 | Torneo relámpago de cuatro u ocho, con llaves: contra bots ya se juega (partidas a 15, los bots del ranking de ejemplo); entre personas, pendiente | En parte |
 | M14 | Sonido de cartas, fósforos y cantos, fabricado en el navegador y apagado de fábrica | Listo |
 | M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
 | M16 | Panel de administración: partidas sin movimiento, cola, limpieza y apodos, con cada acción anotada | Listo |

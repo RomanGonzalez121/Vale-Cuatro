@@ -140,6 +140,9 @@ final class Torneos
      */
     public function abandonar(Torneo $torneo): void
     {
+        // Primero las llaves al día: si su partida acaba de cerrarse, se anota como salió antes de dejar nada.
+        $this->avanzar($torneo->getKey());
+
         DB::transaction(function () use ($torneo) {
             $torneo = Torneo::query()->whereKey($torneo->getKey())->lockForUpdate()->firstOrFail();
             $cruce = $torneo->enCurso() ? $this->cruceDeLaPersona($torneo) : null;

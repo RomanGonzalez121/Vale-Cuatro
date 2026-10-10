@@ -52,7 +52,7 @@ final class Modos
                 'icono' => 'torneo',
                 'resumen' => 'Cuatro u ocho jugadores, eliminación directa y las llaves a la vista.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra bots', 'detalle' => 'Jugás tus partidas, a 15 puntos, y las demás se resuelven solas. Entrás sin registrarte.', 'boton' => 'Armar el torneo', 'ruta' => 'torneo.crear', 'icono' => 'torneo', 'lugares' => Torneos::LUGARES],
+                    ['clave' => 'bots', 'nombre' => 'Contra bots', 'detalle' => 'Jugás tus partidas y las demás se resuelven solas.', 'boton' => 'Armar el torneo', 'ruta' => 'torneo.crear', 'icono' => 'torneo', 'lugares' => Torneos::LUGARES],
                     ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Se inscriben por link y se juega en vivo.', 'boton' => null],
                 ],
             ],

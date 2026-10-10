@@ -207,13 +207,17 @@ class TorneoPorHttpTest extends TestCase
             ->assertRedirect(route('torneo', $torneo))
             ->assertSessionHas('aviso', 'Abandonaste la partida y quedaste afuera del torneo.');
 
-        $this->get(route('torneo', $torneo))->assertOk()
+        // Al abrir las llaves, lo que faltaba se juega solo: dicen dónde quedó la persona y nombran al campeón.
+        $llaves = $this->get(route('torneo', $torneo))->assertOk()
             ->assertSee('Quedaste afuera en los cuartos de final')
             ->assertSee('La dejaste antes del final.')
-            ->assertSee('El campeón es')
             ->assertSee('Armar otro torneo');
 
-        $this->assertFalse($torneo->fresh()->enCurso());
+        $torneo->refresh();
+
+        $this->assertFalse($torneo->enCurso());
+        $llaves->assertSeeInOrder(['Campeón', $torneo->apodoDe($torneo->campeon)]);
+
         // Ya no hay nada que jugar ahí.
         $this->post(route('torneo.jugar', $torneo))->assertRedirect(route('torneo', $torneo))->assertSessionHas('aviso', 'Ese torneo ya terminó.');
     }
