@@ -896,9 +896,10 @@ html:has(body.superficie-pano) {
     }
 
     /*
-     | Los modos de juego. En la mano va una carta por juego que ya se juega. Las
-     | cartas no se mueven al elegir: la elegida queda a pleno y las demás se
-     | apagan, igual que la carta que pierde una baza.
+     | Los modos de juego. En la mano va una carta por juego que ya se juega. La
+     | elegida queda a pleno y se levanta apenas, como una carta de la mano que se
+     | va a jugar; las demás se apagan, igual que la carta que pierde una baza.
+     | Ninguna cambia de lugar: se mueve poco, y solo la que se toca.
      */
     .mano-juegos {
         display: flex;
@@ -953,11 +954,31 @@ html:has(body.superficie-pano) {
         border-radius: 8% / 5.13%;
         background: none;
         cursor: pointer;
-        transition: opacity 200ms var(--ease-llegada);
+        transition:
+            opacity 200ms var(--ease-llegada),
+            transform 220ms var(--ease-llegada);
     }
 
     .naipe-juego[aria-pressed='false'] {
         opacity: 0.45;
+    }
+
+    /* La elegida se levanta y conserva su inclinación. Es una transición: si se elige otra a mitad de camino, vuelve desde donde esté. */
+    .mano-de-varias > .naipe-juego[aria-pressed='true'] {
+        transform: translateY(-5%) rotate(calc((var(--i) - var(--medio, 0)) * 3deg));
+    }
+
+    /* Al apretarla responde enseguida: se hunde apenas bajo el dedo. */
+    .mano-de-varias > .naipe-juego:active {
+        transform: translateY(-2%) rotate(calc((var(--i) - var(--medio, 0)) * 3deg)) scale(0.97);
+    }
+
+    /*
+     | El detalle del juego que se acaba de elegir entra con un fundido corto y sube apenas, en vez de
+     | cambiar de golpe. Solo después de elegir: al cargar la página ya está en su lugar.
+     */
+    .detalle-entra {
+        animation: llegar-el-detalle 220ms var(--ease-llegada) both;
     }
 
     .carta-modo-nombre {
@@ -2051,6 +2072,13 @@ html:has(body.superficie-pano) {
     }
 }
 
+@keyframes llegar-el-detalle {
+    from {
+        opacity: 0;
+        transform: translateY(0.4rem);
+    }
+}
+
 @keyframes cantar {
     from {
         opacity: 0;
@@ -2299,6 +2327,15 @@ html:has(body.superficie-pano) {
         transform: translateY(-0.14em);
     }
 
+    /* La carta de un juego que no está elegido se asoma al pasar el mouse: avisa que se puede elegir. */
+    .naipe-juego[aria-pressed='false']:hover {
+        opacity: 0.75;
+    }
+
+    .mano-de-varias > .naipe-juego[aria-pressed='false']:hover {
+        transform: translateY(-3%) rotate(calc((var(--i) - var(--medio, 0)) * 3deg));
+    }
+
     .naipe-jugable:not([disabled]):hover {
         transform: translateY(-6%);
     }
@@ -2327,6 +2364,12 @@ html:has(body.superficie-pano) {
 
     .naipe-juego {
         transition: none;
+    }
+
+    /* La carta de un juego no se asoma ni se hunde: la elegida queda levantada, sin viaje. */
+    .mano-de-varias > .naipe-juego[aria-pressed='false']:hover,
+    .mano-de-varias > .naipe-juego[aria-pressed='false']:active {
+        transform: rotate(calc((var(--i) - var(--medio, 0)) * 3deg));
     }
 
     /* Las cartas del tanto no se levantan: alcanza con que la otra se apague. */
@@ -2447,7 +2490,8 @@ html:has(body.superficie-pano) {
     }
 
     .se-reparte,
-    .se-canta {
+    .se-canta,
+    .detalle-entra {
         animation-name: fundido;
         animation-duration: 150ms;
     }

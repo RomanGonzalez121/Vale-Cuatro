@@ -47,7 +47,7 @@
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
         <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]'])
-            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false, lugares: {{ $lugaresElegidos }} }">
+            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false, lugares: {{ $lugaresElegidos }}, eligio: false }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                     ¿Cómo querés jugar?
@@ -75,7 +75,7 @@
                                 <button type="button" class="naipe-juego" style="--i: {{ $i }}"
                                     aria-pressed="{{ $juego['clave'] === $juegoElegido ? 'true' : 'false' }}"
                                     :aria-pressed="(juego === '{{ $juego['clave'] }}').toString()"
-                                    @click="juego = '{{ $juego['clave'] }}'">
+                                    @click="eligio = eligio || juego !== '{{ $juego['clave'] }}'; juego = '{{ $juego['clave'] }}'">
                                     <span class="se-reparte block" style="--orden: {{ $i }}">
                                         <span class="se-da-vuelta">
                                             <x-carta-modo :icono="$juego['icono']" :nombre="$juego['nombre']" :renglones="$juego['renglones']" />
@@ -89,13 +89,14 @@
 
                     @foreach ($enLaMano as $juego)
                         <div class="contents" x-show="juego === '{{ $juego['clave'] }}'" @if ($juego['clave'] !== $juegoElegido) x-cloak @endif>
-                            <div @class(['self-center sm:self-end' => $unaSola])>
+                            {{-- Después de elegir una carta, su detalle entra con un fundido corto: primero el nombre y enseguida lo demás. --}}
+                            <div @class(['self-center sm:self-end' => $unaSola]) :class="{ 'detalle-entra': eligio }">
                                 <h2 class="text-2xl font-black leading-[1.02] tracking-tight sm:text-4xl">{{ $juego['nombre'] }}</h2>
                                 {{-- Con varias cartas, en el celular el resumen no va: la carta y el nombre ya dicen qué juego es, y así el botón entra en la pantalla. --}}
                                 <p @class(['mt-2 max-w-[36ch] leading-relaxed sm:mt-3 sm:text-lg', 'max-sm:hidden' => ! $unaSola])>{{ $juego['resumen'] }}</p>
                             </div>
 
-                            <div @class(['col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola, 'lg:col-start-2' => ! $unaSola])>
+                            <div @class(['col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola, 'lg:col-start-2' => ! $unaSola]) :class="{ 'detalle-entra': eligio }" style="animation-delay: 50ms">
                                 @if (count($juego['rivales']) > 1)
                                     <div class="flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Contra quién">
                                         @foreach ($juego['rivales'] as $rival)

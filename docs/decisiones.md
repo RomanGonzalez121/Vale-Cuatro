@@ -1123,6 +1123,7 @@ Hecho con la skill de animación y el criterio de `emil-design-eng`. La pantalla
 - **Elegido:** en pantallas anchas la mano va al lado del detalle, en una grilla; en el celular las cartas son chicas y van en una fila, y el resumen del juego no se muestra (la carta y el título ya lo dicen). Medido: el botón termina a 588 px en 1355 x 638, igual que antes, y a 656 px en 360 x 740, donde la barra de abajo empieza a los 676.
 - **El tamaño del torneo se elige con el mismo molde que el nivel del bot:** el cuadrado de cuatro fósforos, uno para el torneo de cuatro y dos para el de ocho.
 - **Queda para cuando haya tres cartas o más** (el de a cuatro, los desafíos): la grilla ya lo contempla, en dos filas y más chicas, pero no se midió en el navegador.
+- **Al elegir, la carta se levanta** (decidido por Román el 10 de octubre de 2026, y cambia su pedido anterior de que las cartas no se movieran al elegir). La elegida queda un poco más arriba, como una carta de la mano que se va a jugar; la otra baja y se apaga; al apretarla se hunde apenas, y con mouse la que no está elegida se asoma. Ninguna cambia de lugar. El nombre y las opciones del juego elegido entran con un fundido corto en vez de cambiar de golpe, solo después de elegir. Es una transición de `transform` y `opacity` de 220 ms: si se elige otra a mitad de camino, vuelve desde donde esté. Con movimiento reducido la carta queda levantada sin viaje y el detalle aparece con un fundido. El botón de jugar no se mueve de lugar.
 
 ### Lo que encontró la revisión
 
