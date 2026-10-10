@@ -51,6 +51,12 @@ class Partida extends Model
 
     public const ABANDONADA = 'abandonada';
 
+    /**
+     * La cerró la administración porque había quedado sin movimiento. No la ganó ni la dejó nadie: por
+     * eso no es ni "terminada" ni "abandonada", y no entra en el historial ni en el ranking.
+     */
+    public const CERRADA = 'cerrada';
+
     /** Cuántos caracteres tiene el código del link: sorteado, no se puede adivinar. */
     private const LARGO_DEL_CODIGO = 16;
 

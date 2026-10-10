@@ -74,7 +74,7 @@ final class Historial
     /**
      * Lo que la lista dice de una partida, visto desde un asiento.
      *
-     * @return array{id: int, gano: bool, vos: int, ellos: int, rival: string, bot: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, gano: ?bool, completa: bool}, revancha: bool}
+     * @return array{id: int, gano: bool, vos: int, ellos: int, rival: string, bot: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
      */
     public function resumen(Partida $partida, int $asiento): array
     {
@@ -91,7 +91,7 @@ final class Historial
             'bot' => ! $partida->entre_personas,
             'cierre' => $this->comoCerro($partida, $asiento),
             'cuando' => $cuando,
-            'dia' => $this->dia($cuando),
+            'dia' => self::dia($cuando),
             'hora' => $cuando->format('H:i'),
             'manos' => $estado['numeroDeMano'],
             // Una partida que dura menos de un minuto se cuenta como de uno: "0 minutos" no dice nada.
@@ -104,11 +104,12 @@ final class Historial
 
     /**
      * Si la partida es de una serie al mejor de tres: cuál es, qué número de partida fue y cómo quedó la
-     * serie vista desde ese asiento. "gano" es null mientras la serie sigue en juego, y "completa" dice si
+     * serie vista desde ese asiento. "sigue" dice si todavía se juega. "gano" es null mientras sigue, y
+     * también si se cerró sin ganador (la cerró la administración). "completa" dice si
      * se jugó hasta que alguien ganó las que hacían falta. Si alguno se fue en el medio no lo es, aunque la
      * partida abandonada le haya dejado dos al otro: ese marcador no se jugó.
      *
-     * @return array{id: int, numero: int, vos: int, ellos: int, gano: ?bool, completa: bool}|null
+     * @return array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}|null
      */
     private function serie(Partida $partida, int $asiento): ?array
     {
@@ -129,8 +130,10 @@ final class Historial
             'numero' => (int) array_search($partida->getKey(), $contada['partidas'], true) + 1,
             'vos' => $contada['marcador'][$asiento],
             'ellos' => $contada['marcador'][1 - $asiento],
-            'gano' => $serie->cerrada() ? $serie->ganador === $asiento : null,
-            'completa' => $serie->cerrada() && ! $contada['cortada'],
+            'sigue' => ! $serie->cerrada(),
+            // Sin ganador mientras sigue, y también si se cerró sin que la ganara nadie.
+            'gano' => $serie->ganador === null ? null : $serie->ganador === $asiento,
+            'completa' => $serie->cerrada() && $serie->ganador !== null && ! $contada['cortada'],
         ];
     }
 
@@ -168,7 +171,7 @@ final class Historial
     /**
      * El día como se dice hablando: "Hoy", "Ayer" o la fecha.
      */
-    private function dia(Carbon $cuando): string
+    public static function dia(Carbon $cuando): string
     {
         return match (true) {
             $cuando->isToday() => 'Hoy',

@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Algo que pasó en una partida: un reparto (con las cartas de cada asiento),
- * una acción de un asiento, un turno vencido, la llegada de quien abrió la sala
- * o un abandono. Los eventos no se editan ni se borran: aplicados en orden al
+ * una acción de un asiento, un turno vencido, la llegada de quien abrió la sala,
+ * un abandono o el cierre de una partida que quedó sin movimiento. Los eventos no se editan ni se borran: aplicados en orden al
  * motor, devuelven la partida tal como quedó.
  *
  * @property int $partida_id
@@ -36,6 +36,12 @@ class EventoDePartida extends Model
      * su turno corre con el plazo de siempre, y no con el de espera que tiene mientras no llegó.
      */
     public const LLEGADA = 'llegada';
+
+    /**
+     * La partida se cerró desde el panel de administración porque había quedado sin movimiento. No la
+     * ganó nadie y no cambia nada de lo que se jugó: queda dicho, al final de su lista, por qué terminó.
+     */
+    public const CIERRE = 'cierre';
 
     public $timestamps = false;
 

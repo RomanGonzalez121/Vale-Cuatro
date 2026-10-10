@@ -72,8 +72,10 @@
                         @if ($serie)
                             <li class="pt-5 leading-snug max-sm:pt-4">
                                 <span class="block text-lg font-extrabold [overflow-wrap:anywhere] max-sm:text-base">Al mejor de tres contra {{ $tanda->first()['rival'] }}</span>
-                                @if ($serie['gano'] === null)
+                                @if ($serie['sigue'])
                                     <span class="block text-[0.95rem] font-semibold">La serie sigue: va {{ $serie['vos'] }} a {{ $serie['ellos'] }}.</span>
+                                @elseif ($serie['gano'] === null)
+                                    <span class="block text-[0.95rem] font-semibold">La serie quedó sin terminar.</span>
                                 @else
                                     <span @class(['block text-[0.95rem] font-bold', 'text-gana' => $serie['gano'], 'text-pierde' => ! $serie['gano']])>
                                         {{ $serie['gano'] ? 'Ganaste la serie' : 'Perdiste la serie' }}{{ $serie['completa'] ? ' '.max($serie['vos'], $serie['ellos']).' a '.min($serie['vos'], $serie['ellos']) : '' }}.

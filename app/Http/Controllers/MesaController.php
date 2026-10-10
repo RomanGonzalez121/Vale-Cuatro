@@ -252,6 +252,8 @@ class MesaController extends Controller
         return match ($ultima?->estado) {
             Partida::TERMINADA => $this->resultado($ultima, $request),
             Partida::ABANDONADA => $this->comoSeFueAlguien($ultima, $request),
+            // La cerró la administración porque había quedado sin movimiento.
+            Partida::CERRADA => 'Tu última partida se cerró porque había quedado sin movimiento. No la ganó nadie.',
             default => null,
         };
     }

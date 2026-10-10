@@ -17,8 +17,10 @@ use App\Motor\Fase;
 use App\Motor\Mazo;
 use App\Motor\Partida as Motor;
 use App\Motor\TipoDeAccion;
+use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
@@ -60,6 +62,15 @@ final class Mesa
 
     /** Entre personas: con tantos vencimientos seguidos, sin ninguna jugada propia en el medio, se pierde la partida. */
     public const VENCIMIENTOS_PARA_PERDER = 3;
+
+    /**
+     * Cuánto tiene que pasar sin que se mueva nada para que una partida se considere quieta, y se pueda
+     * cerrar desde el panel de administración. Contra el bot, un día: quien la dejó puede volver a la noche.
+     * Entre personas, diez minutos: ahí los turnos vencen solos, así que tanto rato quieta es una falla.
+     */
+    public const HORAS_QUIETA_CONTRA_EL_BOT = 24;
+
+    public const MINUTOS_QUIETA_ENTRE_PERSONAS = 10;
 
     /**
      * Cada partida juega contra el bot de su nivel. Un bot fijo sirve para los tests, que necesitan mirar qué recibe.
@@ -256,8 +267,8 @@ final class Mesa
             foreach ($partida->eventos()->get() as $evento) {
                 $motor = $this->aplicarEvento($motor, $evento);
 
-                // Un abandono no cambia lo que hay en la mesa: no es un paso para mostrar.
-                if ($evento->numero > $desde && $evento->tipo !== EventoDePartida::ABANDONO) {
+                // Un abandono o un cierre no cambian lo que hay en la mesa: no son un paso para mostrar.
+                if ($evento->numero > $desde && ! in_array($evento->tipo, [EventoDePartida::ABANDONO, EventoDePartida::CIERRE], true)) {
                     $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento, $evento);
                 }
             }
@@ -340,6 +351,100 @@ final class Mesa
             $this->cerrar($partida, Partida::ABANDONADA, 1 - $asiento);
 
             return [];
+        });
+    }
+
+    /**
+     * Desde cuándo una partida que no se movió se considera quieta: la hora de su último evento tiene
+     * que ser anterior a esta.
+     */
+    public function limiteDeQuieta(Partida $partida): CarbonInterface
+    {
+        return $partida->entre_personas
+            ? now()->subMinutes(self::MINUTOS_QUIETA_ENTRE_PERSONAS)
+            : now()->subHours(self::HORAS_QUIETA_CONTRA_EL_BOT);
+    }
+
+    /**
+     * Si una partida en curso quedó sin movimiento: hace rato que no se guarda ningún evento en ella.
+     */
+    public function estaQuieta(Partida $partida): bool
+    {
+        $ultimo = $partida->eventos()->max('creado_en') ?? $partida->created_at;
+
+        return $partida->enCurso() && Carbon::parse($ultimo)->lt($this->limiteDeQuieta($partida));
+    }
+
+    /**
+     * Las partidas en curso que quedaron sin movimiento, con la misma regla que estaQuieta(). No cuentan
+     * las simuladas, que nacen ya cerradas.
+     *
+     * @return Builder<Partida>
+     */
+    public function enCursoQuietas(): Builder
+    {
+        return $this->enCursoDePersonas()->where(fn (Builder $partidas) => $this->soloQuietas($partidas));
+    }
+
+    /**
+     * Las partidas en curso que se están jugando: todas las que no están quietas.
+     *
+     * @return Builder<Partida>
+     */
+    public function enCursoQueSeMueven(): Builder
+    {
+        return $this->enCursoDePersonas()->whereNot(fn (Builder $partidas) => $this->soloQuietas($partidas));
+    }
+
+    /**
+     * @return Builder<Partida>
+     */
+    private function enCursoDePersonas(): Builder
+    {
+        return Partida::query()->where('estado', Partida::EN_CURSO)->where('simulada', false);
+    }
+
+    /**
+     * Quieta es la que se creó antes del límite y no tiene ningún evento desde entonces. El límite
+     * depende de contra quién se juega.
+     *
+     * @param  Builder<Partida>  $partidas
+     */
+    private function soloQuietas(Builder $partidas): void
+    {
+        $limites = [
+            [false, now()->subHours(self::HORAS_QUIETA_CONTRA_EL_BOT)],
+            [true, now()->subMinutes(self::MINUTOS_QUIETA_ENTRE_PERSONAS)],
+        ];
+
+        foreach ($limites as [$entrePersonas, $limite]) {
+            $partidas->orWhere(fn (Builder $quieta) => $quieta
+                ->where('entre_personas', $entrePersonas)
+                ->where('created_at', '<', $limite)
+                ->whereDoesntHave('eventos', fn (Builder $eventos) => $eventos->where('creado_en', '>=', $limite)));
+        }
+    }
+
+    /**
+     * Cierra una partida que quedó sin movimiento. Es lo que hace el panel de administración: agrega un
+     * evento al final de su lista y no borra nada. No la gana nadie, así que no cuenta para el ranking,
+     * y deja de ser la partida en curso de sus jugadores. Si era de una serie, la serie se cierra con ella.
+     *
+     * Devuelve false, sin tocar nada, si la partida ya no está en curso o volvió a moverse.
+     */
+    public function cerrarQuieta(Partida $partida): bool
+    {
+        return DB::transaction(function () use ($partida) {
+            $bloqueada = Partida::query()->whereKey($partida->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $this->estaQuieta($bloqueada)) {
+                return false;
+            }
+
+            $this->guardar($bloqueada, EventoDePartida::CIERRE, null, ['motivo' => 'sin_movimiento']);
+            $this->cerrar($bloqueada, Partida::CERRADA, null);
+
+            return true;
         });
     }
 
@@ -442,10 +547,7 @@ final class Mesa
      */
     public function cerrarSalasVencidas(): int
     {
-        $cerradas = Partida::query()
-            ->where('estado', Partida::ESPERANDO)
-            ->where('created_at', '<', now()->subMinutes(self::MINUTOS_DE_SALA))
-            ->update(['estado' => Partida::ABANDONADA, 'terminada_en' => now()]);
+        $cerradas = $this->salasVencidas()->update(['estado' => Partida::ABANDONADA, 'terminada_en' => now()]);
 
         // Una sala al mejor de tres que nadie ocupó no llegó a ser una serie: se va. Se buscan las series sin
         // ninguna partida viva ni jugada, y no "las de las salas que se cerraron": así, si alguien se sentó
@@ -462,6 +564,18 @@ final class Mesa
             ->delete();
 
         return $cerradas;
+    }
+
+    /**
+     * Las salas que esperaron rival más de MINUTOS_DE_SALA: las que se lleva la limpieza.
+     *
+     * @return Builder<Partida>
+     */
+    public function salasVencidas(): Builder
+    {
+        return Partida::query()
+            ->where('estado', Partida::ESPERANDO)
+            ->where('created_at', '<', now()->subMinutes(self::MINUTOS_DE_SALA));
     }
 
     /**
@@ -516,6 +630,15 @@ final class Mesa
         $serie = $partida->serie;
 
         if ($serie === null || $serie->cerrada()) {
+            return;
+        }
+
+        // La cerró la administración porque quedó sin movimiento: la serie se cierra con ella, sin ganador.
+        if ($partida->estado === Partida::CERRADA) {
+            $serie->ganador = null;
+            $serie->terminada_en = now();
+            $serie->save();
+
             return;
         }
 
