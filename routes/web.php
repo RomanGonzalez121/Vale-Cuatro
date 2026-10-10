@@ -12,6 +12,7 @@ use App\Http\Controllers\RegistroController;
 use App\Http\Controllers\RevanchaController;
 use App\Http\Controllers\SalaController;
 use App\Http\Controllers\SesionController;
+use App\Http\Controllers\TorneoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -54,6 +55,16 @@ Route::middleware(['auth', 'throttle:240,1,mesa'])->group(function () {
     Route::post('/mesa/bot', [MesaController::class, 'despertarAlBot'])->name('mesa.bot');
     Route::post('/mesa/plazo', [MesaController::class, 'resolverPlazo'])->name('mesa.plazo');
     Route::post('/mesa/presente', [MesaController::class, 'presente'])->name('mesa.presente');
+});
+
+// El torneo contra bots. Armarlo es una puerta de entrada más: quien llega sin sesión entra como invitado.
+// Lo demás es siempre sobre un torneo de quien hace el pedido.
+Route::post('/torneo', [TorneoController::class, 'crear'])->middleware('throttle:10,1,entrar')->name('torneo.crear');
+
+Route::middleware(['auth', 'throttle:120,1,torneo'])->whereNumber('torneo')->group(function () {
+    Route::get('/torneo/{torneo}', [TorneoController::class, 'ver'])->name('torneo');
+    Route::post('/torneo/{torneo}/jugar', [TorneoController::class, 'jugar'])->name('torneo.jugar');
+    Route::post('/torneo/{torneo}/abandonar', [TorneoController::class, 'abandonar'])->name('torneo.abandonar');
 });
 
 // La revancha, desde el final de una partida. Cada pedido dice de qué partida habla, y tiene que ser de quien lo hace.

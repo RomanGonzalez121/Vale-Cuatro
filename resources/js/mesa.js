@@ -231,6 +231,23 @@ export default (inicial, pedidos) => ({
     },
 
     /**
+     * En un torneo, lo que esta partida deja dicho al terminar: se pasa de ronda, se es campeón o se queda afuera.
+     */
+    get fraseDelTorneo() {
+        const torneo = this.pedidos.torneo;
+
+        if (! torneo || ! this.fin) {
+            return '';
+        }
+
+        if (this.fin !== 'vos') {
+            return 'Quedaste afuera del torneo.';
+        }
+
+        return torneo.esFinal ? 'Sos el campeón del torneo.' : `Pasás ${torneo.sigue}.`;
+    },
+
+    /**
      * Hay un pedido de revancha esperando respuesta, propio o del rival: mientras tanto no se ofrece otra cosa.
      */
     get revanchaALaVista() {

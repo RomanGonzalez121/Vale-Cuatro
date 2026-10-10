@@ -2,6 +2,7 @@
 
 namespace App\Juego;
 
+use App\Models\CruceDeTorneo;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
@@ -28,6 +29,13 @@ final class Historial
      */
     private array $series = [];
 
+    /**
+     * Los cruces de torneo ya buscados en este pedido, por partida.
+     *
+     * @var array<int, CruceDeTorneo|null>
+     */
+    private array $cruces = [];
+
     public function __construct(private readonly Mesa $mesa) {}
 
     /**
@@ -46,7 +54,7 @@ final class Historial
             ->whereIn('estado', [Partida::TERMINADA, Partida::ABANDONADA])
             ->whereNotNull('ganador')
             ->when($desde !== null, fn (Builder $consulta) => $consulta->where('terminada_en', '>=', $desde))
-            ->with(['jugador', 'invitado', 'serie'])
+            ->with(['jugador', 'invitado', 'serie', 'torneo.jugador'])
             ->latest('terminada_en')
             ->latest('id');
     }
@@ -74,7 +82,7 @@ final class Historial
     /**
      * Lo que la lista dice de una partida, visto desde un asiento.
      *
-     * @return array{id: int, gano: bool, vos: int, ellos: int, rival: string, bot: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
+     * @return array{id: int, gano: bool, vos: int, ellos: int, hasta: int, rival: string, bot: bool, torneo: ?string, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
      */
     public function resumen(Partida $partida, int $asiento): array
     {
@@ -87,8 +95,12 @@ final class Historial
             'gano' => $partida->ganador === $asiento,
             'vos' => $estado['tanteo'][$asiento],
             'ellos' => $estado['tanteo'][1 - $asiento],
+            // A cuántos puntos se jugó: 30, o los 15 de una partida de torneo.
+            'hasta' => $partida->puntos,
             'rival' => $this->rival($partida, $asiento),
             'bot' => ! $partida->entre_personas,
+            // Si fue de un torneo, qué partido: "Semifinal". En ese caso el rival es un bot con apodo.
+            'torneo' => $this->partidoDeTorneo($partida),
             'cierre' => $this->comoCerro($partida, $asiento),
             'cuando' => $cuando,
             'dia' => self::dia($cuando),
@@ -143,10 +155,37 @@ final class Historial
     private function rival(Partida $partida, int $asiento): string
     {
         if (! $partida->entre_personas) {
-            return 'Bot '.mb_strtolower($partida->nivel_bot->nombre());
+            $cruce = $this->cruceDeTorneo($partida);
+
+            // En un torneo el bot tiene apodo: es uno de los jugadores de ejemplo del ranking.
+            return $cruce === null
+                ? 'Bot '.mb_strtolower($partida->nivel_bot->nombre())
+                : $partida->torneo->apodoDe($cruce->rivalDe($partida->torneo->lugarDeLaPersona()));
         }
 
         return ($asiento === Mesa::JUGADOR ? $partida->invitado : $partida->jugador)?->apodo ?? 'Alguien que ya no está';
+    }
+
+    /**
+     * Qué partido de un torneo fue, o null si la partida no es de un torneo.
+     */
+    private function partidoDeTorneo(Partida $partida): ?string
+    {
+        $cruce = $this->cruceDeTorneo($partida);
+
+        return $cruce === null ? null : $partida->torneo->nombreDePartido($cruce->ronda);
+    }
+
+    /**
+     * El cruce de las llaves en el que se jugó esa partida, si es de un torneo.
+     */
+    private function cruceDeTorneo(Partida $partida): ?CruceDeTorneo
+    {
+        if ($partida->torneo === null) {
+            return null;
+        }
+
+        return $this->cruces[$partida->getKey()] ??= CruceDeTorneo::query()->where('torneo_id', $partida->torneo_id)->where('partida_id', $partida->getKey())->first();
     }
 
     /**

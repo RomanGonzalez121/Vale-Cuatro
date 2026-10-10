@@ -18,13 +18,23 @@
     // Con una partida sin terminar no se elige nivel: se sigue esa, contra el bot que ya tenía.
     $enCurso ??= null;
     $nivelElegido = $enCurso?->nivel_bot ?? \App\Juego\Nivel::porDefecto();
+
+    // El torneo que quedó sin terminar, si hay: se vuelve a sus llaves en vez de armar otro.
+    $torneo ??= null;
+    // De cuántos jugadores entra elegido el torneo: el más corto.
+    $lugaresElegidos = 4;
+    // Lo que se juega con cada tamaño, dicho en una línea.
+    $recorrido = [
+        4 => 'Semifinal y final: dos partidas si llegás hasta el final.',
+        8 => 'Cuartos, semifinal y final: tres partidas si llegás hasta el final.',
+    ];
 @endphp
 
 <x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
         <div class="modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:pb-24 lg:pt-14"
-            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false }">
+            x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false, lugares: {{ $lugaresElegidos }} }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                     ¿Cómo querés jugar?
@@ -94,8 +104,11 @@
                                         @if ($rival['boton'] !== null)
                                             @php
                                                 $niveles = $rival['niveles'] ?? [];
+                                                $lugares = $rival['lugares'] ?? [];
                                                 // Con una partida sin terminar, cualquiera de los botones la sigue: es una sola a la vez.
                                                 $sigue = $enCurso !== null;
+                                                // Con un torneo sin terminar (y ninguna partida abierta), el torneo no se arma: se vuelve a sus llaves.
+                                                $sigueElTorneo = $lugares !== [] && $torneo !== null && ! $sigue;
                                             @endphp
 
                                             @if ($sigue)
@@ -105,6 +118,8 @@
                                                         Tenés una sala abierta esperando rival. Para jugar contra el bot o en otro modo, primero cancelala.
                                                     @elseif ($enCurso->entre_personas)
                                                         Tenés una partida sin terminar con otra persona.
+                                                    @elseif ($enCurso->torneo_id)
+                                                        Tenés una partida del torneo sin terminar.
                                                     @else
                                                         Tenés una partida sin terminar contra {{ $enCurso->nivel_bot->nombre() }}.
                                                     @endif
@@ -150,6 +165,29 @@
                                                         </label>
                                                     @endunless
                                                 </div>
+                                            @elseif ($sigueElTorneo)
+                                                <p class="mt-4 max-w-[36ch] font-bold leading-relaxed">Tenés un torneo sin terminar.</p>
+                                            @elseif ($lugares !== [])
+                                                {{--
+                                                    De cuántos jugadores. Sale del mismo molde que los niveles del bot: el cuadrado de cuatro fósforos,
+                                                    uno para el torneo de cuatro y dos para el de ocho. Los del tamaño elegido caen de a uno.
+                                                --}}
+                                                <div class="mt-3 grid max-w-[21rem] grid-cols-4" role="group" aria-label="De cuántos jugadores">
+                                                    @foreach ($lugares as $opcion)
+                                                        <button type="button" @disabled($sigue)
+                                                            class="nivel-opcion col-span-2 cursor-pointer py-1 text-left text-lg font-bold disabled:pointer-events-none disabled:cursor-default disabled:aria-[pressed=false]:opacity-70"
+                                                            aria-pressed="{{ $opcion === $lugaresElegidos ? 'true' : 'false' }}"
+                                                            :aria-pressed="(lugares === {{ $opcion }}).toString()"
+                                                            @click="lugares = {{ $opcion }}"><span class="mb-1.5 flex gap-[0.35em] text-[1.25rem]">@for ($cuadrado = 0; $cuadrado < $opcion / 4; $cuadrado++)<x-nivel-fosforos :nivel="\App\Juego\Nivel::UltraDificil" :puesto="$opcion === $lugaresElegidos" modelo="lugares === {{ $opcion }}" />@endfor</span>De {{ $opcion }}</button>
+                                                    @endforeach
+                                                </div>
+
+                                                {{-- Siempre mide dos renglones: el botón no salta al cambiar de tamaño. --}}
+                                                <div class="mt-1 min-h-[3.25rem] max-w-[36ch]">
+                                                    @foreach ($lugares as $opcion)
+                                                        <p class="leading-relaxed" x-show="lugares === {{ $opcion }}" @if ($opcion !== $lugaresElegidos) x-cloak @endif>{{ $recorrido[$opcion] }}</p>
+                                                    @endforeach
+                                                </div>
                                             @elseif (! $sigue)
                                                 {{-- Con otra persona no hay nivel que elegir: la casilla de la serie va sola, arriba del botón. --}}
                                                 <label class="mt-3 flex min-h-11 w-fit cursor-pointer items-center gap-3 font-semibold" data-formato>
@@ -161,18 +199,27 @@
 
                                             {{-- Sin campos a la vista: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
                                             <div class="mt-3 flex flex-wrap items-center gap-3">
+                                                @if ($sigueElTorneo)
+                                                    <a href="{{ route('torneo', $torneo) }}" class="boton boton-naipe min-h-14 px-6 text-lg"><x-icono nombre="torneo" /> Seguir el torneo</a>
+                                                @else
                                                 <form method="POST" action="{{ route($rival['ruta'] ?? 'jugar') }}">
                                                     @csrf
                                                     @if ($niveles !== [])
                                                         <input type="hidden" name="nivel" value="{{ $nivelElegido->value }}" :value="nivel">
                                                     @endif
-                                                    {{-- Una partida, o una serie al mejor de tres: lo dice la casilla de arriba. --}}
-                                                    <input type="hidden" name="serie" value="0" :value="serie ? 1 : 0">
+                                                    @if ($lugares !== [])
+                                                        <input type="hidden" name="lugares" value="{{ $lugaresElegidos }}" :value="lugares">
+                                                    @endif
+                                                    {{-- Una partida, o una serie al mejor de tres: lo dice la casilla de arriba. En un torneo no hay series. --}}
+                                                    @if ($lugares === [])
+                                                        <input type="hidden" name="serie" value="0" :value="serie ? 1 : 0">
+                                                    @endif
                                                     <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">
                                                         <x-icono :nombre="$rival['icono'] ?? 'bot'" />
                                                         {{ $sigue ? ($enCurso->esperando() ? 'Volver a la sala' : 'Seguir la partida') : $rival['boton'] }}
                                                     </button>
                                                 </form>
+                                                @endif
 
                                                 {{-- La sala se cancela desde acá mismo: no hace falta entrar a ella para poder jugar otra cosa. --}}
                                                 @if ($enCurso?->esperando())

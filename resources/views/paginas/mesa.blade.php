@@ -9,6 +9,12 @@
      | enfrente suma su apodo, el pedido que resuelve un plazo vencido y lo que duran el turno y
      | la espera del reparto, para dibujar la cuenta regresiva.
      */
+    // En un torneo el bot tiene apodo (es uno de los jugadores de ejemplo del ranking) y la partida va a 15.
+    $torneo ??= null;
+    $nombreDelBot = $torneo['rival'] ?? null;
+    // Cómo se nombra a quien está enfrente: el apodo de la otra persona, el del bot del torneo, o nada (es "el bot").
+    $enfrente = $rival ?? $nombreDelBot;
+
     $pedidos = [
         'accion' => route('mesa.accion'),
         'repartir' => route('mesa.repartir'),
@@ -19,7 +25,9 @@
         'presente' => ($faltaLlegar ?? false) ? route('mesa.presente') : null,
         'token' => csrf_token(),
         'entrePersonas' => $rival !== null,
-        'rival' => $rival,
+        'rival' => $enfrente,
+        // Si la partida es de un torneo: si es la final y adónde pasa quien gana.
+        'torneo' => $torneo === null ? null : ['esFinal' => $torneo['esFinal'], 'sigue' => $torneo['sigue']],
         'turno' => \App\Juego\Mesa::SEGUNDOS_DE_TURNO,
         'reparto' => \App\Juego\Mesa::SEGUNDOS_PARA_REPARTIR,
         // Si la partida es de una serie al mejor de tres: cómo iba al empezar esta y cuántas hacen falta.
@@ -62,7 +70,7 @@
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa en app.css. --}}
     <div x-data="mesa(@js($vista), @js($pedidos))" @class(['mesa mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
-        <h1 class="sr-only">{{ $nivel ? "Mesa contra el bot, nivel {$nivel->nombre()}" : "Mesa contra {$rival}" }}</h1>
+        <h1 class="sr-only">{{ $nivel ? ($nombreDelBot ? "Mesa contra {$nombreDelBot}, bot de nivel {$nivel->nombre()}" : "Mesa contra el bot, nivel {$nivel->nombre()}") : "Mesa contra {$rival}" }}</h1>
 
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
         <header class="mesa-barra relative z-10" :inert="fin !== null">
@@ -79,15 +87,18 @@
                         <span class="sr-only">Serie al mejor de tres: vos {{ $serie['vos'] }}, {{ $rival ?? 'el bot' }} {{ $serie['rival'] }}.</span>
                         <span aria-hidden="true">Serie <span class="font-black tabular-nums text-oro">{{ $serie['vos'] }}</span> a <span class="font-black tabular-nums text-oro">{{ $serie['rival'] }}</span></span>
                     </p>
+                @elseif ($torneo)
+                    {{-- En un torneo, en ese mismo lugar va qué partido es. --}}
+                    <p class="whitespace-nowrap text-sm font-semibold leading-none"><span class="sr-only">Torneo: </span>{{ $torneo['partido'] }}</p>
                 @endif
             </div>
 
             <section aria-label="Tanteador" class="grid grid-cols-2 gap-x-4 text-[clamp(0.8rem,4.1cqw,1.3rem)] [grid-area:tanteo] lg:gap-x-12">
                 {{-- El asiento propio va siempre primero: quien se sentó por invitación es el 1. --}}
-                <x-tanteador nombre="Vos" :puntos="$vista['tanteo'][$vista['asiento']]" modelo="puntos.vos" class="min-w-0" />
+                <x-tanteador nombre="Vos" :puntos="$vista['tanteo'][$vista['asiento']]" modelo="puntos.vos" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
                 {{-- Un apodo puede tener 20 letras: si no entra en su mitad se corta, y los puntos quedan a la vista. --}}
-                <x-tanteador :nombre="$rival ?? 'Bot'" :puntos="$vista['tanteo'][1 - $vista['asiento']]" modelo="puntos.rival" class="min-w-0"
-                    clase-nombre="min-w-0 truncate text-sm font-semibold" />
+                <x-tanteador :nombre="$enfrente ?? 'Bot'" :puntos="$vista['tanteo'][1 - $vista['asiento']]" modelo="puntos.rival" class="min-w-0"
+                    clase-nombre="min-w-0 truncate text-sm font-semibold" :hasta="$vista['puntosParaGanar']" />
             </section>
 
             {{--
@@ -169,7 +180,8 @@
                         @endif
                     </span>
                     {{-- Un apodo largo ocupa dos renglones como mucho: la fila del rival mide siempre lo mismo. --}}
-                    <span class="line-clamp-2">{{ $nivel ? 'Bot '.mb_strtolower($nivel->nombre()) : $rival }}</span>
+                    {{-- En un torneo el bot va con su apodo: que es un bot lo dicen su ícono y los fósforos de su nivel. --}}
+                    <span class="line-clamp-2">{{ $nivel ? ($nombreDelBot ?? 'Bot '.mb_strtolower($nivel->nombre())) : $rival }}</span>
                 </p>
                 <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
                 {{-- El mazo, contra el borde del campo para que no parezca una carta más del rival. De acá sale el reparto. --}}
@@ -306,15 +318,25 @@
             <div x-show="fin" x-transition:enter="aparece" x-transition:enter-start="desde-chico" class="m-auto w-full max-w-md">
                 {{-- El título recibe el foco para que el lector de pantalla lo anuncie; no es un control, así que no lleva el marco del foco. --}}
                 <h2 id="titulo-fin" x-ref="fin" tabindex="-1" class="text-[clamp(2.75rem,14cqw,4.75rem)] font-black leading-[0.94] tracking-[-0.035em] outline-none [overflow-wrap:anywhere]"
-                    x-text="fin === 'vos' ? 'Ganaste la partida' : @js($nivel ? 'Ganó el bot' : "Ganó {$rival}")"></h2>
+                    x-text="fin === 'vos' ? 'Ganaste la partida' : @js($enfrente ? "Ganó {$enfrente}" : 'Ganó el bot')"></h2>
                 <p id="tanteo-fin" class="sr-only">
-                    Vos <span x-text="puntos.vos"></span>, {{ $rival ?? 'el bot' }} <span x-text="puntos.rival"></span>.
+                    Vos <span x-text="puntos.vos"></span>, {{ $enfrente ?? 'el bot' }} <span x-text="puntos.rival"></span>.
                 </p>
 
                 <div class="mt-7 grid gap-5 text-[1.5rem] sm:text-[1.75rem]" aria-hidden="true">
-                    <x-tanteador nombre="Vos" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" />
-                    <x-tanteador :nombre="$rival ?? 'Bot'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" />
+                    <x-tanteador nombre="Vos" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
+                    <x-tanteador :nombre="$enfrente ?? 'Bot'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                 </div>
+
+                {{-- En un torneo, qué pasa con esta partida: se pasa de ronda, se es campeón o se queda afuera. Y se vuelve a las llaves. --}}
+                @if ($torneo)
+                    <p class="mt-6 text-lg font-bold leading-snug" x-text="fraseDelTorneo"></p>
+
+                    <div class="mt-6 flex flex-col gap-2.5 sm:flex-row">
+                        <a href="{{ $torneo['llaves'] }}" class="boton boton-naipe"><x-icono nombre="torneo" /> Ver las llaves</a>
+                        <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
+                    </div>
+                @endif
 
                 {{-- En una serie, cómo quedó con esta partida: si sigue, o quién se la llevó. --}}
                 @if ($serie)
@@ -333,6 +355,8 @@
                     </div>
                 @endif
 
+                {{-- En un torneo no hay revancha: lo que sigue está en las llaves. --}}
+                @unless ($torneo)
                 <div @class(['mt-8' => ! $serie, 'mt-6' => $serie]) x-show="! sigueLaSerie">
                     @if ($nivel)
                         <div class="flex flex-col gap-2.5 sm:flex-row">
@@ -371,6 +395,7 @@
                         </div>
                     @endif
                 </div>
+                @endunless
             </div>
         </div>
 
@@ -386,7 +411,7 @@
                 class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
                 <h2 id="titulo-salir" class="text-3xl font-black tracking-tight">¿Salir de la mesa?</h2>
                 @if ($rival === null)
-                    <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés{{ $serie ? ', y con ella la serie' : '' }}.</p>
+                    <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés{{ $serie ? ', y con ella la serie' : '' }}{{ $torneo ? ' y quedás afuera del torneo' : '' }}.</p>
                 @else
                     <p class="mt-2 leading-relaxed">
                         Con otra persona la partida no se detiene. Si salís, cada turno tuyo se vence a los {{ \App\Juego\Mesa::SEGUNDOS_DE_TURNO }} segundos,

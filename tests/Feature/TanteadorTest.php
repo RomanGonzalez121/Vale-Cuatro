@@ -58,6 +58,17 @@ class TanteadorTest extends TestCase
         $this->assertSame(range(1, 30), array_map(intval(...), $encontrados[1]));
     }
 
+    public function test_en_una_partida_a_quince_son_tres_grupos_y_no_hay_raya(): void
+    {
+        // Las partidas de torneo van a quince: no tienen malas y buenas.
+        $html = (string) $this->blade('<x-tanteador nombre="Vos" :puntos="9" :hasta="15" />');
+
+        $this->assertSame(3, substr_count($html, '<svg'));
+        $this->assertStringNotContainsString(self::SEPARADOR, $html);
+        $this->assertSame(15, $this->fosforos($html));
+        $this->assertSame(9, $this->puestos($html));
+    }
+
     /**
      * El tanteador dibujado con cada tanteo de una partida, del 0 al 30. Se dibujan todos en una sola
      * plantilla: compilar una por tanteo era lo que hacía lento a este archivo.

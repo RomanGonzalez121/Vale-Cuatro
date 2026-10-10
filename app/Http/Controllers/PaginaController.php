@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Identidad\Paleta;
 use App\Juego\Mesa;
 use App\Juego\Modos;
+use App\Juego\Torneos;
 use App\View\Components\Carta;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -20,7 +21,7 @@ class PaginaController extends Controller
         return view('paginas.portada');
     }
 
-    public function modos(Request $request, Mesa $mesa): View
+    public function modos(Request $request, Mesa $mesa, Torneos $torneos): View
     {
         $jugador = $request->user();
 
@@ -29,6 +30,8 @@ class PaginaController extends Controller
             // Con una partida sin terminar (contra el bot, con otra persona o una sala esperando rival),
             // la pantalla lo avisa y ofrece seguirla en vez de empezar otra.
             'enCurso' => $jugador === null ? null : $mesa->abiertaDe($jugador),
+            // Y con un torneo sin terminar, ofrece volver a sus llaves en vez de armar otro.
+            'torneo' => $jugador === null ? null : $torneos->enCursoDe($jugador),
         ]);
     }
 

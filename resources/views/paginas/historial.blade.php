@@ -101,6 +101,8 @@
                                 <span class="block text-[0.95rem]">
                                     @if ($serie)
                                         {{ $partida['serie']['numero'] }}ª de la serie{{ $partida['revancha'] ? ', revancha' : '' }}.
+                                    @elseif ($partida['torneo'])
+                                        Torneo, {{ mb_strtolower($partida['torneo']) }}.
                                     @else
                                         Mano a mano{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @endif
@@ -111,8 +113,8 @@
                                 </span>
                             </p>
                             <div class="flex w-fit gap-5 rounded-lg bg-pano-hondo px-3.5 py-2.5 text-[0.66rem] max-sm:hidden sm:col-span-2 lg:col-span-1">
-                                <x-tanteador nombre="Vos" :puntos="$partida['vos']" />
-                                <x-tanteador nombre="Rival" :puntos="$partida['ellos']" />
+                                <x-tanteador nombre="Vos" :puntos="$partida['vos']" :hasta="$partida['hasta']" />
+                                <x-tanteador nombre="Rival" :puntos="$partida['ellos']" :hasta="$partida['hasta']" />
                             </div>
                             {{-- Un link a la página de la repetición. Con JavaScript se abre en un cartel acá mismo (historial.js). --}}
                             <a href="{{ route('historial.ver', $partida['id']) }}" data-cuadros="{{ route('historial.cuadros', $partida['id']) }}"

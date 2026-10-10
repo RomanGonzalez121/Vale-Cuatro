@@ -1546,6 +1546,146 @@ html:has(body.superficie-pano) {
         transform: translateY(-0.14em);
     }
 
+    /*
+     | Las llaves del torneo. En el celular las rondas van una debajo de la otra: el orden ya dice quién
+     | se cruza con quién, y no se dibuja nada.
+     |
+     | Desde lg van de izquierda a derecha, una columna por ronda. Cada columna reparte su alto en partes
+     | iguales entre sus cruces, así el cruce de la ronda siguiente queda justo entre los dos de los que
+     | sale. Cada par se une con el dibujo del ícono del torneo: una llave hecha con un fósforo, que
+     | termina en su cabeza donde empieza el cruce siguiente. La línea está tenue mientras el cruce no
+     | tiene ganador y plena cuando ya pasó alguien; la cabeza se enciende cuando llegaron los dos, en Oro,
+     | como la del logo sobre el paño. Nada de esto se mueve.
+     */
+    .llaves {
+        --llave-hueco: 3.5rem;
+        --llave-tenue: color-mix(in srgb, var(--color-naipe) 22%, transparent);
+
+        display: grid;
+        gap: 2.25rem;
+    }
+
+    .llave-lugares {
+        margin-top: 0.75rem;
+    }
+
+    .llave-lugar {
+        position: relative;
+        padding-block: 0.625rem;
+    }
+
+    /* En el celular los cruces de una ronda se separan con una línea fina. */
+    .llave-lugar + .llave-lugar {
+        border-top: 2px solid var(--llave-tenue);
+    }
+
+    .llave-cabeza {
+        display: none;
+    }
+
+    @media (min-width: 64rem) {
+        .llaves {
+            grid-template-columns: repeat(var(--rondas), minmax(0, 1fr));
+            gap: 0 var(--llave-hueco);
+        }
+
+        .llave-ronda {
+            display: grid;
+            grid-template-rows: auto 1fr;
+        }
+
+        .llave-lugares {
+            display: grid;
+            grid-auto-rows: 1fr;
+        }
+
+        .llave-lugar {
+            display: flex;
+            align-items: center;
+            padding-block: 0.875rem;
+        }
+
+        .llave-lugar + .llave-lugar {
+            border-top: 0;
+        }
+
+        /* El brazo que sale de cada cruce: va hasta la mitad del hueco y dobla hacia su pareja. */
+        .llave-lugar::after {
+            position: absolute;
+            left: 100%;
+            width: calc(var(--llave-hueco) / 2);
+            border: 0 solid var(--llave-tenue);
+            border-right-width: 2px;
+            content: '';
+        }
+
+        .llave-lugar:nth-child(odd)::after {
+            top: calc(50% - 1px);
+            bottom: 0;
+            border-top-width: 2px;
+            border-top-right-radius: 3px;
+        }
+
+        .llave-lugar:nth-child(even)::after {
+            top: 0;
+            bottom: calc(50% - 1px);
+            border-bottom-width: 2px;
+            border-bottom-right-radius: 3px;
+        }
+
+        .llave-lugar[data-resuelto]::after {
+            border-color: var(--color-fosforo);
+        }
+
+        /* La final no tiene pareja: su brazo va derecho hasta el campeón. Y del campeón no sale nada. */
+        .llave-final .llave-lugar::after {
+            top: calc(50% - 1px);
+            bottom: auto;
+            height: 2px;
+            border-width: 0;
+            border-radius: 0;
+            background-color: var(--llave-tenue);
+        }
+
+        .llave-final .llave-lugar[data-resuelto]::after {
+            background-color: var(--color-fosforo);
+        }
+
+        .llave-campeon .llave-lugar::after {
+            content: none;
+        }
+
+        /* El palito que entra al cruce siguiente, y su cabeza. Dejan libre el borde del texto. */
+        .llave-ronda:not(:first-child) .llave-lugar::before {
+            position: absolute;
+            top: calc(50% - 1px);
+            left: calc(var(--llave-hueco) / -2);
+            width: calc(var(--llave-hueco) / 2 - 1.125rem);
+            height: 2px;
+            background-color: var(--llave-tenue);
+            content: '';
+        }
+
+        .llave-cabeza {
+            position: absolute;
+            top: calc(50% - 0.25rem);
+            left: -1.125rem;
+            display: block;
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: var(--llave-tenue);
+        }
+
+        .llave-ronda:not(:first-child) .llave-lugar[data-completo]::before {
+            background-color: var(--color-fosforo);
+        }
+
+        .llave-lugar[data-completo] > .llave-cabeza {
+            background-color: var(--color-oro);
+        }
+    }
+
     /* La sala de espera. El link va en una caja del Paño hondo, con el borde de la tinta del naipe a media tinta. */
     .sala-enlace {
         padding: 0.75rem 1rem;

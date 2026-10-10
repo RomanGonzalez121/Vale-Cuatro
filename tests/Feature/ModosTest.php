@@ -6,6 +6,7 @@ use App\Identidad\Iconos;
 use App\Juego\Mesa;
 use App\Juego\Modos;
 use App\Juego\Nivel;
+use App\Juego\Torneos;
 use App\Models\Jugador;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -44,9 +45,11 @@ class ModosTest extends TestCase
         $html = $this->get('/modos')->assertOk()->getContent();
         $botones = array_filter(array_merge(...array_map(fn (array $juego) => array_column($juego['rivales'], 'boton'), Modos::juegos())));
 
-        // Un formulario por cada rival contra el que se puede jugar, y ninguno más: al bot va a /jugar y a una persona, a /invitar.
-        $this->assertSame(count($botones), preg_match_all('/<form[^>]*action="[^"]*\/(?:jugar|invitar)"/', $html));
+        // Un formulario por cada rival contra el que se puede jugar, y ninguno más: al bot va a /jugar, a una persona
+        // a /invitar y al torneo contra bots a /torneo.
+        $this->assertSame(count($botones), preg_match_all('/<form[^>]*action="[^"]*\/(?:jugar|invitar|torneo)"/', $html));
         $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/invitar"/', $html), 'Con otra persona se juega por /invitar.');
+        $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/torneo"/', $html), 'El torneo contra bots se arma por /torneo.');
 
         foreach ($botones as $boton) {
             $this->assertStringContainsString($boton, $html);
@@ -165,9 +168,9 @@ class ModosTest extends TestCase
 
     public function test_con_varios_juegos_en_la_mano_cada_carta_es_un_boton_y_entra_elegida_la_primera(): void
     {
-        // Lo que va a pasar cuando se terminen de a cuatro y el torneo contra bots: se arma la pantalla con esos datos.
+        // Lo que va a pasar cuando se termine el de a cuatro contra bots: se arma la pantalla con esos datos.
         $juegos = array_map(function (array $juego) {
-            if (in_array($juego['clave'], ['de-a-cuatro', 'torneo'], true)) {
+            if ($juego['clave'] === 'de-a-cuatro') {
                 $juego['rivales'][0]['boton'] = 'Jugar con bots';
             }
 
@@ -179,7 +182,37 @@ class ModosTest extends TestCase
         $this->assertSame(3, substr_count($html, 'aria-label="Carta del modo '));
         $this->assertSame(1, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="true"/s', $html));
         $this->assertSame(2, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="false"/s', $html));
-        $this->assertSame(3, preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
+        // Mano a mano contra el bot y el de a cuatro van a /jugar; el torneo, a /torneo.
+        $this->assertSame(2, preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
+        $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/torneo"/', $html));
+    }
+
+    public function test_el_torneo_contra_bots_deja_elegir_de_cuantos_y_entra_elegido_el_de_cuatro(): void
+    {
+        $html = $this->get('/modos')->assertOk()->getContent();
+
+        $this->assertSame(1, preg_match('/<div[^>]*aria-label="De cuántos jugadores">(.*?)<\/div>/s', $html, $grupo));
+        $this->assertSame(1, preg_match_all('/aria-pressed="true"[^>]*>.*?De 4<\/button>/s', $grupo[1]));
+        $this->assertSame(1, preg_match_all('/aria-pressed="false"[^>]*>.*?De 8<\/button>/s', $grupo[1]));
+        // El tamaño viaja en el formulario, y sin tocar nada es el de cuatro. En un torneo no se elige serie.
+        $this->assertSame(1, preg_match('/<form[^>]*action="[^"]*\/torneo".*?<\/form>/s', $html, $formulario));
+        $this->assertStringContainsString('<input type="hidden" name="lugares" value="4"', $formulario[0]);
+        $this->assertStringNotContainsString('name="serie"', $formulario[0]);
+        $this->assertStringContainsString('Armar el torneo', $formulario[0]);
+    }
+
+    public function test_con_un_torneo_sin_terminar_los_modos_ofrecen_seguirlo_en_vez_de_armar_otro(): void
+    {
+        $jugador = Jugador::factory()->create();
+        $torneo = $this->app->make(Torneos::class)->crear($jugador, 8);
+
+        $html = $this->actingAs($jugador)->get('/modos')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Tenés un torneo sin terminar.', $html);
+        $this->assertStringContainsString('href="'.route('torneo', $torneo).'"', $html);
+        $this->assertStringContainsString('Seguir el torneo', $html);
+        $this->assertSame(0, preg_match_all('/<form[^>]*action="[^"]*\/torneo"/', $html));
+        $this->assertStringNotContainsString('De cuántos jugadores', $html);
     }
 
     public function test_jugar_del_menu_lleva_a_elegir_el_modo_desde_cualquier_pantalla(): void

@@ -234,6 +234,18 @@ final class Torneos
     }
 
     /**
+     * El cruce en el que se jugó (o se juega) esa partida, si es de un torneo.
+     */
+    public function cruceDe(Partida $partida): ?CruceDeTorneo
+    {
+        if ($partida->torneo_id === null) {
+            return null;
+        }
+
+        return CruceDeTorneo::query()->where('torneo_id', $partida->torneo_id)->where('partida_id', $partida->getKey())->with('torneo.jugador')->first();
+    }
+
+    /**
      * La semilla de la partida entre bots de un cruce: sale de la del torneo y del lugar del cruce en las llaves.
      */
     public function semillaDe(Torneo $torneo, CruceDeTorneo $cruce): int

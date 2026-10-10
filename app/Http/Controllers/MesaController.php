@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Juego\Mesa;
+use App\Juego\Torneos;
 use App\Models\EventoDePartida;
 use App\Models\Partida;
 use App\Motor\Accion;
@@ -28,7 +29,7 @@ use InvalidArgumentException;
  */
 class MesaController extends Controller
 {
-    public function __construct(private readonly Mesa $mesa) {}
+    public function __construct(private readonly Mesa $mesa, private readonly Torneos $torneos) {}
 
     /**
      * La mesa con la partida en curso. Recargar la página vuelve a la misma partida, en el mismo punto.
@@ -46,6 +47,13 @@ class MesaController extends Controller
                 return redirect()->route('sala', $sala->codigo);
             }
 
+            // Si lo último que jugó fue una partida de torneo, lo que sigue está en sus llaves.
+            $ultima = $this->mesa->ultimaDe($request->user());
+
+            if ($ultima?->torneo_id !== null) {
+                return redirect()->route('torneo', $ultima->torneo_id);
+            }
+
             return redirect()->route('modos')->with('aviso', $this->comoTermino($request));
         }
 
@@ -60,7 +68,36 @@ class MesaController extends Controller
             'faltaLlegar' => $this->mesa->faltaLlegar($partida, $asiento),
             // Si es parte de una serie al mejor de tres, cómo va antes de esta partida.
             'serie' => $this->serieDe($partida, $asiento),
+            // Si es de un torneo: qué partido es, contra qué bot y adónde se vuelve al terminar.
+            'torneo' => $this->torneoDe($partida),
         ]);
+    }
+
+    /**
+     * Lo que la mesa necesita saber cuando la partida es de un torneo: el bot que tocó, con su apodo, qué
+     * partido es y qué viene si se gana. Null si la partida no es de un torneo.
+     *
+     * @return array{llaves: string, rival: string, partido: string, esFinal: bool, sigue: string|null}|null
+     */
+    private function torneoDe(Partida $partida): ?array
+    {
+        $cruce = $this->torneos->cruceDe($partida);
+
+        if ($cruce === null) {
+            return null;
+        }
+
+        $torneo = $cruce->torneo;
+        $esFinal = $cruce->ronda === $torneo->rondas();
+
+        return [
+            'llaves' => route('torneo', $torneo),
+            'rival' => $torneo->apodoDe($cruce->rivalDe($torneo->lugarDeLaPersona())),
+            'partido' => $torneo->nombreDePartido($cruce->ronda),
+            'esFinal' => $esFinal,
+            // Cómo se dice adónde pasa quien gana: "a la final", "a las semifinales".
+            'sigue' => $esFinal ? null : ($cruce->ronda + 1 === $torneo->rondas() ? 'a la final' : 'a las '.mb_strtolower($torneo->nombreDeRonda($cruce->ronda + 1))),
+        ];
     }
 
     /**
@@ -214,6 +251,11 @@ class MesaController extends Controller
             } catch (AccionInvalida) {
                 // Otro pedido la cerró justo antes (dos toques seguidos): ya está abandonada.
             }
+        }
+
+        // En un torneo, dejar la partida es quedar afuera: se vuelve a las llaves, que muestran cómo siguió.
+        if ($partida?->torneo_id !== null) {
+            return redirect()->route('torneo', $partida->torneo_id)->with('aviso', 'Abandonaste la partida y quedaste afuera del torneo.');
         }
 
         return redirect()->route('modos')->with('aviso', $partida?->serie_id === null ? 'Abandonaste la partida.' : 'Abandonaste la partida y, con ella, la serie.');

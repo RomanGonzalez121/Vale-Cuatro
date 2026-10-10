@@ -108,6 +108,27 @@ class Torneo extends Model
     }
 
     /**
+     * Cómo se llama una sola partida de esa ronda: "Semifinal", no "Semifinales".
+     */
+    public function nombreDePartido(int $ronda): string
+    {
+        return match ($this->rondas() - $ronda) {
+            0 => 'Final',
+            1 => 'Semifinal',
+            2 => 'Cuartos de final',
+            default => "Ronda {$ronda}",
+        };
+    }
+
+    /**
+     * Cómo se llama quien ocupa un lugar: el apodo del bot, o el de la persona dueña del torneo.
+     */
+    public function apodoDe(int $lugar): string
+    {
+        return $this->inscriptos[$lugar]['apodo'] ?? $this->jugador?->apodo ?? 'Vos';
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

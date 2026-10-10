@@ -11,13 +11,14 @@ namespace App\Juego;
  * no, todavía está en el mazo. Cuando se termina un módulo alcanza con ponerle
  * el botón a su rival: la pantalla reparte la carta sola.
  *
- * Un rival con "niveles" deja elegir contra qué bot se juega antes de entrar.
+ * Un rival con "niveles" deja elegir contra qué bot se juega antes de entrar. Uno con "lugares" deja
+ * elegir de cuántos jugadores es el torneo.
  * "ruta" es la ruta a la que va su botón y "icono" el que lleva; si faltan, van a jugar contra el bot.
  */
 final class Modos
 {
     /**
-     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, ruta?: string, icono?: string, niveles?: list<Nivel>}>}>
+     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, ruta?: string, icono?: string, niveles?: list<Nivel>, lugares?: list<int>}>}>
      */
     public static function juegos(): array
     {
@@ -51,7 +52,7 @@ final class Modos
                 'icono' => 'torneo',
                 'resumen' => 'Cuatro u ocho jugadores, eliminación directa y las llaves a la vista.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra bots', 'detalle' => 'Jugás tus partidas y las demás se resuelven solas.', 'boton' => null],
+                    ['clave' => 'bots', 'nombre' => 'Contra bots', 'detalle' => 'Jugás tus partidas, a 15 puntos, y las demás se resuelven solas. Entrás sin registrarte.', 'boton' => 'Armar el torneo', 'ruta' => 'torneo.crear', 'icono' => 'torneo', 'lugares' => Torneos::LUGARES],
                     ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Se inscriben por link y se juega en vivo.', 'boton' => null],
                 ],
             ],

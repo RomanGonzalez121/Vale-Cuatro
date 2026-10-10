@@ -185,6 +185,11 @@ final class Revanchas
             return false;
         }
 
+        // En un torneo no hay revancha: quien pierde queda afuera, y a quien gana lo espera otro rival.
+        if ($partida->torneo_id !== null) {
+            return false;
+        }
+
         if ($partida->entre_personas && $partida->invitado_id === null) {
             return false;
         }
