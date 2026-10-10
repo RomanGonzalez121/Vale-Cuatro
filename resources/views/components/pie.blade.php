@@ -12,6 +12,10 @@
             <li><a href="{{ route('como-se-juega') }}" class="underline underline-offset-4">Cómo se juega</a></li>
             <li><a href="{{ route('identidad') }}" class="underline underline-offset-4">Identidad</a></li>
             <li><a href="https://github.com/RomanGonzalez121/Vale-Cuatro" class="underline underline-offset-4">Código en GitHub</a></li>
+            {{-- En el celular el menú de arriba no está: quien administra el sitio llega a su panel desde acá. --}}
+            @if (auth()->user()?->esAdministrador())
+                <li><a href="{{ route('administracion') }}" class="underline underline-offset-4">Administración</a></li>
+            @endif
         </ul>
     </div>
 </footer>

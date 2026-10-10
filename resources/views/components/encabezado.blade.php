@@ -12,6 +12,11 @@
     $conCuenta = $jugador !== null && ! $jugador->esInvitado();
     $rutaDeCuenta = $conCuenta ? 'perfil' : 'ingresar';
     $textoDeCuenta = $conCuenta ? $jugador->apodo : 'Ingresar';
+
+    // Solo para la cuenta de administración: un lugar más en el menú, que lleva a su panel.
+    if ($jugador?->esAdministrador()) {
+        $enlaces['administracion'] = 'Administración';
+    }
 @endphp
 
 <header class="relative z-20">

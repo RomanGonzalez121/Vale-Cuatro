@@ -22,7 +22,8 @@ class SesionController extends Controller
         // Sesión nueva al entrar: un identificador robado antes del ingreso deja de servir.
         $request->session()->regenerate();
 
-        return redirect()->intended(route('portada'));
+        // Quien administra el sitio entra directo a su panel. Los demás, a la portada, como siempre.
+        return redirect()->intended(route($request->user()->esAdministrador() ? 'administracion' : 'portada'));
     }
 
     public function salir(Request $request): RedirectResponse

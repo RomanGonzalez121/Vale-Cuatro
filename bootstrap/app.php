@@ -3,6 +3,7 @@
 use App\Http\Middleware\ConCuenta;
 use App\Http\Middleware\SesionDeInvitado;
 use App\Http\Middleware\SinCuenta;
+use App\Http\Middleware\SoloAdministracion;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'con-cuenta' => ConCuenta::class,
             'sin-cuenta' => SinCuenta::class,
+            'solo-administracion' => SoloAdministracion::class,
         ]);
 
         // En toda página: la sesión de un invitado recuerda cuándo empezó, que es desde cuándo ve su historial.

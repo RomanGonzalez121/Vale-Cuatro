@@ -27,6 +27,7 @@ use RuntimeException;
  * @property string $apodo
  * @property string|null $email
  * @property bool $de_ejemplo
+ * @property bool $es_administrador
  */
 #[Table('jugadores')]
 #[Fillable(['apodo', 'email', 'password'])]
@@ -79,6 +80,38 @@ class Jugador extends Authenticatable
     }
 
     /**
+     * Quien puede entrar al panel de administración. El rol no se asigna en masa ni desde ninguna
+     * pantalla: lo otorga un comando de consola (administrador:dar).
+     */
+    public function esAdministrador(): bool
+    {
+        return (bool) $this->es_administrador;
+    }
+
+    /**
+     * Le cambia el apodo por uno neutro, "Jugador" y un número sorteado. Es lo que hace el panel con un
+     * apodo ofensivo: como el apodo vive en un solo lugar, deja de verse en todas las pantallas. Su dueño
+     * puede elegir otro desde el perfil. Devuelve el apodo que tenía.
+     */
+    public function ocultarApodo(): string
+    {
+        $anterior = $this->apodo;
+
+        // Igual que con los invitados: se guarda directo y decide el índice único de la tabla.
+        for ($cifras = 5; $cifras <= 12; $cifras++) {
+            try {
+                $this->update(['apodo' => 'Jugador '.random_int(10 ** ($cifras - 1), 10 ** $cifras - 1)]);
+
+                return $anterior;
+            } catch (UniqueConstraintViolationException) {
+                continue;
+            }
+        }
+
+        throw new RuntimeException('No se pudo sortear un apodo neutro.');
+    }
+
+    /**
      * Lo que borra `model:prune` cada día: los invitados que no volvieron.
      * Los jugadores de ejemplo no se tocan: no vuelven nunca, y la tabla los necesita.
      *
@@ -107,6 +140,7 @@ class Jugador extends Authenticatable
         return [
             'password' => 'hashed',
             'de_ejemplo' => 'boolean',
+            'es_administrador' => 'boolean',
         ];
     }
 }

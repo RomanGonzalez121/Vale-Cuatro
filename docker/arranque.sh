@@ -50,6 +50,11 @@ como_el_sitio() {
 # La base al día. Con --force porque en producción artisan pregunta antes de migrar, y acá no hay a quién.
 como_el_sitio php artisan migrate --force
 
+# La cuenta que administra el sitio, si en el servicio están cargados ADMIN_EMAIL y ADMIN_PASSWORD.
+# El comando la crea la primera vez y después la deja como está. Si falla (una contraseña corta, por
+# ejemplo) lo dice en el registro, y el sitio arranca igual: sin panel, pero andando.
+como_el_sitio php artisan administrador:crear || echo 'La cuenta de administración no se pudo dejar lista.' >&2
+
 # La configuración, leída una vez y guardada ya resuelta. Se hace acá y no al armar la imagen porque
 # sale de las variables del servicio. Las rutas y las vistas ya vienen resueltas en la imagen.
 como_el_sitio php artisan config:cache

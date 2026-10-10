@@ -45,6 +45,17 @@ class JugadorFactory extends Factory
     }
 
     /**
+     * La cuenta que administra el sitio.
+     */
+    public function administrador(): static
+    {
+        return $this->state(fn (array $atributos) => [
+            'apodo' => 'Cantinero '.fake()->unique()->numberBetween(10, 99),
+            'es_administrador' => true,
+        ]);
+    }
+
+    /**
      * Un jugador de ejemplo del ranking: sin email ni contraseña, y marcado.
      */
     public function deEjemplo(): static

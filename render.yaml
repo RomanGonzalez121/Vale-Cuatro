@@ -49,6 +49,13 @@ services:
       - key: MYSQL_ATTR_SSL_CA
         value: /var/www/html/docker/aiven-ca.pem
 
+      # La cuenta que administra el sitio. Tampoco va escrita acá: el email y la contraseña se cargan en
+      # el panel de Render, y el contenedor crea la cuenta al arrancar. Sin ellos no hay panel de administración.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
       # Las sesiones y la cola viven en la base: sobreviven a cada publicación. El caché, en el disco
       # del contenedor: si se pierde no pasa nada.
       - key: SESSION_DRIVER

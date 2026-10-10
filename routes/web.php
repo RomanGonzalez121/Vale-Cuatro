@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\InvitacionController;
 use App\Http\Controllers\JugarController;
@@ -62,6 +63,18 @@ Route::middleware(['auth', 'throttle:240,1,revancha'])->group(function () {
     Route::post('/revancha/aceptar', [RevanchaController::class, 'aceptar'])->name('revancha.aceptar');
     Route::post('/revancha/rechazar', [RevanchaController::class, 'rechazar'])->name('revancha.rechazar');
     Route::post('/revancha/cancelar', [RevanchaController::class, 'cancelar'])->name('revancha.cancelar');
+});
+
+// El panel de administración. A quien no administra el sitio estas direcciones le contestan lo mismo que
+// una página que no está. No llevan límite de pedidos: solo las pasa una cuenta, y su ingreso ya tiene el suyo.
+// La seguridad del panel no depende de que nadie sepa que existe: este archivo es público.
+Route::middleware('solo-administracion')->prefix('administracion')->group(function () {
+    Route::get('/', [AdministracionController::class, 'ver'])->name('administracion');
+    Route::post('/partidas/{partida}/cerrar', [AdministracionController::class, 'cerrarPartida'])->whereNumber('partida')->name('administracion.partida.cerrar');
+    Route::post('/trabajos/{trabajo}/reintentar', [AdministracionController::class, 'reintentarTrabajo'])->where('trabajo', '[0-9a-fA-F-]{1,40}')->name('administracion.trabajo.reintentar');
+    Route::post('/trabajos/{trabajo}/descartar', [AdministracionController::class, 'descartarTrabajo'])->where('trabajo', '[0-9a-fA-F-]{1,40}')->name('administracion.trabajo.descartar');
+    Route::post('/limpieza', [AdministracionController::class, 'limpiar'])->name('administracion.limpiar');
+    Route::post('/jugadores/{jugador}/ocultar-apodo', [AdministracionController::class, 'ocultarApodo'])->whereNumber('jugador')->name('administracion.apodo.ocultar');
 });
 
 Route::middleware('sin-cuenta')->group(function () {
