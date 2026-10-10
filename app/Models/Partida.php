@@ -21,12 +21,16 @@ use Illuminate\Support\Str;
  * Una partida simulada tiene la misma forma que una entre dos personas (dos jugadores,
  * uno en cada asiento), pero la jugaron dos bots: sus jugadores son de ejemplo.
  *
+ * De a cuatro contra bots, el jugador ocupa el asiento 0, su compañero bot el 2 (enfrente) y los
+ * dos bots rivales el 1 y el 3. Los equipos van intercalados, igual que en el motor.
+ *
  * @property int $id
  * @property int $jugador_id
  * @property int|null $invitado_id
  * @property string $estado
  * @property int|null $primer_mano
  * @property int $puntos
+ * @property int $asientos
  * @property bool $entre_personas
  * @property bool $simulada
  * @property string|null $codigo
@@ -40,7 +44,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $plazo_vence_en
  */
 #[Table('partidas')]
-#[Fillable(['jugador_id', 'invitado_id', 'primer_mano', 'puntos', 'entre_personas', 'codigo', 'nivel_bot'])]
+#[Fillable(['jugador_id', 'invitado_id', 'primer_mano', 'puntos', 'asientos', 'entre_personas', 'codigo', 'nivel_bot'])]
 class Partida extends Model
 {
     /** Entre personas: creada, con su link, y todavía sin rival sentado. */
@@ -67,6 +71,7 @@ class Partida extends Model
         'nivel_bot' => Nivel::Intermedio->value,
         'entre_personas' => false,
         'simulada' => false,
+        'asientos' => 2,
     ];
 
     /**
@@ -130,6 +135,14 @@ class Partida extends Model
         return $this->estado === self::EN_CURSO;
     }
 
+    /**
+     * Si es de truco de a cuatro: dos parejas, con los compañeros enfrentados.
+     */
+    public function deACuatro(): bool
+    {
+        return $this->asientos === 4;
+    }
+
     public function esperando(): bool
     {
         return $this->estado === self::ESPERANDO;
@@ -177,6 +190,7 @@ class Partida extends Model
             'torneo_id' => 'integer',
             'primer_mano' => 'integer',
             'puntos' => 'integer',
+            'asientos' => 'integer',
             'entre_personas' => 'boolean',
             'simulada' => 'boolean',
             'nivel_bot' => Nivel::class,

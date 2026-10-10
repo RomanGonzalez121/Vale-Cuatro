@@ -77,7 +77,8 @@ final class Estadisticas
                 // Un envido cuenta cuando se quiso y se cantaron los tantos. El que no se quiso no se jugó.
                 if ($hecho['tipo'] === 'tantos' && $hecho['canto'] === 'envido') {
                     $jugados++;
-                    $ganados[$hecho['ganador']]++;
+                    // Lo gana un asiento; de a cuatro, lo que cuenta es de qué equipo es.
+                    $ganados[$hecho['ganador'] % 2]++;
                 }
             }
 

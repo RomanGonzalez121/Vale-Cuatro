@@ -43,6 +43,12 @@ class EventoDePartida extends Model
      */
     public const CIERRE = 'cierre';
 
+    /**
+     * De a cuatro: una seña que la persona le hizo a su compañero. No es una jugada y no cambia nada de
+     * lo que hay en la mesa; queda guardada porque el compañero la usa para decidir. Solo la ve el compañero.
+     */
+    public const SENA = 'sena';
+
     public $timestamps = false;
 
     /**

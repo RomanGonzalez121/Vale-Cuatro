@@ -83,10 +83,13 @@ final class Mesa
      * Con una partida sin terminar se retoma esa, con su nivel, aunque se pida otro.
      *
      * Con $enSerie, la partida nueva es la primera de una serie al mejor de tres contra ese nivel.
+     *
+     * Con $asientos en 4 es de truco de a cuatro: el jugador con un bot de compañero contra dos bots,
+     * los tres del mismo nivel. De a cuatro no hay series.
      */
-    public function abrir(Jugador $jugador, ?Nivel $nivel = null, bool $enSerie = false): Partida
+    public function abrir(Jugador $jugador, ?Nivel $nivel = null, bool $enSerie = false, int $asientos = 2): Partida
     {
-        return DB::transaction(function () use ($jugador, $nivel, $enSerie) {
+        return DB::transaction(function () use ($jugador, $nivel, $enSerie, $asientos) {
             // Se bloquea al jugador: dos toques seguidos en "Jugar" no pueden abrir dos partidas.
             Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
 
@@ -100,13 +103,14 @@ final class Mesa
             // El primer mano se sortea acá, con el azar seguro: el motor lo recibe como dato.
             $partida = new Partida([
                 'jugador_id' => $jugador->getKey(),
-                'primer_mano' => Azar::seguro()->entero(self::JUGADOR, self::BOT),
+                'primer_mano' => Azar::seguro()->entero(0, $asientos - 1),
                 'puntos' => 30,
+                'asientos' => $asientos,
                 'nivel_bot' => $nivel ?? Nivel::porDefecto(),
             ]);
 
             // La serie no se asigna en masa: solo la decide el código de la mesa.
-            $partida->serie_id = $enSerie ? Serie::create()->getKey() : null;
+            $partida->serie_id = $enSerie && $asientos === 2 ? Serie::create()->getKey() : null;
             $partida->save();
 
             $this->repartirEn($partida, $this->reconstruir($partida));
@@ -275,14 +279,16 @@ final class Mesa
         return $this->enUnaFoto($partida, function () use ($partida, $asiento) {
             $motor = $this->sinJugar($partida);
             $ultimo = null;
+            $mano = ['manos' => [], 'hechas' => []];
 
             // El estado y el número salen de la misma lectura: si el rival juega justo ahora, no pueden quedar desparejos.
             foreach ($partida->eventos()->get() as $evento) {
                 $motor = $this->aplicarEvento($motor, $evento);
+                $mano = $this->seguirLaMano($mano, $evento);
                 $ultimo = $evento;
             }
 
-            return $this->paso($partida, $motor, $ultimo->numero ?? 0, $asiento, $ultimo);
+            return $this->paso($partida, $motor, $ultimo->numero ?? 0, $asiento, $ultimo, $mano);
         });
     }
 
@@ -304,18 +310,36 @@ final class Mesa
         return $this->enUnaFoto($partida, function () use ($partida, $desde, $asiento) {
             $motor = $this->sinJugar($partida);
             $pasos = [];
+            $mano = ['manos' => [], 'hechas' => []];
 
             foreach ($partida->eventos()->get() as $evento) {
                 $motor = $this->aplicarEvento($motor, $evento);
+                $mano = $this->seguirLaMano($mano, $evento);
 
                 // Un abandono o un cierre no cambian lo que hay en la mesa: no son un paso para mostrar.
                 if ($evento->numero > $desde && ! in_array($evento->tipo, [EventoDePartida::ABANDONO, EventoDePartida::CIERRE], true)) {
-                    $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento, $evento);
+                    $pasos[] = $this->paso($partida, $motor, $evento->numero, $asiento, $evento, $mano);
                 }
             }
 
             return $pasos;
         });
+    }
+
+    /**
+     * Lleva la cuenta de la mano en juego mientras se recorren los eventos: un reparto la empieza de
+     * cero y una seña se suma. Así cada paso lleva las señas de su momento, y no las de ahora.
+     *
+     * @param  array{manos: list<list<string>>, hechas: list<string>}  $mano
+     * @return array{manos: list<list<string>>, hechas: list<string>}
+     */
+    private function seguirLaMano(array $mano, EventoDePartida $evento): array
+    {
+        return match ($evento->tipo) {
+            EventoDePartida::REPARTO => ['manos' => $evento->datos['manos'], 'hechas' => []],
+            EventoDePartida::SENA => [...$mano, 'hechas' => [...$mano['hechas'], $evento->datos['sena']]],
+            default => $mano,
+        };
     }
 
     /**
@@ -377,6 +401,47 @@ final class Mesa
         $asiento = $this->asientoPara($partida, $asiento);
 
         return $this->conLaPartida($partida, fn (Partida $partida, Motor $motor) => $this->repartirEn($partida, $motor, $asiento), $desde);
+    }
+
+    /**
+     * De a cuatro: la persona le hace una seña a su compañero. No es una jugada: no cambia la mesa ni
+     * le pasa el turno a nadie. Queda guardada, y su compañero bot la tiene en cuenta desde su próxima decisión.
+     *
+     * Solo se puede hacer la seña de algo que se tiene, una vez por mano, y mientras se sigue en la mano.
+     *
+     * @return list<array<string, mixed>>
+     *
+     * @throws AccionInvalida si esa seña no se puede hacer ahora: no se guarda nada.
+     */
+    public function sena(Partida $partida, string $sena): array
+    {
+        return $this->conLaPartida($partida, function (Partida $partida, Motor $motor) use ($sena) {
+            if (! $partida->deACuatro()) {
+                throw new AccionInvalida('Las señas son del truco de a cuatro.');
+            }
+
+            $vista = $motor->vistaPara(self::JUGADOR);
+
+            if ($motor->fase() !== Fase::Jugando || in_array(self::JUGADOR, $vista['enMazo'], true)) {
+                throw new AccionInvalida('Ahora no hay a quién hacerle una seña.');
+            }
+
+            $mano = $this->manoEnJuego($partida);
+
+            if (! in_array($sena, $this->senasDe(self::JUGADOR, $mano)['tuyas'], true)) {
+                throw new AccionInvalida('Esa seña no la podés hacer: es de algo que no tenés.');
+            }
+
+            if (in_array($sena, $mano['hechas'], true)) {
+                throw new AccionInvalida('Esa seña ya la hiciste en esta mano.');
+            }
+
+            $evento = $this->guardar($partida, EventoDePartida::SENA, self::JUGADOR, ['sena' => $sena]);
+            $paso = $this->paso($partida, $motor, $evento, self::JUGADOR, null, [...$mano, 'hechas' => [...$mano['hechas'], $sena]]);
+
+            // No pasó nada en la mesa: los hechos de la última jugada ya se contaron.
+            return [[...$paso, 'hechos' => []]];
+        });
     }
 
     /**
@@ -642,8 +707,10 @@ final class Mesa
         $partida = new Partida([
             'jugador_id' => $anterior->jugador_id,
             'invitado_id' => $anterior->invitado_id,
-            'primer_mano' => 1 - $anterior->primer_mano,
+            // El mano pasa al asiento que sigue: con dos asientos, al otro.
+            'primer_mano' => ($anterior->primer_mano + 1) % $anterior->asientos,
             'puntos' => $anterior->puntos,
+            'asientos' => $anterior->asientos,
             'entre_personas' => $anterior->entre_personas,
             // El código es el del link de invitación. Acá nadie lo usa, pero toda partida entre personas tiene el suyo.
             'codigo' => $anterior->entre_personas ? Partida::codigoNuevo() : null,
@@ -721,14 +788,15 @@ final class Mesa
             }
 
             $motor = $this->reconstruir($partida);
+            $asiento = $this->asientoDelBot($partida, $motor);
 
-            if (! $this->leTocaAlBot($motor)) {
+            if ($asiento === null) {
                 return false;
             }
 
-            [$accion, $motor] = $this->jugadaDelBot($partida, $motor);
+            [$accion, $motor] = $this->jugadaDelBot($partida, $motor, $asiento);
 
-            $evento = $this->guardar($partida, EventoDePartida::ACCION, self::BOT, $accion->aArray());
+            $evento = $this->guardar($partida, EventoDePartida::ACCION, $asiento, $accion->aArray());
             $this->despuesDeJugar($partida, $motor, $evento);
 
             return true;
@@ -937,7 +1005,7 @@ final class Mesa
             return;
         }
 
-        if ($this->leTocaAlBot($motor)) {
+        if ($this->asientoDelBot($partida, $motor) !== null) {
             // El job sale recién cuando la jugada quedó guardada. No lleva demora: el bot juega apenas le toca, y
             // la pausa para que parezca que piensa la pone la mesa del navegador, según el ritmo que eligió quien juega.
             TurnoDelBot::dispatch($partida->getKey())->afterCommit();
@@ -973,14 +1041,31 @@ final class Mesa
         }
     }
 
-    private function leTocaAlBot(Motor $motor): bool
+    /**
+     * El asiento del bot al que le toca actuar, o null si no le toca a ninguno.
+     *
+     * Mano a mano es el asiento 1. De a cuatro son tres, y hay un caso que el motor deja abierto: un canto
+     * al equipo lo puede contestar cualquiera de los dos. Si le cantaron al equipo de la persona, contesta
+     * ella: su compañero bot espera, porque si no le sacaría siempre la decisión (decidido por Román).
+     * Solo contesta él si la persona ya se fue al mazo. Entre los dos bots rivales contesta el primero.
+     */
+    private function asientoDelBot(Partida $partida, Motor $motor): ?int
     {
-        return $motor->fase() === Fase::Jugando && $motor->accionesPara(self::BOT) !== [];
+        if ($partida->entre_personas || $motor->fase() !== Fase::Jugando) {
+            return null;
+        }
+
+        $pueden = array_values(array_filter(
+            range(0, $partida->asientos - 1),
+            fn (int $asiento) => $motor->accionesPara($asiento) !== [],
+        ));
+
+        return $pueden === [] || in_array(self::JUGADOR, $pueden, true) ? null : $pueden[0];
     }
 
     private function sinJugar(Partida $partida): Motor
     {
-        return Motor::nueva(2, $partida->primer_mano, $partida->puntos);
+        return Motor::nueva($partida->asientos, $partida->primer_mano, $partida->puntos);
     }
 
     private function aplicarEvento(Motor $motor, EventoDePartida $evento): Motor
@@ -1006,13 +1091,19 @@ final class Mesa
      *
      * @return array<string, mixed>
      */
-    private function paso(Partida $partida, Motor $motor, int $evento, int $asiento, ?EventoDePartida $guardado = null): array
+    private function paso(Partida $partida, Motor $motor, int $evento, int $asiento, ?EventoDePartida $guardado = null, ?array $mano = null): array
     {
         $paso = [...$motor->vistaPara($asiento), 'partida' => $partida->getKey(), 'evento' => $evento];
 
-        // Una llegada no cambia la mesa: el motor sigue con los hechos de la jugada anterior, que ya se contaron.
-        if ($guardado?->tipo === EventoDePartida::LLEGADA) {
+        // Una llegada o una seña no cambian la mesa: el motor sigue con los hechos de la jugada anterior, que ya se contaron.
+        if (in_array($guardado?->tipo, [EventoDePartida::LLEGADA, EventoDePartida::SENA], true)) {
             $paso['hechos'] = [];
+        }
+
+        // De a cuatro, las señas de la mano: las que le hace su compañero, las que puede hacer y las que ya hizo.
+        // Las de los rivales no viajan: una seña es solo para el compañero.
+        if ($partida->deACuatro()) {
+            $paso['senas'] = $this->senasDe($asiento, $mano ?? $this->manoEnJuego($partida));
         }
 
         // Entre personas, cuántos segundos faltan para que el servidor resuelva la espera: el turno o el reparto.
@@ -1025,6 +1116,24 @@ final class Mesa
         }
 
         return $paso;
+    }
+
+    /**
+     * Las señas como las ve un asiento: las de su compañero, las que él puede hacer con sus cartas y las
+     * que ya hizo en esta mano. El compañero es un bot y hace siempre las suyas.
+     *
+     * @param  array{manos: list<list<string>>, hechas: list<string>}  $mano
+     * @return array{companero: list<string>, tuyas: list<string>, hechas: list<string>}
+     */
+    private function senasDe(int $asiento, array $mano): array
+    {
+        $deLasCartas = fn (int $quien) => Senas::de(array_map(Carta::de(...), $mano['manos'][$quien] ?? []));
+
+        return [
+            'companero' => $mano['manos'] === [] ? [] : $deLasCartas(($asiento + 2) % 4),
+            'tuyas' => $mano['manos'] === [] ? [] : $deLasCartas($asiento),
+            'hechas' => $mano['hechas'],
+        ];
     }
 
     /**
@@ -1061,28 +1170,73 @@ final class Mesa
      *
      * @return array{0: Accion, 1: Motor}
      */
-    private function jugadaDelBot(Partida $partida, Motor $motor): array
+    private function jugadaDelBot(Partida $partida, Motor $motor, int $asiento): array
     {
         try {
-            $bot = $this->botFijo ?? $partida->nivel_bot->bot(Azar::seguro());
+            $bot = $this->botFijo ?? ($partida->deACuatro()
+                ? $partida->nivel_bot->botDePareja(Azar::seguro())
+                : $partida->nivel_bot->bot(Azar::seguro()));
 
             if ($bot instanceof Recuerda) {
-                $bot->recordar($this->manosCerradas($partida));
+                $bot->recordar($this->manosCerradas($partida, $asiento));
             }
 
-            $accion = $bot->decidir($motor->vistaPara(self::BOT));
+            if ($bot instanceof RecibeSenas && $partida->deACuatro()) {
+                $bot->recibirSenas($this->senasQueRecibe($asiento, $this->manoEnJuego($partida)));
+            }
 
-            return [$accion, $motor->aplicar(self::BOT, $accion)];
+            $accion = $bot->decidir($motor->vistaPara($asiento));
+
+            return [$accion, $motor->aplicar($asiento, $accion)];
         } catch (Throwable $falla) {
             report($falla);
         }
 
         // Una carta si le toca jugar; si le cantaron, no quiere.
-        $validas = $motor->accionesPara(self::BOT);
+        $validas = $motor->accionesPara($asiento);
         $cartas = array_values(array_filter($validas, fn (Accion $valida) => $valida->tipo === TipoDeAccion::Jugar));
         $accion = $cartas[0] ?? Accion::de(TipoDeAccion::NoQuiero);
 
-        return [$accion, $motor->aplicar(self::BOT, $accion)];
+        return [$accion, $motor->aplicar($asiento, $accion)];
+    }
+
+    /**
+     * Lo que hace falta saber de la mano en juego para las señas: las cartas que recibió cada asiento
+     * y las señas que la persona ya hizo. Sale de los eventos: el último reparto y lo que vino después.
+     *
+     * @return array{manos: list<list<string>>, hechas: list<string>}
+     */
+    private function manoEnJuego(Partida $partida): array
+    {
+        $reparto = $partida->eventos()->where('tipo', EventoDePartida::REPARTO)->reorder('numero', 'desc')->first();
+
+        if ($reparto === null) {
+            return ['manos' => [], 'hechas' => []];
+        }
+
+        $hechas = $partida->eventos()->where('tipo', EventoDePartida::SENA)->where('numero', '>', $reparto->numero)->get()
+            ->map(fn (EventoDePartida $evento) => $evento->datos['sena'])->all();
+
+        return ['manos' => $reparto->datos['manos'], 'hechas' => $hechas];
+    }
+
+    /**
+     * Las señas que un bot recibió de su compañero en la mano en juego.
+     *
+     * Si su compañero es la persona, son las que ella le hizo. Si es otro bot, son las que ese bot puede
+     * hacer con sus cartas: los bots se las hacen siempre todas, y no hace falta guardarlas. En los dos
+     * casos al bot le llega lo que dice la seña y nada más: nunca las cartas del compañero.
+     *
+     * @param  array{manos: list<list<string>>, hechas: list<string>}  $mano
+     * @return list<string>
+     */
+    private function senasQueRecibe(int $asiento, array $mano): array
+    {
+        $companero = ($asiento + 2) % 4;
+
+        return $companero === self::JUGADOR
+            ? $mano['hechas']
+            : Senas::de(array_map(Carta::de(...), $mano['manos'][$companero] ?? []));
     }
 
     /**
@@ -1091,7 +1245,7 @@ final class Mesa
      *
      * @return list<array<string, mixed>>
      */
-    private function manosCerradas(Partida $partida): array
+    private function manosCerradas(Partida $partida, int $asiento = self::BOT): array
     {
         $motor = $this->sinJugar($partida);
         $manos = [];
@@ -1099,7 +1253,7 @@ final class Mesa
         foreach ($partida->eventos()->get() as $evento) {
             // Un reparto nuevo deja atrás una mano cerrada.
             if ($evento->tipo === EventoDePartida::REPARTO && $motor->cierre() !== null) {
-                $manos[] = $motor->vistaPara(self::BOT);
+                $manos[] = $motor->vistaPara($asiento);
             }
 
             $motor = $this->aplicarEvento($motor, $evento);
@@ -1143,7 +1297,8 @@ final class Mesa
             return true;
         }
 
-        return $partida->eventos()->getQuery()->where('numero', '>', $desde)->where('tipo', '!=', EventoDePartida::LLEGADA)->exists();
+        return $partida->eventos()->getQuery()->where('numero', '>', $desde)
+            ->whereNotIn('tipo', [EventoDePartida::LLEGADA, EventoDePartida::SENA])->exists();
     }
 
     /**

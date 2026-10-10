@@ -70,4 +70,13 @@ enum Nivel: int
             self::UltraDificil => new BotUltraDificil($azar),
         };
     }
+
+    /**
+     * El bot de este nivel para el truco de a cuatro, donde se juega en pareja y con señas.
+     * El Fácil es el mismo: tira cualquier cosa, sea de a dos o de a cuatro.
+     */
+    public function botDePareja(Azar $azar): Bot
+    {
+        return $this === self::Facil ? new BotFacil($azar) : new BotDePareja($this, $azar);
+    }
 }
