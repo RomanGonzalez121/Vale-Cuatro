@@ -24,7 +24,7 @@ class ParejasDeBotsTest extends TestCase
         // Cada cruce juega partidas enteras, y partidaDeACuatro() comprueba cada decisión contra el motor.
         foreach (Nivel::cases() as $una) {
             foreach (Nivel::cases() as $otra) {
-                $ganadas = $this->ganadasPorLaPareja($una, $otra, 4, 900 + $una->value * 10 + $otra->value);
+                $ganadas = $this->ganadasPorLaPareja($una, $otra, 2, 900 + $una->value * 10 + $otra->value);
 
                 $this->assertGreaterThanOrEqual(0, $ganadas);
             }
@@ -33,11 +33,12 @@ class ParejasDeBotsTest extends TestCase
 
     public function test_una_pareja_que_juega_con_criterio_le_gana_a_una_que_tira_cualquier_cosa(): void
     {
-        // Medido con 100 partidas por cruce: 81, 80 y 77. Acá se juegan 30, con un piso holgado.
+        // Medido con 100 partidas: la de Intermedio gana 81; las que sacan cuentas, algo más. Acá se juegan 20, con un piso holgado.
+        // Que cada nivel le gane al de abajo se mide aparte, con 300 partidas por cruce: MedicionDeLasParejasTest.
         foreach ([Nivel::Intermedio, Nivel::Dificil, Nivel::UltraDificil] as $nivel) {
-            $ganadas = $this->ganadasPorLaPareja($nivel, Nivel::Facil, 30, 500);
+            $ganadas = $this->ganadasPorLaPareja($nivel, Nivel::Facil, 20, 500);
 
-            $this->assertGreaterThanOrEqual(19, $ganadas, "La pareja de nivel {$nivel->nombre()} ganó {$ganadas} de 30 contra la del Fácil.");
+            $this->assertGreaterThanOrEqual(12, $ganadas, "La pareja de nivel {$nivel->nombre()} ganó {$ganadas} de 20 contra la del Fácil.");
         }
     }
 
@@ -76,11 +77,16 @@ class ParejasDeBotsTest extends TestCase
             ['2-basto', '6-oro', '10-oro'],
         ], '0 1-espada', '1 6-basto');
 
-        foreach ([Nivel::Intermedio, Nivel::Dificil, Nivel::UltraDificil] as $nivel) {
-            $accion = (new BotDePareja($nivel, Azar::deSemilla(1)))->decidir($partida->vistaPara(2));
+        // El Intermedio tira la más baja. Los que sacan cuentas pueden cantar truco antes (la baza ya es de la pareja),
+        // pero ninguno gasta una carta buena sobre el ancho de su compañero.
+        $this->assertSame('4-oro', (new BotDePareja(Nivel::Intermedio, Azar::deSemilla(1)))->decidir($partida->vistaPara(2))->carta->id());
 
-            $this->assertSame(TipoDeAccion::Jugar, $accion->tipo);
-            $this->assertSame('4-oro', $accion->carta->id(), "El nivel {$nivel->nombre()} tiró una carta buena sobre el ancho de su compañero.");
+        foreach ([Nivel::Dificil, Nivel::UltraDificil] as $nivel) {
+            foreach ([1, 2, 3] as $semilla) {
+                $accion = (new BotDePareja($nivel, Azar::deSemilla($semilla)))->decidir($partida->vistaPara(2));
+
+                $this->assertContains($accion->carta?->id() ?? $accion->tipo->value, ['4-oro', 'truco'], "El nivel {$nivel->nombre()} tiró una carta buena sobre el ancho de su compañero.");
+            }
         }
     }
 

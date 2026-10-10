@@ -16,9 +16,11 @@ use App\Motor\TipoDeAccion;
  * con esas señas, y con nada más: nunca ve las cartas de nadie.
  *
  * Los niveles se distinguen igual que en el mano a mano:
- * - Intermedio: juega de frente. Si canta, tiene.
- * - Difícil: saca cuentas (sabe cuál es la carta más alta que todavía puede aparecer) y cada tanto miente.
- * - Ultra difícil: además se acuerda de cómo vienen jugando los rivales en la partida, y arriesga según el tanteo.
+ * - Intermedio: juega de frente, con reglas fijas. Si canta, tiene.
+ * - Difícil: saca cuentas. Imagina muchas veces las cartas que no ve (CuentasDePareja) y con eso elige qué
+ *   carta tirar y si un truco se canta, se quiere o se sube. Cada tanto miente.
+ * - Ultra difícil: además lee a los rivales (si cantaron truco, supone que tienen con qué), se acuerda de
+ *   cómo vienen contestando en la partida y arriesga según el tanteo.
  */
 final class BotDePareja implements Bot, RecibeSenas, Recuerda
 {
@@ -46,7 +48,15 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
 
     private int $trucosNoQueridos = 0;
 
-    public function __construct(private readonly Nivel $nivel, private readonly Azar $azar) {}
+    /** La cuenta de esta decisión, para no sacarla dos veces: la carta que más gana y con qué probabilidad. */
+    private ?array $laMejor = null;
+
+    private readonly CuentasDePareja $cuentas;
+
+    public function __construct(private readonly Nivel $nivel, private readonly Azar $azar)
+    {
+        $this->cuentas = new CuentasDePareja($azar);
+    }
 
     public function recibirSenas(array $senas): void
     {
@@ -75,6 +85,7 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
     public function decidir(array $vista): Accion
     {
         $lectura = new LecturaDePareja($vista, $this->senas);
+        $this->laMejor = null;
 
         // La flor se canta siempre que se pueda: en su turno o contestando un envido o un truco.
         if ($lectura->puede(TipoDeAccion::Flor)) {
@@ -163,12 +174,13 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
     {
         $llega = $this->hastaDondeCanta($lectura);
 
-        // Con algo en la pareja pero no lo que hace falta, cada tanto canta truco igual. Solo al empezar la mano,
-        // que es cuando se le puede creer, y nunca con las manos vacías: un rival que quiere lo cobra doble.
+        // Con una mano pareja, que puede salir para cualquier lado, cada tanto canta truco igual. Solo al empezar
+        // la mano, que es cuando se le puede creer, y nunca con las manos vacías: un rival que quiere lo cobra doble.
         if ($llega === 0
+            && $this->sacaCuentas()
             && $lectura->bazasGanadas() === 0 && $lectura->bazasPerdidas() === 0
             && $lectura->vista['truco']['nivel'] === 0
-            && $lectura->masAltaDeLaPareja() >= self::UN_TRES
+            && $this->probabilidadDeGanar($lectura) >= 0.42
             && $this->miente()) {
             $llega = 1;
         }
@@ -208,31 +220,55 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
                 || ($masAlta >= self::UN_DOS && ($lectura->bazasGanadas() > 0 || $cantado === 1));
         }
 
-        // Sacando cuentas. Con la carta que ya nadie supera y una baza ganada, la mano es suya.
-        if ($this->manda($lectura) && $lectura->bazasGanadas() > 0) {
-            return true;
-        }
+        // Sacando cuentas: no querer regala los puntos de lo ya cantado, así que alcanza con ganar una de cada tres.
+        // Ganando cómodo pide un poco más; perdiendo por mucho, se la juega con menos.
+        return $this->probabilidadDeGanar($lectura) >= 0.36 + 0.05 * $this->cuidado($lectura);
+    }
 
-        // Si los rivales ya ganaron una baza, les falta una sola: hace falta una brava de verdad para aguantar.
-        if ($lectura->bazasPerdidas() > 0) {
-            return $masAlta >= self::BRAVA + ($cantado > 1 ? 1 : 0) + max(0, $this->cuidado($lectura));
-        }
-
-        // Con una baza ganada alcanza con una carta buena; sin ninguna jugada, con una brava o con dos buenas en la pareja.
-        if ($lectura->bazasGanadas() > 0) {
-            return $masAlta >= self::UN_DOS + ($cantado > 1 ? 1 : 0) + $this->cuidado($lectura);
-        }
-
-        return $masAlta >= self::BRAVA || ($cantado === 1 && $this->buenasDeLaPareja($lectura) >= 2);
+    private function sacaCuentas(): bool
+    {
+        return $this->nivel->value >= Nivel::Dificil->value;
     }
 
     /**
-     * Cuántas cartas buenas (de un 2 para arriba) tiene la pareja, contando la que le señaló el compañero.
+     * La probabilidad de que la pareja gane la mano desde acá. Si le toca tirar, tirando la carta que más conviene.
      */
-    private function buenasDeLaPareja(LecturaDePareja $lectura): int
+    private function probabilidadDeGanar(LecturaDePareja $lectura): float
     {
-        return count(array_filter($lectura->vivas(), fn (int $viva) => $viva >= self::UN_DOS))
-            + (int) ($lectura->loQueDijoElCompanero() >= self::UN_DOS);
+        if ($lectura->vista['turno'] === $lectura->asiento && $lectura->enMano() !== []) {
+            return $this->laQueMasGana($lectura)[1];
+        }
+
+        return $this->cuentas->deGanarLaMano($lectura, $this->nivel === Nivel::UltraDificil);
+    }
+
+    /**
+     * De las cartas que tiene, la que le da a la pareja más chances de ganar la mano, y esa probabilidad.
+     * Si dos dan casi lo mismo se queda con la más baja: la alta puede hacer falta después.
+     *
+     * @return array{0: Carta, 1: float}
+     */
+    private function laQueMasGana(LecturaDePareja $lectura): array
+    {
+        if ($this->laMejor !== null) {
+            return $this->laMejor;
+        }
+
+        $enMano = $lectura->enMano();
+        // Dos cartas que valen lo mismo dan la misma cuenta: se prueba una de cada valor.
+        $valores = array_values(array_unique(array_map(fn (Carta $carta) => $carta->jerarquia(), $enMano)));
+        $cuentas = $this->cuentas->tirando($lectura, $valores, $this->nivel === Nivel::UltraDificil);
+        $mejor = null;
+        $gana = -1.0;
+
+        // De la más baja a la más alta: una más alta solo le gana el lugar si da claramente más.
+        foreach ($enMano as $carta) {
+            if ($cuentas[$carta->jerarquia()] > $gana + 0.03) {
+                [$mejor, $gana] = [$carta, $cuentas[$carta->jerarquia()]];
+            }
+        }
+
+        return $this->laMejor = [$mejor, $gana];
     }
 
     /**
@@ -240,6 +276,18 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
      */
     private function hastaDondeCanta(LecturaDePareja $lectura): int
     {
+        if ($this->sacaCuentas()) {
+            // Con la probabilidad de ganar la mano: cuanto más segura, más alto canta. Ganando cómodo pide un poco más.
+            $gana = $this->probabilidadDeGanar($lectura) - 0.05 * $this->cuidado($lectura);
+
+            return match (true) {
+                $gana >= 0.86 => 3,
+                $gana >= 0.74 => 2,
+                $gana >= 0.60 => 1,
+                default => 0,
+            };
+        }
+
         $masAlta = $lectura->masAltaDeLaPareja();
         $ganaronUna = $lectura->bazasGanadas() > 0;
         $bravas = count(array_filter($lectura->vivas(), fn (int $viva) => $viva >= self::BRAVA))
@@ -326,6 +374,10 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
 
     private function elegirCarta(LecturaDePareja $lectura): Carta
     {
+        if ($this->sacaCuentas()) {
+            return $this->laQueMasGana($lectura)[0];
+        }
+
         $enMano = $lectura->enMano();
         $masBaja = $enMano[0];
         $masAlta = $enMano[count($enMano) - 1];
