@@ -968,3 +968,75 @@ Anotado como límite: la mesa del navegador calcula cómo queda la serie sumánd
 - **Con dos navegadores reales,** a 360 x 740, 360 x 640 y 1355 x 638: pedir y querer; pedir y no querer; cancelar; irse de la pantalla; dejar vencer el minuto; una serie entera a tres partidas y su revancha. Sin errores ni scroll en la mesa.
 - **En la integración continua,** una prueba de navegador nueva elige la serie en los modos, juega la primera partida hasta el final y pasa a la segunda desde el botón del final.
 - Capturas en `docs/capturas/`: `modos-mejor-de-tres-celular.png`, `mesa-serie-celular.png`, `final-de-partida-en-serie-celular.png`, `final-de-serie-celular.png`, `final-con-revancha-celular.png`, `revancha-pedida-celular.png`, `revancha-te-piden-celular.png`, `historial-serie.png` y `historial-serie-celular.png`.
+
+## M16. Panel de administración
+
+Una pantalla, `/administracion`, para ver cómo está el sitio y mantenerlo sin tocar la base a mano. No muestra cartas ni deja cambiar un resultado.
+
+### Lo que decidió Román
+
+- **A quien no administra el sitio, el panel le contesta "no existe"** (404), con o sin sesión.
+- **Una partida quedó sin movimiento** cuando contra el bot pasaron 24 horas sin jugadas, o 10 minutos entre dos personas. Entre personas los turnos vencen solos, así que diez minutos quieta ya es una falla.
+- **Cerrarla no le da la partida a nadie:** queda cerrada sin ganador y no cuenta para el ranking.
+- **Un apodo ocultado pasa a ser "Jugador" y un número,** y su dueño puede elegir otro desde el perfil.
+- **La administración va en una cuenta aparte,** nueva, la misma en la máquina de desarrollo y en el sitio publicado. Al ingresar con ella se entra directo al panel, y le aparece "Administración" en el menú. Para cualquier otra cuenta todo sigue igual.
+
+### Quién administra: una cuenta que sale del entorno
+
+- **Problema:** hace falta una cuenta con poder en un sitio cuyo código es público, publicado en un servicio gratuito que no da una consola donde correr comandos. Y el registro no verifica el email: cualquiera puede registrarse con el que quiera.
+- **Elegido:** el email y la contraseña de esa cuenta son dos variables del entorno (`ADMIN_EMAIL` y `ADMIN_PASSWORD`). Un comando de consola, `administrador:crear`, deja la cuenta como digan, y el contenedor lo corre en cada arranque. En el sitio publicado las dos variables se cargan en el panel de Render, igual que la contraseña de la base: no están en ningún archivo del repositorio.
+- **Lo que diga el entorno es lo que vale.** La cuenta de ese email administra el sitio y ninguna otra: si se cambia el email, la anterior pierde el rol y se le cierran las sesiones. Con las variables vacías, nadie administra y el panel no existe para nadie. Así, ante la sospecha de que se filtró la contraseña alcanza con cambiar las variables.
+- **Ninguna pantalla otorga el rol.** No se asigna en masa, y hay un test que manda el dato a mano al registrarse y al cambiar el apodo.
+- **Si alguien se había registrado antes con ese email,** la cuenta pasa a ser la de administración con la contraseña del entorno, y a quien la había abierto se le cierran las sesiones y el "recordarme": no hereda el panel. Eso solo se puede garantizar con las sesiones guardadas en la base, como en el sitio publicado. Si están en otro lado, el comando se niega y pide otro email.
+- **La contraseña no pasa por los archivos de configuración.** La configuración se guarda ya resuelta en un archivo del contenedor y se carga en cada pedido; la contraseña se lee del entorno solo cuando corre el comando. En la base queda su hash. Tampoco se pasa por la línea de comandos, donde quedaría a la vista en la lista de procesos.
+- **Se descartó** una pantalla para crear la cuenta (sería una pantalla que otorga el rol) y sembrarla con una contraseña fija (el repositorio es público).
+
+### Lo que muestra
+
+- **De una partida en curso: quiénes juegan, el tanteo, la mano y cuándo se movió.** Cada renglón se arma eligiendo esos datos uno por uno; la vista de un asiento y el estado del motor no salen del servidor hacia el panel. Hay un test que busca las doce cartas repartidas en todo lo que recibe la pantalla.
+- **De un trabajo fallido: qué era, cuándo falló y la clase del error, sin su mensaje.** El mensaje de un error de la base trae la consulta entera, y ahí puede venir el reparto de una partida que todavía se juega. El detalle queda en el registro del servidor.
+- **De un jugador: el apodo, que ya es público, y si tiene cuenta.** El email no.
+- **Las listas muestran veinte partidas de cada clase y los totales cuentan todas:** las quietas, empezando por la que hace más que está quieta; las que se juegan, por la que se movió último.
+- **Si una partida no se puede volver a pasar por el motor** (un evento dañado, una regla que cambió), su renglón sale igual, sin tanteo. Es justo la que hay que poder cerrar.
+
+### Lo que deja hacer
+
+- **Cerrar una partida que quedó sin movimiento.** Le agrega un evento al final de su lista ("cierre") y no borra nada. Queda en un estado propio, "cerrada": no es "terminada" (nadie llegó a los puntos) ni "abandonada" (nadie la dejó). Por eso no entra en el ranking ni en el historial, y deja de ser la partida en curso de sus jugadores, que al volver a la mesa leen qué pasó. Si era de una serie, la serie se cierra con ella, sin ganador.
+- **Reintentar o descartar un trabajo fallido,** con los mismos comandos que trae Laravel.
+- **Correr la limpieza ahora:** la misma que el sitio hace sola (las salas cada cinco minutos, los invitados una vez por día).
+- **Ocultar un apodo.** Como el apodo vive en un solo lugar, deja de verse en todas las pantallas. No se oculta el de un jugador de ejemplo ni el de la administración.
+- **Cada acción queda anotada** con quién, qué y cuándo, en la misma transacción que la acción: o quedan las dos o no queda ninguna.
+- **Las acciones vuelven a comprobar el rol** aunque la ruta ya lo haya mirado.
+- **Las que no tienen vuelta fácil se confirman en el lugar:** el botón se abre en dos, uno que dice exactamente lo que va a pasar y otro para arrepentirse.
+
+### La pantalla
+
+Román pidió que quedara linda y no pareciera un panel genérico. Sale de las piezas del sitio:
+
+- **El pizarrón del club:** arriba, un bloque de paño con el estado dicho en cuatro frases, cada una contada con fósforos como el tanteo. La que pide que alguien haga algo lleva una ficha en Copa (sobre el paño, Copa va como ficha llena y nunca como texto). Cada frase lleva a su parte del panel.
+- **Cada partida con su tanteo dibujado,** el mismo tanteador de la mesa, desde escritorio. En el celular va en palabras.
+- **El cuaderno,** con el margen de una libreta.
+- No hay gráficos, tarjetas en grilla ni nada que se mueva solo.
+
+### Lo que encontraron la revisión de código y la de seguridad
+
+Diez observaciones, corregidas salvo las dos del final:
+
+- **El rol no se quitaba nunca:** cambiar el email dejaba a la cuenta vieja con el panel. Ahora la cuenta del entorno es la única.
+- **Las sesiones solo se cerraban si estaban en la base,** y el comando decía que sí en cualquier caso. Ahora se niega a tomar una cuenta ajena si no las puede cerrar.
+- **La contraseña quedaba en la configuración guardada del contenedor.**
+- **Una acción podía quedar hecha sin anotarse** si fallaba la anotación.
+- **Con muchas partidas, los números del pizarrón salían de una lista cortada:** una partida trabada entre personas podía no aparecer detrás de cuarenta partidas viejas contra el bot.
+- **Una sola partida ilegible tiraba abajo el panel entero.**
+- **El cierre usaba el estado "abandonada" sin ganador,** que quería decir "sala que nadie ocupó": cada parte del sitio lo distinguía con un parche distinto. Pasó a tener su estado.
+- **Cuentas repetidas en tres lugares** (qué es una sala vencida, qué es una partida quieta, cómo se dice un día).
+- **Anotado, sin cambiar:** el panel vuelve a pasar por el motor hasta cuarenta partidas en cada carga. Para un sitio de este tamaño alcanza.
+- **Anotado, sin cambiar:** el 404 del panel no es idéntico al de una página que no existe (el segundo no abre sesión). La seguridad del panel no depende de que nadie sepa que existe: sus rutas están en este repositorio, que es público.
+
+### Qué se probó y qué no
+
+- **Con tests (711 en total):** cada ruta con visitante sin sesión, invitado y jugador con cuenta (404 en todas) y con la administración; el panel no recibe ninguna carta; cerrar una partida agrega un evento y no borra nada; toda acción deja registro; ninguna pantalla otorga el rol; un apodo ocultado deja de verse en el ranking, el historial y la mesa del rival; y el comando que crea la cuenta, con cada caso de más arriba.
+- **En un navegador real,** a 360 x 740 y en 1355 x 638: sin sesión el panel contesta 404; con la cuenta se entra directo; se cerraron partidas quietas confirmando en el lugar, también con teclado (el foco va al botón que confirma y Esc lo deshace), y se corrió la limpieza. Sin scroll horizontal ni errores.
+- **Falta:** una prueba de navegador automática del panel en la integración continua. No se sumó para no alargar esa corrida.
+- **Pendiente para la API (M9):** que un apodo ocultado tampoco se vea ahí. Hoy la API no existe.
+- Capturas en `docs/capturas/`: `administracion.png`, `administracion-celular.png`, `administracion-cuaderno.png` y `administracion-cuaderno-celular.png`.

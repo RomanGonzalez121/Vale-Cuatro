@@ -65,7 +65,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | M13 | Torneo relámpago de cuatro u ocho, con llaves en vivo: primero contra bots, después entre personas | Pendiente |
 | M14 | Sonido de cartas, fósforos y cantos, fabricado en el navegador y apagado de fábrica | Listo |
 | M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
-| M16 | Panel de administración | Pendiente |
+| M16 | Panel de administración: partidas sin movimiento, cola, limpieza y apodos, con cada acción anotada | Listo |
 | M17 | Modos de juego, desafíos y una escalera de niveles | Adelantada la pantalla para elegir modo; el resto, pendiente |
 | M18 | Perfil con categorías ganadas jugando | Pendiente |
 | M19 | Truco de a cuatro con señas: primero con bots, después entre personas | Pendiente |
@@ -175,7 +175,9 @@ Un programa (supervisor) arranca los cuatro y los vuelve a levantar si alguno se
 | `docker/arranque.sh` | Lo primero que corre: migra la base, lee la configuración y prende los procesos |
 | `docker/supervisord.conf` | Qué procesos hay y en qué orden arrancan |
 | `docker/nginx.conf` | Qué se entrega como archivo, qué va a PHP y qué va al tiempo real |
-| `render.yaml` | Le dice a Render cómo crear el servicio. Los datos de la base no están ahí: se cargan en su panel |
+| `render.yaml` | Le dice a Render cómo crear el servicio. Los datos de la base y los de la cuenta de administración no están ahí: se cargan en su panel |
+
+La cuenta que administra el sitio tampoco está escrita en el repositorio: sale de dos variables del servicio (`ADMIN_EMAIL` y `ADMIN_PASSWORD`), y el contenedor la deja lista cada vez que arranca. Sin ellas, el panel de administración no existe para nadie.
 
 Se publica solo con cada subida a la rama principal, después de que pasan los tests. Los datos no se pierden al volver a publicar: las partidas, las cuentas, las sesiones y la cola viven en la base.
 
