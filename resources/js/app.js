@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import { prepararApertura } from './apertura';
 import { repartirEn } from './cartas';
 import historial from './historial';
 import { prepararInstalacion } from './instalar';
@@ -51,6 +52,7 @@ Alpine.data('sinConexion', sinConexion);
 window.Alpine = Alpine;
 Alpine.start();
 
+prepararApertura();
 prepararLogos();
 prepararModo();
 prepararLlaves();

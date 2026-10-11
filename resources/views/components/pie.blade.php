@@ -7,13 +7,7 @@
                 El motor de reglas, el tiempo real, el historial y el ranking son reales.
             </p>
 
-            {{--
-                Instalarlo como aplicación. El botón aparece solo cuando el navegador avisa que se puede
-                (resources/js/instalar.js); en un iPhone se instala a mano, y se dice cómo.
-            --}}
-            <button type="button" class="boton boton-linea mt-5 min-h-11 px-4 text-sm" data-instalar hidden>
-                <x-icono nombre="instalar" class="size-5" /> Instalar Vale Cuatro
-            </button>
+            {{-- En un iPhone el sitio se instala a mano: se dice cómo (resources/js/instalar.js). --}}
             <p class="mt-4 text-sm leading-relaxed" data-instalar-en-iphone hidden>
                 Para instalarlo en el iPhone: tocá Compartir y después «Agregar a inicio».
             </p>
@@ -23,6 +17,8 @@
             <li><a href="{{ route('como-se-juega') }}" class="underline underline-offset-4">Cómo se juega</a></li>
             <li><a href="{{ route('identidad') }}" class="underline underline-offset-4">Identidad</a></li>
             <li><a href="https://github.com/RomanGonzalez121/Vale-Cuatro" class="underline underline-offset-4">Código en GitHub</a></li>
+            {{-- Instalarlo como aplicación: aparece solo cuando el navegador avisa que se puede. La portada tiene su franja. --}}
+            <li data-instalar hidden><button type="button" class="font-semibold underline underline-offset-4">Instalar la aplicación</button></li>
             {{-- En el celular el menú de arriba no está: quien administra el sitio llega a su panel desde acá. --}}
             @if (auth()->user()?->esAdministrador())
                 <li><a href="{{ route('administracion') }}" class="underline underline-offset-4">Administración</a></li>

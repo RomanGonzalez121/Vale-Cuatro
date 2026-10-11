@@ -1287,3 +1287,24 @@ Que el sitio se instale como una aplicación y avise cuando te toca aunque no lo
 - **No se pudo probar desde la máquina de desarrollo:** instalarlo en un celular y ver llegar un aviso. El navegador de pruebas tiene los avisos bloqueados. Eso se prueba con el sitio publicado y un celular de verdad.
 - **Límites:** en iPhone los avisos solo llegan si el sitio está instalado en la pantalla de inicio (es una regla de Apple). Si la persona tiene la mesa abierta en una computadora y el celular suscripto, no le llega el aviso mientras la computadora la tenga a la vista: es lo buscado. De a cuatro todavía no hay avisos, porque los otros tres son bots.
 - Capturas en `docs/capturas/`: `sin-conexion.png`, `sin-conexion-celular.png`, `mesa-ajustes-avisos-celular.png`, `sala-avisos.png` y `sala-avisos-celular.png`.
+
+### Después de instalarlo en un celular de verdad
+
+Román lo instaló en un Android desde Chrome y marcó tres cosas. Pidió recomendaciones y eligió.
+
+- **La mesa había que deslizarla para ver los cantos.** La mesa mide justo el alto de la pantalla, y lo sacaba de la unidad `dvh`. Instalada, esa unidad contaba más alto del que se ve. En el navegador no pasa.
+  - **Elegido:** la página mide ella misma el alto que se ve, antes de pintar y cada vez que cambia, y lo deja en una variable (`--alto`). Las dos mesas de juego y la página que las lleva se calculan con esa variable. De las medidas que da el navegador vale la más chica: si alguna cuenta de más, gana la otra.
+  - **Por qué va en el layout y no con el resto del JavaScript:** tiene que estar antes del primer dibujo, o la mesa aparecería grande y se achicaría.
+  - **No se pudo reproducir en la computadora.** Se comprobó que, cuando esa medida es menor que `dvh`, la mesa entra entera en ella. Que la medida sea la correcta en ese celular lo confirma Román con el sitio publicado.
+  - No se tocaron las cartas ni la disposición, ni las demás pantallas.
+- **El botón de instalar estaba al fondo del pie y no se veía.**
+  - **Elegido:** una franja propia en la portada, debajo de la primera pantalla: el ícono con su nombre debajo, como queda en el celular, una frase que dice para qué sirve y el botón lleno. Aparece solo cuando se puede instalar; si no, no ocupa lugar. En el pie queda un link chico.
+  - **Se descartó** un cartel que aparezca solo desde abajo: es invasivo y nada en el sitio queda fijo sobre la página.
+- **La pantalla que se ve al abrir la aplicación (el ícono y el nombre) estaba quieta.** Esa pantalla la dibuja el sistema antes de que cargue el sitio: no se puede animar.
+  - **Elegido:** una apertura propia que la continúa. El mismo paño y los mismos cuatro fósforos en el centro; las cabezas se encienden de a una, el nombre acusa el golpe de la cuarta y todo se funde a la portada. Dura menos de un segundo.
+  - **Es el segundo momento coreografiado del sitio** (el otro es el reparto). Román lo decidió sabiendo que cambiaba esa regla.
+  - Se muestra solo en la aplicación instalada, una vez por apertura. Se corta tocando o con una tecla, y con movimiento reducido no aparece. Si el resto del JavaScript no cargara, se retira sola a los cuatro segundos.
+  - El fondo es el paño de día también de noche, porque es el color que usa la pantalla del sistema.
+  - **Se descartó** repartir la mano de la portada al abrir: no choca con ninguna regla, pero no continúa lo que se está viendo.
+  - **Límite:** si el servidor está dormido, la pantalla quieta del sistema se queda hasta que despierta. Eso no lo tapa ninguna animación.
+- Capturas en `docs/capturas/`: `portada-instalar.png`, `portada-instalar-celular.png` y `apertura-celular.png`.

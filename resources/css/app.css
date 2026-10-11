@@ -79,6 +79,35 @@ body:has(.mesa-ultra) {
 }
 
 /*
+ | Con la mesa de juego, la página mide lo mismo que la mesa: el alto que se ve
+ | (--alto, ver .mesa). Si midiera 100dvh y esa unidad contara de más, quedaría
+ | un resto de página para deslizar debajo de los cantos.
+ */
+body:has(.mesa-completa) {
+    min-height: var(--alto, 100dvh);
+}
+
+/*
+ | La apertura de la aplicación instalada (resources/js/apertura.js). Sigue a la
+ | pantalla que dibuja el sistema al abrirla, que usa el paño de día sea cual sea
+ | el modo: por eso el fondo va fijo y no con --color-pano. Solo se ve mientras
+ | la raíz lleva "abriendo", que pone el layout antes de pintar.
+ */
+.apertura {
+    display: none;
+}
+
+.abriendo .apertura {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    background-color: #1f5a46;
+    color: var(--color-naipe);
+}
+
+/*
  | Barra de scroll propia: fina y sobria. Una píldora del color del texto, a
  | media tinta, sobre un carril invisible; al pasar el mouse toma el color
  | pleno y engorda apenas. Sigue sola al modo de día y de noche, porque usa
@@ -1075,17 +1104,20 @@ html:has(body.superficie-pano) {
      | las barras se reparte entre las tres filas de cartas (5,6 veces --b en
      | total). Así la mesa entra siempre entera, sin scroll, y en pantallas
      | grandes las cartas crecen hasta un tope.
+     | El alto es --alto, lo que la página midió que se ve de verdad (el script
+     | del layout): instalada en un celular, la unidad dvh puede contar de más y
+     | los cantos quedaban debajo del borde. Sin esa medida vale 100dvh.
      */
     .mesa {
         container-type: inline-size;
-        --b: max(2.75rem, min(calc((100dvh - 21.5rem) / 5.7), 18cqw, 7.5rem));
+        --b: max(2.75rem, min(calc((var(--alto, 100dvh) - 21.5rem) / 5.7), 18cqw, 7.5rem));
         --ancho-baza: var(--b);
         --ancho-rival: calc(var(--b) * 0.7);
     }
 
     @media (min-width: 64rem) {
         .mesa {
-            --b: max(2.75rem, min(calc((100dvh - 17rem) / 5.7), 20cqw, 8rem));
+            --b: max(2.75rem, min(calc((var(--alto, 100dvh) - 17rem) / 5.7), 20cqw, 8rem));
         }
     }
 
@@ -1115,7 +1147,7 @@ html:has(body.superficie-pano) {
     .mesa-completa {
         display: flex;
         flex-direction: column;
-        height: 100dvh;
+        height: var(--alto, 100dvh);
         overflow: hidden;
     }
 
@@ -1522,7 +1554,7 @@ html:has(body.superficie-pano) {
      | Si se agrega una fila a esta mesa hay que ajustar la cuenta.
      */
     .mesa-cuatro {
-        --b: max(2.5rem, min(calc((100dvh - 24.75rem) / 5.1), 19cqw, 7.5rem));
+        --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 24.75rem) / 5.1), 19cqw, 7.5rem));
         --ancho-companero: calc(var(--b) * 0.5);
         --ancho-acostada: calc(var(--b) * 0.58);
     }
@@ -1530,7 +1562,7 @@ html:has(body.superficie-pano) {
     /* En pantallas anchas sobra lugar a los costados: las cartas de los otros tres crecen. */
     @media (min-width: 64rem) {
         .mesa-cuatro {
-            --b: max(2.5rem, min(calc((100dvh - 22rem) / 5.1), 19cqw, 7.5rem));
+            --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 22rem) / 5.1), 19cqw, 7.5rem));
             --ancho-companero: calc(var(--b) * 0.7);
             --ancho-acostada: calc(var(--b) * 0.8);
         }
@@ -1843,7 +1875,7 @@ html:has(body.superficie-pano) {
         left: 0;
         z-index: 20;
         width: min(20rem, 100%);
-        max-height: calc(100dvh - 15rem);
+        max-height: calc(var(--alto, 100dvh) - 15rem);
         overflow-y: auto;
         border: 2px solid currentColor;
         border-radius: 0.875rem;

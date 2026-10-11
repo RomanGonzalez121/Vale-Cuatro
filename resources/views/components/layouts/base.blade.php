@@ -6,6 +6,8 @@
     'pie' => true,
     // La barra de abajo del celular. Si no se dice nada, acompaña al encabezado.
     'barra' => null,
+    // La apertura de la aplicación instalada (el componente "apertura"). Solo la lleva la portada, que es donde abre.
+    'apertura' => false,
 ])
 
 @php($barra ??= $encabezado)
@@ -33,6 +35,64 @@
             document.documentElement.dataset.modo = modo;
         })();
     </script>
+    {{--
+        El alto que se ve de verdad, medido por la página y dejado en --alto. La mesa de juego se calcula con
+        él (resources/css/app.css, .mesa): instalada en un celular, la unidad dvh puede contar más alto del que
+        hay y los cantos quedaban debajo del borde. De las medidas que da el navegador vale la más chica.
+        Va acá, y no con el resto del JavaScript, para que esté antes de pintar.
+    --}}
+    <script>
+        (function () {
+            var raiz = document.documentElement;
+
+            function medir() {
+                var vista = window.visualViewport;
+                var altos = [window.innerHeight, raiz.clientHeight];
+
+                // Con el teclado abierto lo visible se achica mucho más que una barra del sistema: eso no cuenta.
+                if (vista && vista.height * vista.scale > window.innerHeight * 0.75) {
+                    altos.push(vista.height * vista.scale);
+                }
+
+                altos = altos.filter(function (alto) { return alto > 200; });
+
+                if (altos.length) {
+                    raiz.style.setProperty('--alto', Math.min.apply(null, altos) + 'px');
+                }
+            }
+
+            medir();
+            window.addEventListener('resize', medir);
+            window.addEventListener('orientationchange', medir);
+            window.addEventListener('pageshow', medir);
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', medir);
+            }
+        })();
+    </script>
+    @if ($apertura)
+        {{--
+            La apertura se decide antes de pintar, para que siga a la pantalla del sistema sin que se vea la
+            portada en el medio: solo instalada, una vez por apertura y sin movimiento reducido. Si el resto
+            del JavaScript no llegara a cargar, se retira sola.
+        --}}
+        <script>
+            (function () {
+                try {
+                    var instalada = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+                    if (! instalada || window.matchMedia('(prefers-reduced-motion: reduce)').matches || sessionStorage.getItem('vale-cuatro:abierta')) {
+                        return;
+                    }
+
+                    sessionStorage.setItem('vale-cuatro:abierta', 'si');
+                    document.documentElement.classList.add('abriendo');
+                    setTimeout(function () { document.documentElement.classList.remove('abriendo'); }, 4000);
+                } catch (e) {}
+            })();
+        </script>
+    @endif
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="alternate icon" href="/favicon.ico" sizes="32x32">
     {{-- Para instalarlo como aplicación: el manifiesto dice el nombre, los colores y los íconos; iPhone pide el suyo aparte. --}}
@@ -46,6 +106,10 @@
 </head>
 {{-- Con la barra, la página deja libre su alto para que el pie no quede tapado. --}}
 <body @class(["superficie-{$superficie} min-h-dvh", 'max-lg:pb-[calc(4rem+env(safe-area-inset-bottom))]' => $barra])>
+    @if ($apertura)
+        <x-apertura />
+    @endif
+
     <x-mazo.sprite />
     <a href="#contenido" class="saltar">Saltar al contenido</a>
 

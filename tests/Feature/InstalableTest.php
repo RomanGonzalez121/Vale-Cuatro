@@ -61,6 +61,47 @@ class InstalableTest extends TestCase
         }
     }
 
+    public function test_la_portada_ofrece_instalarlo_en_una_franja_que_arranca_escondida(): void
+    {
+        $portada = $this->get('/')->assertOk()->assertSee('Llevalo en el celular.');
+
+        // La franja y su botón no se ven hasta que el navegador avisa que se puede instalar.
+        $portada->assertSee('data-donde-instalar hidden', false);
+        $this->assertSame(1, preg_match('/<button[^>]*data-instalar hidden>\s*<svg.*?<\/svg>\s*Instalar\s*<\/button>/s', $portada->getContent()));
+
+        // En las demás páginas queda el link del pie, igual de escondido.
+        $this->get('/ranking')->assertOk()->assertDontSee('data-donde-instalar', false)->assertSee('<li data-instalar hidden>', false);
+    }
+
+    public function test_la_apertura_de_la_aplicacion_instalada_va_solo_en_la_portada(): void
+    {
+        // Es donde abre la aplicación (start_url). Se muestra solo si está instalada, y eso lo decide el navegador.
+        $this->get('/')->assertOk()
+            ->assertSee('class="apertura', false)
+            ->assertSee('(display-mode: standalone)', false)
+            ->assertSee('(prefers-reduced-motion: reduce)', false);
+
+        foreach (['/modos', '/ranking', '/sin-conexion'] as $pagina) {
+            $this->get($pagina)->assertOk()->assertDontSee('class="apertura', false)->assertDontSee('abriendo', false);
+        }
+    }
+
+    public function test_la_mesa_se_mide_con_el_alto_que_la_pagina_ve_de_verdad(): void
+    {
+        // Toda página deja medido el alto visible antes de pintar...
+        $this->get('/')->assertOk()->assertSee("raiz.style.setProperty('--alto'", false);
+
+        // ...y las dos mesas de juego, y la página que las lleva, se calculan con él. Instalada en un celular,
+        // la unidad dvh puede contar de más y los cantos quedaban debajo del borde.
+        $estilos = (string) file_get_contents(resource_path('css/app.css'));
+
+        foreach (['.mesa', '.mesa-cuatro', '.mesa-completa', 'body:has(.mesa-completa)'] as $regla) {
+            $this->assertSame(1, preg_match('/(?<![\w-])'.preg_quote($regla, '/').' \{([^}]*)\}/', $estilos, $cuerpo), $regla);
+            $this->assertStringContainsString('var(--alto, 100dvh)', $cuerpo[1], $regla);
+            $this->assertStringNotContainsString('(100dvh', $cuerpo[1], $regla);
+        }
+    }
+
     public function test_la_pagina_de_sin_conexion_es_la_misma_para_todos(): void
     {
         $sinSesion = $this->get('/sin-conexion')->assertOk()->assertSee('Sin conexión')->assertSee('Probar de nuevo');

@@ -7,7 +7,7 @@
     ];
 @endphp
 
-<x-layouts.base superficie="pano">
+<x-layouts.base superficie="pano" :apertura="true">
     {{--
         En el celular el bloque de texto se desarma (`contents`) para que la mano de cartas quede entre el
         título y el botón. La primera pantalla mide justo lo que queda entre el encabezado y la barra de abajo,
@@ -58,6 +58,37 @@
                 <div><div class="se-reparte" style="--orden: 0"><x-carta palo="oro" :numero="7" /></div></div>
                 <div><div class="se-reparte" style="--orden: 2"><x-carta palo="espada" :numero="1" /></div></div>
                 <div><div class="se-reparte" style="--orden: 4"><x-carta palo="basto" :numero="3" /></div></div>
+            </div>
+        </div>
+    </section>
+
+    {{--
+        Instalarlo como aplicación. La franja aparece solo cuando se puede (resources/js/instalar.js): si el
+        navegador no lo ofrece o ya está instalado, no ocupa lugar. El dibujo es el ícono con su nombre debajo,
+        tal como queda en la pantalla del celular. En un iPhone se instala a mano, y en vez del botón se dice cómo.
+    --}}
+    <section aria-labelledby="titulo-instalar" class="border-t border-naipe/20" data-donde-instalar hidden>
+        {{-- En el celular: el ícono junto al título, y debajo la frase y el botón a todo el ancho. Desde `sm`, todo en un renglón. --}}
+        <div class="mx-auto grid max-w-6xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5 gap-y-4 px-5 py-9 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-10 sm:gap-y-2 sm:px-8 sm:py-12">
+            <figure class="text-center sm:row-span-2" aria-hidden="true">
+                <img src="/iconos/icono-192.png" alt="" width="192" height="192" class="size-16 rounded-[22%] border-2 border-naipe/25 sm:size-24">
+                <figcaption class="mt-1.5 text-xs font-semibold sm:mt-2 sm:text-sm">Vale Cuatro</figcaption>
+            </figure>
+
+            <h2 id="titulo-instalar" class="text-[1.75rem] font-black leading-[1.02] tracking-tight sm:self-end sm:text-3xl">
+                Llevalo en el celular.
+            </h2>
+            <p class="max-w-[44ch] leading-snug max-sm:col-span-2 sm:col-start-2 sm:self-start sm:text-lg">
+                Se instala desde acá, sin tienda. Si jugás con otra persona, te avisa cuando te toca.
+            </p>
+
+            <div class="max-sm:col-span-2 sm:col-start-3 sm:row-span-2 sm:row-start-1">
+                <button type="button" class="boton boton-naipe min-h-14 px-6 text-lg max-sm:w-full" data-instalar hidden>
+                    <x-icono nombre="instalar" /> Instalar
+                </button>
+                <p class="max-w-[30ch] font-semibold leading-snug" data-instalar-en-iphone hidden>
+                    En el iPhone: tocá Compartir y después «Agregar a inicio».
+                </p>
             </div>
         </div>
     </section>
