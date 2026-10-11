@@ -1,10 +1,5 @@
 @php
     /*
-     | Todos los botones que puede llegar a tener la barra de cantos. La mesa
-     | muestra solo los que el motor declara válidos en cada momento, y en el
-     | orden que corresponde: [clave, texto, texto corto, clase, ícono].
-     */
-    /*
      | Lo que la mesa le pide al servidor y lo que necesita saber de la partida. Con otra persona
      | enfrente suma su apodo, el pedido que resuelve un plazo vencido y lo que duran el turno y
      | la espera del reparto, para dibujar la cuenta regresiva.
@@ -44,25 +39,6 @@
     ];
 
     $serie ??= null;
-
-    $botones = [
-        ['quiero', 'Quiero', null, 'boton-basto', 'quiero'],
-        ['no_quiero', 'No quiero', null, 'boton-copa', 'no-quiero'],
-        ['truco', 'Truco', null, 'boton-copa', 'truco'],
-        ['retruco', 'Retruco', null, 'boton-copa', 'truco'],
-        ['vale_cuatro', 'Vale cuatro', null, 'boton-copa', 'truco'],
-        ['grupo-envido', 'Envido', null, 'boton-oro', 'envido'],
-        ['grupo-subir', 'Subir', null, 'boton-oro', 'envido'],
-        ['envido', 'Envido', null, 'boton-oro', 'envido'],
-        ['real_envido', 'Real envido', 'Real', 'boton-oro', 'envido'],
-        ['falta_envido', 'Falta envido', 'Falta', 'boton-oro', 'envido'],
-        ['flor', 'Flor', null, 'boton-oro', 'flor'],
-        ['contraflor', 'Contraflor', null, 'boton-oro', 'flor'],
-        ['contraflor_al_resto', 'Contraflor al resto', 'Al resto', 'boton-oro', 'flor'],
-        ['mazo', 'Al mazo', null, 'boton-linea', 'mazo'],
-        ['mas', 'Más', null, 'boton-linea', null],
-        ['volver', 'Volver', null, 'boton-linea', null],
-    ];
 @endphp
 
 <x-layouts.base titulo="Mesa" superficie="pano" :encabezado="false" :pie="false">
@@ -104,53 +80,7 @@
                     clase-nombre="min-w-0 truncate text-sm font-semibold" :hasta="$vista['puntosParaGanar']" />
             </section>
 
-            {{--
-                Los botones de la barra: los ajustes y salir. Los ajustes (el modo, el sonido y el ritmo) son
-                preferencias que se eligen una vez, así que no ocupan la barra: se despliegan en una ventanita
-                debajo, sin tapar la mesa ni detener nada. Se cierra tocando afuera, con Esc o con el mismo botón.
-                El toque de afuera se escucha antes que nadie (capture): una carta, al jugarse, frena su propio toque.
-            --}}
-            <div class="relative flex items-center gap-2 justify-self-end [grid-area:acciones]" @click.outside.capture="cerrarAjustes(false)" @keydown.escape.window="cerrarAjustes()">
-                <button type="button" x-ref="botonDeAjustes" class="boton min-h-10 gap-1.5 px-3 py-1.5 text-sm" :class="ajustando ? 'boton-naipe' : 'boton-linea'"
-                    @click="ajustando ? cerrarAjustes() : abrirAjustes()" aria-controls="ajustes-de-la-mesa" :aria-expanded="ajustando.toString()">
-                    <x-icono nombre="ajustes" class="size-5" /> Ajustes
-                </button>
-                <button type="button" class="boton boton-linea min-h-10 gap-1.5 px-3 py-1.5 text-sm" @click="cerrarAjustes(false); saliendo = true" aria-label="Salir de la mesa">
-                    <x-icono nombre="salir" class="size-5" /> Salir
-                </button>
-
-                {{--
-                    Cada ajuste es un renglón entero que se toca: a la izquierda qué es y cómo está, con palabras;
-                    a la derecha su llave. La del modo es la carta que se da vuelta, la misma del resto del sitio.
-                    Las otras dos son un fósforo en su carril: apagado descansa a un lado, prendido cruza y se
-                    le enciende la cabeza.
-                --}}
-                <div id="ajustes-de-la-mesa" x-ref="ajustes" x-show="ajustando" x-cloak
-                    x-transition:enter="aparece" x-transition:enter-start="desde-chico" x-transition:leave="se-va" x-transition:leave-end="opacity-0"
-                    class="ajustes superficie-naipe" role="dialog" aria-label="Ajustes de la mesa">
-                    <button type="button" class="ajuste" data-cambiar-modo>
-                        <span>
-                            <span class="block font-bold">Modo</span>
-                            <span class="text-sm" data-nombre-del-modo>De día</span>
-                        </span>
-                        <span class="ajuste-carta"><x-modo.carta /></span>
-                    </button>
-                    <button type="button" role="switch" class="ajuste" :aria-checked="sonido.toString()" aria-label="Sonido" data-boton-sonido @click="cambiarSonido()">
-                        <span>
-                            <span class="block font-bold">Sonido</span>
-                            <span class="text-sm" x-text="sonido ? 'Prendido' : 'Apagado'">Apagado</span>
-                        </span>
-                        <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
-                    </button>
-                    <button type="button" role="switch" class="ajuste" :aria-checked="agil.toString()" aria-label="Ritmo ágil" data-boton-ritmo @click="cambiarRitmo()">
-                        <span>
-                            <span class="block font-bold">Ritmo</span>
-                            <span class="text-sm" x-text="agil ? 'Ágil, sin pausas largas' : 'Tranquilo, da tiempo a leer'">Tranquilo, da tiempo a leer</span>
-                        </span>
-                        <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
-                    </button>
-                </div>
-            </div>
+            <x-mesa.ajustes />
         </header>
 
         {{-- Tocar la mesa apura lo que se esté mostrando (los tantos del envido). --}}
@@ -278,35 +208,7 @@
             </section>
         </div>
 
-        <section aria-label="Cantos disponibles" :inert="fin !== null" class="relative z-10 bg-pano-hondo px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            {{--
-                Solo se muestran los cantos que el motor declara válidos en este momento, en una fila.
-                Los botones están todos acá; la mesa decide cuáles se ven y en qué orden. Las dos cosas
-                van en un solo :style, porque x-show y :style en el mismo botón se pisan.
-            --}}
-            <div x-ref="barra" class="mesa-acciones mx-auto flex max-w-2xl gap-2" :data-muchos="barra.length > 3">
-                @foreach ($botones as [$clave, $texto, $corto, $clase, $icono])
-                    <button type="button" class="boton {{ $clase }}" x-cloak data-boton="{{ $clave }}" :style="estiloDe('{{ $clave }}')"
-                        :disabled="ocupada" @click="tocar('{{ $clave }}')" @if ($corto) aria-label="{{ $texto }}" @endif>
-                        @if ($icono)
-                            <x-icono :nombre="$icono" />
-                        @endif
-                        @if ($corto)
-                            {{-- En el celular va el nombre corto, que es como se dice en la mesa. --}}
-                            <span class="sm:hidden">{{ $corto }}</span><span class="hidden sm:inline">{{ $texto }}</span>
-                        @else
-                            {{ $texto }}
-                        @endif
-                    </button>
-                @endforeach
-
-                {{-- Con la mano cerrada no queda nada por cantar: lo único que se puede hacer es repartir. --}}
-                <button type="button" x-ref="repartir" class="boton boton-naipe" x-cloak data-boton="repartir" :style="estiloDe('repartir')"
-                    :disabled="ocupada" @click="tocar('repartir')">
-                    <x-icono nombre="repartir" /> Repartir
-                </button>
-            </div>
-        </section>
+        <x-mesa.cantos />
 
         {{--
             El final de la partida es el gesto fuerte de la mesa, y no es un festejo: el paño hondo ocupa todo, el

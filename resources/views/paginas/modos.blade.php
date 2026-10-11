@@ -123,6 +123,9 @@
                                             @php
                                                 $niveles = $rival['niveles'] ?? [];
                                                 $lugares = $rival['lugares'] ?? [];
+                                                // De a cuatro: los bots son tres y no hay series.
+                                                $deACuatro = ($rival['campos']['asientos'] ?? 2) === 4;
+                                                $conSerie = $rival['serie'] ?? true;
                                                 // Con una partida sin terminar, cualquiera de los botones la sigue: es una sola a la vez.
                                                 $sigue = $enCurso !== null;
                                                 // Con un torneo sin terminar (y ninguna partida abierta), el torneo no se arma: se vuelve a sus llaves.
@@ -138,6 +141,8 @@
                                                         Tenés una partida sin terminar con otra persona.
                                                     @elseif ($enCurso->torneo_id)
                                                         Tenés una partida del torneo sin terminar.
+                                                    @elseif ($enCurso->deACuatro())
+                                                        Tenés una partida de a cuatro sin terminar.
                                                     @else
                                                         Tenés una partida sin terminar contra {{ $enCurso->nivel_bot->nombre() }}.
                                                     @endif
@@ -171,10 +176,14 @@
                                                 --}}
                                                 <div class="relative mt-1 max-w-[36ch]">
                                                     @foreach ($niveles as $opcion)
-                                                        <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Bot {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalle() }}</p>
+                                                        @if ($deACuatro)
+                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Tres bots, nivel {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalleDeACuatro() }}</p>
+                                                        @else
+                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Bot {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalle() }}</p>
+                                                        @endif
                                                     @endforeach
 
-                                                    @unless ($sigue)
+                                                    @unless ($sigue || ! $conSerie)
                                                         {{-- Mide un renglón, pero se toca en un área más alta (el ::before), para que el dedo no le erre. --}}
                                                         <label class="absolute right-0 top-0 flex h-[1.625rem] cursor-pointer items-center gap-2 font-semibold before:absolute before:-inset-x-2 before:-inset-y-2.5 before:content-['']" data-formato>
                                                             <input type="checkbox" class="casilla sr-only" x-model="serie">
@@ -227,8 +236,11 @@
                                                     @if ($lugares !== [])
                                                         <input type="hidden" name="lugares" value="{{ $lugaresElegidos }}" :value="lugares">
                                                     @endif
-                                                    {{-- Una partida, o una serie al mejor de tres: lo dice la casilla de arriba. En un torneo no hay series. --}}
-                                                    @if ($lugares === [])
+                                                    @foreach ($rival['campos'] ?? [] as $campo => $valor)
+                                                        <input type="hidden" name="{{ $campo }}" value="{{ $valor }}">
+                                                    @endforeach
+                                                    {{-- Una partida, o una serie al mejor de tres: lo dice la casilla de arriba. En un torneo y de a cuatro no hay series. --}}
+                                                    @if ($lugares === [] && $conSerie)
                                                         <input type="hidden" name="serie" value="0" :value="serie ? 1 : 0">
                                                     @endif
                                                     <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg">

@@ -21,14 +21,18 @@ class JugarController extends Controller
     public function __invoke(Request $request, Mesa $mesa): RedirectResponse
     {
         // El nivel del bot llega desde la pantalla de modos. El botón de la portada no lo manda: va el de siempre.
-        // Y si se juega una sola partida o una serie al mejor de tres.
-        $request->validate(['nivel' => ['nullable', Rule::enum(Nivel::class)], 'serie' => ['nullable', 'boolean']]);
+        // Y si se juega una sola partida o una serie al mejor de tres, y de a cuántos: mano a mano o de a cuatro.
+        $request->validate([
+            'nivel' => ['nullable', Rule::enum(Nivel::class)],
+            'serie' => ['nullable', 'boolean'],
+            'asientos' => ['nullable', Rule::in([2, 4])],
+        ]);
         $nivel = $request->enum('nivel', Nivel::class) ?? Nivel::porDefecto();
 
         $jugador = $this->jugadorOInvitado($request);
 
         // Retoma la partida que tenía sin terminar, con su nivel, o empieza una nueva ya repartida.
-        $mesa->abrir($jugador, $nivel, $request->boolean('serie'));
+        $mesa->abrir($jugador, $nivel, $request->boolean('serie'), $request->integer('asientos', 2));
 
         return redirect()->route('mesa');
     }

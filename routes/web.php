@@ -51,6 +51,7 @@ Route::middleware(['auth', 'throttle:240,1,mesa'])->group(function () {
     Route::get('/mesa/estado', [MesaController::class, 'estado'])->name('mesa.estado');
     Route::post('/mesa/accion', [MesaController::class, 'accion'])->name('mesa.accion');
     Route::post('/mesa/repartir', [MesaController::class, 'repartir'])->name('mesa.repartir');
+    Route::post('/mesa/sena', [MesaController::class, 'sena'])->name('mesa.sena');
     Route::post('/mesa/abandonar', [MesaController::class, 'abandonar'])->name('mesa.abandonar');
     Route::post('/mesa/bot', [MesaController::class, 'despertarAlBot'])->name('mesa.bot');
     Route::post('/mesa/plazo', [MesaController::class, 'resolverPlazo'])->name('mesa.plazo');

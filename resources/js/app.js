@@ -3,6 +3,7 @@ import { repartirEn } from './cartas';
 import historial from './historial';
 import { prepararLogos } from './logo';
 import mesa from './mesa';
+import mesaDeCuatro from './mesa-cuatro';
 import { prepararModo } from './modo';
 import { duelo, tantoDeEnvido } from './reglas';
 import repeticion from './repeticion';
@@ -37,6 +38,7 @@ Alpine.directive('carta', (elemento, { expression }, { evaluateLater, effect }) 
 });
 
 Alpine.data('mesa', mesa);
+Alpine.data('mesaDeCuatro', mesaDeCuatro);
 Alpine.data('duelo', duelo);
 Alpine.data('tantoDeEnvido', tantoDeEnvido);
 Alpine.data('repeticion', repeticion);

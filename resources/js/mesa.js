@@ -32,7 +32,7 @@ import { apagarSonido, audioAbierto, guardarSonido, prenderSonido, sonar, sonido
 
 const LADOS = ['vos', 'rival'];
 
-const CANTOS = {
+export const CANTOS = {
     envido: 'Envido',
     real_envido: 'Real envido',
     falta_envido: 'Falta envido',
@@ -46,8 +46,8 @@ const CANTOS = {
 
 const ENVIDOS = ['envido', 'real_envido', 'falta_envido'];
 const FLORES = ['flor', 'contraflor', 'contraflor_al_resto'];
-const TRUCOS = ['truco', 'retruco', 'vale_cuatro'];
-const NIVEL_DE_TRUCO = ['', 'Truco', 'Retruco', 'Vale cuatro'];
+export const TRUCOS = ['truco', 'retruco', 'vale_cuatro'];
+export const NIVEL_DE_TRUCO = ['', 'Truco', 'Retruco', 'Vale cuatro'];
 
 const CONCEPTOS = {
     envido: 'Envido',
@@ -59,7 +59,7 @@ const CONCEPTOS = {
     mano: 'Mano',
 };
 
-const CALLADO = { numero: '', frase: '', visible: false };
+export const CALLADO = { numero: '', frase: '', visible: false };
 
 // El ritmo de la mesa lo elige quien juega, con el botón de la barra. No cambia el juego: cambia cuánto se detiene
 // la mesa. "pausas" multiplica las pausas para leer cada jugada (1 es lo escrito en cada lugar); "piensa" es lo
@@ -300,6 +300,21 @@ export default (inicial, pedidos) => ({
      */
     quien(asiento) {
         return asiento === this.yo ? 'vos' : 'rival';
+    },
+
+    /**
+     * Si una jugada la hizo otro y no quien mira la mesa. Mano a mano el otro es uno solo; la mesa de
+     * cuatro (mesa-cuatro.js) lo cambia, porque ahí los otros son tres.
+     */
+    esDeOtro(asiento) {
+        return asiento === this.ellos;
+    },
+
+    /**
+     * Lo que dice la mesa mientras espera la jugada del bot.
+     */
+    get avisoDeEspera() {
+        return 'Juega el bot.';
     },
 
     /**
@@ -580,7 +595,7 @@ export default (inicial, pedidos) => ({
         while (! this.pedidos.entrePersonas && this.juegaElOtro) {
             if (! this.pensando) {
                 this.pensando = true;
-                this.aviso = 'Juega el bot.';
+                this.aviso = this.avisoDeEspera;
             }
 
             await new Promise((listo) => setTimeout(listo, this.ritmo.consulta));
@@ -1304,7 +1319,7 @@ export default (inicial, pedidos) => ({
 
     async mostrar(paso, conPausa = false) {
         // Entre dos jugadas seguidas del rival hay un momento, para que se lea la anterior.
-        if (conPausa && paso.hechos[0]?.asiento === this.ellos) {
+        if (conPausa && this.esDeOtro(paso.hechos[0]?.asiento)) {
             await this.leer(650);
         }
 
@@ -1319,14 +1334,25 @@ export default (inicial, pedidos) => ({
             await this.contar(hecho, paso);
         }
 
-        if (this.tantos.vos.visible || this.tantos.rival.visible) {
+        if (this.hayTantosALaVista()) {
             await this.leer(1300);
-            this.tantos.vos.visible = false;
-            this.tantos.rival.visible = false;
+            this.callarTantos();
             this.levantarTanto([]);
         }
 
         this.vista = paso;
+    },
+
+    /**
+     * Los tantos del envido que están a la vista, y sacarlos. Aparte, porque la mesa de cuatro tiene cuatro.
+     */
+    hayTantosALaVista() {
+        return this.tantos.vos.visible || this.tantos.rival.visible;
+    },
+
+    callarTantos() {
+        this.tantos.vos.visible = false;
+        this.tantos.rival.visible = false;
     },
 
     async contar(hecho, paso) {
@@ -1836,8 +1862,7 @@ export default (inicial, pedidos) => ({
         const delBot = (mostradas[this.ellos] ?? []).filter((carta) => ! vista.bazas.some((baza) => baza.jugadas.some(([, otra]) => otra === carta)));
         const dorsos = [...this.$refs.rival.children];
 
-        this.tantos.vos.visible = false;
-        this.tantos.rival.visible = false;
+        this.callarTantos();
         this.$refs.mano.removeAttribute('data-tanto');
         this.$refs.mano.querySelectorAll('button').forEach((boton, i) => {
             boton.disabled = true;

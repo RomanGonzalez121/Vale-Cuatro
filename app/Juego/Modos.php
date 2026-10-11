@@ -12,13 +12,14 @@ namespace App\Juego;
  * el botón a su rival: la pantalla reparte la carta sola.
  *
  * Un rival con "niveles" deja elegir contra qué bot se juega antes de entrar. Uno con "lugares" deja
- * elegir de cuántos jugadores es el torneo.
+ * elegir de cuántos jugadores es el torneo. "campos" son datos fijos que su botón manda (de a cuatro,
+ * cuántos asientos) y "serie" en false saca la casilla del mejor de tres.
  * "ruta" es la ruta a la que va su botón y "icono" el que lleva; si faltan, van a jugar contra el bot.
  */
 final class Modos
 {
     /**
-     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, ruta?: string, icono?: string, niveles?: list<Nivel>, lugares?: list<int>}>}>
+     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, ruta?: string, icono?: string, niveles?: list<Nivel>, lugares?: list<int>, campos?: array<string, int>, serie?: bool}>}>
      */
     public static function juegos(): array
     {
@@ -41,7 +42,7 @@ final class Modos
                 'icono' => 'de-a-cuatro',
                 'resumen' => 'Dos contra dos, con señas entre compañeros.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Con bots', 'detalle' => 'Un bot de compañero y dos de rivales.', 'boton' => null],
+                    ['clave' => 'bots', 'nombre' => 'Con bots', 'detalle' => 'Un bot de compañero y dos de rivales.', 'boton' => 'Jugar de a cuatro', 'ruta' => 'jugar', 'icono' => 'de-a-cuatro', 'niveles' => Nivel::cases(), 'campos' => ['asientos' => 4], 'serie' => false],
                     ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Armás la pareja por link y juegan en vivo.', 'boton' => null],
                 ],
             ],

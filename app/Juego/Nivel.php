@@ -59,6 +59,19 @@ enum Nivel: int
     }
 
     /**
+     * Lo mismo, dicho de los tres bots del truco de a cuatro: el compañero y los dos rivales son del mismo nivel.
+     */
+    public function detalleDeACuatro(): string
+    {
+        return match ($this) {
+            self::Facil => 'Tiran cualquier cosa. Para aprender.',
+            self::Intermedio => 'Juegan de frente: si cantan, tienen.',
+            self::Dificil => 'Sacan cuentas y cada tanto mienten.',
+            self::UltraDificil => 'Leen la mesa y arriesgan según el tanteo.',
+        };
+    }
+
+    /**
      * El bot de este nivel. El azar llega de afuera: con semilla en los tests, seguro en una partida real.
      */
     public function bot(Azar $azar): Bot

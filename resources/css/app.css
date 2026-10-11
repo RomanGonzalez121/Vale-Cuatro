@@ -1514,6 +1514,380 @@ html:has(body.superficie-pano) {
         opacity: 0.38;
     }
 
+    /*
+     | La mesa de a cuatro, en cruz: tu compañero enfrente, un rival a cada lado y vos abajo.
+     | Sale de la misma medida, --b, con otra cuenta: lo que queda después de las barras, la fila del
+     | compañero y los renglones fijos se reparte entre la cruz del centro (2,7 veces --b) y tu mano
+     | (2,3 veces --b). El ancho también la frena: a los costados de la cruz van los dos rivales.
+     | Si se agrega una fila a esta mesa hay que ajustar la cuenta.
+     */
+    .mesa-cuatro {
+        --b: max(2.5rem, min(calc((100dvh - 24.75rem) / 5.1), 19cqw, 7.5rem));
+        --ancho-companero: calc(var(--b) * 0.5);
+        --ancho-acostada: calc(var(--b) * 0.58);
+    }
+
+    /* En pantallas anchas sobra lugar a los costados: las cartas de los otros tres crecen. */
+    @media (min-width: 64rem) {
+        .mesa-cuatro {
+            --b: max(2.5rem, min(calc((100dvh - 22rem) / 5.1), 19cqw, 7.5rem));
+            --ancho-companero: calc(var(--b) * 0.7);
+            --ancho-acostada: calc(var(--b) * 0.8);
+        }
+    }
+
+    /*
+     | Las cartas de los otros tres, boca abajo, en un abanico chico: la del medio va arriba, así las
+     | tres se cuentan de un vistazo. Cada hijo es un lugar, que lleva la inclinación del abanico; la
+     | carta va adentro, y es lo que se mueve al repartir y al jugar. La mano guarda su medida aunque
+     | ya no queden cartas.
+     */
+    .mano-de-otro {
+        --ancho-otro: var(--ancho-companero);
+        display: flex;
+        justify-content: center;
+        min-width: calc(var(--ancho-otro) * 2.2);
+        min-height: calc(var(--ancho-otro) * 1.56);
+    }
+
+    .mano-de-otro > * {
+        width: var(--ancho-otro);
+        flex: none;
+    }
+
+    .mano-de-otro > * + * {
+        margin-left: calc(var(--ancho-otro) * -0.4);
+    }
+
+    .mano-de-otro > :nth-child(1) {
+        transform: rotate(-8deg) translateY(4%);
+    }
+
+    .mano-de-otro > :nth-child(2) {
+        position: relative;
+        z-index: 1;
+    }
+
+    .mano-de-otro > :nth-child(3) {
+        transform: rotate(8deg) translateY(4%);
+    }
+
+    /*
+     | Los rivales de los costados tienen las cartas acostadas, mirando al centro, como se ven desde tu
+     | silla. Acostada, una carta ocupa alto (que en el celular sobra) en vez de ancho (que falta): así
+     | entran más grandes. El lugar mide lo que la carta ya girada; la carta gira adentro.
+     */
+    .mano-acostada {
+        --ancho-otro: var(--ancho-acostada);
+        flex-direction: column;
+        align-items: center;
+        min-width: calc(var(--ancho-otro) * 1.56);
+        min-height: calc(var(--ancho-otro) * 2.1);
+    }
+
+    .mano-acostada > * {
+        position: relative;
+        width: calc(var(--ancho-otro) * 1.56);
+        height: var(--ancho-otro);
+    }
+
+    .mano-acostada > * + * {
+        margin-top: calc(var(--ancho-otro) * -0.45);
+        margin-left: 0;
+    }
+
+    .mano-acostada > :nth-child(1) {
+        transform: rotate(-7deg);
+    }
+
+    .mano-acostada > :nth-child(3) {
+        transform: rotate(7deg);
+    }
+
+    .mano-acostada > * > * {
+        position: absolute;
+        inset: 0;
+    }
+
+    /* La de la izquierda apunta a la derecha y la de la derecha a la izquierda: las dos al centro. */
+    .mano-acostada > * > * > .carta {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: var(--ancho-otro);
+        transform: translate(-50%, -50%) rotate(90deg);
+        /* La sombra gira con la carta: se corrige para que caiga hacia el mismo lado que las demás. */
+        box-shadow: 3px -2px 0 var(--color-sombra);
+    }
+
+    .mano-acostada[data-dorsos='derecha'] > * > * > .carta {
+        transform: translate(-50%, -50%) rotate(-90deg);
+        box-shadow: -3px 2px 0 var(--color-sombra);
+    }
+
+    /*
+     | Quién es mano: una ficha redonda apoyada en la esquina de sus cartas. No ocupa lugar, así
+     | que el nombre mide lo mismo sea o no mano y nada se corre de una mano a la otra.
+     */
+    .ficha-de-mano {
+        position: absolute;
+        top: -0.5rem;
+        right: -0.5rem;
+        z-index: 3;
+        display: grid;
+        width: 1.375rem;
+        height: 1.375rem;
+        place-items: center;
+        border: 1.5px solid color-mix(in srgb, var(--color-naipe) 45%, transparent);
+        border-radius: 50%;
+        background-color: var(--color-pano-hondo);
+    }
+
+    /* El nombre de cada uno. Mientras canta, queda marcado como una ficha de naipe: así se sabe de quién es la palabra del centro. */
+    .otro-nombre {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .otro-nombre[data-habla='true'] {
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+    }
+
+    /*
+     | La cruz: la baza que se está jugando, con cada carta delante de quien la tiró. Las de los costados
+     | asoman por debajo de las del medio, y la tuya pisa apenas la de tu compañero.
+     */
+    .cruz {
+        position: relative;
+        flex: none;
+        width: calc(var(--b) * 2.7);
+        height: calc(var(--b) * 2.7);
+    }
+
+    /*
+     | En la cruz se marca un solo lugar: el de quien tiene que tirar. La marca va dando la vuelta a la
+     | mesa con el turno, y se va cuando cae la carta. Con un canto sin contestar no se marca ninguno.
+     */
+    .cruz > .hueco-baza {
+        position: absolute;
+    }
+
+    .cruz > .hueco-baza[data-toca='true']:empty {
+        border-color: color-mix(in srgb, var(--color-naipe) 46%, transparent);
+    }
+
+    .cruz-companero {
+        top: 0;
+        left: 50%;
+        margin-left: calc(var(--b) * -0.5);
+        transform: rotate(-2deg);
+    }
+
+    .cruz-vos {
+        bottom: 0;
+        left: 50%;
+        z-index: 1;
+        margin-left: calc(var(--b) * -0.5);
+        transform: rotate(2deg);
+    }
+
+    .cruz-izquierda {
+        top: 50%;
+        left: 0;
+        margin-top: calc(var(--b) * -0.78);
+        transform: rotate(-7deg);
+    }
+
+    .cruz-derecha {
+        top: 50%;
+        right: 0;
+        margin-top: calc(var(--b) * -0.78);
+        transform: rotate(7deg);
+    }
+
+    /*
+     | Los tantos del envido, cada uno dicho desde su lugar de la cruz. Van sobre una ficha de paño hondo:
+     | pueden caer encima de una carta, y Oro sobre Naipe no se lee (sobre Paño hondo da 6,3:1).
+     | La letra sale de --b, como la cruz: así las cuatro fichas entran sin pisarse en cualquier mesa.
+     | "Son buenas" va en dos renglones por lo mismo.
+     */
+    .cruz-tanto {
+        position: absolute;
+        z-index: 5;
+        font-size: calc(var(--b) * 0.62);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+    }
+
+    .cruz-tanto-companero {
+        top: calc(var(--b) * 0.45);
+        left: 50%;
+    }
+
+    .cruz-tanto-vos {
+        top: calc(100% - var(--b) * 0.45);
+        left: 50%;
+    }
+
+    .cruz-tanto-izquierda {
+        top: 50%;
+        left: calc(var(--b) * 0.45);
+    }
+
+    .cruz-tanto-derecha {
+        top: 50%;
+        left: calc(100% - var(--b) * 0.45);
+    }
+
+    .tanto-ficha {
+        padding: 0.06em 0.16em 0.12em;
+        border-radius: 0.12em;
+        background-color: var(--color-pano-hondo);
+        color: var(--color-oro);
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    /* El que pierde queda a media tinta, pero la ficha no se transparenta: debajo puede haber una carta. */
+    .voz.tanto-ficha[data-visible='true'][data-pierde='true'] {
+        opacity: 1;
+        color: color-mix(in srgb, var(--color-oro) 42%, var(--color-pano-hondo));
+    }
+
+    /*
+     | Un naipe en chico, para decir una carta en un renglón: el número y el palo, que a ese tamaño es lo
+     | único que se lee de una carta. Lo usan las señas (qué carta dice cada una) y el cierre de la mano
+     | (las cartas que alguien muestra). Su tamaño sale de la letra de donde está.
+     */
+    .mini-naipe {
+        display: inline-flex;
+        flex: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.1em;
+        width: 1.5em;
+        height: 2.3em;
+        border: 1.5px solid var(--color-tinta);
+        border-radius: 0.2em;
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+        line-height: 1;
+    }
+
+    .mini-naipe-numero {
+        font-size: 0.85em;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+    }
+
+    /* Una seña que dice el número y no el palo: el número solo, más grande. */
+    .mini-naipe[data-tipo='numero'] .mini-naipe-numero {
+        font-size: 1.15em;
+    }
+
+    .mini-naipe-palo {
+        width: 0.58em;
+        height: 0.87em;
+    }
+
+    /* "No tengo nada": el lugar de una carta, vacío. */
+    .mini-naipe[data-tipo='nada'] {
+        border-color: color-mix(in srgb, currentColor 55%, transparent);
+        background: none;
+        color: inherit;
+    }
+
+    /* "Tengo buen envido" no es una carta: va el ícono del envido, sin naipe. */
+    .mini-naipe[data-tipo='envido'] {
+        width: 1.7em;
+        border: 0;
+        background: none;
+        color: inherit;
+    }
+
+    .mini-naipe-envido {
+        width: 1.7em;
+        height: 1.7em;
+    }
+
+    /* Lo que te dice tu compañero, dibujado al lado suyo. El envido va en su color. */
+    .senas-dichas {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.25rem;
+        min-height: 2.3em;
+        font-size: 0.9rem;
+    }
+
+    .senas-dichas .mini-naipe[data-tipo='envido'] {
+        color: var(--color-oro);
+    }
+
+    /*
+     | Las señas: una ventanita como la de los ajustes, desplegada debajo de la fila del compañero. Arriba,
+     | lo que te dijo él; abajo, las que podés hacerle vos, cada una un renglón entero que se toca.
+     */
+    .senas-panel {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        z-index: 20;
+        width: min(20rem, 100%);
+        max-height: calc(100dvh - 15rem);
+        overflow-y: auto;
+        border: 2px solid currentColor;
+        border-radius: 0.875rem;
+        transform-origin: top left;
+    }
+
+    .sena {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        min-height: 3.25rem;
+        padding: 0.375rem 0.875rem;
+        font-size: 1.05rem;
+        text-align: left;
+        line-height: 1.2;
+    }
+
+    button.sena {
+        cursor: pointer;
+    }
+
+    button.sena[disabled] {
+        cursor: default;
+    }
+
+    .sena + .sena {
+        border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+    }
+
+    .sena:focus-visible {
+        outline-offset: -5px;
+        border-radius: 0.625rem;
+    }
+
+    /* El naipe de una seña que se puede hacer responde como una carta: se levanta al pasar y se hunde al apretar. */
+    button.sena .mini-naipe {
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    button.sena:not([disabled]):active .mini-naipe {
+        transform: scale(0.94);
+    }
+
     /* Tanteador: la marca de cada fósforo que falta, apenas visible sobre el paño hondo. */
     .fosforo-lugar {
         stroke: color-mix(in srgb, var(--color-naipe) 13%, transparent);
@@ -1946,6 +2320,38 @@ html:has(body.superficie-pano) {
     }
 
     /*
+     | La repetición de una partida de a cuatro lleva más renglones fijos que la de a dos (el nombre de
+     | cada uno, las bazas escritas), así que sus cartas salen un poco más chicas de la misma cuenta.
+     | Una propiedad no se puede calcular con su propio valor: la medida pasa por otra, un nivel más arriba.
+     */
+    .repeticion-de-cuatro {
+        --b-de-dos: var(--b);
+    }
+
+    .repeticion-de-cuatro > * {
+        --b: calc(var(--b-de-dos) * 0.95);
+        --ancho-baza: var(--b);
+    }
+
+    .repeticion-de-cuatro > .repeticion-texto {
+        min-height: 2.5rem;
+    }
+
+    /* Las cartas de cada uno de los otros tres, en chico y en fila. La que ya se jugó deja su lugar. */
+    .repeticion-otro {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.125rem;
+    }
+
+    .repeticion-otro-cartas {
+        display: flex;
+        gap: 0.2rem;
+        font-size: clamp(0.72rem, 3.6cqw, 0.95rem);
+    }
+
+    /*
      | El cartel de la repetición, sobre la lista del historial. Es el <dialog>
      | del navegador. No lleva sombra (la única del sitio es la de las cartas): lo
      | separa de la lista el fondo, que la tapa con el Paño hondo. En el celular
@@ -2255,6 +2661,15 @@ html:has(body.superficie-pano) {
 }
 
 @media (hover: hover) and (pointer: fine) {
+    /* Una seña: su naipe se levanta e inclina, como una carta que se agarra. */
+    button.sena:not([disabled]):hover .mini-naipe {
+        transform: translateY(-0.14em) rotate(-5deg);
+    }
+
+    button.sena:not([disabled]):active .mini-naipe {
+        transform: scale(0.94);
+    }
+
     /* Los ajustes de la mesa: el fósforo de la llave se asoma hacia donde va a ir, y la carta del modo se entreabre. */
     .ajuste:hover .llave-fosforo {
         transform: translateX(0.18rem);
@@ -2402,6 +2817,13 @@ html:has(body.superficie-pano) {
     .casilla-caja .icono {
         transform: none;
         transition: opacity 150ms ease;
+    }
+
+    button.sena .mini-naipe,
+    button.sena:not([disabled]):hover .mini-naipe,
+    button.sena:not([disabled]):active .mini-naipe {
+        transform: none;
+        transition: none;
     }
 
     /* La carta no gira: la cara aparece sobre el dorso con un fundido. */

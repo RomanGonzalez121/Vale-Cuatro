@@ -19,8 +19,8 @@ class ArmarUnTorneoTest extends DuskTestCase
         $this->browse(function (Browser $navegador) {
             $navegador->visit('/modos')->waitFor('.naipe-juego');
 
-            // La segunda carta de la mano es la del torneo. Entra elegido el de cuatro.
-            $navegador->script("document.querySelectorAll('.naipe-juego')[1].click()");
+            // La carta del torneo, que se busca por su dibujo y no por su lugar en la mano. Entra elegido el de cuatro.
+            $navegador->script("document.querySelector('.naipe-juego:has([data-modo=torneo])').click()");
             $navegador->waitForText('Dos rondas, a 15 puntos.')
                 ->press('Armar el torneo')
                 ->waitForText('Las llaves', 15)

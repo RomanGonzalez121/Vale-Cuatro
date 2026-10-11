@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Juego\Mesa;
+use App\Juego\Senas;
 use App\Juego\Torneos;
 use App\Models\EventoDePartida;
 use App\Models\Partida;
@@ -58,6 +59,16 @@ class MesaController extends Controller
         }
 
         $asiento = $this->asientoDe($partida, $request);
+
+        // De a cuatro la mesa es otra: en cruz, con el compañero enfrente y un rival a cada lado.
+        if ($partida->deACuatro()) {
+            return view('paginas.mesa-cuatro', [
+                'vista' => $this->mesa->vista($partida, $asiento),
+                'nivel' => $partida->nivel_bot,
+                // Todas las señas, para que la mesa sepa decir y dibujar cualquiera. Cuáles tiene cada uno lo dice la vista.
+                'senas' => Senas::todas(),
+            ]);
+        }
 
         return view('paginas.mesa', [
             'vista' => $this->mesa->vista($partida, $asiento),
@@ -227,6 +238,21 @@ class MesaController extends Controller
     }
 
     /**
+     * De a cuatro, la persona le hace una seña a su compañero. No es una jugada: no mueve la mesa ni espera
+     * el turno, así que no lleva "desde". Qué señas puede hacer lo decide el servidor, con sus cartas.
+     */
+    public function sena(Request $request): JsonResponse
+    {
+        $sena = $request->input('sena');
+
+        if (! is_string($sena) || ! Senas::existe($sena)) {
+            return $this->rechazo('Esa seña no existe.');
+        }
+
+        return $this->conLaPartida($request, fn (Partida $partida) => $this->mesa->sena($partida, $sena));
+    }
+
+    /**
      * El último evento que la mesa dice haber mostrado al mandar la jugada, si lo mandó. Con eso el servidor
      * rechaza una jugada decidida sobre una pantalla atrasada.
      */
@@ -307,6 +333,11 @@ class MesaController extends Controller
         $asiento = $this->asientoDe($partida, $request);
         $tanteo = $this->mesa->reconstruir($partida)->tanteo();
         $rival = $partida->entre_personas ? 'tu rival' : 'el bot';
+
+        // De a cuatro el tanteo es de la pareja: la de la persona es la primera.
+        if ($partida->deACuatro()) {
+            return "Tu última partida de a cuatro terminó {$tanteo[0]} a {$tanteo[1]}: ".($partida->ganador === 0 ? 'ganaron ustedes.' : 'ganaron los rivales.');
+        }
 
         return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($partida->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.").$this->comoQuedoLaSerie($partida, $asiento);
     }
