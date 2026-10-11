@@ -64,7 +64,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | M12 | Revancha y series al mejor de tres, contra el bot y entre dos personas | Listo |
 | M13 | Torneo relámpago de cuatro u ocho, con llaves: contra bots ya se juega (partidas a 15, los bots del ranking de ejemplo); entre personas, pendiente | En parte |
 | M14 | Sonido de cartas, fósforos y cantos, fabricado en el navegador y apagado de fábrica | Listo |
-| M15 | Instalable en el celular, con aviso de "te toca" | Pendiente |
+| M15 | Instalable en el celular: se instala desde el navegador, tiene su página de "sin conexión" y avisa cuando te toca | Listo |
 | M16 | Panel de administración: partidas sin movimiento, cola, limpieza y apodos, con cada acción anotada | Listo |
 | M17 | Modos de juego, desafíos y una escalera de niveles | Adelantada la pantalla para elegir modo; el resto, pendiente |
 | M18 | Perfil con categorías ganadas jugando | Pendiente |

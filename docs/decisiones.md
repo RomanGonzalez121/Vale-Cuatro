@@ -1217,3 +1217,73 @@ Dos contra dos: una persona con un bot de compañero contra dos bots. La versió
 - **No se probó** con lector de pantalla (queda para el pulido final) ni la mesa de noche más allá de abrirla. Cómo se siente el ritmo con tres bots lo dice quien juega.
 - **Límites:** la mesa ancha de escritorio sigue pendiente para las dos mesas; la repetición no marca quién es mano; el panel de administración muestra la partida en un renglón, sin la mesa.
 - Capturas en `docs/capturas/`: `mesa-de-a-cuatro.png`, `mesa-de-a-cuatro-celular.png`, `mesa-de-a-cuatro-senas-celular.png`, `mesa-de-a-cuatro-tantos-celular.png`, `mesa-de-a-cuatro-cierre-celular.png`, `modos-de-a-cuatro.png`, `modos-de-a-cuatro-celular.png`, `repeticion-de-a-cuatro.png` y `repeticion-de-a-cuatro-celular.png`.
+
+## M15. Instalable en el celular
+
+Que el sitio se instale como una aplicación y avise cuando te toca aunque no lo estés mirando. Sigue siendo el mismo sitio: no hay una aplicación aparte ni pasa por ninguna tienda.
+
+### Lo que decidió Román
+
+- **La librería de avisos se usa directo** (`minishlink/web-push`, que hace solo el envío). La tabla de suscripciones y el trabajo en cola son propios, con nombres en español como el resto. Se descartó el paquete armado para Laravel, que trae su tabla y su forma de avisar ya hechas: menos código, pero una capa más que no se puede explicar.
+- **Quien juega sin cuenta también recibe avisos.** El caso más común es alguien que entra por un link y juega sin registrarse.
+- **Se avisa de tres cosas, siempre entre personas y solo si no se tiene la mesa a la vista:** que te toca jugar, que te cantaron algo, y que alguien se sentó en la sala que abriste.
+- **Lo visible se hace con las piezas del sitio y con movimiento propio,** no solo para que funcione.
+
+### Instalarlo
+
+- **El manifiesto** (`public/manifest.json`) dice el nombre, los colores (el paño de fondo y el paño hondo en la barra del sistema) y los íconos.
+- **Los íconos salen del isotipo,** dibujados con un navegador y guardados como imágenes en `public/iconos/`: dos comunes, uno "recortable" para Android (el paño llega a los bordes y los fósforos quedan en la zona que nunca se recorta), uno para iPhone y la insignia de una tinta que acompaña a un aviso.
+- **El botón de instalar aparece solo cuando el navegador avisa que se puede.** Está en el pie y en los ajustes de la mesa. Ofrecer algo que no se puede hacer es peor que no ofrecerlo. En un iPhone el navegador no deja abrir ese cartel: se muestra cómo hacerlo a mano.
+- **Se comprobó que el navegador lo da por instalable** preguntándoselo directamente (sin errores de instalación ni del manifiesto). El plan pedía medirlo con Lighthouse, que sacó esa revisión en sus versiones actuales: se usó la misma comprobación que hace el navegador.
+
+### Qué se guarda en el equipo, y qué no
+
+- **Problema:** una aplicación instalada tiene que abrir rápido y no mostrar el error del navegador cuando no hay conexión. Pero el truco se juega en vivo: una partida guardada mostraría cartas viejas, o de otra persona que usó el mismo equipo.
+- **Elegido:** un service worker (`public/sw.js`) que guarda solo lo que no depende de quién lo pide: los estilos, los scripts y las fuentes compilados, los íconos y la página de "sin conexión". Qué se guarda lo decide una sola función con una lista corta.
+- **Una página pedida va siempre a la red.** Solo si la red no contesta se muestra la de "sin conexión". Ni la mesa ni ningún pedido suyo quedan guardados.
+- **La página de "sin conexión" es la misma para todos:** se baja sin la sesión de nadie, y no lleva encabezado ni nada personal.
+- **Cuando se publica una versión nueva se borra lo guardado por la anterior.** La página registra el service worker con la versión de lo compilado en la dirección; al cambiar, el navegador lo instala de nuevo.
+- **Se descartó** guardar las páginas del sitio para verlas sin conexión (el ranking, las reglas): serían datos viejos presentados como actuales, y no es lo que pide el módulo.
+
+### La página de "sin conexión"
+
+- **El dibujo es el mazo, boca abajo.** Sin conexión las cartas "volvieron al mazo". No promete lo que no puede cumplir: dice que sin conexión no hay mesa.
+- **"Probar de nuevo" no va a un lugar fijo:** pregunta si el sitio contesta y, si contesta, vuelve a pedir la página que se quería abrir. También prueba sola cuando el equipo avisa que volvió la conexión.
+- **Movimiento:** al abrirse, las tres cartas llegan al mazo de a una, que es el reparto al revés (300 ms cada una, con la curva del sitio). Si se prueba y sigue sin andar, la carta de arriba se levanta y vuelve a caer, como quien va a repartir y no puede; lo mismo va escrito. Con movimiento reducido las cartas aparecen con un fundido y la de arriba no se mueve.
+- Medida sin scroll a 360 x 640, 360 x 740 y 1355 x 638.
+
+### Los avisos
+
+- **El permiso se pide con un botón, nunca al cargar.** Un navegador que pregunta de entrada recibe un "no" que después cuesta deshacer. Hay dos lugares: en la sala, para quien se va a mandar el link por otra aplicación, y un renglón más en los ajustes de la mesa, con la misma llave de fósforo del sonido y el ritmo. Ahí mismo se dan de baja.
+- **A quién se le avisa se decide dos veces.** Al pasar el turno: si esa persona no pidió avisos o tiene la mesa a la vista, no se encola nada. Y unos segundos después, al ir a mandarlo: si en ese rato jugó, volvió a la mesa o la partida se cerró, tampoco se manda.
+- **"Tener la mesa a la vista" lo dice la propia página:** avisa cuando queda a la vista, lo repite cada tanto y avisa cuando se tapa o se cierra. Si se cerró sin llegar a avisar, la marca se vence sola a los 45 segundos.
+- **El aviso sale de un trabajo en cola,** con cinco segundos de demora. Uno que falla no se reintenta: un "te toca" que llega tarde es peor que ninguno.
+- **El texto nunca nombra una carta.** Se lee en la pantalla bloqueada del celular. Dice "Te toca jugar" o "La Tana te cantó truco", y nada más.
+- **Un aviso nuevo de la misma partida reemplaza al anterior** en vez de apilarse.
+- **El sitio solo le manda avisos a los servicios de avisos conocidos** (el de Chrome, el de Firefox, el de Windows y el de Apple). La dirección la da el navegador de cada persona: si se aceptara cualquiera, alguien podría hacer que el servidor le hable a la máquina que quiera. Tampoco se siguen redirecciones.
+- **Un navegador que ya no existe se da de baja solo:** cuando su servicio contesta que la suscripción venció, se borra.
+- **Contra el bot no hay avisos:** el bot juega en el momento y no hay a quién esperar.
+
+### Las claves de los avisos
+
+- **Problema:** el sitio firma cada aviso con un par de claves, y tienen que ser siempre las mismas: si cambian, todas las suscripciones hechas dejan de recibir avisos. El contenedor se rearma en cada publicación y su disco no sobrevive; y el repositorio es público.
+- **Elegido:** se generan solas la primera vez que hacen falta y quedan en la base, con la privada cifrada con la clave de la aplicación. No hay que cargar nada a mano.
+- **Se descartó** pedirlas como dos variables de entorno: es lo más común, pero suma un paso manual en cada lugar donde se instale el sitio, y la base ya es lo único que persiste.
+- **A OpenSSL se le pasa una configuración mínima propia** para generar la clave, en vez de dejar que busque la de la máquina: en Windows esa suele estar mal y la clave no sale.
+
+### Lo que encontró la revisión
+
+- **El envío estaba escrito para una versión anterior de la librería** y fallaba al primer aviso. Los tests no lo veían, porque en lugar del envío real usan uno de mentira: apareció al hacer una pasada de verdad contra el servicio de avisos de Chrome.
+- **La ventanita de ajustes quedaba debajo del fósforo de la cuenta regresiva** entre personas. Venía de antes y se notó al sumarle renglones.
+- **En el registro de errores quedaba la dirección del navegador** cuando un aviso fallaba. Ahora queda solo el código de la respuesta.
+- **El primer reparto de una partida mandaba dos avisos** a quien abrió la sala: el de la llegada y un "te toca". Queda el de la llegada.
+
+### Qué se probó y qué no
+
+- **Con tests (800 en total):** quién puede anotarse y con qué direcciones; un navegador es de un solo jugador y cada jugador tiene un tope; la baja; que el aviso se encola cuando el turno pasa a alguien suscripto que no tiene la mesa a la vista, y no en el caso contrario; que ningún aviso nombra una carta, jugando partidas enteras; que al mandarlo no sale si ya jugó, volvió o la partida se cerró; las claves; el manifiesto y sus íconos; y que el service worker guarda solo lo estático.
+- **En un navegador real:** el sitio queda instalable; lo guardado después de recorrer el sitio y jugar son 15 archivos, todos estáticos, y la única página es la de "sin conexión"; sin conexión se ve esa página en cualquier dirección, también en la mesa; "Probar de nuevo" avisa si sigue sin andar y vuelve a la página pedida cuando anda.
+- **En la integración continua,** la prueba de navegador que juega una mano revisa además qué quedó guardado.
+- **El envío de verdad se probó contra el servicio de avisos de Chrome** con una suscripción inventada: lo cifró, lo firmó, lo mandó, y el servicio contestó lo esperable (que esa suscripción no existe).
+- **No se pudo probar desde la máquina de desarrollo:** instalarlo en un celular y ver llegar un aviso. El navegador de pruebas tiene los avisos bloqueados. Eso se prueba con el sitio publicado y un celular de verdad.
+- **Límites:** en iPhone los avisos solo llegan si el sitio está instalado en la pantalla de inicio (es una regla de Apple). Si la persona tiene la mesa abierta en una computadora y el celular suscripto, no le llega el aviso mientras la computadora la tenga a la vista: es lo buscado. De a cuatro todavía no hay avisos, porque los otros tres son bots.
+- Capturas en `docs/capturas/`: `sin-conexion.png`, `sin-conexion-celular.png`, `mesa-ajustes-avisos-celular.png`, `sala-avisos.png` y `sala-avisos-celular.png`.
