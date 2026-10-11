@@ -57,6 +57,6 @@
         </div>
 
         {{-- En escritorio la mano asoma desde el borde de abajo de la mesa. El ancho de la carta también mira el alto de la ventana. --}}
-        <x-cuenta.mano :mano="$mano" class="cuenta-mano mt-auto pt-12" style="--ancho-carta: clamp(6rem, min(15vw, 24dvh), 13.5rem)" />
+        <x-cuenta.mano :mano="$mano" class="cuenta-mano mt-auto pt-12" style="--ancho-carta: clamp(6rem, min(15vw, calc(var(--alto, 100dvh) * 0.24)), 13.5rem)" />
     </x-slot:lado>
 </x-cuenta>

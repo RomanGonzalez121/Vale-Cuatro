@@ -86,20 +86,36 @@ class InstalableTest extends TestCase
         }
     }
 
-    public function test_la_mesa_se_mide_con_el_alto_que_la_pagina_ve_de_verdad(): void
+    public function test_lo_que_se_mide_contra_el_alto_usa_el_que_la_pagina_ve_de_verdad(): void
     {
-        // Toda página deja medido el alto visible antes de pintar...
-        $this->get('/')->assertOk()->assertSee("raiz.style.setProperty('--alto'", false);
+        // Toda página deja medido el alto visible antes de pintar, y lo usa para su propio alto mínimo.
+        $this->get('/')->assertOk()->assertSee("raiz.style.setProperty('--alto'", false)->assertSee('min-h-(--alto)', false);
 
-        // ...y las dos mesas de juego, y la página que las lleva, se calculan con él. Instalada en un celular,
-        // la unidad dvh puede contar de más y los cantos quedaban debajo del borde.
-        $estilos = (string) file_get_contents(resource_path('css/app.css'));
+        // Instalada en un celular, la unidad dvh cuenta más alto del que se ve: los cantos de la mesa y el botón
+        // de la portada quedaban tapados. Por eso no se usa suelta en ningún lado: solo como valor de fábrica.
+        $estilos = (string) preg_replace('~/\*.*?\*/~s', '', (string) file_get_contents(resource_path('css/app.css')));
 
-        foreach (['.mesa', '.mesa-cuatro', '.mesa-completa', 'body:has(.mesa-completa)'] as $regla) {
-            $this->assertSame(1, preg_match('/(?<![\w-])'.preg_quote($regla, '/').' \{([^}]*)\}/', $estilos, $cuerpo), $regla);
-            $this->assertStringContainsString('var(--alto, 100dvh)', $cuerpo[1], $regla);
-            $this->assertStringNotContainsString('(100dvh', $cuerpo[1], $regla);
+        $this->assertStringContainsString('--alto: 100dvh;', $estilos);
+        $this->assertSame(0, preg_match('/dvh/', str_replace(['--alto: 100dvh;', 'var(--alto, 100dvh)'], '', $estilos)));
+
+        foreach (['.mesa', '.mesa-cuatro', '.mesa-completa', '.portada-inicio'] as $regla) {
+            $this->assertSame(1, preg_match('/(?<![\w-])'.preg_quote($regla, '/').' \{[^}]*var\(--alto, 100dvh\)/', $estilos), $regla);
         }
+
+        $sueltas = [];
+
+        foreach ([resource_path('views'), resource_path('js')] as $carpeta) {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($carpeta, \FilesystemIterator::SKIP_DOTS)) as $archivo) {
+                foreach (file($archivo->getPathname()) as $numero => $linea) {
+                    // Los comentarios pueden nombrar la unidad; el código no.
+                    if (preg_match('/^\s*(\*|\||\/\/|\/\*|\{\{--)/', $linea) !== 1 && preg_match('/dvh/', str_replace('var(--alto, 100dvh)', '', $linea)) === 1) {
+                        $sueltas[] = $archivo->getFilename().':'.($numero + 1);
+                    }
+                }
+            }
+        }
+
+        $this->assertSame([], $sueltas);
     }
 
     public function test_la_pagina_de_sin_conexion_es_la_misma_para_todos(): void

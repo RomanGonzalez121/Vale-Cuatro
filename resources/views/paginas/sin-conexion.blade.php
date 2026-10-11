@@ -10,7 +10,7 @@
 --}}
 
 <x-layouts.base titulo="Sin conexión" descripcion="Vale Cuatro se juega en vivo: sin conexión no hay mesa." superficie="pano" :encabezado="false" :pie="false" :barra="false">
-    <div class="sin-conexion mx-auto grid min-h-dvh max-w-5xl content-center gap-x-16 gap-y-7 px-6 py-7 sm:gap-y-10 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+    <div class="sin-conexion mx-auto grid min-h-(--alto) max-w-5xl content-center gap-x-16 gap-y-7 px-6 py-7 sm:gap-y-10 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
         x-data="sinConexion({ pulso: @js(url('/up')), inicio: @js(route('portada')) })">
         {{-- El logo va primero en las dos disposiciones; en el celular le sigue el mazo y después el texto. --}}
         <a href="{{ route('portada') }}" class="w-fit rounded text-xl no-underline lg:col-span-2" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>

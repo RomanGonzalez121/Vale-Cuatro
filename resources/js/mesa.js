@@ -368,14 +368,14 @@ export default (inicial, pedidos) => ({
         const renglones = this.voz.texto.split('\n');
         const largo = Math.max(...renglones.map((renglon) => renglon.length), 4);
 
-        return `min(${REMS_DE_LA_LETRA_MAS_GRANDE}rem, ${24 / renglones.length}dvh, calc(88cqw / ${largo * ANCHO_DE_LETRA + RELLENO_DEL_CANTO}))`;
+        return `min(${REMS_DE_LA_LETRA_MAS_GRANDE}rem, calc(var(--alto, 100dvh) * ${0.24 / renglones.length}), calc(88cqw / ${largo * ANCHO_DE_LETRA + RELLENO_DEL_CANTO}))`;
     },
 
     /**
      * El canto, partido en dos renglones si en esta mesa así se lee bastante más grande (en el celular; en
      * una pantalla ancha entra entero). La decisión es la misma que en la repetición (cantoEnRenglones);
      * lo propio de la mesa es cómo mide la letra: las tres medidas que tamanoDeVoz le pasa a los estilos
-     * (11rem, dvh y cqw), sacadas acá en píxeles.
+     * (11rem, una parte del alto y cqw), sacadas acá en píxeles.
      */
     enRenglones(texto) {
         return cantoEnRenglones(texto, (renglones) => Math.min(

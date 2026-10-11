@@ -155,7 +155,7 @@
                     Los tantos del envido, cantados como en la mesa: arriba el rival y abajo vos.
                     El que pierde queda a media tinta. Lo mismo se anuncia en el aviso de abajo.
                 --}}
-                <div class="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-[0.3em] pt-7" style="font-size: min(5.5rem, 9dvh, 23cqw)" aria-hidden="true">
+                <div class="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-[0.3em] pt-7" style="font-size: min(5.5rem, calc(var(--alto, 100dvh) * 0.09), 23cqw)" aria-hidden="true">
                     @foreach (['rival', 'vos'] as $quien)
                         <p class="voz canto canto-oro text-center" data-quien="{{ $quien }}" :data-visible="tantos.{{ $quien }}.visible"
                             :data-pierde="tantos.resuelto && tantos.gana !== '{{ $quien }}'">

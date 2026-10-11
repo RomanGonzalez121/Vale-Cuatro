@@ -36,10 +36,11 @@
         })();
     </script>
     {{--
-        El alto que se ve de verdad, medido por la página y dejado en --alto. La mesa de juego se calcula con
-        él (resources/css/app.css, .mesa): instalada en un celular, la unidad dvh puede contar más alto del que
-        hay y los cantos quedaban debajo del borde. De las medidas que da el navegador vale la más chica.
-        Va acá, y no con el resto del JavaScript, para que esté antes de pintar.
+        El alto que se ve de verdad, medido por la página y dejado en --alto. Todo lo que se mide contra el alto
+        de la ventana se calcula con él (resources/css/app.css, :root): instalada en un celular, la unidad de alto de CSS
+        cuenta más alto del que hay, y los cantos de la mesa o el botón de la portada quedaban tapados.
+        De las medidas que da el navegador vale la más chica. Va acá, y no con el resto del JavaScript, para
+        que esté antes de pintar.
     --}}
     <script>
         (function () {
@@ -105,7 +106,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 {{-- Con la barra, la página deja libre su alto para que el pie no quede tapado. --}}
-<body @class(["superficie-{$superficie} min-h-dvh", 'max-lg:pb-[calc(4rem+env(safe-area-inset-bottom))]' => $barra])>
+<body @class(["superficie-{$superficie} min-h-(--alto)", 'max-lg:pb-[calc(4rem+env(safe-area-inset-bottom))]' => $barra])>
     @if ($apertura)
         <x-apertura />
     @endif

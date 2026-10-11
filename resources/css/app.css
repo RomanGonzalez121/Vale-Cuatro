@@ -47,6 +47,15 @@
  */
 :root {
     color-scheme: light;
+
+    /*
+     | El alto de la ventana. Todo lo que se mide contra él (la mesa, la primera
+     | pantalla de la portada, la repetición) usa --alto y no la unidad dvh:
+     | instalada en un celular, esa unidad cuenta más alto del que se ve, y lo
+     | de abajo quedaba tapado. La página lo mide antes de pintar (el script del
+     | layout) y pisa este valor, que queda para cuando no hay JavaScript.
+     */
+    --alto: 100dvh;
 }
 
 :root[data-modo='noche'] {
@@ -76,15 +85,6 @@ body:has(.mesa-ultra) {
 
 :root[data-modo='noche'] body:has(.mesa-ultra) {
     --color-pano: #0e2b21;
-}
-
-/*
- | Con la mesa de juego, la página mide lo mismo que la mesa: el alto que se ve
- | (--alto, ver .mesa). Si midiera 100dvh y esa unidad contara de más, quedaría
- | un resto de página para deslizar debajo de los cantos.
- */
-body:has(.mesa-completa) {
-    min-height: var(--alto, 100dvh);
 }
 
 /*
@@ -777,7 +777,7 @@ html:has(body.superficie-pano) {
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             grid-template-rows: auto 1fr;
             /* Lo que queda de la ventana debajo del encabezado, que mide 4,75rem. */
-            min-height: calc(100dvh - 4.75rem);
+            min-height: calc(var(--alto, 100dvh) - 4.75rem);
         }
 
         /* El borde izquierdo coincide con el del encabezado (72rem de ancho, 2rem de margen). */
@@ -1104,9 +1104,7 @@ html:has(body.superficie-pano) {
      | las barras se reparte entre las tres filas de cartas (5,6 veces --b en
      | total). Así la mesa entra siempre entera, sin scroll, y en pantallas
      | grandes las cartas crecen hasta un tope.
-     | El alto es --alto, lo que la página midió que se ve de verdad (el script
-     | del layout): instalada en un celular, la unidad dvh puede contar de más y
-     | los cantos quedaban debajo del borde. Sin esa medida vale 100dvh.
+     | El alto es --alto, lo que la página midió que se ve de verdad (ver :root).
      */
     .mesa {
         container-type: inline-size;
@@ -2234,7 +2232,7 @@ html:has(body.superficie-pano) {
      | su línea fina, el lugar del rival, el mazo, el aviso y el lugar propio.
      */
     .sala-mesa {
-        --b: clamp(3rem, min(13.5vw, 9.5dvh), 4.5rem);
+        --b: clamp(3rem, min(13.5vw, calc(var(--alto, 100dvh) * 0.095)), 4.5rem);
         --ancho-rival: calc(var(--b) * 0.7);
         max-width: 27rem;
         /* Cuando llega el rival la página baja hasta mostrarla entera, por encima de la barra de abajo del celular. */
@@ -2348,7 +2346,7 @@ html:has(body.superficie-pano) {
      | reparte entre las tres filas de cartas (unas 6,6 veces --b).
      */
     .repeticion-mesa {
-        --b: max(2.5rem, min(calc((100dvh - 16rem) / 6.6), 17cqw, 6.25rem));
+        --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 16rem) / 6.6), 17cqw, 6.25rem));
     }
 
     /*
@@ -2422,7 +2420,7 @@ html:has(body.superficie-pano) {
     .cartel-repeticion {
         width: min(100% - 2rem, 62rem);
         max-width: none;
-        max-height: calc(100dvh - 2rem);
+        max-height: calc(var(--alto, 100dvh) - 2rem);
         margin: auto;
         padding: 0;
         border: 0;
@@ -2448,20 +2446,20 @@ html:has(body.superficie-pano) {
      */
     @media (min-width: 64rem) {
         .cartel-repeticion .repeticion-mesa {
-            --b: max(2.5rem, min(calc((100dvh - 17.25rem) / 6.6), 17cqw, 6.25rem));
+            --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 17.25rem) / 6.6), 17cqw, 6.25rem));
         }
     }
 
     @media (max-width: 63.99rem) {
         .cartel-repeticion .repeticion-mesa {
-            --b: max(2.5rem, min(calc((100dvh - 33rem) / 6.6), 17cqw, 6.25rem));
+            --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 33rem) / 6.6), 17cqw, 6.25rem));
         }
     }
 
     @media (max-width: 39.99rem) {
         .cartel-repeticion {
             width: 100%;
-            height: 100dvh;
+            height: var(--alto, 100dvh);
             max-height: none;
             border-radius: 0;
         }
@@ -2476,7 +2474,7 @@ html:has(body.superficie-pano) {
          | El detalle queda debajo, deslizando.
          */
         .cartel-repeticion .repeticion-mesa {
-            --b: max(2.5rem, min(calc((100dvh - 26.5rem) / 6.6), 17cqw));
+            --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 26.5rem) / 6.6), 17cqw));
         }
 
         /* El resultado y "Cerrar" comparten renglón, con "Cerrar" arriba a la derecha. */
@@ -2577,15 +2575,15 @@ html:has(body.superficie-pano) {
  */
 @media (width < 40rem) {
     .portada-inicio {
-        --titulo: clamp(2.125rem, 6.9dvh, 2.75rem);
+        --titulo: clamp(2.125rem, calc(var(--alto, 100dvh) * 0.069), 2.75rem);
         --bajada: 4.125rem;
-        --mano: calc(100dvh - 16.75rem - var(--titulo) * 2.82 - var(--bajada));
+        --mano: calc(var(--alto, 100dvh) - 16.75rem - var(--titulo) * 2.82 - var(--bajada));
         --ancho-carta: clamp(4rem, min(30vw, var(--mano) / 2.35), 8rem);
 
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        min-height: calc(100dvh - 8.75rem);
+        min-height: calc(var(--alto, 100dvh) - 8.75rem);
     }
 
     .portada-inicio h1 {
@@ -2625,28 +2623,28 @@ html:has(body.superficie-pano) {
  */
 @media (min-width: 64rem) {
     .cuenta-titulo {
-        padding-top: clamp(1.25rem, 8dvh - 1.75rem, 3.5rem);
-        padding-bottom: clamp(1rem, 4dvh - 0.5rem, 2.25rem);
+        padding-top: clamp(1.25rem, calc(var(--alto, 100dvh) * 0.08) - 1.75rem, 3.5rem);
+        padding-bottom: clamp(1rem, calc(var(--alto, 100dvh) * 0.04) - 0.5rem, 2.25rem);
     }
 
     .cuenta-frase {
-        font-size: clamp(2.75rem, min(6vw, 8.6dvh), 4.75rem);
+        font-size: clamp(2.75rem, min(6vw, calc(var(--alto, 100dvh) * 0.086)), 4.75rem);
     }
 
     .cuenta-formulario {
-        padding-bottom: clamp(1.5rem, 12dvh - 3rem, 5rem);
+        padding-bottom: clamp(1.5rem, calc(var(--alto, 100dvh) * 0.12) - 3rem, 5rem);
     }
 
     .cuenta-formulario form {
-        gap: clamp(0.875rem, 4.4dvh - 0.75rem, 1.75rem);
+        gap: clamp(0.875rem, calc(var(--alto, 100dvh) * 0.044) - 0.75rem, 1.75rem);
     }
 
     .cuenta-mesa-texto {
-        padding-top: clamp(1.75rem, 12dvh - 2.5rem, 5rem);
+        padding-top: clamp(1.75rem, calc(var(--alto, 100dvh) * 0.12) - 2.5rem, 5rem);
     }
 
     .cuenta-mano {
-        padding-top: clamp(1.5rem, 8dvh - 1rem, 4rem);
+        padding-top: clamp(1.5rem, calc(var(--alto, 100dvh) * 0.08) - 1rem, 4rem);
     }
 }
 
@@ -2665,15 +2663,15 @@ html:has(body.superficie-pano) {
  */
 @media (min-width: 64rem) {
     .portada-inicio {
-        min-height: min(calc(100dvh - 4.75rem), 60rem);
+        min-height: min(calc(var(--alto, 100dvh) - 4.75rem), 60rem);
     }
 }
 
 @media (min-width: 64rem) and (height < 51.25rem) {
     .portada-inicio {
-        --arriba: clamp(1rem, 20dvh - 6.75rem, 3.5rem);
-        --abajo: clamp(1.5rem, 37dvh - 13rem, 6rem);
-        --libre: calc(100dvh - 4.75rem - var(--arriba) - var(--abajo));
+        --arriba: clamp(1rem, calc(var(--alto, 100dvh) * 0.2) - 6.75rem, 3.5rem);
+        --abajo: clamp(1.5rem, calc(var(--alto, 100dvh) * 0.37) - 13rem, 6rem);
+        --libre: calc(var(--alto, 100dvh) - 4.75rem - var(--arriba) - var(--abajo));
         --carta: clamp(5rem, calc((var(--libre) - 0.75rem) / 3.46), 10.5rem);
 
         padding-top: var(--arriba);
@@ -2710,15 +2708,15 @@ html:has(body.superficie-pano) {
  */
 @media (min-width: 64rem) and (height < 51.25rem) {
     .modos-inicio {
-        padding-top: clamp(1rem, 13dvh - 3.75rem, 3.5rem);
+        padding-top: clamp(1rem, calc(var(--alto, 100dvh) * 0.13) - 3.75rem, 3.5rem);
     }
 
     .modos-inicio h1 {
-        font-size: clamp(2.75rem, 9dvh, 4.5rem);
+        font-size: clamp(2.75rem, calc(var(--alto, 100dvh) * 0.09), 4.5rem);
     }
 
     .modos-mano {
-        margin-top: clamp(1rem, 7dvh - 1.75rem, 2.5rem);
+        margin-top: clamp(1rem, calc(var(--alto, 100dvh) * 0.07) - 1.75rem, 2.5rem);
     }
 }
 

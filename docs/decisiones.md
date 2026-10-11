@@ -1293,10 +1293,11 @@ Que el sitio se instale como una aplicación y avise cuando te toca aunque no lo
 Román lo instaló en un Android desde Chrome y marcó tres cosas. Pidió recomendaciones y eligió.
 
 - **La mesa había que deslizarla para ver los cantos.** La mesa mide justo el alto de la pantalla, y lo sacaba de la unidad `dvh`. Instalada, esa unidad contaba más alto del que se ve. En el navegador no pasa.
-  - **Elegido:** la página mide ella misma el alto que se ve, antes de pintar y cada vez que cambia, y lo deja en una variable (`--alto`). Las dos mesas de juego y la página que las lleva se calculan con esa variable. De las medidas que da el navegador vale la más chica: si alguna cuenta de más, gana la otra.
+  - **Elegido:** la página mide ella misma el alto que se ve, antes de pintar y cada vez que cambia, y lo deja en una variable (`--alto`). De las medidas que da el navegador vale la más chica: si alguna cuenta de más, gana la otra.
+  - **Primero se aplicó solo a la mesa, y no alcanzó.** Román mandó capturas del celular: la página medía unos 46 px más de lo que se veía, y en la portada el botón de jugar quedaba debajo de la barra de abajo. Ahora todo lo que se mide contra el alto de la ventana usa esa variable (la mesa, la portada, los modos, la repetición, las pantallas de cuenta), y un test impide que la unidad `dvh` vuelva a usarse suelta. En un navegador común las dos medidas coinciden y nada cambia de lugar: se midieron de nuevo los botones de la portada y de los modos, y dieron lo mismo que antes.
   - **Por qué va en el layout y no con el resto del JavaScript:** tiene que estar antes del primer dibujo, o la mesa aparecería grande y se achicaría.
   - **No se pudo reproducir en la computadora.** Se comprobó que, cuando esa medida es menor que `dvh`, la mesa entra entera en ella. Que la medida sea la correcta en ese celular lo confirma Román con el sitio publicado.
-  - No se tocaron las cartas ni la disposición, ni las demás pantallas.
+  - No se tocaron las cartas ni la disposición.
 - **El botón de instalar estaba al fondo del pie y no se veía.**
   - **Elegido:** una franja propia en la portada, debajo de la primera pantalla: el ícono con su nombre debajo, como queda en el celular, una frase que dice para qué sirve y el botón lleno. Aparece solo cuando se puede instalar; si no, no ocupa lugar. En el pie queda un link chico.
   - **Se descartó** un cartel que aparezca solo desde abajo: es invasivo y nada en el sitio queda fijo sobre la página.
