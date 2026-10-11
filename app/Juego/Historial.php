@@ -82,7 +82,7 @@ final class Historial
     /**
      * Lo que la lista dice de una partida, visto desde un asiento.
      *
-     * @return array{id: int, gano: bool, vos: int, ellos: int, hasta: int, rival: string, bot: bool, torneo: ?string, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
+     * @return array{id: int, asientos: int, gano: bool, vos: int, ellos: int, hasta: int, rival: string, bot: bool, torneo: ?string, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
      */
     public function resumen(Partida $partida, int $asiento): array
     {
@@ -92,6 +92,8 @@ final class Historial
 
         return [
             'id' => $partida->getKey(),
+            // De a cuatro, "vos" y "ellos" son las parejas: la de la persona y la de los dos rivales.
+            'asientos' => $partida->asientos,
             'gano' => $partida->ganador === $asiento,
             'vos' => $estado['tanteo'][$asiento],
             'ellos' => $estado['tanteo'][1 - $asiento],
@@ -151,9 +153,14 @@ final class Historial
 
     /**
      * Contra quién se jugó, dicho como en la mesa: "Bot intermedio" o el apodo de la otra persona.
+     * De a cuatro contra bots son dos, del mismo nivel que el compañero.
      */
     private function rival(Partida $partida, int $asiento): string
     {
+        if ($partida->deACuatro()) {
+            return 'dos bots de nivel '.mb_strtolower($partida->nivel_bot->nombre());
+        }
+
         if (! $partida->entre_personas) {
             $cruce = $this->cruceDeTorneo($partida);
 

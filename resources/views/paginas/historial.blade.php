@@ -92,17 +92,21 @@
                             'ml-0.5 border-l-2 border-l-texto pl-4 sm:pl-6' => $serie,
                         ])>
                             <p class="leading-none">
-                                <span @class(['block text-sm font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>{{ $partida['gano'] ? 'Ganaste' : 'Perdiste' }}</span>
+                                {{-- De a cuatro se gana y se pierde de a dos: vos y tu compañero. --}}
+                                @php($deACuatro = $partida['asientos'] === 4)
+                                <span @class(['block text-sm font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>{{ $deACuatro ? ($partida['gano'] ? 'Ganaron' : 'Perdieron') : ($partida['gano'] ? 'Ganaste' : 'Perdiste') }}</span>
                                 <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</span>
                             </p>
                             <p class="min-w-0 leading-snug max-sm:order-3 max-sm:col-span-2">
                                 <span class="block text-lg font-bold [overflow-wrap:anywhere] max-sm:text-base">Contra {{ $partida['rival'] }}</span>
-                                {{-- De qué juego fue. Hoy hay uno solo; el torneo, los desafíos y el de a cuatro van a decirlo acá. --}}
+                                {{-- De qué juego fue: mano a mano, de un torneo o de a cuatro. Los desafíos van a decirlo acá. --}}
                                 <span class="block text-[0.95rem]">
                                     @if ($serie)
                                         {{ $partida['serie']['numero'] }}ª de la serie{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @elseif ($partida['torneo'])
                                         Torneo, {{ mb_strtolower($partida['torneo']) }}.
+                                    @elseif ($deACuatro)
+                                        De a cuatro, con un bot de compañero{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @else
                                         Mano a mano{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @endif
@@ -113,8 +117,8 @@
                                 </span>
                             </p>
                             <div class="flex w-fit gap-5 rounded-lg bg-pano-hondo px-3.5 py-2.5 text-[0.66rem] max-sm:hidden sm:col-span-2 lg:col-span-1">
-                                <x-tanteador nombre="Vos" :puntos="$partida['vos']" :hasta="$partida['hasta']" />
-                                <x-tanteador nombre="Rival" :puntos="$partida['ellos']" :hasta="$partida['hasta']" />
+                                <x-tanteador :nombre="$deACuatro ? 'Nosotros' : 'Vos'" :puntos="$partida['vos']" :hasta="$partida['hasta']" />
+                                <x-tanteador :nombre="$deACuatro ? 'Ellos' : 'Rival'" :puntos="$partida['ellos']" :hasta="$partida['hasta']" />
                             </div>
                             {{-- Un link a la página de la repetición. Con JavaScript se abre en un cartel acá mismo (historial.js). --}}
                             <a href="{{ route('historial.ver', $partida['id']) }}" data-cuadros="{{ route('historial.cuadros', $partida['id']) }}"

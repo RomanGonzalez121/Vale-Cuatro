@@ -13,6 +13,10 @@
     los controles y al final el detalle, así la mesa y los botones se ven juntos sin deslizar.
 
     El slot es la acción de arriba: "Cerrar" en el cartel, "Volver al historial" en la página.
+
+    Una partida de a cuatro se ve con otra mesa, en cruz, como se jugó: el compañero enfrente y un rival
+    a cada lado, con sus cartas dibujadas en chico (número y palo), y en el centro la baza de ese momento.
+    Cuál de las dos mesas va lo dicen los datos, porque el cartel sirve para cualquier partida de la lista.
 --}}
 
 <div x-data="repeticion({{ $datos }})" {{ $attributes->class('repeticion') }} @keydown.window="tecla($event)">
@@ -20,7 +24,7 @@
         {{ $slot }}
 
         <{{ $encabezado }} id="titulo-repeticion" class="text-[2rem] font-black leading-[0.98] tracking-tight sm:text-5xl">
-            <span x-text="resumen.gano ? 'Ganaste' : 'Perdiste'"></span>
+            <span x-text="deACuatro ? (resumen.gano ? 'Ganaron' : 'Perdieron') : (resumen.gano ? 'Ganaste' : 'Perdiste')"></span>
             <span class="whitespace-nowrap tabular-nums" x-text="`${resumen.vos} a ${resumen.ellos}`"></span>
         </{{ $encabezado }}>
     </header>
@@ -36,43 +40,74 @@
     </div>
 
     <div class="repeticion-escena">
-        <div class="mesa repeticion-mesa superficie-pano relative overflow-hidden rounded-xl">
+        <div class="mesa repeticion-mesa superficie-pano relative overflow-hidden rounded-xl" :class="{ 'repeticion-de-cuatro': deACuatro }">
             <div class="relative z-10 grid grid-cols-2 gap-x-4 bg-pano-hondo px-4 py-3 text-[clamp(0.75rem,3.9cqw,1.05rem)]">
-                <x-tanteador nombre="Vos" :puntos="0" modelo="estado.tanteo.vos" class="min-w-0" />
-                <x-tanteador nombre="Rival" nombre-vivo="resumen.bot ? 'Bot' : resumen.rival" :puntos="0" modelo="estado.tanteo.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-sm font-semibold" />
+                <x-tanteador nombre="Vos" nombre-vivo="deACuatro ? 'Nosotros' : 'Vos'" :puntos="0" modelo="estado.tanteo.vos" class="min-w-0" />
+                <x-tanteador nombre="Rival" nombre-vivo="deACuatro ? 'Ellos' : (resumen.bot ? 'Bot' : resumen.rival)" :puntos="0" modelo="estado.tanteo.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-sm font-semibold" />
             </div>
 
-            {{-- El rival: sus cartas si es el bot, dorsos si es otra persona. Los lugares vacíos guardan su ancho. --}}
-            <div class="px-4 pt-3" aria-hidden="true">
-                <div class="mesa-rival flex justify-center gap-2">
-                    @foreach ([0, 1, 2] as $lugar)
-                        <div data-orden="{{ $lugar * 2 + 1 }}" x-carta="estado.rival[{{ $lugar }}]"></div>
-                    @endforeach
+            <template x-if="! deACuatro">
+                <div>
+                    {{-- El rival: sus cartas si es el bot, dorsos si es otra persona. Los lugares vacíos guardan su ancho. --}}
+                    <div class="px-4 pt-3" aria-hidden="true">
+                        <div class="mesa-rival flex justify-center gap-2">
+                            @foreach ([0, 1, 2] as $lugar)
+                                <div data-orden="{{ $lugar * 2 + 1 }}" x-carta="estado.rival[{{ $lugar }}]"></div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div x-ref="bazas" class="relative px-4 py-4">
+                        <ol class="mx-auto grid max-w-xl grid-cols-3 gap-3">
+                            @foreach ([0, 1, 2] as $numero)
+                                <li class="flex flex-col items-center">
+                                    <p class="mb-2 text-xs font-semibold sm:text-sm">{{ $numero + 1 }}ª baza<span x-text="rotuloDeBaza({{ $numero }})"></span></p>
+                                    <div class="hueco-baza hueco-rival" :class="{ 'opacity-55': perdio({{ $numero }}, 'rival') }" x-carta="estado.bazas[{{ $numero }}].rival"></div>
+                                    <div class="hueco-baza hueco-propio" :class="{ 'opacity-55': perdio({{ $numero }}, 'vos') }" x-carta="estado.bazas[{{ $numero }}].vos"></div>
+                                </li>
+                            @endforeach
+                        </ol>
+
+                        <x-repeticion.canto />
+                    </div>
                 </div>
-            </div>
+            </template>
 
-            <div x-ref="bazas" class="relative px-4 py-4">
-                <ol class="mx-auto grid max-w-xl grid-cols-3 gap-3">
-                    @foreach ([0, 1, 2] as $numero)
-                        <li class="flex flex-col items-center">
-                            <p class="mb-2 text-xs font-semibold sm:text-sm">{{ $numero + 1 }}ª baza<span x-text="rotuloDeBaza({{ $numero }})"></span></p>
-                            <div class="hueco-baza hueco-rival" :class="{ 'opacity-55': perdio({{ $numero }}, 'rival') }" x-carta="estado.bazas[{{ $numero }}].rival"></div>
-                            <div class="hueco-baza hueco-propio" :class="{ 'opacity-55': perdio({{ $numero }}, 'vos') }" x-carta="estado.bazas[{{ $numero }}].vos"></div>
-                        </li>
-                    @endforeach
-                </ol>
+            {{--
+                De a cuatro: tu compañero arriba, un rival a cada lado y la baza de ese momento en cruz. Las cartas
+                de los otros tres van en chico, con el número y el palo: son bots, y en la repetición se ven todas.
+                La carta que ya se jugó deja su lugar vacío, así las otras no se corren.
+            --}}
+            <template x-if="deACuatro">
+                <div x-ref="bazas" class="repeticion-cruz relative px-3 pb-1 pt-2">
+                    <x-repeticion.otro lugar="companero" nombre="Compañero" />
 
-                {{-- El canto, con la misma pieza que en la mesa. Uno largo puede venir en dos renglones. --}}
-                <div class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" aria-hidden="true">
-                    <p class="voz canto whitespace-pre text-center" :data-visible="(estado.canto !== null).toString()" :data-quien="voz.quien" :style="{ fontSize: `${voz.letra}px` }"
-                        :class="{ 'canto-oro': voz.tono === 'oro', 'canto-ficha canto-copa': voz.tono === 'copa', 'canto-ficha canto-basto': voz.tono === 'basto' }"
-                        x-text="voz.texto"></p>
+                    <div class="mx-auto mt-1 grid w-full grid-cols-[1fr_auto_1fr] items-center gap-1.5" style="max-width: calc(var(--b) * 6.6)">
+                        <x-repeticion.otro lugar="izquierda" nombre="Rival" />
+
+                        <div class="cruz" aria-hidden="true">
+                            @foreach (['izquierda' => 3, 'derecha' => 1, 'companero' => 2, 'vos' => 0] as $lugar => $orden)
+                                <div class="hueco-baza cruz-{{ $lugar }}" data-orden="{{ $orden }}" x-carta="estado.cruz.{{ $lugar }}"
+                                    :data-gana="estado.cruz.ganador === '{{ $lugar }}' ? '' : null" :data-pierde="perdioEnLaCruz('{{ $lugar }}') ? '' : null"></div>
+                            @endforeach
+                        </div>
+
+                        <x-repeticion.otro lugar="derecha" nombre="Rival" />
+                    </div>
+
+                    <ol class="mt-1 flex justify-center gap-x-5 text-xs font-semibold sm:text-sm">
+                        @foreach ([0, 1, 2] as $numero)
+                            <li>{{ $numero + 1 }}ª<span x-text="rotuloDeBaza({{ $numero }})"></span></li>
+                        @endforeach
+                    </ol>
+
+                    <x-repeticion.canto />
                 </div>
-            </div>
+            </template>
 
-            <p aria-live="polite" class="flex min-h-12 items-center justify-center px-4 text-center font-semibold leading-snug" x-text="estado.texto"></p>
+            <p aria-live="polite" class="repeticion-texto flex min-h-12 items-center justify-center px-4 text-center font-semibold leading-snug" x-text="estado.texto"></p>
 
-            <div class="px-4 pb-5 pt-1" aria-hidden="true">
+            <div class="repeticion-mano px-4 pb-5 pt-1" aria-hidden="true">
                 <div class="abanico mesa-mano">
                     @foreach ([0, 1, 2] as $lugar)
                         <div data-orden="{{ $lugar * 2 }}" x-carta="estado.propias[{{ $lugar }}]"></div>

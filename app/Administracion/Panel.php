@@ -199,7 +199,8 @@ final class Panel
             'uno' => $partida->jugador?->apodo ?? 'Alguien que ya no está',
             'otro' => $partida->entre_personas
                 ? ($partida->invitado?->apodo ?? 'Alguien que ya no está')
-                : 'Bot '.mb_strtolower($partida->nivel_bot->nombre()),
+                // De a cuatro, la persona juega con un bot contra otros dos: el tanteo es de las parejas.
+                : ($partida->deACuatro() ? 'Tres bots de nivel ' : 'Bot ').mb_strtolower($partida->nivel_bot->nombre()),
             'contraElBot' => ! $partida->entre_personas,
             'enSerie' => $partida->serie_id !== null,
             'tanteo' => $tanteo,

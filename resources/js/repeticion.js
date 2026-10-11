@@ -10,7 +10,7 @@
  | seguidas y una animación los haría sentir lentos.
  */
 
-import { cantoEnRenglones, reparto } from './cartas';
+import { cantoEnRenglones, numeroDe, paloDe, reparto } from './cartas';
 
 const ENTRE_CUADROS = 1150;
 
@@ -48,6 +48,11 @@ export default ({ resumen, rival, cuadros, manos }) => ({
     /** La mesa tal como estaba después del cuadro actual. */
     get estado() {
         return this.cuadros[this.indice];
+    },
+
+    /** Si la partida fue de a cuatro: se ve con la mesa en cruz, y el tanteo es de las parejas. */
+    get deACuatro() {
+        return this.resumen.asientos === 4;
     },
 
     get reproduciendo() {
@@ -89,11 +94,39 @@ export default ({ resumen, rival, cuadros, manos }) => ({
 
     /** Qué cartas del rival se ven: las del bot, todas; las de otra persona, solo las que se vieron en la mesa. */
     get nota() {
+        if (this.deACuatro) {
+            return 'Jugaste con un bot de compañero. Acá se ven las cartas de los cuatro.';
+        }
+
         return this.resumen.bot ? 'Acá se ven las cartas de los dos.' : `De ${this.rival} se ven solo las cartas que jugó o mostró en la mesa.`;
     },
 
     rotuloDeBaza(numero) {
+        // De a cuatro las bazas son de las parejas, y de cada una se guarda solo de quién fue.
+        if (this.deACuatro) {
+            return { vos: ' nuestra', rival: ' de ellos', parda: ' parda' }[this.estado.bazas[numero]] ?? '';
+        }
+
         return { vos: ', tuya', rival: this.resumen.bot ? ', del bot' : ', del rival', parda: ', parda' }[this.estado.bazas[numero].ganador] ?? '';
+    },
+
+    /** De a cuatro, en la baza que está en la cruz: la carta que perdió se apaga y la que ganó queda arriba. */
+    perdioEnLaCruz(lugar) {
+        const ganador = this.estado.cruz.ganador;
+
+        return ganador !== null && ganador !== 'parda' && ganador !== lugar && this.estado.cruz[lugar] !== null;
+    },
+
+    /**
+     * Una carta dibujada en chico (el número y el palo), para las manos de los otros tres de la mesa de a cuatro.
+     * Un lugar sin carta no dibuja nada, pero guarda su medida.
+     */
+    dibujoDe(carta) {
+        return carta ? { tipo: 'carta', numero: numeroDe(carta), palo: paloDe(carta) } : { tipo: 'nada', numero: null, palo: null };
+    },
+
+    seFue(lugar) {
+        return this.estado.enMazo.includes(lugar);
     },
 
     /** La carta de quien perdió la baza se apaga, igual que en la mesa. */

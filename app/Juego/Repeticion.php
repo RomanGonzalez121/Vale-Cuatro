@@ -17,6 +17,9 @@ use App\Motor\Partida as Motor;
  * solo las que se vieron en la mesa (las jugadas y las que mostró por el envido o la flor): el reglamento
  * dice que las demás vuelven al mazo boca abajo y nunca se muestran, y mostrarlas le contaría a cada uno
  * cuándo el otro le mintió.
+ *
+ * Una partida de a cuatro se cuenta con otra forma de cuadro (deACuatro): cuatro manos, la baza en cruz y
+ * el tanteo de las parejas. Ahí los otros tres son bots, así que se ven las cartas de todos.
  */
 final class Repeticion
 {
@@ -35,6 +38,12 @@ final class Repeticion
     private const DEL_TRUCO = ['truco', 'retruco', 'vale_cuatro'];
 
     private const NIVEL_DE_TRUCO = ['', 'Truco', 'Retruco', 'Vale cuatro'];
+
+    /** De a cuatro, el lugar de cada asiento en la mesa, visto desde la persona (el 0). Se juega hacia la derecha. */
+    private const LUGARES = ['vos', 'derecha', 'companero', 'izquierda'];
+
+    /** Cómo se nombra a cada uno de los otros tres al empezar una frase, igual que en la mesa. */
+    private const NOMBRES = [1 => 'El de la derecha', 2 => 'Tu compañero', 3 => 'El de la izquierda'];
 
     private const CONCEPTOS = [
         'envido' => 'envido',
@@ -55,6 +64,10 @@ final class Repeticion
      */
     public function de(Partida $partida, int $asiento): array
     {
+        if ($partida->deACuatro()) {
+            return $this->deACuatro($partida);
+        }
+
         $ellos = 1 - $asiento;
         $rival = $this->nombreDelRival($partida, $asiento);
         $quien = fn (?int $otro): string => $otro === $asiento ? 'vos' : 'rival';
@@ -174,6 +187,188 @@ final class Repeticion
     }
 
     /**
+     * Los cuadros de una partida de a cuatro, vistos desde el asiento de la persona (el 0): su compañero
+     * enfrente y un rival a cada lado. El tanteo es de las parejas ("vos" es la suya y "rival" la otra).
+     *
+     * En cada cuadro: las cartas que le quedan a cada uno, la baza que se está jugando en cruz (cada carta
+     * delante de quien la tiró), de quién fue cada baza ya cerrada y quién se fue al mazo.
+     *
+     * @return array{cuadros: list<array<string, mixed>>, manos: list<int>}
+     */
+    private function deACuatro(Partida $partida): array
+    {
+        $pareja = fn (int $equipo): string => $equipo % 2 === 0 ? 'vos' : 'rival';
+        $sujeto = fn (int $asiento): ?string => self::NOMBRES[$asiento] ?? null;
+        $cruzVacia = [...array_fill_keys(self::LUGARES, null), 'ganador' => null];
+
+        $cuadro = [
+            'mano' => 0,
+            'tanteo' => ['vos' => 0, 'rival' => 0],
+            'propias' => [null, null, null],
+            'otros' => ['derecha' => [null, null, null], 'companero' => [null, null, null], 'izquierda' => [null, null, null]],
+            'cruz' => $cruzVacia,
+            'bazas' => [null, null, null],
+            'enMazo' => [],
+            'canto' => null,
+            'texto' => '',
+            'fin' => null,
+        ];
+        $cuadros = [];
+        $manos = [];
+        // Qué baza está en la cruz: cuando cae la primera carta de la siguiente, la anterior se levanta.
+        $enLaCruz = 0;
+        $anterior = null;
+
+        foreach ($this->mesa->pasoAPaso($partida) as [$evento, $motor]) {
+            // Una seña no mueve la mesa, pero pasó: se cuenta con palabras, y nada más cambia.
+            if ($evento->tipo === EventoDePartida::SENA) {
+                $tiene = Senas::todas()[$evento->datos['sena']]['tiene'] ?? null;
+                $dijo = $evento->datos['sena'] === Senas::NADA ? 'no tengo nada' : "tengo {$tiene}";
+
+                $cuadros[] = $cuadro = [...$cuadro, 'canto' => null, 'texto' => "Le hiciste una seña a tu compañero: {$dijo}."];
+
+                continue;
+            }
+
+            if ($evento->tipo === EventoDePartida::ABANDONO) {
+                $cuadros[] = [...$cuadro, 'canto' => null, 'texto' => 'Abandonaste la partida.', 'fin' => 'rival'];
+
+                continue;
+            }
+
+            // Un evento que no pasó por el motor deja los hechos de la jugada anterior, que ya se contaron.
+            if ($motor === $anterior) {
+                continue;
+            }
+
+            $anterior = $motor;
+
+            foreach (self::enOrdenDeRelato($motor->hechos()) as $hecho) {
+                $cuadro['canto'] = null;
+                $asiento = $hecho['asiento'] ?? null;
+                $quien = $asiento === null ? null : $sujeto($asiento);
+
+                switch ($hecho['tipo']) {
+                    case 'reparto':
+                        $manos[] = count($cuadros);
+                        $repartidas = $evento->datos['manos'];
+                        $enLaCruz = 0;
+                        $cuadro = [
+                            ...$cuadro,
+                            'mano' => $hecho['numero'],
+                            'tanteo' => ['vos' => $motor->tanteo()[0], 'rival' => $motor->tanteo()[1]],
+                            'propias' => array_values($repartidas[0]),
+                            // Los otros tres son bots: en la repetición se ven las cartas de todos.
+                            'otros' => ['derecha' => array_values($repartidas[1]), 'companero' => array_values($repartidas[2]), 'izquierda' => array_values($repartidas[3])],
+                            'cruz' => $cruzVacia,
+                            'bazas' => [null, null, null],
+                            'enMazo' => [],
+                            'texto' => "Mano {$hecho['numero']}. ".($hecho['mano'] === 0 ? 'Sos mano.' : 'Es mano '.mb_strtolower($sujeto($hecho['mano'])).'.'),
+                        ];
+                        break;
+
+                    case 'carta':
+                        $numero = $this->bazaDe($motor, $hecho);
+
+                        if ($numero !== $enLaCruz) {
+                            $cuadro['cruz'] = $cruzVacia;
+                            $enLaCruz = $numero;
+                        }
+
+                        $cuadro['cruz'][self::LUGARES[$asiento]] = $hecho['carta'];
+                        $cuadro = $this->sinLaCartaDe($cuadro, $asiento, $hecho['carta']);
+                        $cuadro['texto'] = ($quien === null ? 'Jugaste' : "{$quien} jugó").' el '.self::nombreDe($hecho['carta']).'.';
+                        break;
+
+                    case 'baza':
+                        $cuadro['bazas'][$hecho['numero'] - 1] = $hecho['ganador'] === null ? 'parda' : $pareja($hecho['ganador']);
+                        $cuadro['cruz']['ganador'] = $hecho['ganador'] === null ? 'parda' : self::LUGARES[$hecho['ganador']];
+                        $cuadro['texto'] = match (true) {
+                            $hecho['ganador'] === null => 'Parda.',
+                            $hecho['ganador'] === 0 => 'Ganaste la baza.',
+                            default => $sujeto($hecho['ganador']).' ganó la baza.',
+                        };
+                        break;
+
+                    case 'canto':
+                        $canto = self::CANTOS[$hecho['canto']];
+                        $cuadro['canto'] = ['quien' => $pareja($asiento), 'texto' => $canto, 'tono' => in_array($hecho['canto'], self::DEL_TRUCO, true) ? 'copa' : 'oro'];
+                        $cuadro['texto'] = ($quien === null ? 'Cantaste' : "{$quien} cantó").' '.mb_strtolower($canto).'.';
+                        break;
+
+                    case 'respuesta':
+                        $cuadro['canto'] = ['quien' => $pareja($asiento), 'texto' => $hecho['quiere'] ? 'Quiero' : 'No quiero', 'tono' => $hecho['quiere'] ? 'basto' : 'copa'];
+                        $cuadro['texto'] = match (true) {
+                            $quien === null => $hecho['quiere'] ? 'Quisiste.' : 'No quisiste.',
+                            default => $quien.($hecho['quiere'] ? ' quiso.' : ' no quiso.'),
+                        };
+                        break;
+
+                    case 'tantos':
+                        $cuadro['texto'] = implode(' ', array_map(function (array $dicho, int $orden) use ($sujeto) {
+                            $nombre = $sujeto($dicho['asiento']);
+
+                            return match (true) {
+                                $dicho['tanto'] === null => $nombre === null ? 'Dijiste: son buenas.' : "{$nombre} dijo: son buenas.",
+                                default => ($nombre === null ? 'Cantaste' : "{$nombre} cantó")." {$dicho['tanto']}".($orden === 0 ? '.' : ', son mejores.'),
+                            };
+                        }, $hecho['tantos'], array_keys($hecho['tantos'])));
+                        break;
+
+                    case 'puntos':
+                        $cuadro['tanteo'] = ['vos' => $hecho['tanteo'][0], 'rival' => $hecho['tanteo'][1]];
+                        $cuadro['texto'] = ($pareja($hecho['equipo']) === 'vos' ? 'Sumamos' : 'Ellos sumaron')." {$hecho['puntos']}: ".$this->conceptoDe($hecho['concepto'], $motor).'.';
+                        break;
+
+                    case 'mazo':
+                        // Sus cartas quedan muertas: vuelven al mazo y no se juegan.
+                        $cuadro['enMazo'][] = self::LUGARES[$asiento];
+
+                        if ($asiento === 0) {
+                            $cuadro['propias'] = [null, null, null];
+                        } else {
+                            $cuadro['otros'][self::LUGARES[$asiento]] = [null, null, null];
+                        }
+
+                        $cuadro['texto'] = $quien === null ? 'Te fuiste al mazo.' : "{$quien} se fue al mazo.";
+                        break;
+
+                    case 'mano_cerrada':
+                        $cuadro['texto'] = $pareja($hecho['ganador']) === 'vos' ? 'Ganamos la mano.' : 'Ellos ganaron la mano.';
+                        break;
+
+                    case 'partida_terminada':
+                        $cuadro['fin'] = $pareja($hecho['ganador']);
+                        $cuadro['texto'] = ($cuadro['fin'] === 'vos' ? 'Ganamos la partida' : 'Ellos ganaron la partida').", {$cuadro['tanteo']['vos']} a {$cuadro['tanteo']['rival']}.";
+                        break;
+                }
+
+                $cuadros[] = $cuadro;
+            }
+        }
+
+        return ['cuadros' => $cuadros, 'manos' => $manos];
+    }
+
+    /**
+     * De a cuatro, la mano de quien jugó ya sin esa carta. El lugar queda vacío, así las otras no se corren.
+     *
+     * @param  array<string, mixed>  $cuadro
+     * @return array<string, mixed>
+     */
+    private function sinLaCartaDe(array $cuadro, int $asiento, string $carta): array
+    {
+        if ($asiento === 0) {
+            $cuadro['propias'] = array_map(fn (?string $otra) => $otra === $carta ? null : $otra, $cuadro['propias']);
+        } else {
+            $lugar = self::LUGARES[$asiento];
+            $cuadro['otros'][$lugar] = array_map(fn (?string $otra) => $otra === $carta ? null : $otra, $cuadro['otros'][$lugar]);
+        }
+
+        return $cuadro;
+    }
+
+    /**
      * El motor avisa que la partida terminó apenas se anota el punto que la cierra, antes de cerrar la
      * mano. Al contarla va al final: lo último que se lee es quién ganó la partida.
      *
@@ -192,6 +387,10 @@ final class Repeticion
      */
     public function nombreDelRival(Partida $partida, int $asiento): string
     {
+        if ($partida->deACuatro()) {
+            return 'los rivales';
+        }
+
         if (! $partida->entre_personas) {
             return 'el bot';
         }
