@@ -119,7 +119,7 @@ class JugarDeACuatroTest extends DuskTestCase
                 acciones: mesa.vista.acciones.map((accion) => accion.tipo),
                 puntos: mesa.puntos.vos + mesa.puntos.rival,
                 delCompanero: mesa.vista.senas?.companero ?? [],
-                hechas: mesa.vista.senas?.hechas ?? [],
+                hechas: mesa.senasPropias.filter((propia) => propia.hecha).map((propia) => propia.sena),
             };
         JS)[0];
     }
