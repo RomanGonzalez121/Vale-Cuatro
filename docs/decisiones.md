@@ -1141,3 +1141,79 @@ Hecho con la skill de animación y el criterio de `emil-design-eng`. La pantalla
 - **No se jugó un torneo entero a mano, carta por carta:** las partidas de las pruebas se cerraron con un bot que se va al mazo o se armaron con partidas simuladas a 15.
 - **Límites:** la repetición del historial y el panel de administración dibujan el tanteador a 30 también para una partida de torneo. Un torneo que su dueño no vuelve a abrir queda "en curso" para siempre: no molesta, y al volver puede seguirlo o dejarlo. No hay una lista de torneos jugados: se llega a las llaves de uno desde el final de su partida o mientras está en curso.
 - Capturas en `docs/capturas/`: `torneo-llaves.png`, `torneo-llaves-celular.png`, `torneo-campeon.png`, `torneo-afuera-celular.png`, `torneo-llaves-de-noche.png`, `mesa-torneo-celular.png`, `modos-torneo.png` y `modos-torneo-celular.png`.
+
+## M19a. Truco de a cuatro contra bots
+
+Dos contra dos: una persona con un bot de compañero contra dos bots. La versión entre personas (M19b) viene después.
+
+### Lo que decidió Román
+
+- **El reglamento que faltaba.** El tanto de quien se fue al mazo no cuenta para el envido de su pareja. Una contraflor vale lo de siempre (6 querida, 4 no querida) aunque una pareja tenga dos flores. Una carta ya jugada sigue valiendo en la baza aunque su dueño se vaya al mazo después, y una flor ya cantada se anota igual. Cada regla tiene su test en el motor.
+- **Las señas son nueve y fijas:** una por cada carta brava (ancho de espada, ancho de basto, siete de espada, siete de oro), una para "un tres", "un dos" y "un ancho falso", "no tengo nada" y "tengo buen envido". No hay texto libre.
+- **Cada seña se muestra con el gesto, lo que quiere decir y un dibujo,** para quien no las sabe todas. Y la persona solo puede hacer las de lo que tiene: no se le miente al compañero.
+- **Cuando le cantan a la pareja, contesta la persona.** Su compañero bot espera; si la persona ya se fue al mazo, contesta él.
+- **Un solo nivel para los tres bots,** el que se elige en los modos.
+- **Para el ranking cuenta como cualquier partida contra bots,** con la regla de siempre.
+- **La mesa va en cruz** (elegida entre tres disposiciones): el compañero enfrente, un rival a cada lado y la persona abajo.
+- **Los rivales de los costados tienen las cartas acostadas, mirando al centro, y más grandes.** La primera versión las tenía paradas y chicas; Román las vio y pidió que se vieran mejor. Las cartas que se juegan al centro van derechas, para leerlas de un vistazo.
+
+### Cómo se guarda y quién juega
+
+- **Es una partida más, con cuatro asientos.** La persona es el 0, su compañero el 2 y los rivales el 1 y el 3. Se guarda como eventos, igual que todas, así que el historial, el ranking y el panel de administración la encuentran sin código aparte. El ganador de la partida es una pareja: la 0 es la de la persona.
+- **Los tres bots juegan desde la cola,** de a una jugada por trabajo, como el bot del mano a mano. Cada uno decide con lo que vería un jugador sentado en su asiento, más las señas de su compañero. Hay un test que revisa que a ninguno le lleguen cartas ajenas.
+- **Una seña no es una jugada.** No pasa por el motor (que no sabe nada de señas): queda guardada como un evento aparte, no espera el turno y no hace rebotar una jugada que venía en camino. Le llega solo al compañero: las de los rivales no viajan nunca al navegador de la persona, y la de la persona no la recibe ningún bot rival (test).
+- **El compañero bot hace todas sus señas al repartir.** Salen de sus cartas, así que no puede señalar algo que no tiene.
+- **Sin series ni torneo.** La revancha sí: es otra partida de a cuatro, y el mano pasa al asiento siguiente.
+
+### Los bots que juegan en pareja
+
+- **Problema:** con reglas fijas, la pareja de nivel Difícil le ganaba a la de Intermedio 48 de 100 partidas. No eran escalones. Román eligió hacer un Difícil de verdad antes que dejar los nombres como estaban.
+- **Elegido:** el Difícil y el Ultra sacan cuentas. Antes de tirar una carta o de contestar un truco imaginan 36 veces las cartas que no ven (respetando lo que ya se jugó y lo que dijeron las señas del compañero), juegan cada mano imaginada hasta el final y se quedan con la jugada con la que más ganan. El Ultra, además, supone que un rival que cantó truco tiene con qué, se acuerda de cómo vienen contestando y arriesga según el tanteo.
+- **Medido,** con 300 partidas por cruce desde una semilla fija: Difícil le gana a Intermedio 184 (61 %), Ultra a Difícil 176 (59 %) y Ultra a Intermedio 188 (63 %). La medición es un test aparte (`--group medicion`, unos seis minutos) con pisos por debajo de lo medido y por encima del empate.
+- **El Fácil es el mismo del mano a mano:** tira cualquier cosa válida.
+
+### La mesa en cruz
+
+- **Sale de la mesa de siempre.** El JavaScript de la mesa de a cuatro toma el de la mesa de a dos y le cambia lo que depende de cuántos son: dónde está cada asiento, cómo se nombra, la baza y las señas. Hablar con el servidor, esperar a los bots, la barra de cantos, el ritmo, el sonido, el tanteador y el final son los mismos. De la plantilla se separaron en dos piezas los ajustes y la barra de cantos, que usan las dos mesas.
+- **"Nosotros" y "ellos".** El tanteo es de las parejas y se anota como en el club. A los rivales se los nombra por el lado ("el de la derecha"), que es lo que se dice jugando y entra en un renglón del celular.
+- **En el centro se ve una sola baza,** la que se está jugando, con cada carta delante de quien la tiró. Cuando se cierra queda arriba la que ganó y las demás se apagan; si la mano sigue, las cuatro vuelven al mazo. De las bazas anteriores queda escrito de quién fue cada una.
+- **Se marca un solo lugar: el de quien tiene que tirar.** La marca va dando la vuelta a la mesa con el turno. Junto al nombre de cada bot, su ícono pasa a ser un reloj mientras piensa.
+- **Quién canta:** la palabra va grande al centro, como siempre, y el nombre de quien la dijo queda marcado como una ficha de naipe mientras dura.
+- **Los tantos del envido se dicen desde el lugar de cada uno,** en ronda. Van sobre una ficha de paño hondo porque pueden caer encima de una carta, y Oro sobre Naipe no se lee (sobre Paño hondo da 6,3:1). El que pierde queda a media tinta sin que la ficha se transparente.
+- **Quién es mano** lo dice una ficha redonda apoyada en la esquina de sus cartas. No ocupa lugar, así nada se corre de una mano a la otra.
+- **Las cartas que alguien muestra al cerrar la mano** (ganó el envido, sumó por una flor) van en el cierre, dibujadas en chico con su nombre: a ese tamaño, de una carta se leen el número y el palo, y eso es lo que se dibuja.
+- **La medida:** todas las cartas salen de una sola variable, igual que en la mesa de a dos, con otra cuenta. Medido sin scroll a 360 x 740, 360 x 640, 1355 x 638 y 1920 x 1080.
+
+### Las señas en la pantalla
+
+- **Lo que dice el compañero se ve siempre,** dibujado al lado suyo: la carta, si la seña la dice entera; el número solo, si no dice el palo; un lugar vacío para "no tengo nada"; y el ícono del envido. Al repartir, la mesa lo dice además con palabras.
+- **El botón "Señas" abre una ventanita** como la de los ajustes: arriba, cada seña del compañero con el gesto y lo que quiere decir; abajo, las que puede hacer la persona, cada una un renglón que se toca. No traba la mesa y se usa también mientras juegan los bots. La que ya se hizo queda marcada.
+- **Se descartó** mostrar el gesto y el significado siempre a la vista: con tres o cuatro señas no entra en un celular sin sumar filas a la mesa.
+
+### El historial y la repetición
+
+- **En la lista** una partida de a cuatro dice que lo fue, con quién se jugó, y el tanteo va como "nosotros" y "ellos".
+- **La repetición tiene su propia mesa en cruz.** El relato se arma igual que siempre, volviendo a pasar los eventos por el motor, pero cada cuadro lleva cuatro manos y la baza de ese momento. Como los otros tres son bots, se ven las cartas de todos: las de ellos van dibujadas en chico (número y palo). Una seña se cuenta con palabras, sin mover nada.
+- **Cuál de las dos mesas se dibuja lo dicen los datos,** porque el cartel del historial sirve para cualquier partida de la lista.
+
+### Los modos, con tres cartas en la mano
+
+- La carta del de a cuatro se reparte sola al ponerle el botón a su rival en el catálogo. Con tres cartas la mano va en dos filas en pantallas anchas. Medido: el botón de jugar termina a 587 px en 1355 x 638 y a 656 px en 360 x 740, donde la barra de abajo empieza a los 676.
+- De a cuatro no se ofrece la serie al mejor de tres, y el nivel se describe en plural: son tres bots.
+
+### Lo que encontró la revisión
+
+- **Las cuatro fichas de los tantos se pisaban** en una mesa baja: su letra se medía contra la ventana y no contra la carta. Ahora sale de la misma medida que la cruz, y "son buenas" va en dos renglones.
+- **Los tres dorsos de cada bot parecían dos:** la última tapaba a la del medio. Van en abanico, con la del medio arriba.
+- **Los dorsos saltaban al terminar el reparto:** la inclinación del abanico estaba en el mismo elemento que se mueve. Ahora el lugar lleva la inclinación y la carta, adentro, es lo que viaja.
+- **Una seña recién hecha podía volver a ofrecerse** si justo llegaba un paso armado un instante antes. La mesa recuerda las que hizo en la mano.
+- **La prueba de navegador del torneo elegía "la segunda carta" de los modos,** que pasó a ser la del de a cuatro. Las dos pruebas eligen ahora la carta por su dibujo.
+
+### Qué se probó y qué no
+
+- **Con tests (779 en total):** el reglamento de a cuatro que faltaba, un test por regla; partidas enteras contra cada nivel sin que ningún bot falle; que a la persona no le llega ninguna carta ajena sin jugar ni mostrar, tampoco en la página; las señas (solo de lo que se tiene, una vez por mano, llegan solo al compañero, no existen en el mano a mano); quién contesta un canto; el compañero que sigue solo; el ranking; la revancha; el historial y la repetición con el mismo tanteo que tuvo la partida.
+- **En un navegador real:** una partida entera contra bots difíciles a 360 x 740 (30 a 24, 206 eventos), sin errores ni scroll; manos sueltas a 360 x 640 y 1355 x 638; las señas, los tantos de a cuatro y el cierre; el historial y la repetición en cinco tamaños.
+- **En la integración continua** se sumó una prueba de navegador: una mano de a cuatro con una seña, y el reparto de la siguiente.
+- **No se probó** con lector de pantalla (queda para el pulido final) ni la mesa de noche más allá de abrirla. Cómo se siente el ritmo con tres bots lo dice quien juega.
+- **Límites:** la mesa ancha de escritorio sigue pendiente para las dos mesas; la repetición no marca quién es mano; el panel de administración muestra la partida en un renglón, sin la mesa.
+- Capturas en `docs/capturas/`: `mesa-de-a-cuatro.png`, `mesa-de-a-cuatro-celular.png`, `mesa-de-a-cuatro-senas-celular.png`, `mesa-de-a-cuatro-tantos-celular.png`, `mesa-de-a-cuatro-cierre-celular.png`, `modos-de-a-cuatro.png`, `modos-de-a-cuatro-celular.png`, `repeticion-de-a-cuatro.png` y `repeticion-de-a-cuatro-celular.png`.

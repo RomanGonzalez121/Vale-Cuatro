@@ -68,7 +68,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | M16 | Panel de administración: partidas sin movimiento, cola, limpieza y apodos, con cada acción anotada | Listo |
 | M17 | Modos de juego, desafíos y una escalera de niveles | Adelantada la pantalla para elegir modo; el resto, pendiente |
 | M18 | Perfil con categorías ganadas jugando | Pendiente |
-| M19 | Truco de a cuatro con señas: primero con bots, después entre personas | Pendiente |
+| M19 | Truco de a cuatro con señas: con bots ya se juega (un bot de compañero contra dos, mesa en cruz, nueve señas); entre personas, pendiente | En parte |
 | M20 | Mazos y mesas para elegir | Pendiente |
 
 **El cierre**
