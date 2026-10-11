@@ -14,6 +14,7 @@
  | las cartas de verdad recién llegan en la mesa.
  */
 
+import { PRENDIDOS, SIN_AVISOS, apagarAvisos, avisarPresencia, estadoDeAvisos, prenderAvisos } from './avisos';
 import { LLEGADA, llegarDelMazo, movimientoReducido } from './cartas';
 import { escucharPartida } from './echo';
 
@@ -25,8 +26,11 @@ const CADA_SIN_AVISOS = 4000;
 const PAUSA_DEL_REPARTO = 1600;
 const PAUSA_REDUCIDA = 700;
 
-export default function sala({ estado, mesa, enlace, partida }) {
+export default function sala({ estado, mesa, enlace, partida, paraAvisar }) {
     return {
+        // Los avisos al equipo en este navegador: 'no' (no hay), 'bloqueados', 'apagados' o 'prendidos'.
+        avisos: SIN_AVISOS,
+        cambiandoAvisos: false,
         // Cómo salió lo último que se intentó con el link: 'copiado', 'elegido' (se dejó seleccionado para copiar a mano) o nada.
         copiado: null,
         puedeCompartir: typeof navigator.share === 'function',
@@ -40,6 +44,12 @@ export default function sala({ estado, mesa, enlace, partida }) {
         init() {
             this.escuchar();
             this.consultar();
+
+            if (paraAvisar) {
+                estadoDeAvisos().then((cual) => (this.avisos = cual));
+                // A quien tiene la sala a la vista no se le manda el aviso: ya lo está viendo.
+                avisarPresencia(paraAvisar);
+            }
 
             // Si la pestaña estaba dormida, se entera apenas vuelve.
             document.addEventListener('visibilitychange', () => {
@@ -63,6 +73,19 @@ export default function sala({ estado, mesa, enlace, partida }) {
                 },
                 alCaer: () => (this.enVivo = false),
             });
+        },
+
+        /**
+         * El botón de los avisos: los prende (ahí el navegador pide el permiso) o los apaga.
+         */
+        async cambiarAvisos() {
+            if (this.cambiandoAvisos || ! paraAvisar) {
+                return;
+            }
+
+            this.cambiandoAvisos = true;
+            this.avisos = this.avisos === PRENDIDOS ? await apagarAvisos(paraAvisar) : await prenderAvisos(paraAvisar);
+            this.cambiandoAvisos = false;
         },
 
         async consultar() {

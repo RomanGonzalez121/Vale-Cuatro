@@ -47,7 +47,63 @@ class JugarUnaManoTest extends DuskTestCase
             $navegador->waitUsing(20, self::PAUSA, fn () => $this->mesa($navegador)['mano'] === 2 && $this->mesa($navegador)['fase'] === 'jugando');
 
             $navegador->waitUsing(20, self::PAUSA, fn () => count($navegador->elements('.mesa-mano button')) === 3);
+
+            $this->assertQueNoQuedoGuardadaNingunaPartida($navegador);
         });
+    }
+
+    /**
+     * Después de jugar, lo que el service worker dejó guardado en el navegador es solo lo estático (lo
+     * compilado, los íconos) y la página de "sin conexión". Ni la mesa, ni sus pedidos, ni nada con cartas.
+     */
+    private function assertQueNoQuedoGuardadaNingunaPartida(Browser $navegador): void
+    {
+        // Con Vite sirviendo los archivos (en desarrollo) el service worker no se registra: no hay nada que mirar.
+        if ($navegador->script("return document.querySelector('meta[name=version]').content")[0] === 'desarrollo') {
+            return;
+        }
+
+        $guardado = $navegador->driver->executeAsyncScript(<<<'JS'
+            const listo = arguments[arguments.length - 1];
+
+            (async () => {
+                await navigator.serviceWorker.ready;
+
+                const lista = [];
+
+                for (const nombre of await caches.keys()) {
+                    const guardado = await caches.open(nombre);
+
+                    for (const pedido of await guardado.keys()) {
+                        const respuesta = await guardado.match(pedido);
+
+                        lista.push([new URL(pedido.url).pathname, (respuesta.headers.get('content-type') || '').split(';')[0], await respuesta.clone().text()]);
+                    }
+                }
+
+                listo(lista);
+            })();
+        JS);
+
+        $rutas = array_column($guardado, 0);
+
+        $this->assertContains('/sin-conexion', $rutas, 'El service worker no guardó la página de sin conexión.');
+
+        foreach ($guardado as [$ruta, $tipo, $contenido]) {
+            $this->assertMatchesRegularExpression('#^/(build/assets/|iconos/|favicon\.(svg|ico)$|manifest\.json$|sin-conexion$)#', $ruta, "Quedó guardado {$ruta}.");
+
+            // La única página guardada es la de sin conexión, y no trae ninguna mesa.
+            if ($tipo === 'text/html') {
+                $this->assertSame('/sin-conexion', $ruta);
+                $this->assertStringNotContainsString('x-data="mesa(', $contenido);
+                $this->assertStringNotContainsString('misCartas', $contenido);
+            }
+
+            // Y nada de lo guardado es una respuesta de la mesa.
+            if ($tipo === 'application/json') {
+                $this->assertSame('/manifest.json', $ruta);
+            }
+        }
     }
 
     /**

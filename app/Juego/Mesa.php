@@ -2,6 +2,7 @@
 
 namespace App\Juego;
 
+use App\Avisos\Avisos;
 use App\Events\PartidaActualizada;
 use App\Jobs\AvanzarTorneo;
 use App\Jobs\ResolverPlazo;
@@ -623,6 +624,9 @@ final class Mesa
             $partida->save();
 
             $this->repartirEn($partida, $this->reconstruir($partida), self::BOT);
+
+            // Quien abrió la sala puede estar en otra aplicación, mandando el link: se le avisa que ya llegó alguien.
+            app(Avisos::class)->seSentoElRival($partida);
 
             return $partida;
         });
@@ -1322,6 +1326,8 @@ final class Mesa
         // Contra el bot no hace falta: la mesa le pregunta al servidor mientras juega.
         if ($partida->entre_personas) {
             PartidaActualizada::avisar($partida->getKey(), $numero);
+            // Y a quien le toca ahora, si pidió avisos y no tiene la mesa a la vista, le llega uno al celular.
+            app(Avisos::class)->partidaCambio($partida, $numero, $tipo);
         }
 
         return $numero;

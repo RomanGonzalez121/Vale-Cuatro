@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Avisos\Avisos;
 use App\Http\Controllers\Concerns\EntraComoInvitado;
 use App\Juego\Mesa;
 use App\Models\Partida;
@@ -34,7 +35,7 @@ class SalaController extends Controller
         return $partida->esperando() ? redirect()->route('sala', $partida->codigo) : redirect()->route('mesa');
     }
 
-    public function ver(Request $request, string $codigo): View|RedirectResponse
+    public function ver(Request $request, Avisos $avisos, string $codigo): View|RedirectResponse
     {
         $partida = $this->partida($codigo);
 
@@ -58,6 +59,8 @@ class SalaController extends Controller
             'enlace' => route('invitacion', $codigo),
             'minutos' => Mesa::MINUTOS_DE_SALA,
             'enSerie' => $partida->serie_id !== null,
+            // Para ofrecer el aviso de "se sentó tu rival" a quien se va a mandar el link por otra aplicación.
+            'avisos' => $avisos->paraLaPagina(),
         ]);
     }
 

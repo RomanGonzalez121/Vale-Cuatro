@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { repartirEn } from './cartas';
 import historial from './historial';
+import { prepararInstalacion } from './instalar';
 import { prepararLogos } from './logo';
 import mesa from './mesa';
 import mesaDeCuatro from './mesa-cuatro';
@@ -8,6 +9,7 @@ import { prepararModo } from './modo';
 import { duelo, tantoDeEnvido } from './reglas';
 import repeticion from './repeticion';
 import sala from './sala';
+import sinConexion from './sin-conexion';
 import { prepararLlaves } from './torneo';
 
 /*
@@ -44,6 +46,7 @@ Alpine.data('tantoDeEnvido', tantoDeEnvido);
 Alpine.data('repeticion', repeticion);
 Alpine.data('historial', historial);
 Alpine.data('sala', sala);
+Alpine.data('sinConexion', sinConexion);
 
 window.Alpine = Alpine;
 Alpine.start();
@@ -51,3 +54,4 @@ Alpine.start();
 prepararLogos();
 prepararModo();
 prepararLlaves();
+prepararInstalacion();

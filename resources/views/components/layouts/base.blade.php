@@ -35,6 +35,13 @@
     </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="alternate icon" href="/favicon.ico" sizes="32x32">
+    {{-- Para instalarlo como aplicación: el manifiesto dice el nombre, los colores y los íconos; iPhone pide el suyo aparte. --}}
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/iconos/icono-apple-180.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Vale Cuatro">
+    {{-- La versión de lo compilado: con ella se registra el service worker (resources/js/instalar.js). --}}
+    <meta name="version" content="{{ \App\Instalable\Version::actual() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 {{-- Con la barra, la página deja libre su alto para que el pie no quede tapado. --}}

@@ -20,7 +20,7 @@ FROM php:8.3-fpm-alpine
 # nginx atiende el puerto, supervisor mantiene vivos los procesos y su-exec les saca los permisos de root.
 # pdo_mysql es la base; pcntl lo usan la cola y Reverb para apagarse bien; opcache evita leer el código en cada pedido.
 RUN apk add --no-cache nginx supervisor su-exec \
-    && docker-php-ext-install pdo_mysql pcntl opcache \
+    && docker-php-ext-install pdo_mysql pcntl opcache bcmath \
     && mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY docker/php.ini "$PHP_INI_DIR/conf.d/zz-vale-cuatro.ini"

@@ -2352,6 +2352,36 @@ html:has(body.superficie-pano) {
     }
 
     /*
+     | La página de "sin conexión": el mazo, con las cartas boca abajo, en grande. Tres cartas apiladas
+     | y apenas corridas, igual que el mazo de la mesa. Cómo llegan lo mueve sin-conexion.js.
+     */
+    .sin-conexion-mazo {
+        position: relative;
+        width: clamp(7.5rem, 34vw, 13rem);
+        aspect-ratio: 100 / 156;
+        margin-inline: 0.75rem;
+        transform: rotate(7deg);
+    }
+
+    .sin-conexion-mazo > * {
+        position: absolute;
+        inset: 0;
+    }
+
+    .sin-conexion-mazo > :nth-child(2) {
+        transform: translate(-4px, -4px);
+    }
+
+    .sin-conexion-mazo > :nth-child(3) {
+        transform: translate(-8px, -8px);
+    }
+
+    /* Un renglón de los ajustes que no se puede tocar (los avisos bloqueados): se lee, y nada más. */
+    .ajuste[disabled] {
+        cursor: default;
+    }
+
+    /*
      | El cartel de la repetición, sobre la lista del historial. Es el <dialog>
      | del navegador. No lleva sombra (la única del sitio es la de las cartas): lo
      | separa de la lista el fondo, que la tapa con el Paño hondo. En el celular

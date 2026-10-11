@@ -20,6 +20,8 @@
         'presente' => ($faltaLlegar ?? false) ? route('mesa.presente') : null,
         'token' => csrf_token(),
         'entrePersonas' => $rival !== null,
+        // Entre personas, lo que hace falta para pedir avisos al celular y para decir si la mesa está a la vista.
+        'avisos' => $avisos ?? null,
         'rival' => $enfrente,
         // Si la partida es de un torneo: si es la final y adónde pasa quien gana.
         'torneo' => $torneo === null ? null : ['esFinal' => $torneo['esFinal'], 'sigue' => $torneo['sigue']],
@@ -49,7 +51,8 @@
         <h1 class="sr-only">{{ $nivel ? ($nombreDelBot ? "Mesa contra {$nombreDelBot}, bot de nivel {$nivel->nombre()}" : "Mesa contra el bot, nivel {$nivel->nombre()}") : "Mesa contra {$rival}" }}</h1>
 
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
-        <header class="mesa-barra relative z-10" :inert="fin !== null">
+        {{-- Con los ajustes desplegados la barra sube un escalón: la ventanita no puede quedar debajo del fósforo de la cuenta regresiva. --}}
+        <header class="mesa-barra relative z-10" :class="{ 'z-20': ajustando }" :inert="fin !== null">
             {{-- En el celular el logo va sin el nombre: con los cuatro fósforos alcanza, y ese ancho lo necesitan los botones. --}}
             <div class="flex min-w-0 items-center gap-3 justify-self-start [grid-area:logo] lg:gap-5">
                 <a href="{{ route('portada') }}" class="rounded text-lg no-underline max-sm:text-2xl max-sm:[&_.logo-nombre]:hidden lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Avisos\Avisos;
 use App\Juego\Mesa;
 use App\Juego\Senas;
 use App\Juego\Torneos;
@@ -30,7 +31,7 @@ use InvalidArgumentException;
  */
 class MesaController extends Controller
 {
-    public function __construct(private readonly Mesa $mesa, private readonly Torneos $torneos) {}
+    public function __construct(private readonly Mesa $mesa, private readonly Torneos $torneos, private readonly Avisos $avisos) {}
 
     /**
      * La mesa con la partida en curso. Recargar la página vuelve a la misma partida, en el mismo punto.
@@ -81,6 +82,8 @@ class MesaController extends Controller
             'serie' => $this->serieDe($partida, $asiento),
             // Si es de un torneo: qué partido es, contra qué bot y adónde se vuelve al terminar.
             'torneo' => $this->torneoDe($partida),
+            // Con otra persona enfrente: lo que la mesa necesita para pedir avisos al celular.
+            'avisos' => $partida->entre_personas ? $this->avisos->paraLaPagina() : null,
         ]);
     }
 

@@ -26,6 +26,7 @@
  | mesa se entera igual que de una jugada, por un aviso sin datos y preguntando.
  */
 
+import { BLOQUEADOS, PRENDIDOS, SIN_AVISOS, apagarAvisos, avisarPresencia, estadoDeAvisos, prenderAvisos } from './avisos';
 import { LLEGADA, cantoEnRenglones, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
 import { escucharPartida } from './echo';
 import { apagarSonido, audioAbierto, guardarSonido, prenderSonido, sonar, sonidoGuardado } from './sonido';
@@ -141,6 +142,9 @@ export default (inicial, pedidos) => ({
     agil: ritmoGuardado() === 'agil',
     // Si la mesa suena. Arranca apagada, salvo que quien juega la haya dejado prendida.
     sonido: sonidoGuardado(),
+    // Los avisos al equipo en este navegador (entre personas): 'no' (no hay), 'bloqueados', 'apagados' o 'prendidos'.
+    avisos: SIN_AVISOS,
+    cambiandoAvisos: false,
     // De qué lado arde el fósforo de la cuenta regresiva ('vos', 'rival' o ninguno) y sus animaciones.
     plazo: null,
     llamas: [],
@@ -184,6 +188,12 @@ export default (inicial, pedidos) => ({
 
         if (this.pedidos.entrePersonas) {
             this.escuchar();
+        }
+
+        if (this.pedidos.avisos) {
+            estadoDeAvisos().then((cual) => (this.avisos = cual));
+            // A quien tiene la mesa a la vista no se le manda un aviso: el servidor se entera por acá.
+            avisarPresencia(this.pedidos.avisos);
         }
 
         this.pintar(this.vista);
@@ -1258,6 +1268,31 @@ export default (inicial, pedidos) => ({
         } else {
             apagarSonido();
         }
+    },
+
+    /**
+     * Cómo están los avisos, dicho en el renglón de los ajustes.
+     */
+    get textoDeAvisos() {
+        return {
+            [PRENDIDOS]: 'Prendidos: te aviso cuando te toca',
+            [BLOQUEADOS]: 'Bloqueados en este navegador',
+        }[this.avisos] ?? 'Apagados';
+    },
+
+    /**
+     * La llave de los avisos: los prende (ahí el navegador pide el permiso) o los apaga. La mesa lo dice
+     * con palabras, igual que con el sonido y el ritmo.
+     */
+    async cambiarAvisos() {
+        if (this.cambiandoAvisos || ! this.pedidos.avisos) {
+            return;
+        }
+
+        this.cambiandoAvisos = true;
+        this.avisos = this.avisos === PRENDIDOS ? await apagarAvisos(this.pedidos.avisos) : await prenderAvisos(this.pedidos.avisos);
+        this.cambiandoAvisos = false;
+        this.aviso = { [PRENDIDOS]: 'Avisos prendidos.', [BLOQUEADOS]: 'Los avisos quedaron bloqueados en este navegador.' }[this.avisos] ?? 'Avisos apagados.';
     },
 
     /**

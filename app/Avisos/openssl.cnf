@@ -1,0 +1,9 @@
+# La configuración mínima que PHP le pide a OpenSSL para generar una clave (App\Avisos\Claves).
+# No configura nada del sitio: existe para no depender del archivo de OpenSSL de cada máquina, que en
+# Windows suele faltar o estar mal y hace fallar la generación.
+
+[ req ]
+default_bits = 2048
+distinguished_name = nombre
+
+[ nombre ]

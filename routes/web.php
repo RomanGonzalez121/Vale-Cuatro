@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdministracionController;
+use App\Http\Controllers\AvisosController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\InvitacionController;
 use App\Http\Controllers\JugarController;
@@ -57,6 +58,16 @@ Route::middleware(['auth', 'throttle:240,1,mesa'])->group(function () {
     Route::post('/mesa/plazo', [MesaController::class, 'resolverPlazo'])->name('mesa.plazo');
     Route::post('/mesa/presente', [MesaController::class, 'presente'])->name('mesa.presente');
 });
+
+// Los avisos al celular: anotar este navegador, darlo de baja y decir si la mesa está a la vista.
+Route::middleware(['auth', 'throttle:60,1,avisos'])->group(function () {
+    Route::post('/avisos', [AvisosController::class, 'suscribir'])->name('avisos.suscribir');
+    Route::post('/avisos/baja', [AvisosController::class, 'baja'])->name('avisos.baja');
+    Route::post('/avisos/vista', [AvisosController::class, 'vista'])->name('avisos.vista');
+});
+
+// Lo que se muestra cuando se pide una página y no hay conexión. La guarda el service worker (public/sw.js).
+Route::get('/sin-conexion', [PaginaController::class, 'sinConexion'])->name('sin-conexion');
 
 // El torneo contra bots. Armarlo es una puerta de entrada más: quien llega sin sesión entra como invitado.
 // Lo demás es siempre sobre un torneo de quien hace el pedido.

@@ -43,5 +43,27 @@
             </span>
             <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
         </button>
+        {{--
+            Los avisos al celular ("Te toca"), solo con otra persona enfrente: un bot juega en el momento.
+            El permiso se pide recién al tocar esta llave. Si el navegador no tiene avisos, el renglón no está;
+            si la persona los bloqueó, lo dice y no se puede tocar: solo ella los puede volver a permitir.
+        --}}
+        <button type="button" role="switch" class="ajuste" x-show="pedidos.avisos && avisos !== 'no'" x-cloak
+            :aria-checked="(avisos === 'prendidos').toString()" :disabled="avisos === 'bloqueados' || cambiandoAvisos"
+            aria-label="Avisos al celular" data-boton-avisos @click="cambiarAvisos()">
+            <span>
+                <span class="block font-bold">Avisos</span>
+                <span class="text-sm" x-text="textoDeAvisos">Apagados</span>
+            </span>
+            <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
+        </button>
+        {{-- Solo cuando el navegador avisa que el sitio se puede instalar (resources/js/instalar.js). --}}
+        <button type="button" class="ajuste" data-instalar hidden>
+            <span>
+                <span class="block font-bold">Instalar</span>
+                <span class="text-sm">Tenela en tu pantalla de inicio</span>
+            </span>
+            <span class="ajuste-carta"><x-icono nombre="instalar" class="size-7" /></span>
+        </button>
     </div>
 </div>

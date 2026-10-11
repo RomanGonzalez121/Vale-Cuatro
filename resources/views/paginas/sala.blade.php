@@ -1,6 +1,6 @@
 <x-layouts.base titulo="Invitá a alguien" descripcion="Mandale el link de tu partida a quien quieras y jueguen al truco en vivo." superficie="pano">
     <div class="sala-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-6 px-5 pb-16 pt-6 sm:gap-y-9 sm:px-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-center lg:pb-24 lg:pt-14"
-        x-data="sala({ estado: @js(route('sala.estado', $codigo)), mesa: @js(route('mesa')), enlace: @js($enlace), partida: @js($partida) })">
+        x-data="sala({ estado: @js(route('sala.estado', $codigo)), mesa: @js(route('mesa')), enlace: @js($enlace), partida: @js($partida), paraAvisar: @js($avisos ?? null) })">
         <section aria-labelledby="titulo-sala">
             <h1 id="titulo-sala" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
                 Invitá a alguien
@@ -88,7 +88,23 @@
                 </div>
             </div>
 
-            <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+            {{--
+                Para quien se va a otra aplicación a mandar el link: el aviso de que alguien se sentó le llega
+                al equipo. El permiso se pide recién al tocar el botón, que confirma él mismo, en Basto, igual
+                que "Copiar link". Si el navegador no tiene avisos, el botón no está.
+            --}}
+            <div class="mt-5" x-show="avisos !== 'no'" x-cloak>
+                <button type="button" class="boton min-h-12 px-5" :class="avisos === 'prendidos' ? 'boton-basto' : 'boton-linea'"
+                    :disabled="avisos === 'bloqueados' || cambiandoAvisos || llego" :aria-pressed="(avisos === 'prendidos').toString()" @click="cambiarAvisos()">
+                    <span class="contents" x-show="avisos !== 'prendidos'"><x-icono nombre="aviso" /> Avisarme cuando se siente</span>
+                    <span class="contents" x-show="avisos === 'prendidos'" x-cloak><x-icono nombre="quiero" /> Te aviso cuando se siente</span>
+                </button>
+                <p class="mt-2 max-w-[34ch] text-[0.95rem] leading-relaxed" x-show="avisos === 'bloqueados'" x-cloak>
+                    Los avisos están bloqueados en este navegador. Se permiten desde sus ajustes.
+                </p>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
                 <form method="POST" action="{{ route('sala.cancelar', $codigo) }}">
                     @csrf
                     <button type="submit" class="boton boton-linea min-h-12 px-5" :disabled="llego">Cancelar sala</button>

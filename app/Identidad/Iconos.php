@@ -39,6 +39,9 @@ final class Iconos
         'sonido' => ['M4.5 9.5H8L12.5 5.5V18.5L8 14.5H4.5ZM15.5 12H18.3M15.5 9 17.2 7.3M15.5 15 17.2 16.7', [[20.4, 12, 1.8], [18.6, 5.9, 1.8], [18.6, 18.1, 1.8]]],
         // Una seña: un guiño. Un ojo abierto (la cabeza), el otro cerrado (la raya) y la boca de costado.
         'sena' => ['M4.5 9H10M7 16.5H13.5L17 14.2', [[16.5, 9, 2.4]]],
+        // Instalar: un fósforo que baja a su caja. Avisos: una carta con una cabeza encendida en la esquina.
+        'instalar' => ['M12 3.5V11M5.5 15.5V20.5H18.5V15.5', [[12, 13.2, 2.2]]],
+        'aviso' => ['M5.5 7.5H14.5V20.5H5.5Z', [[17.4, 5.8, 2.6]]],
         'flor' => ['M12 20.5V8M12 20.5 6.9 10.4M12 20.5 17.1 10.4', [[12, 5.6, 2.2], [5.8, 8.2, 2.2], [18.2, 8.2, 2.2]]],
         // Los juegos: dos fósforos (uno por jugador), cuatro en la mesa, las llaves del torneo, un fósforo de bandera y los escalones.
         'mano-a-mano' => ['M8 20.5V8.4M16 20.5V8.4', [[8, 5.9, 2.4], [16, 5.9, 2.4]]],

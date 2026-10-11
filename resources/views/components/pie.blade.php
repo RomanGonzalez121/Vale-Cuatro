@@ -6,6 +6,17 @@
                 Los rivales bot y los jugadores de ejemplo del ranking son simulados, y están marcados.
                 El motor de reglas, el tiempo real, el historial y el ranking son reales.
             </p>
+
+            {{--
+                Instalarlo como aplicación. El botón aparece solo cuando el navegador avisa que se puede
+                (resources/js/instalar.js); en un iPhone se instala a mano, y se dice cómo.
+            --}}
+            <button type="button" class="boton boton-linea mt-5 min-h-11 px-4 text-sm" data-instalar hidden>
+                <x-icono nombre="instalar" class="size-5" /> Instalar Vale Cuatro
+            </button>
+            <p class="mt-4 text-sm leading-relaxed" data-instalar-en-iphone hidden>
+                Para instalarlo en el iPhone: tocá Compartir y después «Agregar a inicio».
+            </p>
         </div>
 
         <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">

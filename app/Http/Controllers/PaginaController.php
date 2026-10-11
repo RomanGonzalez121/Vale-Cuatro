@@ -40,6 +40,15 @@ class PaginaController extends Controller
         return view('paginas.como-se-juega');
     }
 
+    /**
+     * La página que el sitio instalado muestra cuando no hay conexión. No depende de quién la pide:
+     * el service worker la guarda una vez y es la misma para todos.
+     */
+    public function sinConexion(): View
+    {
+        return view('paginas.sin-conexion');
+    }
+
     public function identidad(): View
     {
         return view('paginas.identidad', [
