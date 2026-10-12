@@ -203,9 +203,19 @@ export default (inicial, pedidos) => ({
         this.pintar(this.vista);
 
         if (this.esManoConObjetivo) {
-            // El objetivo se muestra solo al llegar, cuando el reparto ya está en la mesa, y se corre con la primera jugada.
-            setTimeout(() => this.enJuego && ! this.ocupada && this.abrirObjetivo(false), 700);
-            this.$watch('ocupada', (ocupada) => ocupada && this.cerrarObjetivo(false));
+            // El objetivo se muestra solo, una vez, cuando la mesa queda libre por primera vez: el reparto ya llegó y,
+            // si el bot salía primero, ya jugó. No va a un tiempo fijo: en un equipo lento el reparto tarda más.
+            // Se corre con la primera jugada.
+            let mostrado = false;
+            const mostrar = () => {
+                if (! mostrado && this.enJuego && ! this.ocupada) {
+                    mostrado = true;
+                    this.abrirObjetivo(false);
+                }
+            };
+
+            this.$watch('ocupada', (ocupada) => (ocupada ? this.cerrarObjetivo(false) : mostrar()));
+            this.$nextTick(mostrar);
         }
     },
 
