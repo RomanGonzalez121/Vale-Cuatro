@@ -37,6 +37,11 @@
     $cartas = count($enLaMano);
     // Sin nada en el mazo, la columna del mazo no existe: la mano toma ese ancho y va en una sola fila.
     $sinMazo = $enElMazo === [];
+    // Y en pantallas anchas la pantalla se parte en dos zonas (.modos-dos-zonas en app.css): a la izquierda,
+    // sobre el paño, el título y la mano abierta en abanico; a la derecha, un panel de paño hondo con el juego elegido.
+    $abierta = $sinMazo && ! $unaSola;
+    // Lo que la persona lleva en cada juego, para dibujarlo en el panel: solo en esa disposición.
+    $escenas ??= [];
     $columnas = match (true) {
         $sinMazo => max(1, $cartas),
         $cartas <= 2 => max(1, $cartas),
@@ -53,7 +58,7 @@
 <x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
-        <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ($sinMazo ? '' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]')])
+        <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', 'modos-dos-zonas' => $abierta, $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ($sinMazo ? '' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]')])
             x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false, lugares: {{ $lugaresElegidos }}, eligio: false }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
@@ -66,7 +71,7 @@
                 --}}
                 <div @class(['modos-mano mt-7 grid items-start gap-y-5 lg:mt-10', $unaSola ? 'grid-cols-[auto_minmax(0,1fr)] gap-x-5 sm:gap-x-9' : 'grid-cols-1 max-sm:gap-y-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-x-9'])>
                     {{-- La mano: una carta por juego que ya se juega. El reparto es el único movimiento que no responde a una acción. --}}
-                    <div @class(['mano-juegos', $unaSola ? 'mano-de-una sm:row-span-2' : 'mano-de-varias lg:row-span-2'])
+                    <div @class(['mano-juegos', $unaSola ? 'mano-de-una sm:row-span-2' : 'mano-de-varias lg:row-span-2', 'mano-abierta' => $abierta])
                         style="--ancho-carta: clamp(6.25rem, 27vw, 13rem); --medio: {{ (count($enLaMano) - 1) / 2 }}; --columnas: {{ $columnas }}; --ancho-de-varias: {{ $anchoDeVarias }}">
                         @foreach ($enLaMano as $i => $juego)
                             @if ($unaSola)
@@ -95,15 +100,22 @@
                     </div>
 
                     @foreach ($enLaMano as $juego)
-                        <div class="contents" x-show="juego === '{{ $juego['clave'] }}'" @if ($juego['clave'] !== $juegoElegido) x-cloak @endif>
+                        <div class="modo-juego contents" x-show="juego === '{{ $juego['clave'] }}'" @if ($juego['clave'] !== $juegoElegido) x-cloak @endif>
                             {{-- Después de elegir una carta, su detalle entra con un fundido corto: primero el nombre y enseguida lo demás. --}}
-                            <div @class(['self-center sm:self-end' => $unaSola]) :class="{ 'detalle-entra': eligio }">
+                            <div @class(['modo-nombre', 'self-center sm:self-end' => $unaSola]) :class="{ 'detalle-entra': eligio }">
                                 <h2 class="text-2xl font-black leading-[1.02] tracking-tight sm:text-4xl">{{ $juego['nombre'] }}</h2>
                                 {{-- Con varias cartas, en el celular el resumen no va: la carta y el nombre ya dicen qué juego es, y así el botón entra en la pantalla. --}}
                                 <p @class(['mt-2 max-w-[36ch] leading-relaxed sm:mt-3 sm:text-lg', 'max-sm:hidden' => ! $unaSola])>{{ $juego['resumen'] }}</p>
                             </div>
 
-                            <div @class(['col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola, 'lg:col-start-2' => ! $unaSola]) :class="{ 'detalle-entra': eligio }" style="animation-delay: 50ms">
+                            {{-- En el panel, entre el nombre y las opciones: lo que la persona lleva en ese juego, dibujado. --}}
+                            @if ($abierta && isset($escenas[$juego['clave']]))
+                                <div class="modo-escena max-lg:hidden" :class="{ 'detalle-entra': eligio }" style="animation-delay: 25ms">
+                                    <x-modos.escena :juego="$juego['clave']" :datos="$escenas[$juego['clave']]" />
+                                </div>
+                            @endif
+
+                            <div @class(['modo-opciones', 'col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola, 'lg:col-start-2' => ! $unaSola]) :class="{ 'detalle-entra': eligio }" style="animation-delay: 50ms">
                                 @if (count($juego['rivales']) > 1)
                                     <div class="flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Contra quién">
                                         @foreach ($juego['rivales'] as $rival)

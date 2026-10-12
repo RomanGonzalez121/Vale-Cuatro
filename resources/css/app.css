@@ -976,6 +976,57 @@ html:has(body.superficie-pano) {
         }
     }
 
+    /*
+     | La mano abierta: en pantallas anchas, cuando ya no queda ningún juego en el mazo, las cartas de los
+     | juegos van grandes y en abanico, como la mano propia en la mesa. Giran sobre un punto que queda por
+     | debajo de ellas y las de las puntas bajan un poco, así el borde de arriba dibuja un arco.
+     | La elegida sale de la mano hacia arriba. Las demás no se apagan (se pisan, y una carta a media
+     | tinta se transparentaría sobre la otra): lo que dice cuál está elegida es que está más arriba.
+     | Ninguna cambia de lugar.
+     */
+    @media (min-width: 64rem) {
+        .mano-abierta {
+            /* El ancho de una carta sale del ancho de la zona de la mano (el 63,6 % de la sección) y no del de la
+               ventana: la mano entera mide unas 4,6 cartas, y así le queda siempre aire hasta el panel. */
+            --ancho-abierta: min(9.25rem, calc((63.6cqw - 3.5rem) / 4.62));
+            display: flex;
+            align-items: flex-end;
+            gap: 0;
+            /* Arriba, el aire que necesita la elegida para subir. Abajo, lo que bajan y giran las cartas de las
+               puntas: así el borde de abajo de la mano queda a la altura del botón de jugar, y no más abajo. */
+            padding: calc(var(--ancho-abierta) * 0.44) calc(var(--ancho-abierta) * 0.12) calc(var(--ancho-abierta) * 0.32);
+        }
+
+        .mano-abierta > .naipe-juego {
+            --giro: calc((var(--i) - var(--medio, 0)) * 5.5deg);
+            --cae: calc((var(--i) - var(--medio, 0)) * (var(--i) - var(--medio, 0)) * var(--ancho-abierta) * 0.045);
+            flex: none;
+            width: var(--ancho-abierta);
+            opacity: 1;
+            transform: translateY(var(--cae)) rotate(var(--giro));
+            transform-origin: 50% 130%;
+        }
+
+        /* Se pisan lo justo: de cada carta tapada se sigue viendo el dibujo. */
+        .mano-abierta > .naipe-juego + .naipe-juego {
+            margin-left: calc(var(--ancho-abierta) * -0.27);
+        }
+
+        .mano-abierta > .naipe-juego[aria-pressed='false'] {
+            opacity: 1;
+        }
+
+        /* La elegida sube bien arriba de las demás y casi se endereza: es la carta que se está por tirar. */
+        .mano-abierta > .naipe-juego[aria-pressed='true'] {
+            z-index: 1;
+            transform: translateY(-24%) rotate(calc(var(--giro) * 0.3));
+        }
+
+        .mano-abierta > .naipe-juego:active {
+            transform: translateY(calc(var(--cae) - 5%)) rotate(var(--giro)) scale(0.97);
+        }
+    }
+
     .naipe-juego {
         display: block;
         padding: 0;
@@ -1080,6 +1131,34 @@ html:has(body.superficie-pano) {
 
     .escalon[data-estado='cerrado'] .escalon-numero {
         opacity: 0.7;
+    }
+
+    /*
+     | Lo que se dibuja en el panel de los modos: la mano del desafío que falta, la escalera en chico y el
+     | cruce del torneo. Son las mismas piezas de sus pantallas, a otro tamaño.
+     */
+    .escena-mano {
+        --ancho-carta: 3.4rem;
+        padding: 0.35rem 0.5rem;
+    }
+
+    .escena-duelo {
+        --ancho-baza: 3.4rem;
+    }
+
+    .escalera-chica {
+        --ancho-carta: 2.5rem;
+        max-width: 15.5rem;
+        height: calc(var(--ancho-carta) * 1.75 + var(--paso-y) * (var(--escalones) - 1));
+    }
+
+    .escalera-chica > li {
+        bottom: calc(var(--paso-y) * var(--i));
+    }
+
+    .escalera-chica > li[data-toca] {
+        z-index: 1;
+        transform: translateY(-12%);
     }
 
     /*
@@ -2816,6 +2895,89 @@ html:has(body.superficie-pano) {
     }
 }
 
+/*
+ | Modos en pantallas anchas, con los cinco juegos en la mano: dos zonas, como las pantallas de cuenta.
+ | A la izquierda, sobre el paño, el título y la mano abierta, centrada en lo que queda debajo de él.
+ | A la derecha, un panel de paño hondo que va de arriba a abajo y hasta el borde de la ventana, con el
+ | juego elegido: su nombre arriba, en el medio lo que la persona lleva en ese juego y, apoyados al pie,
+ | el rival, el nivel y el botón de jugar. El botón queda a la misma altura en todos los juegos.
+ | El fondo del panel es un dibujo (::before) que ocupa la segunda columna entera. La zona de la mano
+ | tiene casi dos tercios del ancho: las cartas no llegan al panel.
+ | El alto es el de la primera pantalla, con un tope para monitores muy altos. En una ventana de 1355 x 638
+ | quedan 562 px. Si se agrega algo al panel o a la mano, volver a medir ahí.
+ | Va fuera de las capas, y después de las reglas de las ventanas bajas, porque les gana a las dos.
+ */
+@media (min-width: 64rem) {
+    .modos-dos-zonas {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .modos-dos-zonas > section {
+        container-type: inline-size;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+        min-height: min(calc(var(--alto, 100dvh) - 4.75rem), 46rem);
+    }
+
+    .modos-dos-zonas > section::before {
+        grid-row: 1 / -1;
+        grid-column: 2;
+        /* Hasta el borde derecho de la ventana: lo que le falta a la columna, más el margen de la página. */
+        margin-right: calc((min(100vw, 72rem) - 100vw) / 2 - 2rem);
+        background-color: var(--color-pano-hondo);
+        content: '';
+    }
+
+    .modos-dos-zonas h1 {
+        grid-row: 1;
+        grid-column: 1;
+        padding-top: clamp(1.25rem, calc(var(--alto, 100dvh) * 0.05), 2.75rem);
+        font-size: clamp(2.5rem, 4vw, 3.75rem);
+    }
+
+    /* La mano pasa a ser una pieza de la misma grilla que el título, y cada juego, una columna entera del panel. */
+    .modos-dos-zonas .modos-mano {
+        display: contents;
+    }
+
+    .modos-dos-zonas .mano-juegos {
+        grid-row: 2;
+        grid-column: 1;
+        place-self: center;
+    }
+
+    .modos-dos-zonas .modo-juego {
+        display: flex;
+        flex-direction: column;
+        grid-row: 1 / -1;
+        grid-column: 2;
+        padding: clamp(1.5rem, calc(var(--alto, 100dvh) * 0.06), 3.25rem) 0 clamp(1.5rem, calc(var(--alto, 100dvh) * 0.06), 3.25rem) clamp(1.75rem, 3vw, 3rem);
+    }
+
+    /* El nombre más largo ("Escalera del club") entra en un renglón del panel: con dos, el botón se iría de la pantalla. */
+    .modos-dos-zonas .modo-nombre h2 {
+        font-size: clamp(1.875rem, 2.6vw, 2.5rem);
+        white-space: nowrap;
+    }
+
+    /* Lo que la persona lleva en ese juego ocupa el medio, centrado en el aire que queda. */
+    .modos-dos-zonas .modo-escena {
+        margin-block: auto;
+        padding-block: 0.75rem;
+    }
+
+    /* Las opciones van siempre al pie, haya o no algo en el medio. */
+    .modos-dos-zonas .modo-opciones {
+        margin-top: auto;
+    }
+
+    .modos-dos-zonas .modo-escena + .modo-opciones {
+        margin-top: 0;
+    }
+}
+
 @media (hover: hover) and (pointer: fine) {
     /* Una seña: su naipe se levanta e inclina, como una carta que se agarra. */
     button.sena:not([disabled]):hover .mini-naipe {
@@ -2907,6 +3069,14 @@ html:has(body.superficie-pano) {
         transform: translateY(-3%) rotate(calc((var(--i) - var(--medio, 0)) * 3deg));
     }
 
+    /* En la mano abierta, la carta que no está elegida se asoma de la mano: avisa que se puede tirar. */
+    @media (min-width: 64rem) {
+        .mano-abierta > .naipe-juego[aria-pressed='false']:hover {
+            opacity: 1;
+            transform: translateY(calc(var(--cae) - 6%)) rotate(var(--giro));
+        }
+    }
+
     .naipe-jugable:not([disabled]):hover {
         transform: translateY(-6%);
     }
@@ -2956,6 +3126,14 @@ html:has(body.superficie-pano) {
     .mano-de-varias > .naipe-juego[aria-pressed='false']:hover,
     .mano-de-varias > .naipe-juego[aria-pressed='false']:active {
         transform: rotate(calc((var(--i) - var(--medio, 0)) * 3deg));
+    }
+
+    /* Lo mismo en la mano abierta: cada carta se queda en su lugar del abanico. */
+    @media (min-width: 64rem) {
+        .mano-abierta > .naipe-juego[aria-pressed='false']:hover,
+        .mano-abierta > .naipe-juego[aria-pressed='false']:active {
+            transform: translateY(var(--cae)) rotate(var(--giro));
+        }
     }
 
     /* Las cartas del tanto no se levantan: alcanza con que la otra se apague. */

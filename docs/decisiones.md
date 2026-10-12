@@ -1363,6 +1363,20 @@ Se salteó a propósito el torneo entre personas (M13b), que era el que seguía 
 - **Modos:** con los cinco juegos en la mano ya no queda ninguno en el mazo, así que esa columna desaparece y la mano va en una sola fila.
 - **Medido:** el botón de jugar de la escalera termina a 614 px en un celular de 360 x 740 y a 502 px en una ventana de 1355 x 638. El de los modos no se movió (588 px en esa ventana). La mesa de un desafío no hace scroll a 360 x 640, 360 x 740 ni 1355 x 638.
 
+### La pantalla de modos en escritorio, rehecha
+
+Con cinco juegos en la mano, en una pantalla ancha quedaban cinco cartas chicas a la izquierda, el detalle a la derecha y mucho paño vacío. Román pidió que se viera mejor y fue eligiendo entre opciones, mirándola en su ventana.
+
+- **Dos zonas, como las pantallas de cuenta.** A la izquierda, sobre el paño, el título y la mano. A la derecha, un panel de paño hondo que va de arriba a abajo y llega al borde de la ventana, con el juego elegido: el nombre arriba y el rival, el nivel y el botón apoyados al pie. El botón queda a la misma altura en los cinco juegos.
+- **La mano abierta.** Las cinco cartas van en abanico, más grandes y centradas en su zona. La elegida sube y casi se endereza, como la carta que se está por tirar. Ninguna cambia de lugar.
+- **El tamaño de las cartas sale del ancho de su zona,** no del de la ventana: así la mano nunca llega al panel. Se había probado con el ancho de la ventana y en la de Román la última carta lo tocaba.
+- **El medio del panel dice lo tuyo en ese juego,** dibujado con las piezas del sitio. Sin eso quedaba un hueco entre el nombre y las opciones. En mano a mano y de a cuatro, las partidas ganadas contadas con fósforos; en desafíos, la mano del próximo que falta; en la escalera, la escalera en chico con el escalón que toca levantado; en el torneo, el cruce que toca o cuántos se ganaron. Quien todavía no jugó lee "Todavía sin partidas" y no un "0 de 0".
+- **Se descartó:** una línea de texto con lo que está empezado (era la primera idea y no llenaba nada) y achicar el panel para que no sobrara lugar.
+- **El celular no cambió.** Todo esto corre desde `lg`; lo dibujado en el panel no se muestra más abajo.
+- **Medido:** en 1355 x 638 el botón termina a 600 px en los cinco juegos y la mano termina 25 px antes del panel. También se miró en 1024 x 768, 1366 x 768 y 1920 x 1080. En un celular de 360 x 740 el botón sigue donde estaba.
+- **Qué se probó:** los tests de las páginas y las pruebas de navegador que pasan por los modos. No se escribieron tests nuevos para lo dibujado en el panel: queda pendiente.
+- Capturas: `modos-dos-zonas.png` y `modos-dos-zonas-pantalla-grande.png`.
+
 ### Lo que encontró la revisión
 
 - **En Windows, dos archivos que solo se distinguen por una mayúscula son el mismo.** El archivo de las fichas se llamó primero igual que su clase, en minúscula, y la pisó. En Linux (donde corre el sitio) habrían sido dos archivos distintos y el error no se habría visto hasta publicar. Ahora las fichas tienen otro nombre.
