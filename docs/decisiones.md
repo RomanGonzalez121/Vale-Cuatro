@@ -1309,3 +1309,71 @@ Román lo instaló en un Android desde Chrome y marcó tres cosas. Pidió recome
   - **Se descartó** repartir la mano de la portada al abrir: no choca con ninguna regla, pero no continúa lo que se está viendo.
   - **Límite:** si el servidor está dormido, la pantalla quieta del sistema se queda hasta que despierta. Eso no lo tapa ninguna animación.
 - Capturas en `docs/capturas/`: `portada-instalar.png`, `portada-instalar-celular.png` y `apertura-celular.png`.
+
+## M17. Desafíos y escalera del club
+
+Más de una forma de jugar solo: manos armadas con un objetivo, y un camino de ocho escalones para ir pasando. La pantalla de modos ya existía (se adelantó antes de M3); acá se hizo lo que va adentro.
+
+Se salteó a propósito el torneo entre personas (M13b), que era el que seguía por orden: necesita cuatro u ocho personas conectadas a la vez para probarlo y para mostrarlo. Queda para el final, junto con el de a cuatro entre personas.
+
+### Lo que decidió Román
+
+- **La escalera tiene ocho escalones mezclados:** partidas a 15 contra un rival cada vez más difícil (de Fácil a Ultra difícil) y manos con objetivo.
+- **Hay ocho desafíos sueltos, todos abiertos** desde el principio y en cualquier orden. Lo que va en orden es la escalera.
+- **El progreso se guarda también sin cuenta,** y se conserva al registrarse. No hizo falta código: quien juega sin cuenta es una fila de jugador como cualquier otra.
+- **Nada de esto cuenta para el ranking:** son manos armadas y partidas que se repiten hasta que salen.
+- **La escalera se ve como naipes en escalera** (entre tres opciones): ocho naipes apoyados en el paño que suben en diagonal; los abiertos boca arriba y los que faltan boca abajo.
+
+### Un desafío es una ficha de datos
+
+- **Problema:** el plan pedía que agregar un desafío no llevara código nuevo.
+- **Elegido:** cada desafío es una ficha en `app/Juego/fichas-de-desafios.php`: el tanteo, quién es mano, las cartas de los dos, lo que ya está jugado al arrancar (por ejemplo, "el bot cantó truco") y el objetivo.
+- **El objetivo también es un dato:** una lista de condiciones que se cumplen todas. Hay siete: ganar la mano, ganar la partida, ganar el envido, sumar tantos puntos, que el bot no sume más de tantos, que el bot no quiera un canto y que lo quiera. Un test arma una mano que no está en el catálogo, con dos objetivos distintos, y comprueba que el resultado cambia.
+- **Se descartó** una clase por desafío: doce clases casi iguales, y una más por cada desafío nuevo.
+
+### El bot de un desafío contesta siempre lo mismo
+
+- **Problema:** los bots Fácil, Difícil y Ultra difícil usan azar (para tirar cualquier cosa, o para mentir). Con azar, la misma jugada podía salir bien un intento y mal el siguiente: un desafío dependería de la suerte.
+- **Elegido:** en un desafío el azar del bot sale de la clave del desafío y del número de la jugada. Las mismas jugadas reciben siempre las mismas respuestas, así que cada desafío tiene una solución que se puede buscar.
+- **Lo que eso permite:** un test juega cada desafío de todas las maneras posibles y comprueba que al menos una cumple el objetivo y al menos una no. Los doce pasan. De la más fácil sale bien el 67 % de las maneras de jugarla; de las más difíciles, el 3 %.
+- **Límite que hay que conocer:** como la clave decide cómo contesta el bot, cambiarle la clave a una ficha cambia el desafío. Ese test lo detecta.
+- En una partida de la escalera (no una mano) el bot juega con azar de verdad, como en cualquier partida.
+
+### Un desafío sobre el motor, sin tocar sus reglas
+
+- **Una mano armada ya existía en el motor** desde M2. Se le sumó una sola cosa: poder fijar el tanteo de arranque antes de repartir (`conTanteo`), que era lo que la situación armada hacía por dentro. Tiene su test.
+- **El tanteo de arranque queda guardado con el evento del reparto.** Así la partida se vuelve a contar desde sus eventos aunque después la ficha cambie o se borre.
+- **Un desafío es una sola mano.** Cuando la mano se cierra, la mesa cierra la partida. "Quién la ganó" pasa a querer decir si se cumplió el objetivo: se puede cumplir perdiendo la mano (en "Irse a tiempo" el objetivo es que el bot sume un solo punto).
+- **Si se cumplió lo decide el servidor,** volviendo a pasar los eventos guardados por el motor, igual que el historial y el ranking. La pantalla no manda ningún resultado; un test manda uno falso y comprueba que no cuenta.
+
+### La escalera y su candado
+
+- **Un escalón se juega solo si ya se pasaron los anteriores.** Lo decide el servidor con lo que tiene anotado: pedir a mano un escalón cerrado vuelve a la escalera con un aviso y no crea nada, ni siquiera el jugador invitado.
+- **Las manos de la escalera son desafíos que no están en la lista suelta:** la única manera de llegar es subiendo. Pedirlas por la dirección de los desafíos contesta que no existen.
+- **Los rivales de las partidas son gente del club:** jugadores de ejemplo del ranking, con su apodo y su carta, que sube por la jerarquía del truco (del cuatro de espada al ancho de espada). Es lo mismo que en el torneo contra bots.
+- **Lo que hay en un escalón cerrado no se cuenta:** está boca abajo, también en el código de la página.
+- **El progreso se anota en un solo lugar:** cuando la mesa cierra una partida de un desafío o de la escalera. Una que se abandona cuenta como un intento y nada más.
+
+### Las pantallas
+
+- **Desafíos:** cada uno se muestra con lo que lo distingue, que es la mano que te toca, con las cartas de verdad. Van agrupados por tema y con una lista, no con tarjetas iguales.
+- **Escalera:** los ocho naipes llegan repartidos y los abiertos se dan vuelta, con el mismo reparto del resto del sitio. Tocar uno muestra su escalón al lado; el elegido se levanta, como la carta de un modo de juego.
+- **En la mesa, el objetivo va en una ventanita** como la de los ajustes: se abre sola al llegar y se corre con la primera jugada. No le agrega una fila a la mesa, que sigue sin scroll.
+- **Al cerrar la mano no se reparte:** el cierre dice "Desafío superado" o "No salió esta vez", y en la fila de los cantos van los botones de lo que sigue.
+- **Modos:** con los cinco juegos en la mano ya no queda ninguno en el mazo, así que esa columna desaparece y la mano va en una sola fila.
+- **Medido:** el botón de jugar de la escalera termina a 614 px en un celular de 360 x 740 y a 502 px en una ventana de 1355 x 638. El de los modos no se movió (588 px en esa ventana). La mesa de un desafío no hace scroll a 360 x 640, 360 x 740 ni 1355 x 638.
+
+### Lo que encontró la revisión
+
+- **En Windows, dos archivos que solo se distinguen por una mayúscula son el mismo.** El archivo de las fichas se llamó primero igual que su clase, en minúscula, y la pisó. En Linux (donde corre el sitio) habrían sido dos archivos distintos y el error no se habría visto hasta publicar. Ahora las fichas tienen otro nombre.
+- **Un test pedía que la mesa de un escalón no dijera "Objetivo"** y fallaba por el nombre de una variable de la página. Se cambió para que busque la ventanita y no la palabra.
+- **El botón del final de un desafío con ícono no entraba a 360 px.** Los dos botones de esa fila van sin ícono.
+- **Un test de la escalera dependía de quién salía mano.** Para perder una partida a propósito, la persona se iba al mazo contra un bot que también se iba: ganaba el que fuera mano segundo. Pasó la corrida completa y falló la siguiente. Ahora el bot de prueba tira una carta cuando la persona tiene que perder, y el resultado no depende del sorteo.
+
+### Qué se probó y qué no
+
+- **Con tests (830 en total, 27 nuevos):** las fichas bien escritas; cada desafío con solución y sin salir solo; el mismo desafío arranca siempre igual y el bot contesta siempre igual; cada desafío ganado y perdido por la mesa de verdad, con el bot en la cola, da lo mismo que al buscarle la solución; el objetivo sale de los eventos; el candado de la escalera; nada va al ranking ni tiene revancha; el historial dice qué fue cada cosa.
+- **En un navegador real:** una prueba automática supera un desafío de punta a punta y lo ve marcado en la lista. A mano: un desafío perdido, el final de una partida de la escalera, y las tres pantallas en celular y en escritorio.
+- **No se jugó la escalera entera a mano,** escalón por escalón: las partidas a 15 se probaron contra un bot de prueba.
+- **No se probó con lector de pantalla.** Queda para el pulido final.
+- Capturas en `docs/capturas/`: `escalera.png`, `escalera-celular.png`, `desafios.png`, `desafios-celular.png`, `desafio-objetivo-celular.png`, `desafio-superado-celular.png`, `modos-cinco-juegos.png` y `modos-cinco-juegos-celular.png`.

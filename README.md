@@ -66,7 +66,7 @@ El proyecto se construye por módulos. Hoy están terminados los nueve primeros,
 | M14 | Sonido de cartas, fósforos y cantos, fabricado en el navegador y apagado de fábrica | Listo |
 | M15 | Instalable en el celular: se instala desde el navegador, tiene su página de "sin conexión" y avisa cuando te toca | Listo |
 | M16 | Panel de administración: partidas sin movimiento, cola, limpieza y apodos, con cada acción anotada | Listo |
-| M17 | Modos de juego, desafíos y una escalera de niveles | Adelantada la pantalla para elegir modo; el resto, pendiente |
+| M17 | Modos, desafíos y escalera del club: ocho manos con objetivo y ocho escalones en orden | Listo |
 | M18 | Perfil con categorías ganadas jugando | Pendiente |
 | M19 | Truco de a cuatro con señas: con bots ya se juega (un bot de compañero contra dos, mesa en cruz, nueve señas); entre personas, pendiente | En parte |
 | M20 | Mazos y mesas para elegir | Pendiente |
