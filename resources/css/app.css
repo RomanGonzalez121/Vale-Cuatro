@@ -1002,6 +1002,86 @@ html:has(body.superficie-pano) {
         transform: translateY(-2%) rotate(calc((var(--i) - var(--medio, 0)) * 3deg)) scale(0.97);
     }
 
+    /* Los desafíos: la mano con la que arranca cada uno, en chico. El abanico necesita aire a los costados para no recortarse. */
+    .desafio-mano {
+        --ancho-carta: clamp(2.9rem, 12vw, 4.25rem);
+        padding: calc(var(--ancho-carta) * 0.1) calc(var(--ancho-carta) * 0.14);
+    }
+
+    /*
+     | La escalera del club: ocho naipes apoyados en el paño que suben en diagonal, cada uno un escalón.
+     | Cada naipe se corre a la derecha y sube un paso respecto del anterior; en el celular se pisan un
+     | poco, como una mano abierta. El elegido se levanta, igual que la carta de un modo de juego.
+     | El alto sale de la cuenta: una carta, los pasos que sube la última y el lugar del número de abajo.
+     */
+    .escalera {
+        position: relative;
+        --ancho-carta: clamp(3.4rem, 10.6vw, 6rem);
+        --paso-x: calc((100% - var(--ancho-carta)) / (var(--escalones) - 1));
+        --paso-y: calc(var(--ancho-carta) * 0.27);
+        width: 100%;
+        max-width: 44rem;
+        height: calc(var(--ancho-carta) * 1.7 + var(--paso-y) * (var(--escalones) - 1) + 1.75rem);
+    }
+
+    .escalera > li {
+        position: absolute;
+        bottom: calc(var(--paso-y) * var(--i) + 1.75rem);
+        left: calc(var(--paso-x) * var(--i));
+        width: var(--ancho-carta);
+    }
+
+    /* El elegido queda por encima del escalón siguiente, que en el celular lo pisa. */
+    .escalera > li:has(.escalon[aria-pressed='true']) {
+        z-index: 1;
+    }
+
+    .escalon {
+        position: relative;
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        border-radius: 8% / 5.13%;
+        background: none;
+        cursor: pointer;
+        transition: transform 200ms var(--ease-llegada);
+    }
+
+    .escalon[aria-pressed='true'] {
+        transform: translateY(-9%);
+    }
+
+    /* Al apretarlo responde enseguida: se hunde apenas bajo el dedo. */
+    .escalon:active {
+        transform: translateY(-4%) scale(0.97);
+    }
+
+    /* El número va debajo de cada naipe. El del escalón que toca va lleno, en Naipe: Oro sobre el paño no llega para un texto chico. */
+    .escalon-numero {
+        position: absolute;
+        top: calc(100% + 0.4rem);
+        left: 50%;
+        display: grid;
+        place-items: center;
+        min-width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        line-height: 1;
+        transform: translateX(-50%);
+    }
+
+    .escalon[data-estado='toca'] .escalon-numero {
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+    }
+
+    .escalon[data-estado='cerrado'] .escalon-numero {
+        opacity: 0.7;
+    }
+
     /*
      | El detalle del juego que se acaba de elegir entra con un fundido corto y sube apenas, en vez de
      | cambiar de golpe. Solo después de elegir: al cargar la página ya está en su lugar.
@@ -1188,6 +1268,22 @@ html:has(body.superficie-pano) {
 
     :root[data-modo='noche'] .ajustes {
         --cabeza: var(--color-oro);
+    }
+
+    /*
+     | El objetivo de un desafío: una ventanita como la de los ajustes, debajo del botón que la abre.
+     | Dice qué hay que lograr sin taparle la mano a nadie ni agregarle una fila a la mesa.
+     */
+    .objetivo {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        z-index: 20;
+        width: min(20rem, calc(100vw - 2rem));
+        padding: 0.875rem 1rem 1rem;
+        border: 2px solid currentColor;
+        border-radius: 0.875rem;
+        transform-origin: top left;
     }
 
     /* Cada ajuste es un renglón entero que se toca: qué es y cómo está a la izquierda, su llave a la derecha. */
@@ -2818,6 +2914,11 @@ html:has(body.superficie-pano) {
     .naipe-jugable:not([disabled]):active {
         transform: translateY(-6%) scale(0.97);
     }
+
+    /* Un escalón que no está elegido se asoma al pasar el mouse. */
+    .escalon[aria-pressed='false']:hover {
+        transform: translateY(-4%);
+    }
 }
 
 /* Con movimiento reducido todo pasa a un fundido corto: se quedan la opacidad y el color. */
@@ -2830,6 +2931,16 @@ html:has(body.superficie-pano) {
     .naipe-jugable.del-tanto {
         transform: none;
         transition: none;
+    }
+
+    /* El escalón elegido queda levantado, sin viaje; los demás no se asoman. */
+    .escalon {
+        transition: none;
+    }
+
+    .escalon[aria-pressed='false']:hover,
+    .escalon:active {
+        transform: none;
     }
 
     /* La carta del modo que ya se juega no gira: aparece cara arriba. Y las demás se apagan sin transición. */

@@ -32,6 +32,11 @@ final class Estadisticas
             return false;
         }
 
+        // Un desafío o un escalón se repiten hasta que salen: no dicen quién juega mejor.
+        if ($partida->esDePractica()) {
+            return false;
+        }
+
         return $partida->entre_personas || ($partida->nivel_bot?->value ?? 0) >= self::DESDE_EL_NIVEL->value;
     }
 

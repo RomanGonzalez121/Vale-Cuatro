@@ -94,17 +94,19 @@
                             <p class="leading-none">
                                 {{-- De a cuatro se gana y se pierde de a dos: vos y tu compañero. --}}
                                 @php($deACuatro = $partida['asientos'] === 4)
-                                <span @class(['block text-sm font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>{{ $deACuatro ? ($partida['gano'] ? 'Ganaron' : 'Perdieron') : ($partida['gano'] ? 'Ganaste' : 'Perdiste') }}</span>
+                                <span @class(['block text-sm font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>{{ $partida['esDesafio'] ? ($partida['gano'] ? 'Superado' : 'No salió') : ($deACuatro ? ($partida['gano'] ? 'Ganaron' : 'Perdieron') : ($partida['gano'] ? 'Ganaste' : 'Perdiste')) }}</span>
                                 <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</span>
                             </p>
                             <p class="min-w-0 leading-snug max-sm:order-3 max-sm:col-span-2">
                                 <span class="block text-lg font-bold [overflow-wrap:anywhere] max-sm:text-base">Contra {{ $partida['rival'] }}</span>
-                                {{-- De qué juego fue: mano a mano, de un torneo o de a cuatro. Los desafíos van a decirlo acá. --}}
+                                {{-- De qué juego fue: mano a mano, de un torneo, de a cuatro, un desafío o un escalón de la escalera. --}}
                                 <span class="block text-[0.95rem]">
                                     @if ($serie)
                                         {{ $partida['serie']['numero'] }}ª de la serie{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @elseif ($partida['torneo'])
                                         Torneo, {{ mb_strtolower($partida['torneo']) }}.
+                                    @elseif ($partida['practica'])
+                                        {{ $partida['practica'] }}.
                                     @elseif ($deACuatro)
                                         De a cuatro, con un bot de compañero{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @else

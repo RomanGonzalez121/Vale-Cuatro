@@ -24,7 +24,7 @@
         {{ $slot }}
 
         <{{ $encabezado }} id="titulo-repeticion" class="text-[2rem] font-black leading-[0.98] tracking-tight sm:text-5xl">
-            <span x-text="deACuatro ? (resumen.gano ? 'Ganaron' : 'Perdieron') : (resumen.gano ? 'Ganaste' : 'Perdiste')"></span>
+            <span x-text="resumen.esDesafio ? (resumen.gano ? 'Superado' : 'No salió') : (deACuatro ? (resumen.gano ? 'Ganaron' : 'Perdieron') : (resumen.gano ? 'Ganaste' : 'Perdiste'))"></span>
             <span class="whitespace-nowrap tabular-nums" x-text="`${resumen.vos} a ${resumen.ellos}`"></span>
         </{{ $encabezado }}>
     </header>

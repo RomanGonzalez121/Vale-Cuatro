@@ -190,6 +190,11 @@ final class Revanchas
             return false;
         }
 
+        // Un desafío o un escalón no tienen revancha: se vuelven a jugar desde su lista.
+        if ($partida->esDePractica()) {
+            return false;
+        }
+
         if ($partida->entre_personas && $partida->invitado_id === null) {
             return false;
         }

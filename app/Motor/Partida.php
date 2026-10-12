@@ -122,15 +122,29 @@ final class Partida
      */
     public static function armada(array $manos, int $mano = 0, array $tanteo = [0, 0], int $puntos = 30): self
     {
-        $partida = self::nueva(count($manos), $mano, $puntos);
+        return self::nueva(count($manos), $mano, $puntos)->conTanteo($tanteo)->conManos($manos);
+    }
 
-        if (count($tanteo) !== 2 || array_filter($tanteo, is_int(...)) !== $tanteo || min($tanteo) < 0 || max($tanteo) >= $puntos) {
+    /**
+     * La misma partida arrancando desde otro tanteo. Solo vale antes de repartir la primera mano: es
+     * para armar una situación, no para corregir los puntos de una partida que ya se está jugando.
+     *
+     * @param  array{0: int, 1: int}  $tanteo
+     */
+    public function conTanteo(array $tanteo): self
+    {
+        if ($this->numeroDeMano > 0) {
+            throw new AccionInvalida('El tanteo de arranque se fija antes de repartir la primera mano.');
+        }
+
+        if (count($tanteo) !== 2 || array_filter($tanteo, is_int(...)) !== $tanteo || min($tanteo) < 0 || max($tanteo) >= $this->puntosParaGanar) {
             throw new InvalidArgumentException('El tanteo son dos números, de 0 a menos de los puntos de la partida.');
         }
 
-        $partida->tanteo = array_values($tanteo);
+        $nueva = clone $this;
+        $nueva->tanteo = array_values($tanteo);
 
-        return $partida->conManos($manos);
+        return $nueva;
     }
 
     /**

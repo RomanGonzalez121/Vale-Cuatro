@@ -160,6 +160,10 @@ export default (inicial, pedidos) => ({
     cierreDesde: 0,
     aviso: 'Repartiendo.',
     fin: null,
+    // En un desafío (una mano con objetivo): si se cumplió, cuando la mano ya cerró. Lo dice el servidor.
+    superado: null,
+    // La ventanita con el objetivo del desafío está desplegada.
+    conObjetivo: false,
     // El final de la partida: los puntos que van contando los dos tanteadores del cartel.
     cuenta: { vos: 0, rival: 0 },
     // La revancha entre dos personas: en qué está (lo dice el servidor), cuántos segundos le quedan a un
@@ -197,6 +201,12 @@ export default (inicial, pedidos) => ({
         }
 
         this.pintar(this.vista);
+
+        if (this.esManoConObjetivo) {
+            // El objetivo se muestra solo al llegar, cuando el reparto ya está en la mesa, y se corre con la primera jugada.
+            setTimeout(() => this.enJuego && ! this.ocupada && this.abrirObjetivo(false), 700);
+            this.$watch('ocupada', (ocupada) => ocupada && this.cerrarObjetivo(false));
+        }
     },
 
     // Lo que lee la pantalla
@@ -238,6 +248,59 @@ export default (inicial, pedidos) => ({
         return marcador.vos > marcador.rival
             ? `Ganaste la serie ${marcador.vos} a ${marcador.rival}.`
             : `${this.rivalAlEmpezar} ganó la serie ${marcador.rival} a ${marcador.vos}.`;
+    },
+
+    /**
+     * Si la partida es un desafío: una sola mano con un objetivo, que se cierra cuando la mano termina.
+     * Ahí no hay final de partida ni reparto: lo que sigue es reintentar o volver a la lista.
+     */
+    get esManoConObjetivo() {
+        return Boolean(this.pedidos.practica?.esMano);
+    },
+
+    /**
+     * El desafío ya cerró: la mano terminó, se haya cumplido el objetivo o no.
+     */
+    get cerroElDesafio() {
+        return this.esManoConObjetivo && ! this.enJuego && this.cierre !== null;
+    },
+
+    /**
+     * En una partida de la escalera, lo que deja dicho al terminar: se pasó el escalón o no.
+     */
+    get fraseDeLaEscalera() {
+        const practica = this.pedidos.practica;
+
+        if (! practica || practica.esMano || ! this.fin) {
+            return '';
+        }
+
+        if (this.fin !== 'vos') {
+            return `El escalón ${practica.escalon} no salió esta vez.`;
+        }
+
+        return practica.esElUltimo ? 'Llegaste arriba: completaste la escalera del club.' : `Pasaste el escalón ${practica.escalon}.`;
+    },
+
+    abrirObjetivo(conFoco = true) {
+        this.cerrarAjustes(false);
+        this.conObjetivo = true;
+
+        if (conFoco) {
+            this.$nextTick(() => this.$refs.objetivo?.focus({ preventScroll: true }));
+        }
+    },
+
+    cerrarObjetivo(devolverElFoco = true) {
+        if (! this.conObjetivo) {
+            return;
+        }
+
+        this.conObjetivo = false;
+
+        if (devolverElFoco) {
+            this.$nextTick(() => this.$refs.botonDeObjetivo?.focus({ preventScroll: true }));
+        }
     },
 
     /**
@@ -431,6 +494,12 @@ export default (inicial, pedidos) => ({
 
     get barra() {
         if (this.fin) {
+            return [];
+        }
+
+        // Un desafío es una sola mano: cuando cierra no se reparte. Lo que sigue son los botones de su cierre,
+        // que no pasan por acá (son un formulario y un link): la fila de cantos queda vacía.
+        if (this.esManoConObjetivo && ! this.enJuego) {
             return [];
         }
 
@@ -1452,6 +1521,11 @@ export default (inicial, pedidos) => ({
                 break;
 
             case 'partida_terminada':
+                // En un desafío, llegar a los puntos no es el final de nada: lo que cuenta es el objetivo, y ya lo dijo el cierre.
+                if (this.esManoConObjetivo) {
+                    break;
+                }
+
                 this.fin = quien;
                 this.sonar('final');
                 this.contarElFinal();
@@ -1790,7 +1864,7 @@ export default (inicial, pedidos) => ({
 
         // Entre dos manos: queda a la vista el cierre de la que terminó.
         this.cerrarMano(vista, false);
-        this.fin = vista.ganador === null ? null : this.quien(vista.ganador);
+        this.fin = vista.ganador === null || this.esManoConObjetivo ? null : this.quien(vista.ganador);
         this.cuenta = { ...this.puntos };
         this.atenderLaRevancha();
         this.aviso = aviso ?? this.aviso;
@@ -1885,10 +1959,14 @@ export default (inicial, pedidos) => ({
     cerrarMano(vista, animar = true) {
         const { ganador, motivo, anotado, mostradas } = vista.cierre;
         const entrePersonas = this.pedidos.entrePersonas;
-        const titulo = motivo === 'partida'
+        // En un desafío el título no es de quién fue la mano sino si se cumplió el objetivo: se puede cumplir perdiéndola.
+        this.superado = this.esManoConObjetivo ? Boolean(vista.superado) : null;
+
+        const deLaMano = motivo === 'partida'
             ? 'Se terminó la partida'
             // Con otra persona el título no lleva su apodo: uno largo lo partiría en tres renglones.
             : (ganador === this.yo ? 'Ganaste la mano' : (entrePersonas ? 'Perdiste la mano' : 'La mano es del bot'));
+        const titulo = this.superado === null ? deLaMano : (this.superado ? 'Desafío superado' : 'No salió esta vez');
         const razon = this.razonDelCierre(vista);
         const lineas = anotado.map((linea) => ({
             puntos: linea.puntos,
@@ -1927,7 +2005,7 @@ export default (inicial, pedidos) => ({
             `${titulo}. ${razon}`,
             ...lineas.map((linea) => `${linea.puntos} por ${linea.texto}.`),
             delBot.length ? `${this.rivalAlEmpezar} muestra ${delBot.map((carta) => `el ${nombreDe(carta)}`).join(' y ')}.` : '',
-            vista.fase === 'por_repartir' ? (entrePersonas ? 'Se reparte solo en unos segundos. Repartir lo apura.' : 'Apretá Repartir para seguir.') : '',
+            this.superado !== null || vista.fase !== 'por_repartir' ? '' : (entrePersonas ? 'Se reparte solo en unos segundos. Repartir lo apura.' : 'Apretá Repartir para seguir.'),
         ].filter(Boolean).join(' ');
     },
 

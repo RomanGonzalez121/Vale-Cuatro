@@ -43,11 +43,21 @@ class ModosTest extends TestCase
     public function test_solo_los_rivales_que_se_juegan_tienen_boton(): void
     {
         $html = $this->get('/modos')->assertOk()->getContent();
-        $botones = array_filter(array_merge(...array_map(fn (array $juego) => array_column($juego['rivales'], 'boton'), Modos::juegos())));
+        $rivales = array_filter(array_merge(...array_column(Modos::juegos(), 'rivales')), fn (array $rival) => $rival['boton'] !== null);
+        $botones = array_column($rivales, 'boton');
+        $enlaces = array_filter($rivales, fn (array $rival) => $rival['enlace'] ?? false);
 
-        // Un formulario por cada rival contra el que se puede jugar, y ninguno más: al bot va a /jugar, a una persona
-        // a /invitar y al torneo contra bots a /torneo.
-        $this->assertSame(count($botones), preg_match_all('/<form[^>]*action="[^"]*\/(?:jugar|invitar|torneo)"/', $html));
+        // Un formulario por cada rival contra el que se entra a una mesa, y ninguno más: al bot va a /jugar, a una
+        // persona a /invitar y al torneo contra bots a /torneo.
+        $this->assertSame(count($rivales) - count($enlaces), preg_match_all('/<form[^>]*action="[^"]*\/(?:jugar|invitar|torneo)"/', $html));
+
+        // Los desafíos y la escalera tienen su propia pantalla: su botón es un link, y no crea nada.
+        $this->assertSame(['desafios', 'escalera'], array_values(array_column($enlaces, 'ruta')));
+
+        foreach ($enlaces as $enlace) {
+            $this->assertStringContainsString('<a href="'.route($enlace['ruta']).'" class="boton boton-naipe', $html);
+        }
+
         $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/invitar"/', $html), 'Con otra persona se juega por /invitar.');
         $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/torneo"/', $html), 'El torneo contra bots se arma por /torneo.');
 
@@ -133,10 +143,23 @@ class ModosTest extends TestCase
 
     public function test_lo_que_falta_esta_dicho_y_no_se_puede_jugar(): void
     {
-        $html = $this->get('/modos')->assertOk()->getContent();
-        $enElMazo = array_filter(Modos::juegos(), fn (array $juego) => ! Modos::seJuega($juego));
+        // Hoy los cinco juegos se juegan con al menos un rival: no queda ninguno en el mazo, y el mazo no se dibuja.
+        $this->assertSame([], array_filter(Modos::juegos(), fn (array $juego) => ! Modos::seJuega($juego)));
+        $this->get('/modos')->assertOk()->assertDontSee('Todavía en el mazo');
 
-        $this->assertNotEmpty($enElMazo);
+        // Con un juego al que todavía no se le puede jugar contra nadie, vuelve a aparecer con su nombre.
+        $juegos = array_map(function (array $juego) {
+            if ($juego['clave'] === 'escalera') {
+                $juego['rivales'][0]['boton'] = null;
+            }
+
+            return $juego;
+        }, Modos::juegos());
+
+        $html = (string) $this->view('paginas.modos', ['juegos' => $juegos]);
+        $enElMazo = array_filter($juegos, fn (array $juego) => ! Modos::seJuega($juego));
+
+        $this->assertCount(1, $enElMazo);
         $this->assertStringContainsString('Todavía en el mazo', $html);
 
         // La lista del mazo nombra cada juego que falta y no tiene ningún botón ni formulario.
@@ -168,20 +191,12 @@ class ModosTest extends TestCase
 
     public function test_con_varios_juegos_en_la_mano_cada_carta_es_un_boton_y_entra_elegida_la_primera(): void
     {
-        // Lo que va a pasar cuando se termine el de a cuatro contra bots: se arma la pantalla con esos datos.
-        $juegos = array_map(function (array $juego) {
-            if ($juego['clave'] === 'de-a-cuatro') {
-                $juego['rivales'][0]['boton'] = 'Jugar con bots';
-            }
+        $html = (string) $this->view('paginas.modos', ['juegos' => Modos::juegos()]);
 
-            return $juego;
-        }, Modos::juegos());
-
-        $html = (string) $this->view('paginas.modos', ['juegos' => $juegos]);
-
-        $this->assertSame(3, substr_count($html, 'aria-label="Carta del modo '));
+        // Los cinco juegos: mano a mano, de a cuatro, torneo, desafíos y escalera.
+        $this->assertSame(5, substr_count($html, 'aria-label="Carta del modo '));
         $this->assertSame(1, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="true"/s', $html));
-        $this->assertSame(2, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="false"/s', $html));
+        $this->assertSame(4, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="false"/s', $html));
         // Mano a mano contra el bot y el de a cuatro van a /jugar; el torneo, a /torneo.
         $this->assertSame(2, preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
         $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/torneo"/', $html));

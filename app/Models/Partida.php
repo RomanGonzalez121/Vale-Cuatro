@@ -24,6 +24,10 @@ use Illuminate\Support\Str;
  * De a cuatro contra bots, el jugador ocupa el asiento 0, su compañero bot el 2 (enfrente) y los
  * dos bots rivales el 1 y el 3. Los equipos van intercalados, igual que en el motor.
  *
+ * Un desafío es una sola mano armada contra el bot, con un objetivo: se cierra cuando esa mano termina,
+ * y "ganador" dice si el objetivo se cumplió (el asiento del jugador) o no (el del bot). Un escalón de
+ * la escalera del club es una de esas manos o una partida entera contra el bot.
+ *
  * @property int $id
  * @property int $jugador_id
  * @property int|null $invitado_id
@@ -37,6 +41,8 @@ use Illuminate\Support\Str;
  * @property int|null $serie_id
  * @property int|null $anterior_id
  * @property int|null $torneo_id
+ * @property string|null $desafio
+ * @property int|null $escalon
  * @property Serie|null $serie
  * @property Nivel|null $nivel_bot
  * @property int|null $ganador
@@ -157,6 +163,23 @@ class Partida extends Model
     }
 
     /**
+     * Si es una mano armada con un objetivo: un desafío suelto, o un escalón de la escalera que es una mano.
+     */
+    public function esDesafio(): bool
+    {
+        return $this->desafio !== null;
+    }
+
+    /**
+     * Si es de un desafío o de la escalera del club. Lo que se juega ahí se puede repetir hasta que salga:
+     * no cuenta para el ranking ni tiene revancha.
+     */
+    public function esDePractica(): bool
+    {
+        return $this->desafio !== null || $this->escalon !== null;
+    }
+
+    /**
      * Si sigue a otra entre los mismos dos: es la siguiente de una serie, o una revancha.
      */
     public function esContinuacion(): bool
@@ -188,6 +211,7 @@ class Partida extends Model
             'serie_id' => 'integer',
             'anterior_id' => 'integer',
             'torneo_id' => 'integer',
+            'escalon' => 'integer',
             'primer_mano' => 'integer',
             'puntos' => 'integer',
             'asientos' => 'integer',

@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\AvisosController;
+use App\Http\Controllers\DesafiosController;
+use App\Http\Controllers\EscaleraController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\InvitacionController;
 use App\Http\Controllers\JugarController;
@@ -78,6 +80,14 @@ Route::middleware(['auth', 'throttle:120,1,torneo'])->whereNumber('torneo')->gro
     Route::post('/torneo/{torneo}/jugar', [TorneoController::class, 'jugar'])->name('torneo.jugar');
     Route::post('/torneo/{torneo}/abandonar', [TorneoController::class, 'abandonar'])->name('torneo.abandonar');
 });
+
+// Los desafíos y la escalera del club. Mirar la lista no pide sesión; jugar es una puerta de entrada más:
+// quien llega sin sesión entra como invitado. Llevan su propio límite porque un desafío es una mano
+// y se reintenta seguido.
+Route::get('/desafios', [DesafiosController::class, 'lista'])->name('desafios');
+Route::post('/desafios/{clave}', [DesafiosController::class, 'jugar'])->where('clave', '[a-z0-9-]{1,40}')->middleware('throttle:30,1,practica')->name('desafios.jugar');
+Route::get('/escalera', [EscaleraController::class, 'ver'])->name('escalera');
+Route::post('/escalera/{escalon}', [EscaleraController::class, 'jugar'])->whereNumber('escalon')->middleware('throttle:30,1,practica')->name('escalera.jugar');
 
 // La revancha, desde el final de una partida. Cada pedido dice de qué partida habla, y tiene que ser de quien lo hace.
 Route::middleware(['auth', 'throttle:240,1,revancha'])->group(function () {

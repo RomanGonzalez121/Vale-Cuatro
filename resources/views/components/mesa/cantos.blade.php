@@ -1,3 +1,5 @@
+@props(['practica' => null])
+
 @php
     /*
      | Todos los botones que puede llegar a tener la barra de cantos. La mesa
@@ -51,5 +53,29 @@
             :disabled="ocupada" @click="tocar('repartir')">
             <x-icono nombre="repartir" /> Repartir
         </button>
+
+        {{--
+            Un desafío es una sola mano: al cerrar no se reparte. En esta misma fila va lo que sigue: probar de
+            nuevo, subir al escalón que se abrió o volver a la lista. Primero lo que más probablemente se quiere.
+            Van sin ícono: a 360 px los dos textos ocupan todo el ancho.
+        --}}
+        @if ($practica)
+            @if ($practica['siguiente'])
+                <form method="POST" action="{{ $practica['siguiente'] }}" class="contents" x-show="cerroElDesafio && superado" x-cloak>
+                    @csrf
+                    <button type="submit" class="boton boton-naipe" data-boton="subir">Subir al escalón {{ $practica['escalon'] + 1 }}</button>
+                </form>
+            @endif
+            <a href="{{ $practica['volver'] }}" class="boton" :class="superado && ! {{ $practica['siguiente'] ? 'true' : 'false' }} ? 'boton-naipe order-first' : 'boton-linea order-last'"
+                x-show="cerroElDesafio" x-cloak data-boton="volver-a-la-lista">
+                {{ $practica['escalon'] ? 'Ver la escalera' : 'Otros desafíos' }}
+            </a>
+            <form method="POST" action="{{ $practica['reintentar'] }}" class="contents" x-show="cerroElDesafio && ! (superado && {{ $practica['siguiente'] ? 'true' : 'false' }})" x-cloak>
+                @csrf
+                <button type="submit" class="boton" :class="superado ? 'boton-linea' : 'boton-naipe'" data-boton="reintentar">
+                    <span x-text="superado ? 'Jugarlo de nuevo' : 'Probar de nuevo'">Probar de nuevo</span>
+                </button>
+            </form>
+        @endif
     </div>
 </section>

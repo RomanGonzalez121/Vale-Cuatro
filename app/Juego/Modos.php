@@ -15,11 +15,12 @@ namespace App\Juego;
  * elegir de cuántos jugadores es el torneo. "campos" son datos fijos que su botón manda (de a cuatro,
  * cuántos asientos) y "serie" en false saca la casilla del mejor de tres.
  * "ruta" es la ruta a la que va su botón y "icono" el que lleva; si faltan, van a jugar contra el bot.
+ * Con "enlace", el botón no entra a una mesa: lleva a una pantalla propia (la lista de desafíos, la escalera).
  */
 final class Modos
 {
     /**
-     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, ruta?: string, icono?: string, niveles?: list<Nivel>, lugares?: list<int>, campos?: array<string, int>, serie?: bool}>}>
+     * @return list<array{clave: string, nombre: string, renglones: list<string>, icono: string, resumen: string, rivales: list<array{clave: string, nombre: string, detalle: string, boton: string|null, ruta?: string, icono?: string, niveles?: list<Nivel>, lugares?: list<int>, campos?: array<string, int>, serie?: bool, enlace?: bool}>}>
      */
     public static function juegos(): array
     {
@@ -64,7 +65,7 @@ final class Modos
                 'icono' => 'desafio',
                 'resumen' => 'Manos armadas con un objetivo: ganar esa mano, o lograr que el bot no quiera.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Cada desafío reparte siempre las mismas cartas.', 'boton' => null],
+                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Ocho manos. Cada una reparte siempre las mismas cartas.', 'boton' => 'Ver los desafíos', 'ruta' => 'desafios', 'icono' => 'desafio', 'enlace' => true],
                 ],
             ],
             [
@@ -72,9 +73,9 @@ final class Modos
                 'nombre' => 'Escalera del club',
                 'renglones' => ['Escalera'],
                 'icono' => 'escalera',
-                'resumen' => 'Una serie de rivales cada vez más difíciles. Pasás uno y se abre el siguiente.',
+                'resumen' => 'Ocho escalones en orden. Pasás uno y se abre el siguiente.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Cada nivel es un rival nuevo o una mano con objetivo.', 'boton' => null],
+                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Cada escalón es un rival más difícil o una mano con objetivo.', 'boton' => 'Ver la escalera', 'ruta' => 'escalera', 'icono' => 'escalera', 'enlace' => true],
                 ],
             ],
         ];

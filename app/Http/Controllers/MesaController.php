@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Avisos\Avisos;
+use App\Juego\Desafios;
+use App\Juego\Escalera;
 use App\Juego\Mesa;
 use App\Juego\Senas;
 use App\Juego\Torneos;
@@ -56,6 +58,11 @@ class MesaController extends Controller
                 return redirect()->route('torneo', $ultima->torneo_id);
             }
 
+            // Y si fue un desafío o un escalón, se vuelve a su lista, que muestra cómo quedó.
+            if ($ultima?->esDePractica()) {
+                return redirect()->route($ultima->escalon !== null ? 'escalera' : 'desafios')->with('aviso', $this->comoTerminoLaPractica($ultima));
+            }
+
             return redirect()->route('modos')->with('aviso', $this->comoTermino($request));
         }
 
@@ -84,7 +91,56 @@ class MesaController extends Controller
             'torneo' => $this->torneoDe($partida),
             // Con otra persona enfrente: lo que la mesa necesita para pedir avisos al celular.
             'avisos' => $partida->entre_personas ? $this->avisos->paraLaPagina() : null,
+            // Si es un desafío o un escalón de la escalera: qué hay que lograr y adónde se vuelve.
+            'practica' => $this->practicaDe($partida),
         ]);
+    }
+
+    /**
+     * Lo que la mesa necesita saber cuando la partida es un desafío o un escalón de la escalera: qué es,
+     * qué hay que lograr si es una mano con objetivo, contra quién si es una partida, y adónde se vuelve
+     * o se reintenta. Null si la partida no es de ninguno de los dos.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function practicaDe(Partida $partida): ?array
+    {
+        if (! $partida->esDePractica()) {
+            return null;
+        }
+
+        $desafio = $partida->esDesafio() ? Desafios::de($partida->desafio) : null;
+        $escalon = $partida->escalon === null ? null : Escalera::escalon($partida->escalon);
+
+        return [
+            // Una mano con objetivo se cierra sola al terminar la mano; una partida de la escalera va a los puntos.
+            'esMano' => $partida->esDesafio(),
+            'titulo' => $desafio['titulo'] ?? $escalon['titulo'] ?? 'Desafío',
+            'consigna' => $desafio['consigna'] ?? null,
+            'escalon' => $partida->escalon,
+            'esElUltimo' => $partida->escalon === Escalera::cuantos(),
+            // En una partida de la escalera el bot tiene apodo: es alguien del club.
+            'rival' => $escalon['rival'] ?? null,
+            'volver' => route($partida->escalon !== null ? 'escalera' : 'desafios'),
+            'reintentar' => $partida->escalon !== null ? route('escalera.jugar', $partida->escalon) : route('desafios.jugar', $partida->desafio),
+            'siguiente' => $partida->escalon !== null && $partida->escalon < Escalera::cuantos() ? route('escalera.jugar', $partida->escalon + 1) : null,
+        ];
+    }
+
+    /**
+     * Cómo terminó el último desafío o escalón, para quien vuelve a la mesa y ya no lo encuentra abierto.
+     */
+    private function comoTerminoLaPractica(Partida $partida): ?string
+    {
+        if ($partida->estado !== Partida::TERMINADA) {
+            return null;
+        }
+
+        $paso = $partida->ganador === Mesa::JUGADOR;
+
+        return $partida->escalon !== null
+            ? ($paso ? "Pasaste el escalón {$partida->escalon}." : "El escalón {$partida->escalon} no salió esta vez.")
+            : ($paso ? 'Desafío superado.' : 'El desafío no salió esta vez.');
     }
 
     /**
@@ -287,6 +343,11 @@ class MesaController extends Controller
         // En un torneo, dejar la partida es quedar afuera: se vuelve a las llaves, que muestran cómo siguió.
         if ($partida?->torneo_id !== null) {
             return redirect()->route('torneo', $partida->torneo_id)->with('aviso', 'Abandonaste la partida y quedaste afuera del torneo.');
+        }
+
+        // Un desafío o un escalón que se deja cuenta como un intento: se vuelve a su lista.
+        if ($partida?->esDePractica()) {
+            return redirect()->route($partida->escalon !== null ? 'escalera' : 'desafios')->with('aviso', $partida->escalon !== null ? 'Dejaste el escalón.' : 'Dejaste el desafío.');
         }
 
         return redirect()->route('modos')->with('aviso', $partida?->serie_id === null ? 'Abandonaste la partida.' : 'Abandonaste la partida y, con ella, la serie.');

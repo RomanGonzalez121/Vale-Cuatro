@@ -35,8 +35,15 @@
      | y más chicas, para que la mano no sea más alta que el detalle.
      */
     $cartas = count($enLaMano);
-    $columnas = $cartas <= 2 ? max(1, $cartas) : (int) ceil($cartas / 2);
+    // Sin nada en el mazo, la columna del mazo no existe: la mano toma ese ancho y va en una sola fila.
+    $sinMazo = $enElMazo === [];
+    $columnas = match (true) {
+        $sinMazo => max(1, $cartas),
+        $cartas <= 2 => max(1, $cartas),
+        default => (int) ceil($cartas / 2),
+    };
     $anchoDeVarias = match (true) {
+        $sinMazo && $cartas > 2 => '7rem',
         $cartas <= 2 => '7.75rem',
         $cartas <= 4 => '7rem',
         default => '5.5rem',
@@ -46,7 +53,7 @@
 <x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
-        <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]'])
+        <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ($sinMazo ? '' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]')])
             x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false, lugares: {{ $lugaresElegidos }}, eligio: false }">
             <section aria-labelledby="titulo-modos">
                 <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
@@ -130,6 +137,8 @@
                                                 $sigue = $enCurso !== null;
                                                 // Con un torneo sin terminar (y ninguna partida abierta), el torneo no se arma: se vuelve a sus llaves.
                                                 $sigueElTorneo = $lugares !== [] && $torneo !== null && ! $sigue;
+                                                // Los desafíos y la escalera tienen su propia pantalla: el botón lleva ahí, no a una mesa.
+                                                $esEnlace = $rival['enlace'] ?? false;
                                             @endphp
 
                                             @if ($sigue)
@@ -141,6 +150,8 @@
                                                         Tenés una partida sin terminar con otra persona.
                                                     @elseif ($enCurso->torneo_id)
                                                         Tenés una partida del torneo sin terminar.
+                                                    @elseif ($enCurso->esDePractica())
+                                                        Tenés {{ $enCurso->escalon ? 'un escalón' : 'un desafío' }} sin terminar.
                                                     @elseif ($enCurso->deACuatro())
                                                         Tenés una partida de a cuatro sin terminar.
                                                     @else
@@ -214,7 +225,7 @@
                                                         <p class="leading-relaxed" x-show="lugares === {{ $opcion }}" @if ($opcion !== $lugaresElegidos) x-cloak @endif>{{ $recorrido[$opcion] }}</p>
                                                     @endforeach
                                                 </div>
-                                            @elseif (! $sigue)
+                                            @elseif (! $sigue && ! $esEnlace)
                                                 {{-- Con otra persona no hay nivel que elegir: la casilla de la serie va sola, arriba del botón. --}}
                                                 <label class="mt-3 flex min-h-11 w-fit cursor-pointer items-center gap-3 font-semibold" data-formato>
                                                     <input type="checkbox" class="casilla sr-only" x-model="serie">
@@ -227,6 +238,8 @@
                                             <div class="mt-3 flex flex-wrap items-center gap-3">
                                                 @if ($sigueElTorneo)
                                                     <a href="{{ route('torneo', $torneo) }}" class="boton boton-naipe min-h-14 px-6 text-lg"><x-icono nombre="torneo" /> Seguir el torneo</a>
+                                                @elseif ($esEnlace && ! $sigue)
+                                                    <a href="{{ route($rival['ruta']) }}" class="boton boton-naipe min-h-14 px-6 text-lg"><x-icono :nombre="$rival['icono']" /> {{ $rival['boton'] }}</a>
                                                 @else
                                                 <form method="POST" action="{{ route($rival['ruta'] ?? 'jugar') }}">
                                                     @csrf

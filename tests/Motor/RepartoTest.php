@@ -120,6 +120,19 @@ class RepartoTest extends TestCase
         }
     }
 
+    public function test_el_tanteo_de_arranque_se_fija_antes_de_repartir_y_no_despues(): void
+    {
+        // Es lo que hace una situación armada por dentro: una partida nueva, su tanteo y recién después las cartas.
+        $manos = [['1-espada', '2-oro', '4-copa'], ['7-oro', '3-copa', '5-basto']];
+        $porPasos = Partida::nueva(mano: 1)->conTanteo([12, 27])->conManos(array_map($this->cartas(...), $manos));
+
+        $this->assertSame($this->armada($manos, mano: 1, tanteo: [12, 27])->aArray(), $porPasos->aArray());
+
+        // Con una mano ya repartida el tanteo es el que dejó el juego: no se toca.
+        $this->expectException(AccionInvalida::class);
+        $porPasos->conTanteo([0, 0]);
+    }
+
     public function test_la_mesa_es_de_dos_o_de_cuatro(): void
     {
         $this->expectException(InvalidArgumentException::class);

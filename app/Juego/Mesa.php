@@ -161,6 +161,88 @@ final class Mesa
     }
 
     /**
+     * Abre un desafío: una sola mano contra el bot, armada con las cartas, el tanteo y lo ya jugado que
+     * dice su ficha. Acá no se sortea nada, así que el mismo desafío arranca siempre igual. La partida
+     * se cierra sola cuando esa mano termina, y ahí se mira si se cumplió el objetivo.
+     *
+     * Con una partida sin terminar devuelve esa, sea la que sea: una persona juega una sola a la vez.
+     *
+     * @param  array<string, mixed>  $desafio  La ficha del catálogo (App\Juego\Desafios).
+     * @param  int|null  $escalon  Si esa mano es un escalón de la escalera del club, cuál.
+     */
+    public function abrirDesafio(Jugador $jugador, array $desafio, ?int $escalon = null): Partida
+    {
+        return DB::transaction(function () use ($jugador, $desafio, $escalon) {
+            Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
+
+            $abierta = $this->abiertaDe($jugador);
+
+            if ($abierta !== null) {
+                return $abierta;
+            }
+
+            $partida = new Partida([
+                'jugador_id' => $jugador->getKey(),
+                'primer_mano' => Desafios::mano($desafio),
+                'puntos' => Desafios::PUNTOS,
+                'nivel_bot' => Nivel::from($desafio['nivel']),
+            ]);
+
+            // Ni el desafío ni el escalón se asignan en masa: solo los decide el código de la mesa.
+            $partida->desafio = $desafio['clave'];
+            $partida->escalon = $escalon;
+            $partida->save();
+
+            // El tanteo de arranque queda guardado con el reparto: la partida se puede volver a contar
+            // desde sus eventos aunque después la ficha cambie.
+            $motor = Desafios::motor($desafio);
+            $evento = $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => Desafios::manos($desafio), 'tanteo' => Desafios::tanteo($desafio)]);
+
+            foreach (Desafios::jugadas($desafio) as [$asiento, $accion]) {
+                $motor = $motor->aplicar($asiento, $accion);
+                $evento = $this->guardar($partida, EventoDePartida::ACCION, $asiento, $accion->aArray());
+            }
+
+            $this->despuesDeJugar($partida, $motor, $evento);
+
+            return $partida;
+        });
+    }
+
+    /**
+     * La partida de un escalón de la escalera del club: contra el bot de ese nivel y a los puntos de la
+     * escalera, ya repartida. Qué escalón y si está abierto lo decide quien llama: esto solo la crea.
+     *
+     * Con una partida sin terminar devuelve esa, sea la que sea.
+     */
+    public function abrirEnEscalera(Jugador $jugador, Nivel $nivel, int $escalon): Partida
+    {
+        return DB::transaction(function () use ($jugador, $nivel, $escalon) {
+            Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
+
+            $abierta = $this->abiertaDe($jugador);
+
+            if ($abierta !== null) {
+                return $abierta;
+            }
+
+            $partida = new Partida([
+                'jugador_id' => $jugador->getKey(),
+                'primer_mano' => Azar::seguro()->entero(self::JUGADOR, self::BOT),
+                'puntos' => Escalera::PUNTOS,
+                'nivel_bot' => $nivel,
+            ]);
+
+            $partida->escalon = $escalon;
+            $partida->save();
+
+            $this->repartirEn($partida, $this->reconstruir($partida));
+
+            return $partida;
+        });
+    }
+
+    /**
      * La partida que el jugador tiene en juego: la suya contra el bot, o la que comparte con otra persona,
      * sea que la creó o que se sentó con el link.
      */
@@ -997,6 +1079,14 @@ final class Mesa
      */
     private function despuesDeJugar(Partida $partida, Motor $motor, int $evento): void
     {
+        // Un desafío es una sola mano: cuando se cierra, se cierra la partida. Quien "gana" es el jugador
+        // si cumplió el objetivo y el bot si no, haya ganado esa mano o la haya perdido.
+        if ($partida->esDesafio() && $motor->fase() !== Fase::Jugando) {
+            $this->cerrar($partida, Partida::TERMINADA, $this->cumplioElObjetivo($partida) ? self::JUGADOR : self::BOT);
+
+            return;
+        }
+
         if ($motor->fase() === Fase::Terminada) {
             $this->cerrar($partida, Partida::TERMINADA, $motor->ganador());
 
@@ -1014,6 +1104,23 @@ final class Mesa
             // la pausa para que parezca que piensa la pone la mesa del navegador, según el ritmo que eligió quien juega.
             TurnoDelBot::dispatch($partida->getKey())->afterCommit();
         }
+    }
+
+    /**
+     * Si en un desafío se cumplió el objetivo. No se le pregunta a la pantalla ni se mira lo que quedó en
+     * memoria: sale de volver a pasar los eventos guardados por el motor, como el historial y el ranking.
+     */
+    private function cumplioElObjetivo(Partida $partida): bool
+    {
+        $desafio = Desafios::de((string) $partida->desafio);
+
+        if ($desafio === null) {
+            return false;
+        }
+
+        [$hechos, $final] = Objetivos::loQuePaso($this->pasoAPaso($partida));
+
+        return Objetivos::cumple($desafio['objetivo'], $hechos, $final);
     }
 
     /**
@@ -1075,7 +1182,8 @@ final class Mesa
     private function aplicarEvento(Motor $motor, EventoDePartida $evento): Motor
     {
         return match ($evento->tipo) {
-            EventoDePartida::REPARTO => $motor->conManos(array_map(
+            // Un desafío arranca desde un tanteo dado, que quedó guardado con su reparto.
+            EventoDePartida::REPARTO => (isset($evento->datos['tanteo']) ? $motor->conTanteo($evento->datos['tanteo']) : $motor)->conManos(array_map(
                 fn (array $mano) => array_map(Carta::de(...), $mano),
                 $evento->datos['manos'],
             )),
@@ -1102,6 +1210,12 @@ final class Mesa
         // Una llegada o una seña no cambian la mesa: el motor sigue con los hechos de la jugada anterior, que ya se contaron.
         if (in_array($guardado?->tipo, [EventoDePartida::LLEGADA, EventoDePartida::SENA], true)) {
             $paso['hechos'] = [];
+        }
+
+        // En un desafío, la jugada que cierra la mano cierra también la partida: ese paso dice si se cumplió
+        // el objetivo. Antes de eso, y si se abandonó, no dice nada.
+        if ($partida->esDesafio()) {
+            $paso['superado'] = $motor->fase() !== Fase::Jugando && $partida->estado === Partida::TERMINADA ? $partida->ganador === self::JUGADOR : null;
         }
 
         // De a cuatro, las señas de la mano: las que le hace su compañero, las que puede hacer y las que ya hizo.
@@ -1177,9 +1291,14 @@ final class Mesa
     private function jugadaDelBot(Partida $partida, Motor $motor, int $asiento): array
     {
         try {
+            // En un desafío el bot no juega al azar: con las mismas jugadas contesta siempre lo mismo.
+            $azar = $partida->esDesafio()
+                ? Desafios::azar((string) $partida->desafio, (int) $partida->eventos()->max('numero') + 1)
+                : Azar::seguro();
+
             $bot = $this->botFijo ?? ($partida->deACuatro()
-                ? $partida->nivel_bot->botDePareja(Azar::seguro())
-                : $partida->nivel_bot->bot(Azar::seguro()));
+                ? $partida->nivel_bot->botDePareja($azar)
+                : $partida->nivel_bot->bot($azar));
 
             if ($bot instanceof Recuerda) {
                 $bot->recordar($this->manosCerradas($partida, $asiento));
@@ -1350,6 +1469,9 @@ final class Mesa
         } catch (Throwable $falla) {
             report($falla);
         }
+
+        // Si era un desafío o un escalón de la escalera, queda anotado en lo que el jugador lleva pasado.
+        (new Progresos)->anotar($partida);
 
         $this->seguirLaSerie($partida);
 

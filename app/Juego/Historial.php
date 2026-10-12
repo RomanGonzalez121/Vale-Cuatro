@@ -82,7 +82,7 @@ final class Historial
     /**
      * Lo que la lista dice de una partida, visto desde un asiento.
      *
-     * @return array{id: int, asientos: int, gano: bool, vos: int, ellos: int, hasta: int, rival: string, bot: bool, torneo: ?string, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
+     * @return array{id: int, asientos: int, gano: bool, vos: int, ellos: int, hasta: int, rival: string, bot: bool, torneo: ?string, practica: ?string, esDesafio: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
      */
     public function resumen(Partida $partida, int $asiento): array
     {
@@ -103,6 +103,10 @@ final class Historial
             'bot' => ! $partida->entre_personas,
             // Si fue de un torneo, qué partido: "Semifinal". En ese caso el rival es un bot con apodo.
             'torneo' => $this->partidoDeTorneo($partida),
+            // Si fue un desafío o un escalón de la escalera, cuál. En un desafío, "gano" dice si se cumplió
+            // el objetivo, que no es lo mismo que ganar la mano.
+            'practica' => $this->practica($partida),
+            'esDesafio' => $partida->esDesafio(),
             'cierre' => $this->comoCerro($partida, $asiento),
             'cuando' => $cuando,
             'dia' => self::dia($cuando),
@@ -161,6 +165,11 @@ final class Historial
             return 'dos bots de nivel '.mb_strtolower($partida->nivel_bot->nombre());
         }
 
+        // En una partida de la escalera el bot es alguien del club, con su apodo.
+        if ($partida->escalon !== null && ! $partida->esDesafio()) {
+            return Escalera::escalon($partida->escalon)['rival'] ?? 'Bot '.mb_strtolower($partida->nivel_bot->nombre());
+        }
+
         if (! $partida->entre_personas) {
             $cruce = $this->cruceDeTorneo($partida);
 
@@ -171,6 +180,25 @@ final class Historial
         }
 
         return ($asiento === Mesa::JUGADOR ? $partida->invitado : $partida->jugador)?->apodo ?? 'Alguien que ya no está';
+    }
+
+    /**
+     * De qué desafío o de qué escalón fue, o null si la partida no es de ninguno de los dos. Si la ficha
+     * ya no está en el catálogo, se dice lo que se sabe.
+     */
+    private function practica(Partida $partida): ?string
+    {
+        if (! $partida->esDePractica()) {
+            return null;
+        }
+
+        $titulo = $partida->esDesafio() ? (Desafios::de($partida->desafio)['titulo'] ?? null) : null;
+
+        if ($partida->escalon !== null) {
+            return "Escalera, escalón {$partida->escalon}".($titulo === null ? '' : ": {$titulo}");
+        }
+
+        return 'Desafío'.($titulo === null ? '' : ": {$titulo}");
     }
 
     /**
