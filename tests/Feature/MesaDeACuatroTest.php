@@ -65,6 +65,7 @@ class MesaDeACuatroTest extends TestCase
     {
         // Si un bot fallara, la mesa juega algo válido por él y anota el error: acá no puede haber ninguno.
         Exceptions::fake();
+        $jugaron = [];
 
         foreach ([Nivel::Facil, Nivel::Intermedio, Nivel::Dificil, Nivel::UltraDificil] as $numero => $nivel) {
             $partida = $this->mesa()->abrir(Jugador::factory()->create(), $nivel, asientos: 4);
@@ -83,9 +84,12 @@ class MesaDeACuatroTest extends TestCase
             $motor = $this->mesa()->reconstruir($partida);
             $this->assertSame(Fase::Terminada, $motor->fase());
             $this->assertSame($partida->ganador, $motor->ganador());
-            // Los cuatro asientos jugaron.
-            $this->assertSame([0, 1, 2, 3], $partida->eventos()->where('tipo', EventoDePartida::ACCION)->pluck('asiento')->unique()->sort()->values()->all());
+            $jugaron = [...$jugaron, ...$partida->eventos()->where('tipo', EventoDePartida::ACCION)->pluck('asiento')->all()];
         }
+
+        // Los cuatro asientos jugaron. Se mira entre las cuatro partidas y no en cada una: una partida puede
+        // terminarse en la primera mano (una falta envido querida de entrada) antes de que le toque al último.
+        $this->assertEqualsCanonicalizing([0, 1, 2, 3], array_values(array_unique($jugaron)));
 
         Exceptions::assertNothingReported();
     }
