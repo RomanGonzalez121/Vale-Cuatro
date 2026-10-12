@@ -42,7 +42,15 @@ jobs:
         run: vendor/bin/pint --test
 
       - name: Tests (PHPUnit)
-        run: php artisan test
+        run: |
+          set -o pipefail
+          php artisan test 2>&1 | tee storage/logs/tests.txt
+
+      # Lo que falló, dicho como avisos de la corrida: se lee sin tener que entrar al registro.
+      - name: Qué falló
+        if: failure()
+        run: |
+          grep -E "FAILED|Failed asserting|Exception|tests/.*\.php:[0-9]+" storage/logs/tests.txt | sed 's/\x1b\[[0-9;]*m//g' | head -10 | while IFS= read -r linea; do echo "::error title=Test::$linea"; done || true
 
   # Un Chrome de verdad usa el sitio como una persona: entra sin cuenta, se registra, ingresa y juega
   # una mano entera contra el bot. Lo que los otros tests no ven es la pantalla, y esto la prueba.
@@ -108,7 +116,15 @@ jobs:
           echo "El sitio de prueba no respondió." && cat storage/logs/servidor.log && exit 1
 
       - name: Pruebas de navegador (Dusk)
-        run: php artisan dusk
+        run: |
+          set -o pipefail
+          php artisan dusk 2>&1 | tee storage/logs/dusk.txt
+
+      # Lo que falló, dicho como avisos de la corrida: se lee sin tener que entrar al registro.
+      - name: Qué falló
+        if: failure()
+        run: |
+          grep -E "FAILED|Failed asserting|Exception|Waited|tests/Browser/.*\.php:[0-9]+" storage/logs/dusk.txt | sed 's/\x1b\[[0-9;]*m//g' | head -10 | while IFS= read -r linea; do echo "::error title=Prueba de navegador::$linea"; done || true
 
       # Si algo falla, queda lo que el navegador tenía en pantalla y lo que escribió el sitio.
       - name: Capturas y registros, si falló
