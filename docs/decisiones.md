@@ -1368,6 +1368,9 @@ Se salteó a propósito el torneo entre personas (M13b), que era el que seguía 
 - **En Windows, dos archivos que solo se distinguen por una mayúscula son el mismo.** El archivo de las fichas se llamó primero igual que su clase, en minúscula, y la pisó. En Linux (donde corre el sitio) habrían sido dos archivos distintos y el error no se habría visto hasta publicar. Ahora las fichas tienen otro nombre.
 - **Un test pedía que la mesa de un escalón no dijera "Objetivo"** y fallaba por el nombre de una variable de la página. Se cambió para que busque la ventanita y no la palabra.
 - **El botón del final de un desafío con ícono no entraba a 360 px.** Los dos botones de esa fila van sin ícono.
+- **Una prueba de navegador miraba el cartel del cierre un instante antes de que terminara de aparecer.** Acá pasaba siempre y en la integración continua, que es más lenta, fallaba: el cartel entra con un fundido y, mientras está transparente, el navegador no lo cuenta como visible. Ahora lo espera. Con la subida en rojo el sitio no se publica, así que M17 tardó tres subidas en salir.
+- **La integración continua no decía qué había fallado** sin entrar al registro con la cuenta. Ahora cada test que falla queda escrito como un aviso de la corrida, que se lee desde afuera.
+- **Un test viejo de la revancha de a cuatro dependía de la suerte:** la revancha iba a un punto contra bots de verdad, que a veces la terminaban antes de que el test la mirara. Falló por primera vez en una de estas subidas. Ahora los bots no juegan en ese test.
 - **Un test de la escalera dependía de quién salía mano.** Para perder una partida a propósito, la persona se iba al mazo contra un bot que también se iba: ganaba el que fuera mano segundo. Pasó la corrida completa y falló la siguiente. Ahora el bot de prueba tira una carta cuando la persona tiene que perder, y el resultado no depende del sorteo.
 
 ### Qué se probó y qué no

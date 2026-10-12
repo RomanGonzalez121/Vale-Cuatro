@@ -141,6 +141,10 @@ class MesaDeACuatroPorHttpTest extends TestCase
         $jugador = Jugador::factory()->invitado()->create();
         $partida = $this->terminada($jugador);
 
+        // La revancha va a un punto y en ella sale primero un bot: si los bots jugaran solos podrían terminarla
+        // antes de que el test la mire (alcanza con que los dos rivales se vayan al mazo). Acá no juegan.
+        Queue::fake();
+
         $this->actingAs($jugador)->post('/revancha/pedir', ['partida' => $partida->id])->assertRedirect('/mesa');
 
         $revancha = Partida::query()->where('anterior_id', $partida->id)->sole();
