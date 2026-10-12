@@ -43,9 +43,11 @@ class JugarUnDesafioTest extends DuskTestCase
             $navegador->waitUsing(20, self::PAUSA, fn () => $this->mesa($navegador)['cerro']);
 
             $this->assertTrue($this->mesa($navegador)['superado']);
-            $navegador->assertSee('Desafío superado')
+
+            // El cierre entra con un fundido: mientras está transparente el navegador no lo da por visible, así que se lo espera.
+            $navegador->waitForText('Desafío superado', 10)
                 ->assertMissing('[data-boton="repartir"]')
-                ->assertVisible('[data-boton="reintentar"]')
+                ->waitFor('[data-boton="reintentar"]', 10)
                 ->click('[data-boton="volver-a-la-lista"]')
                 ->waitForLocation('/desafios')
                 ->assertSee('Jugar de nuevo');
