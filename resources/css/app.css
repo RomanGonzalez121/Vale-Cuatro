@@ -2764,13 +2764,27 @@ html:has(body.superficie-pano) {
     }
 
     /* Lo que falta ganar queda boca abajo y a media tinta: se ve que está, y que todavía no es tuyo. */
-    .camino-cerrada > .carta {
-        opacity: 0.5;
+    /*
+     | Va un velo del color del paño encima y no una opacidad: con opacidad, el navegador pintaba una franja
+     | más clara dentro del dorso Tinta.
+     */
+    .camino-cerrada,
+    .dorso-cerrado {
+        position: relative;
+    }
+
+    .camino-cerrada::after,
+    .dorso-cerrado::after {
+        position: absolute;
+        inset: 0;
+        border-radius: 8% / 5.13%;
+        background-color: color-mix(in srgb, var(--color-pano) 50%, transparent);
+        content: '';
     }
 
     /* Un dorso que falta ganar se ve un poco más: es el premio, y tiene que reconocerse su dibujo. */
-    .dorso-cerrado > .carta {
-        opacity: 0.62;
+    .dorso-cerrado::after {
+        background-color: color-mix(in srgb, var(--color-pano) 38%, transparent);
     }
 
     .camino-pide {
