@@ -35,7 +35,7 @@ final class Torneos
     public const PUNTOS = 15;
 
     /** La carta con la que se ve a la persona en las llaves: la más baja del mazo, por donde se empieza. */
-    public const CARTA_DE_LA_PERSONA = '4-copa';
+    public const CARTA_DE_LA_PERSONA = Premios::CARTA_DE_FABRICA;
 
     public function __construct(private readonly Mesa $mesa) {}
 
@@ -269,18 +269,21 @@ final class Torneos
     {
         $azar = Azar::deSemilla($semilla);
         $cartas = JugadoresDeEjemplo::cartas();
+        // La carta de la persona es la de su perfil: la que eligió entre las que ganó, o la de fábrica.
+        $suya = (new Premios)->cartaDe($jugador);
         $bots = [];
 
         foreach (JugadoresDeEjemplo::lista() as $apodo => $nivel) {
             // Si la persona eligió el apodo de uno de ellos, ese no entra: no puede haber dos con el mismo nombre.
-            if ($apodo !== $jugador->apodo) {
+            // Tampoco el que tiene su misma carta: en las llaves cada carta es de uno solo.
+            if ($apodo !== $jugador->apodo && $cartas[$apodo] !== $suya) {
                 $bots[] = ['apodo' => $apodo, 'nivel' => $nivel->value, 'carta' => $cartas[$apodo]];
             }
         }
 
         $inscriptos = array_slice($this->mezclar($bots, $azar), 0, $lugares - 1);
-        // El lugar de la persona no guarda apodo ni nivel: es el dueño del torneo. Su carta es siempre la misma.
-        $inscriptos[] = ['apodo' => null, 'nivel' => null, 'carta' => self::CARTA_DE_LA_PERSONA];
+        // El lugar de la persona no guarda apodo ni nivel: es el dueño del torneo.
+        $inscriptos[] = ['apodo' => null, 'nivel' => null, 'carta' => $suya];
 
         return $this->mezclar($inscriptos, $azar);
     }

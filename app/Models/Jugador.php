@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Juego\Experiencia;
 use Database\Factories\JugadorFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -28,6 +29,9 @@ use RuntimeException;
  * @property string|null $email
  * @property bool $de_ejemplo
  * @property bool $es_administrador
+ * @property string|null $carta
+ * @property string|null $dorso
+ * @property Experiencia|null $experiencia
  */
 #[Table('jugadores')]
 #[Fillable(['apodo', 'email', 'password'])]
@@ -141,6 +145,7 @@ class Jugador extends Authenticatable
             'password' => 'hashed',
             'de_ejemplo' => 'boolean',
             'es_administrador' => 'boolean',
+            'experiencia' => Experiencia::class,
         ];
     }
 }

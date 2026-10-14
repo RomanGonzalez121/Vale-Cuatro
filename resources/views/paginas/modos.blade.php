@@ -17,7 +17,8 @@
 
     // Con una partida sin terminar no se elige nivel: se sigue esa, contra el bot que ya tenía.
     $enCurso ??= null;
-    $nivelElegido = $enCurso?->nivel_bot ?? \App\Juego\Nivel::porDefecto();
+    // Sin partida, entra elegido el que le toca por lo que declaró en su perfil (o el de siempre).
+    $nivelElegido = $enCurso?->nivel_bot ?? \App\Juego\Experiencia::nivelPara(auth()->user());
 
     // El torneo que quedó sin terminar, si hay: se vuelve a sus llaves en vez de armar otro.
     $torneo ??= null;

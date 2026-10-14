@@ -51,6 +51,8 @@
                             <p class="mt-3 text-[0.95rem] leading-snug max-sm:mt-2 max-sm:text-xs">
                                 <strong class="text-lg font-black tabular-nums max-sm:block max-sm:leading-tight">{{ $jugador['ganadas'] }}</strong> ganadas <span class="max-lg:block">de {{ $jugador['jugadas'] }}</span>
                             </p>
+                            {{-- La categoría sale de esas mismas ganadas. --}}
+                            <p class="mt-1 text-sm font-semibold max-sm:text-[0.7rem]"><span class="sr-only">Categoría</span> {{ $jugador['categoria'] }}</p>
                             <p class="mt-1.5 max-sm:text-[0.7rem]"><x-racha :cantidad="$jugador['racha']" /></p>
                         </li>
                     @endforeach
@@ -79,7 +81,10 @@
                             <td @class(['text-2xl font-black tabular-nums', 'pl-3' => $jugador['vos']])>{{ $jugador['puesto'] }}</td>
                             <td>
                                 <span class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                                    {{-- Cada uno va con su carta: la que eligió entre las que ganó. Es dibujo; la categoría va escrita al lado. --}}
+                                    <span class="w-6 flex-none sm:w-7" aria-hidden="true"><x-carta :palo="explode('-', $jugador['carta'])[1]" :numero="(int) explode('-', $jugador['carta'])[0]" /></span>
                                     <span class="text-lg font-bold leading-tight [overflow-wrap:anywhere]">{{ $jugador['apodo'] }}</span>
+                                    <span class="text-sm font-semibold"><span class="sr-only">Categoría</span> {{ mb_strtolower($jugador['categoria']) }}</span>
                                     @if ($jugador['bot'])
                                         <span class="inline-flex items-center gap-1 rounded-md bg-texto px-1.5 py-0.5 text-xs font-bold text-fondo">
                                             <x-icono nombre="bot" class="size-4" /> bot

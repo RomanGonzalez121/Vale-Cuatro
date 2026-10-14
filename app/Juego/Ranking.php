@@ -84,8 +84,8 @@ final class Ranking
                     $consulta->orWhere('j.id', $mira);
                 }
             })
-            ->groupBy('j.id', 'j.apodo', 'j.email', 'j.de_ejemplo')
-            ->selectRaw('j.id, j.apodo, j.de_ejemplo, case when j.email is null then 0 else 1 end as con_cuenta')
+            ->groupBy('j.id', 'j.apodo', 'j.email', 'j.de_ejemplo', 'j.carta')
+            ->selectRaw('j.id, j.apodo, j.de_ejemplo, j.carta, case when j.email is null then 0 else 1 end as con_cuenta')
             ->selectRaw('count(*) as jugadas')
             ->selectRaw('sum(case when r.gano = 1 then 1 else 0 end) as ganadas')
             ->selectRaw('sum(r.envidos_jugados) as envidos_jugados, sum(r.envidos_ganados) as envidos_ganados')
@@ -98,6 +98,12 @@ final class Ranking
                 'vos' => (int) $fila->id === $mira,
                 'enLaTabla' => (bool) $fila->de_ejemplo || (bool) $fila->con_cuenta,
                 'ganadas' => (int) $fila->ganadas,
+                // La categoría sale de las mismas ganadas; la carta, de la que eligió entre las que tiene
+                // destrabadas. Un jugador de ejemplo tiene la suya, fija.
+                'categoria' => Categoria::con((int) $fila->ganadas)->nombre(),
+                'carta' => $fila->de_ejemplo
+                    ? (JugadoresDeEjemplo::cartas()[$fila->apodo] ?? Premios::CARTA_DE_FABRICA)
+                    : Premios::cartaCon($fila->carta, (int) $fila->ganadas),
                 'jugadas' => (int) $fila->jugadas,
                 'racha' => (int) $fila->racha,
                 // El porcentaje de envidos ganados, o null si todavía no jugó ninguno.

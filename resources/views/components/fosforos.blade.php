@@ -1,4 +1,4 @@
-@props(['grupo' => 0, 'puntos' => 0, 'modelo' => null])
+@props(['grupo' => 0, 'puntos' => 0, 'modelo' => null, 'hasta' => null])
 
 @php
     /*
@@ -8,6 +8,7 @@
      | (una expresión de Alpine) los fósforos nuevos caen solos al sumar.
      | Debajo va la marca de los que faltan, muy tenue: así se leen los grupos
      | de cinco y dónde se separan las malas de las buenas.
+     | Con "hasta", la cuenta termina en ese número: los lugares que le siguen no se dibujan.
      */
     $fosforos = [
         ['M4 19.5V8', 4, 4.6],
@@ -20,8 +21,10 @@
 
 <svg {{ $attributes->class('flex-none') }} viewBox="0 0 28 28">
     <g class="fosforo-lugar" fill="none" stroke-width="2" stroke-linecap="round">
-        @foreach ($fosforos as [$trazo])
-            <path d="{{ $trazo }}" />
+        @foreach ($fosforos as $i => [$trazo])
+            @if ($hasta === null || $grupo * 5 + $i + 1 <= $hasta)
+                <path d="{{ $trazo }}" />
+            @endif
         @endforeach
     </g>
 

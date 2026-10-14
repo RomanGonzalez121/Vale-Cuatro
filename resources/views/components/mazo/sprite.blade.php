@@ -7,6 +7,17 @@
         <pattern id="trama-dorso" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <path d="M0 0H9M0 0V9" stroke="var(--color-tinta)" stroke-width="1.6" />
         </pattern>
+
+        {{-- El dorso "Fósforos": dos fósforos por baldosa, uno cabeza arriba y otro cabeza abajo. Palito en Tinta y cabeza en Copa. --}}
+        <pattern id="trama-fosforos" x="8" y="8" width="14" height="35" patternUnits="userSpaceOnUse">
+            <path d="M3.5 7V30M10.5 5V28" stroke="var(--color-tinta)" stroke-width="2" stroke-linecap="round" />
+            <circle cx="3.5" cy="5.5" r="2.7" fill="var(--color-copa)" />
+            <circle cx="10.5" cy="29.5" r="2.7" fill="var(--color-copa)" />
+        </pattern>
+
+        <clipPath id="recorte-dorso">
+            <rect x="8" y="8" width="84" height="140" rx="3" />
+        </clipPath>
     </defs>
 
     <symbol id="isotipo" viewBox="0 0 28 28">
@@ -123,5 +134,37 @@
         <rect x="8" y="8" width="84" height="140" rx="3" fill="url(#trama-dorso)" stroke="var(--color-tinta)" stroke-width="1.5" />
         <circle cx="50" cy="78" r="18" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
         <use href="#isotipo" x="37" y="65" width="26" height="26" style="color: var(--color-tinta)" />
+    </symbol>
+
+    {{--
+        Los dorsos que se ganan en la escalera del club. Los tres van en las tintas del mazo, planas, y se
+        distinguen por la forma, no por el color: rayas de fósforos, un bloque de tinta y una ronda de anillos.
+    --}}
+    <symbol id="dorso-fosforos" viewBox="0 0 100 156">
+        <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <rect x="8" y="8" width="84" height="140" rx="3" fill="url(#trama-fosforos)" stroke="var(--color-tinta)" stroke-width="1.5" />
+    </symbol>
+
+    <symbol id="dorso-tinta" viewBox="0 0 100 156">
+        <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <rect x="8" y="8" width="84" height="140" rx="3" fill="var(--color-tinta)" />
+        <rect x="14.5" y="14.5" width="71" height="127" rx="1.5" fill="none" stroke="var(--color-naipe)" stroke-width="1.2" />
+        <use href="#isotipo" x="28" y="56" width="44" height="44" style="color: var(--color-naipe)" />
+    </symbol>
+
+    <symbol id="dorso-ronda" viewBox="0 0 100 156">
+        <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <g clip-path="url(#recorte-dorso)" fill="none" stroke="var(--color-tinta)" stroke-width="4.5">
+            <circle cx="50" cy="78" r="9" />
+            <circle cx="50" cy="78" r="20" />
+            <circle cx="50" cy="78" r="31" />
+            <circle cx="50" cy="78" r="42" />
+            <circle cx="50" cy="78" r="53" />
+            <circle cx="50" cy="78" r="64" />
+            <circle cx="50" cy="78" r="75" />
+            <circle cx="50" cy="78" r="86" />
+        </g>
+        <circle cx="50" cy="78" r="3.4" fill="var(--color-tinta)" />
+        <rect x="8" y="8" width="84" height="140" rx="3" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
     </symbol>
 </svg>

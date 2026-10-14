@@ -18,6 +18,7 @@ use App\Motor\Carta;
 use App\Motor\Fase;
 use App\Motor\Mazo;
 use App\Motor\Partida as Motor;
+use App\Motor\Tanto;
 use App\Motor\TipoDeAccion;
 use Carbon\CarbonInterface;
 use Closure;
@@ -1233,7 +1234,46 @@ final class Mesa
             $paso['vencio'] = $guardado?->tipo === EventoDePartida::VENCIMIENTO ? $guardado->asiento : null;
         }
 
+        // Quien declaró en su perfil que está aprendiendo ve su tanto de envido ya sumado. Es una cuenta
+        // hecha con sus propias cartas: no cambia qué puede jugar ni viaja en el paso de nadie más.
+        if ($this->personaEn($partida, $asiento)?->experiencia?->veSuTanto()) {
+            $paso['ayudas'] = ['tanto' => self::tantoDe($paso, $asiento)];
+        }
+
         return $paso;
+    }
+
+    /**
+     * La persona sentada en ese asiento, o null si ahí juega un bot.
+     */
+    private function personaEn(Partida $partida, int $asiento): ?Jugador
+    {
+        return match (true) {
+            $asiento === self::JUGADOR => $partida->jugador,
+            $partida->entre_personas && $asiento === self::BOT => $partida->invitado,
+            default => null,
+        };
+    }
+
+    /**
+     * El tanto de envido de un asiento, con las tres cartas que le repartieron: las que le quedan y las
+     * que ya tiró en esta mano. Null si todavía no hay cartas repartidas.
+     *
+     * @param  array<string, mixed>  $vista  La vista de ese mismo asiento.
+     */
+    private static function tantoDe(array $vista, int $asiento): ?int
+    {
+        $cartas = $vista['misCartas'];
+
+        foreach ($vista['bazas'] as $baza) {
+            foreach ($baza['jugadas'] as [$quien, $carta]) {
+                if ($quien === $asiento) {
+                    $cartas[] = $carta;
+                }
+            }
+        }
+
+        return count($cartas) === 3 ? Tanto::deEnvido(array_map(Carta::de(...), $cartas)) : null;
     }
 
     /**

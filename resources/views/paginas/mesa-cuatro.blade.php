@@ -198,6 +198,15 @@
                 </div>
 
                 {{--
+                    La ayuda de quien declaró que está aprendiendo: su tanto de envido ya sumado, mientras dura la
+                    primera baza. Va sobre el borde de abajo de las cartas: no le agrega una fila a la mesa.
+                --}}
+                <p class="mesa-tanto" x-show="tantoPropio !== null && baza === 0 && ! cierre" x-cloak
+                    x-transition:enter="aparece" x-transition:enter-start="opacity-0" x-transition:leave="se-va" x-transition:leave-end="opacity-0">
+                    <span class="sr-only">Tu tanto de envido:</span> <span x-text="tantoPropio"></span> <span aria-hidden="true">de envido</span>
+                </p>
+
+                {{--
                     El cierre de la mano ocupa el lugar de tus cartas, que ya volvieron al mazo: qué pareja ganó,
                     por qué, cuánto sumó cada cosa y las cartas que alguien tuvo que mostrar. No agrega una fila.
                 --}}

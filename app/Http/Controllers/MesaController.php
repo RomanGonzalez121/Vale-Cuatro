@@ -6,6 +6,7 @@ use App\Avisos\Avisos;
 use App\Juego\Desafios;
 use App\Juego\Escalera;
 use App\Juego\Mesa;
+use App\Juego\Premios;
 use App\Juego\Senas;
 use App\Juego\Torneos;
 use App\Models\EventoDePartida;
@@ -83,6 +84,8 @@ class MesaController extends Controller
             // Contra el bot, su nivel. Con otra persona no hay nivel: se muestra su apodo.
             'nivel' => $partida->nivel_bot,
             'rival' => $this->apodoDelRival($partida, $asiento),
+            // De la otra persona se ve, además del apodo, su categoría, su carta y el dorso que eligió. Nada más.
+            'socio' => $this->socioDeEnfrente($partida, $asiento),
             // Quien abrió la sala todavía no avisó que llegó: la mesa lo hace apenas está a la vista.
             'faltaLlegar' => $this->mesa->faltaLlegar($partida, $asiento),
             // Si es parte de una serie al mejor de tres, cómo va antes de esta partida.
@@ -454,6 +457,18 @@ class MesaController extends Controller
     /**
      * El apodo de la otra persona, o null si se juega contra el bot. Si su cuenta ya no existe, "Tu rival".
      */
+    /**
+     * Lo que se ve del perfil de la otra persona: apodo, categoría, carta y dorso. Contra el bot, nada.
+     *
+     * @return array{apodo: string, categoria: string, carta: string, dorso: string}|null
+     */
+    private function socioDeEnfrente(Partida $partida, int $asiento): ?array
+    {
+        $otro = $partida->entre_personas ? ($asiento === Mesa::JUGADOR ? $partida->invitado : $partida->jugador) : null;
+
+        return $otro === null ? null : (new Premios)->aLaVista($otro);
+    }
+
     private function apodoDelRival(Partida $partida, int $asiento): ?string
     {
         if (! $partida->entre_personas) {

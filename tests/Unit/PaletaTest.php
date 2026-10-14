@@ -49,6 +49,23 @@ class PaletaTest extends TestCase
         }
     }
 
+    public function test_las_tintas_de_los_dorsos_que_se_ganan_alcanzan_su_minimo_de_contraste(): void
+    {
+        foreach (Paleta::combinacionesDeLosDorsos() as $combinacion) {
+            $contraste = Paleta::contraste($combinacion['texto'], $combinacion['fondo']);
+
+            $this->assertGreaterThanOrEqual(
+                $combinacion['minimo'],
+                $contraste,
+                sprintf('En los dorsos, %s sobre %s da %.2f y necesita %.1f.', $combinacion['texto'], $combinacion['fondo'], $contraste, $combinacion['minimo']),
+            );
+
+            // No suman colores: todas sus tintas son de la paleta del mazo.
+            $this->assertArrayHasKey($combinacion['texto'], Paleta::COLORES);
+            $this->assertArrayHasKey($combinacion['fondo'], Paleta::COLORES);
+        }
+    }
+
     public function test_los_colores_de_palo_sin_aclarar_no_alcanzan_como_texto_sobre_tinta(): void
     {
         // Por esto existen los tonos de noche: sin aclararlos, no se leen.

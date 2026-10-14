@@ -1395,3 +1395,59 @@ Con cinco juegos en la mano, en una pantalla ancha quedaban cinco cartas chicas 
 - **No se jugó la escalera entera a mano,** escalón por escalón: las partidas a 15 se probaron contra un bot de prueba.
 - **No se probó con lector de pantalla.** Queda para el pulido final.
 - Capturas en `docs/capturas/`: `escalera.png`, `escalera-celular.png`, `desafios.png`, `desafios-celular.png`, `desafio-objetivo-celular.png`, `desafio-superado-celular.png`, `modos-cinco-juegos.png` y `modos-cinco-juegos-celular.png`.
+
+## M18. Perfil y categorías
+
+Que jugar mucho se note, sin dar ninguna ventaja en la mesa. El perfil pasó de cambiar solo el apodo a ser la pantalla de quién sos en el club: tu carta, tu categoría, el dorso de tus cartas y cuánto truco sabés.
+
+### Lo que decidió Román
+
+- **La categoría sube con partidas ganadas:** novato hasta 9, medio de 10 a 39, avanzado desde 40. Cuentan las mismas partidas que en el ranking (contra el bot desde Intermedio, y todas las de personas).
+- **Quien declara que está aprendiendo** ve su tanto de envido ya sumado y entra contra el bot Fácil.
+- **Las cartas de perfil se ganan con la categoría; los dorsos, con la escalera.** Así la escalera también tiene premio.
+- **Las cartas se destraban una por una:** cada carta del camino pide una cantidad de partidas ganadas, y las categorías son tres tramos de ese mismo camino. Se descartó destrabarlas en tres tandas, porque entre tanda y tanda pasaban muchas partidas sin premio.
+- **Tres dorsos nuevos**, además del de fábrica. Se descartaron cinco: en tintas planas cuesta que tantos se distingan en chico.
+- **La pantalla: "tu carta y su camino"**, entre tres opciones. Se descartaron la mesa servida (el formulario quedaba apretado sobre el paño) y el abanico de catorce cartas (se parecía demasiado a la pantalla de modos).
+
+### Nada se guarda que se pueda calcular
+
+- **La categoría y lo destrabado no tienen columna.** Salen de los resultados que anota el ranking leyendo los eventos (`App\Juego\Premios`), y de los escalones pasados de la escalera. Si se rehace el ranking con `ranking:recalcular`, la categoría se rehace sola.
+- **Lo que se guarda es lo que se eligió** (`jugadores.carta`, `jugadores.dorso`) y lo que se declaró (`jugadores.experiencia`). Al leer la carta o el dorso se vuelve a comprobar que estén ganados: una carta escrita a mano en la base no se muestra.
+- **El candado está en el servidor.** Elegir una carta o un dorso es un pedido que se vuelve a validar contra lo ganado, venga de la pantalla o no.
+
+### El camino
+
+Catorce cartas en el orden del truco, una por cada escalón de la jerarquía: 4, 5, 6, 7 falso, 10, 11, 12, ancho falso, 2, 3, 7 de oro, 7 de espada, ancho de basto y ancho de espada. Piden 0, 2, 4, 6, 8, 10, 14, 18, 24, 31, 40, 55, 75 y 100 ganadas. Las de medio arrancan justo en 10 y las de avanzado en 40: cada categoría empieza con una carta nueva. Los saltos crecen de a poco, para que al principio haya una carta cerca y el ancho de espada cueste.
+
+Los palos se eligieron para variar los colores en el renglón. Algunas cartas del camino son las mismas que tienen los jugadores de ejemplo: en un torneo, el bot que tiene tu carta no se inscribe, así cada carta de las llaves es de uno solo.
+
+### Los dorsos
+
+Fósforos (escalón 3), Tinta (escalón 6) y Ronda (escalón 8). Van en las tintas del mazo, planas, y se distinguen por la forma y no por el color: rayas de fósforos con la cabeza en Copa, un bloque de Tinta con el isotipo, y una ronda de anillos. Las combinaciones están en `Paleta::combinacionesDeLosDorsos()` con su test, y se miraron a 60 px: los cuatro se reconocen.
+
+El dorso que elegiste es el que ve tu rival en la mesa entre personas. El mazo de la mesa sigue siendo el de fábrica.
+
+### Lo que ve el rival
+
+De tu perfil, la otra persona recibe tu apodo, tu categoría, tu carta y tu dorso. Nada más: ni tu cuenta, ni lo que declaraste. La categoría y la carta van junto a su apodo, en el lugar del ícono, así la fila del rival mide lo mismo. Contra el bot no viaja el perfil de nadie.
+
+### La ayuda del tanto
+
+Es una cuenta hecha en el servidor con tus tres cartas y va solo en tu paso de la mesa (`ayudas.tanto`), así `mesa.js` sigue sin reglas. Se ve como una ficha de Oro sobre el borde de abajo de tus cartas mientras dura la primera baza: no le agrega una fila a la mesa. No cambia las jugadas permitidas ni lo que recibe el rival (test). Vale también en la mesa de a cuatro.
+
+### La pantalla
+
+- **Es una mesa.** Sobre el paño, tu carta grande; al tocarla se da vuelta y muestra tu dorso, que es lo que ve el rival. Al lado, un panel de paño hondo (como el tanteador y como el de los modos) con tu apodo, tu categoría, tus ganadas y cuánto te falta para la próxima carta, contado con fósforos. Debajo, sobre el mismo paño, el camino en sus tres tramos y los dorsos. Al final, en la superficie de lectura, cuánto truco sabés y tu cuenta.
+- **El panel no es de naipe:** se probó y los fósforos (palito claro) no se leían sobre naipe.
+- **Lo que falta ganar va boca abajo y a media tinta,** con tu dorso. La carta elegida sube y lleva la píldora "Tu carta". Las cartas y los dorsos que se eligen usan el mismo gesto que los escalones de la escalera (se asoman con el mouse, se hunden al apretar).
+- **Al elegir un dorso** la página vuelve con la carta dada vuelta: es lo que cambió.
+- **En el ranking** cada jugador va con su carta y su categoría. Los cuatro de arriba siguen con las cuatro cartas que mandan: esas son del puesto, no de quien lo ocupa.
+- **Medido:** en 1355 x 638 la carta, su texto y su botón entran en la primera pantalla. La mesa entre personas sigue sin scroll a 360 x 740, 360 x 640 y 1355 x 638.
+
+### Qué se probó y qué no
+
+- **Con tests (16 nuevos):** la categoría sale de partidas jugadas y se rehace leyendo solo los eventos; se sube con las ganadas y las perdidas no cuentan; el camino va en el orden del truco; no se elige una carta ni un dorso sin haberlos ganado, tampoco mandando el pedido a mano; una carta guardada que no está ganada no se muestra; el rival recibe solo apodo, categoría, carta y dorso; la ayuda del tanto la ve solo quien la pidió y no cambia nada más; lo declarado cambia el bot de entrada y no pesa si se elige un nivel; en el torneo la persona juega con su carta y ningún bot la repite; el ranking dice categoría y carta.
+- **En un navegador real:** el perfil en escritorio, celular y de noche; la mesa entre dos cuentas a 360 px, de los dos lados. Las siete pruebas automáticas de navegador pasan.
+- **No se probó con lector de pantalla.** Queda para el pulido final.
+- **Sin `code-review` con la skill:** fue revisión propia sobre lo cambiado.
+- Capturas en `docs/capturas/`: `perfil.png`, `perfil-celular.png`, `perfil-dorso.png`, `dorsos.png`, `ranking-con-categorias.png`, `mesa-rival-con-dorso-celular.png` y `mesa-ayuda-del-tanto-celular.png`.

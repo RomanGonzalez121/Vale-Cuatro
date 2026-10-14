@@ -1087,7 +1087,9 @@ html:has(body.superficie-pano) {
         z-index: 1;
     }
 
-    .escalon {
+    /* .naipe-boton es lo mismo fuera de la escalera: una carta que se elige (las del perfil). */
+    .escalon,
+    .naipe-boton {
         position: relative;
         display: block;
         width: 100%;
@@ -1099,12 +1101,14 @@ html:has(body.superficie-pano) {
         transition: transform 200ms var(--ease-llegada);
     }
 
-    .escalon[aria-pressed='true'] {
+    .escalon[aria-pressed='true'],
+    .naipe-boton[aria-pressed='true'] {
         transform: translateY(-9%);
     }
 
     /* Al apretarlo responde enseguida: se hunde apenas bajo el dedo. */
-    .escalon:active {
+    .escalon:active,
+    .naipe-boton:active {
         transform: translateY(-4%) scale(0.97);
     }
 
@@ -1562,6 +1566,25 @@ html:has(body.superficie-pano) {
 
     .mesa-mazo > :nth-child(3) {
         transform: translate(-4px, -4px);
+    }
+
+    /* El tanto de envido ya sumado, para quien está aprendiendo: una ficha de Oro sobre el borde de abajo de sus cartas. */
+    .mesa-tanto {
+        position: absolute;
+        bottom: 0.15rem;
+        left: 50%;
+        z-index: 5;
+        padding: 0.2rem 0.7rem;
+        border-radius: 999px;
+        background-color: var(--color-oro);
+        color: var(--color-tinta);
+        font-size: 0.8rem;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.2;
+        white-space: nowrap;
+        pointer-events: none;
+        translate: -50% 0;
     }
 
     /* Donde cae cada carta. El borde no se ve: solo guarda la medida. */
@@ -2680,6 +2703,202 @@ html:has(body.superficie-pano) {
         animation-delay: 760ms;
     }
 
+    /*
+     | El perfil. Es una mesa: sobre el paño, tu carta (grande, se da vuelta y muestra tu dorso) y, debajo,
+     | el camino de las catorce y los dorsos. Al lado de la carta, un panel de paño hondo con quién sos.
+     | En el celular todo va en una columna y el panel ocupa el ancho entero.
+     */
+    .perfil-grilla {
+        display: grid;
+        gap: 2.5rem 0;
+        padding: 2rem 1.25rem 3.5rem;
+    }
+
+    .perfil-carta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .perfil-naipe {
+        width: clamp(9.5rem, 44vw, 12.5rem);
+    }
+
+    .perfil-hoja {
+        margin-inline: -1.25rem;
+        padding: 2.25rem 1.25rem 2.5rem;
+    }
+
+    /* Los fósforos de la cuenta van sobre paño hondo: sus lugares se marcan un poco más que en el tanteador. */
+    .perfil-cuenta .fosforo-lugar {
+        stroke: color-mix(in srgb, var(--color-naipe) 30%, transparent);
+    }
+
+    /* El camino: tres tramos, uno por categoría. En el celular cada tramo es un renglón de cartas. */
+    .camino {
+        display: grid;
+        gap: 2.25rem 0;
+    }
+
+    .camino-tramo {
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .camino-rotulo {
+        display: block;
+        width: 100%;
+        margin-bottom: 1.4rem;
+        padding-bottom: 0.55rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--color-naipe) 32%, transparent);
+        font-size: 1.05rem;
+        line-height: 1.1;
+    }
+
+    .camino-cartas {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.55rem;
+        max-width: 27rem;
+    }
+
+    /* Lo que falta ganar queda boca abajo y a media tinta: se ve que está, y que todavía no es tuyo. */
+    .camino-cerrada > .carta {
+        opacity: 0.5;
+    }
+
+    /* Un dorso que falta ganar se ve un poco más: es el premio, y tiene que reconocerse su dibujo. */
+    .dorso-cerrado > .carta {
+        opacity: 0.62;
+    }
+
+    .camino-pide {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.15;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    /* La marca de la carta elegida: la misma píldora de "Sos mano", llena para que se encuentre de un vistazo. */
+    .camino-tuya {
+        margin-inline: -0.35rem;
+        padding-block: 0.16rem;
+        border-radius: 999px;
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
+    .dorsos-fila {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.9rem;
+        max-width: 36rem;
+    }
+
+    /* Cuánto truco sabés: tres renglones que se tocan, cada uno con los fósforos del bot que le toca. */
+    .experiencia {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-top: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .experiencia:last-child {
+        border-bottom: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
+    }
+
+    /* Con uno elegido, los otros dos bajan un paso. Sin ninguno, los tres valen lo mismo. */
+    form:has(.experiencia[aria-pressed='true']) .experiencia[aria-pressed='false'] {
+        opacity: 0.66;
+    }
+
+    /* Sobre la superficie de lectura los fósforos van en la tinta del texto: el palito claro no se leería. */
+    .experiencia .nivel-fosforos .fosforo-lugar {
+        stroke: color-mix(in srgb, var(--color-texto) 55%, transparent);
+    }
+
+    .experiencia .nivel-fosforos .fosforo-falta {
+        stroke: color-mix(in srgb, var(--color-texto) 14%, transparent);
+    }
+
+    .experiencia .nivel-fosforos .fosforo > path {
+        stroke: var(--color-texto);
+    }
+
+    @media (min-width: 40rem) {
+        .perfil-grilla {
+            padding-inline: 2rem;
+        }
+
+        .perfil-hoja {
+            margin-inline: -2rem;
+            padding-inline: 2rem;
+        }
+
+        .camino-cartas {
+            gap: 0.75rem;
+        }
+    }
+
+    @media (min-width: 64rem) {
+        .perfil-grilla {
+            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+            row-gap: 0;
+            padding-top: 0;
+            padding-bottom: 5rem;
+        }
+
+        .perfil-carta {
+            justify-content: center;
+            padding-block: 2.75rem;
+        }
+
+        /* La carta y lo de abajo entran en la primera pantalla también en una ventana baja (1355 x 638). */
+        .perfil-naipe {
+            width: min(clamp(12rem, 18vw, 15.5rem), calc((var(--alto, 100dvh) - 21rem) * 0.64));
+        }
+
+        /* El panel llega hasta el borde derecho de la ventana, como el de los modos. */
+        .perfil-hoja {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin: 0 calc((min(100vw, 72rem) - 100vw) / 2 - 2rem) 0 0;
+            padding: 3.25rem calc((100vw - min(100vw, 72rem)) / 2 + 2rem) 3.25rem clamp(2rem, 4vw, 3.75rem);
+        }
+
+        .perfil-camino,
+        .perfil-dorsos {
+            grid-column: 1 / -1;
+            padding-top: 4rem;
+        }
+
+        /* Las catorce en un renglón: los tramos se reparten el ancho según cuántas cartas tienen. */
+        .camino {
+            grid-template-columns: 5fr 5fr 4fr;
+            column-gap: 2rem;
+        }
+
+        .camino-cartas {
+            grid-template-columns: repeat(var(--cartas), minmax(0, 1fr));
+            gap: 0.55rem;
+            max-width: none;
+        }
+
+        .camino-tuya {
+            font-size: 0.78rem;
+        }
+    }
+
     .tabla {
         width: 100%;
         border-collapse: collapse;
@@ -3085,8 +3304,9 @@ html:has(body.superficie-pano) {
         transform: translateY(-6%) scale(0.97);
     }
 
-    /* Un escalón que no está elegido se asoma al pasar el mouse. */
-    .escalon[aria-pressed='false']:hover {
+    /* Un escalón que no está elegido se asoma al pasar el mouse. Igual una carta del perfil. */
+    .escalon[aria-pressed='false']:hover,
+    .naipe-boton:not([aria-pressed='true']):hover {
         transform: translateY(-4%);
     }
 }
@@ -3104,12 +3324,15 @@ html:has(body.superficie-pano) {
     }
 
     /* El escalón elegido queda levantado, sin viaje; los demás no se asoman. */
-    .escalon {
+    .escalon,
+    .naipe-boton {
         transition: none;
     }
 
     .escalon[aria-pressed='false']:hover,
-    .escalon:active {
+    .escalon:active,
+    .naipe-boton:not([aria-pressed='true']):hover,
+    .naipe-boton:active {
         transform: none;
     }
 

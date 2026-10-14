@@ -12,6 +12,9 @@
     $nombreDelBot = $torneo['rival'] ?? $practica['rival'] ?? null;
     // Cómo se nombra a quien está enfrente: el apodo de la otra persona, el del bot del torneo, o nada (es "el bot").
     $enfrente = $rival ?? $nombreDelBot;
+    // De otra persona se ve además su categoría, su carta y el dorso que eligió para sus cartas.
+    $socio ??= null;
+    $cartaDelSocio = $socio === null ? null : explode('-', $socio['carta']);
 
     $pedidos = [
         'accion' => route('mesa.accion'),
@@ -26,6 +29,8 @@
         // Entre personas, lo que hace falta para pedir avisos al celular y para decir si la mesa está a la vista.
         'avisos' => $avisos ?? null,
         'rival' => $enfrente,
+        // Con qué dorso se dibujan las cartas de quien está enfrente: el que eligió, si eligió uno.
+        'dorsoDelRival' => $socio !== null && $socio['dorso'] !== \App\Juego\Premios::DORSO_DE_FABRICA ? 'dorso-'.$socio['dorso'] : 'dorso',
         // Si la partida es de un torneo: si es la final y adónde pasa quien gana.
         'torneo' => $torneo === null ? null : ['esFinal' => $torneo['esFinal'], 'sigue' => $torneo['sigue']],
         // Si es un desafío o un escalón: si es una sola mano con objetivo, y qué escalón.
@@ -143,7 +148,12 @@
                         <span class="transition-opacity ease-llegada" :class="piensaElRival ? 'opacity-100 duration-200' : 'opacity-0 duration-100'" aria-hidden="true">
                             <x-icono nombre="tiempo" class="size-4" />
                         </span>
-                        <x-icono :nombre="$nivel ? 'bot' : 'jugador'" class="size-5" />
+                        @if ($socio)
+                            {{-- Una persona se presenta con su carta y su categoría, en el lugar del ícono: la fila mide lo mismo. --}}
+                            <span class="w-[1.15rem] flex-none sm:w-6" aria-hidden="true"><x-carta :palo="$cartaDelSocio[1]" :numero="(int) $cartaDelSocio[0]" /></span>
+                        @else
+                            <x-icono :nombre="$nivel ? 'bot' : 'jugador'" class="size-5" />
+                        @endif
                         {{-- El nivel, con los mismos fósforos que se eligieron en los modos. Una persona no tiene nivel. --}}
                         @if ($nivel)
                             <x-nivel-fosforos :nivel="$nivel" class="text-[0.8rem]" />
@@ -152,6 +162,10 @@
                     {{-- Un apodo largo ocupa dos renglones como mucho: la fila del rival mide siempre lo mismo. --}}
                     {{-- En un torneo el bot va con su apodo: que es un bot lo dicen su ícono y los fósforos de su nivel. --}}
                     <span class="line-clamp-2">{{ $nivel ? ($nombreDelBot ?? 'Bot '.mb_strtolower($nivel->nombre())) : $rival }}</span>
+                    {{-- La categoría de la otra persona, debajo de su apodo en el celular y al lado en pantallas anchas. --}}
+                    @if ($socio)
+                        <span class="whitespace-nowrap text-xs font-semibold sm:text-sm"><span class="sr-only">Categoría</span> {{ $socio['categoria'] }}</span>
+                    @endif
                 </p>
                 <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
                 {{-- El mazo, contra el borde del campo para que no parezca una carta más del rival. De acá sale el reparto. --}}
@@ -224,6 +238,15 @@
                     <div></div>
                     <div></div>
                 </div>
+
+                {{--
+                    La ayuda de quien declaró que está aprendiendo: su tanto de envido ya sumado, mientras dura la
+                    primera baza. Va sobre el borde de abajo de las cartas: no le agrega una fila a la mesa.
+                --}}
+                <p class="mesa-tanto" x-show="tantoPropio !== null && baza === 0 && ! cierre" x-cloak
+                    x-transition:enter="aparece" x-transition:enter-start="opacity-0" x-transition:leave="se-va" x-transition:leave-end="opacity-0">
+                    <span class="sr-only">Tu tanto de envido:</span> <span x-text="tantoPropio"></span> <span aria-hidden="true">de envido</span>
+                </p>
 
                 {{--
                     El cierre de la mano ocupa el lugar de tus cartas, que ya volvieron al mazo:

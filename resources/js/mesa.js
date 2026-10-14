@@ -372,6 +372,14 @@ export default (inicial, pedidos) => ({
     },
 
     /**
+     * El tanto de envido propio, ya sumado por el servidor. Solo lo recibe quien declaró en su perfil
+     * que está aprendiendo; para los demás es null y la mesa no muestra nada.
+     */
+    get tantoPropio() {
+        return this.vista.ayudas?.tanto ?? null;
+    },
+
+    /**
      * Si la persona pidió menos movimiento. Se pregunta cada vez: puede cambiarlo con la mesa abierta.
      */
     get reducido() {
@@ -1838,7 +1846,7 @@ export default (inicial, pedidos) => ({
         for (let i = 0; i < vista.cartasEnMano[this.ellos]; i++) {
             const dorso = document.createElement('div');
 
-            dorso.append(plantilla('dorso'));
+            dorso.append(plantilla(this.pedidos.dorsoDelRival ?? 'dorso'));
             this.$refs.rival.append(dorso);
 
             if (animar) {
@@ -2001,7 +2009,7 @@ export default (inicial, pedidos) => ({
         while (dorsos.length < delBot.length) {
             const dorso = document.createElement('div');
 
-            dorso.append(plantilla('dorso'));
+            dorso.append(plantilla(this.pedidos.dorsoDelRival ?? 'dorso'));
             this.$refs.rival.append(dorso);
             dorsos.push(dorso);
         }

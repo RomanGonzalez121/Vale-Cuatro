@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\TurnoDelBot;
 use App\Juego\Mesa;
 use App\Juego\Nivel;
+use App\Juego\Premios;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
@@ -77,8 +78,8 @@ class MesaPorHttpTest extends TestCase
 
         $html = $this->actingAs($jugador)->get('/mesa')->assertOk()->assertSee('Vale Cuatro')->getContent();
 
-        // Las 40 cartas y el dorso, para dibujar cualquier jugada sin volver al servidor.
-        $this->assertSame(41, substr_count($html, '<template data-plantilla='));
+        // Las 40 cartas y los cuatro dorsos, para dibujar cualquier jugada sin volver al servidor.
+        $this->assertSame(40 + count(Premios::DORSOS), substr_count($html, '<template data-plantilla='));
     }
 
     public function test_la_mesa_dice_contra_que_nivel_se_juega_y_al_final_ofrece_la_revancha_de_esa_partida(): void

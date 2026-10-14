@@ -122,4 +122,7 @@ Route::post('/salir', [SesionController::class, 'salir'])->middleware('auth')->n
 Route::middleware('con-cuenta')->group(function () {
     Route::get('/perfil', [PerfilController::class, 'ver'])->name('perfil');
     Route::put('/perfil', [PerfilController::class, 'guardar']);
+    Route::put('/perfil/carta', [PerfilController::class, 'elegirCarta'])->name('perfil.carta');
+    Route::put('/perfil/dorso', [PerfilController::class, 'elegirDorso'])->name('perfil.dorso');
+    Route::put('/perfil/experiencia', [PerfilController::class, 'declarar'])->name('perfil.experiencia');
 });

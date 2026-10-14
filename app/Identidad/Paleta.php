@@ -103,6 +103,21 @@ class Paleta
         ];
     }
 
+    /**
+     * Las tintas de los dorsos que se ganan en la escalera. No suman colores: son las del mazo.
+     * Son dibujo, así que les toca el mínimo de un elemento gráfico.
+     *
+     * @return list<array{texto: string, fondo: string, minimo: float, donde: string}>
+     */
+    public static function combinacionesDeLosDorsos(): array
+    {
+        return [
+            ['texto' => 'tinta', 'fondo' => 'naipe', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Trama de los dorsos Fósforos y Ronda'],
+            ['texto' => 'copa', 'fondo' => 'naipe', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Cabezas del dorso Fósforos'],
+            ['texto' => 'naipe', 'fondo' => 'tinta', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Isotipo del dorso Tinta'],
+        ];
+    }
+
     public static function nombre(string $color): string
     {
         return (self::COLORES[$color] ?? self::DE_NOCHE[$color])['nombre'];
