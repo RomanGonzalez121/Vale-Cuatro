@@ -15,6 +15,9 @@ use App\Models\Resultado;
  *
  * Qué tiene destrabado cada uno no se guarda: se calcula de sus resultados y de sus progresos. Lo que
  * se guarda es qué eligió, y al leerlo se vuelve a comprobar que lo tenga.
+ *
+ * La cuenta de administración tiene todas las cartas y los dorsos abiertos, para ver cómo queda cada
+ * premio sin inventar partidas. Su categoría no cambia: sale de sus partidas, como la de todos.
  */
 final class Premios
 {
@@ -77,13 +80,14 @@ final class Premios
     public function camino(?Jugador $jugador): array
     {
         $ganadas = $this->ganadas($jugador);
-        $elegida = self::cartaCon($jugador?->carta, $ganadas);
+        $todo = self::loTieneTodo($jugador);
+        $elegida = self::cartaCon($jugador?->carta, $ganadas, $todo);
 
         return array_map(fn (string $carta, int $desde) => [
             'carta' => $carta,
             'ganadas' => $desde,
             'categoria' => Categoria::con($desde),
-            'abierta' => $ganadas >= $desde,
+            'abierta' => $todo || $ganadas >= $desde,
             'elegida' => $carta === $elegida,
         ], array_keys(self::CAMINO), self::CAMINO);
     }
@@ -117,26 +121,27 @@ final class Premios
     public function dorsos(?Jugador $jugador): array
     {
         $pasados = $this->escalonesPasados($jugador);
-        $elegido = self::dorsoCon($jugador?->dorso, $pasados);
+        $todo = self::loTieneTodo($jugador);
+        $elegido = self::dorsoCon($jugador?->dorso, $pasados, $todo);
 
         return array_map(fn (string $clave, array $dorso) => [
             'clave' => $clave,
             ...$dorso,
-            'abierto' => $dorso['escalon'] === 0 || in_array($dorso['escalon'], $pasados, true),
+            'abierto' => $todo || $dorso['escalon'] === 0 || in_array($dorso['escalon'], $pasados, true),
             'elegido' => $clave === $elegido,
         ], array_keys(self::DORSOS), self::DORSOS);
     }
 
     public function tieneCarta(Jugador $jugador, string $carta): bool
     {
-        return isset(self::CAMINO[$carta]) && $this->ganadas($jugador) >= self::CAMINO[$carta];
+        return isset(self::CAMINO[$carta]) && (self::loTieneTodo($jugador) || $this->ganadas($jugador) >= self::CAMINO[$carta]);
     }
 
     public function tieneDorso(Jugador $jugador, string $dorso): bool
     {
         $escalon = self::DORSOS[$dorso]['escalon'] ?? null;
 
-        return $escalon !== null && ($escalon === 0 || in_array($escalon, $this->escalonesPasados($jugador), true));
+        return $escalon !== null && (self::loTieneTodo($jugador) || $escalon === 0 || in_array($escalon, $this->escalonesPasados($jugador), true));
     }
 
     /**
@@ -148,7 +153,7 @@ final class Premios
             return JugadoresDeEjemplo::cartas()[$jugador->apodo] ?? self::CARTA_DE_FABRICA;
         }
 
-        return self::cartaCon($jugador?->carta, $this->ganadas($jugador));
+        return self::cartaCon($jugador?->carta, $this->ganadas($jugador), self::loTieneTodo($jugador));
     }
 
     /**
@@ -156,7 +161,7 @@ final class Premios
      */
     public function dorsoDe(?Jugador $jugador): string
     {
-        return self::dorsoCon($jugador?->dorso, $this->escalonesPasados($jugador));
+        return self::dorsoCon($jugador?->dorso, $this->escalonesPasados($jugador), self::loTieneTodo($jugador));
     }
 
     /**
@@ -175,22 +180,30 @@ final class Premios
     }
 
     /**
-     * La carta elegida si existe y está destrabada con esas ganadas; si no, la de fábrica. Sirve también
-     * para quien arma una tabla y ya tiene las ganadas de cada uno.
+     * Si ese jugador tiene todo abierto: es la cuenta de administración, que prueba los premios.
      */
-    public static function cartaCon(?string $elegida, int $ganadas): string
+    public static function loTieneTodo(?Jugador $jugador): bool
     {
-        return $elegida !== null && isset(self::CAMINO[$elegida]) && $ganadas >= self::CAMINO[$elegida] ? $elegida : self::CARTA_DE_FABRICA;
+        return $jugador?->esAdministrador() ?? false;
+    }
+
+    /**
+     * La carta elegida si existe y está destrabada con esas ganadas (o lo tiene todo); si no, la de fábrica.
+     * Sirve también para quien arma una tabla y ya tiene las ganadas de cada uno.
+     */
+    public static function cartaCon(?string $elegida, int $ganadas, bool $todo = false): string
+    {
+        return $elegida !== null && isset(self::CAMINO[$elegida]) && ($todo || $ganadas >= self::CAMINO[$elegida]) ? $elegida : self::CARTA_DE_FABRICA;
     }
 
     /**
      * @param  list<int>  $pasados  Los escalones que ya pasó.
      */
-    private static function dorsoCon(?string $elegido, array $pasados): string
+    private static function dorsoCon(?string $elegido, array $pasados, bool $todo = false): string
     {
         $escalon = self::DORSOS[$elegido ?? '']['escalon'] ?? null;
 
-        return $escalon !== null && ($escalon === 0 || in_array($escalon, $pasados, true)) ? (string) $elegido : self::DORSO_DE_FABRICA;
+        return $escalon !== null && ($todo || $escalon === 0 || in_array($escalon, $pasados, true)) ? (string) $elegido : self::DORSO_DE_FABRICA;
     }
 
     /**

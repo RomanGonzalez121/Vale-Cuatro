@@ -1431,6 +1431,10 @@ El dorso que elegiste es el que ve tu rival en la mesa entre personas. El mazo d
 
 De tu perfil, la otra persona recibe tu apodo, tu categoría, tu carta y tu dorso. Nada más: ni tu cuenta, ni lo que declaraste. La categoría y la carta van junto a su apodo, en el lugar del ícono, así la fila del rival mide lo mismo. Contra el bot no viaja el perfil de nadie.
 
+### La administración tiene todo abierto
+
+Román quería ver la pantalla con todo destrabado en el sitio publicado. Se descartó darle partidas ganadas inventadas a una cuenta: habrían aparecido en el ranking público, que es una de las partes reales del proyecto. En cambio, la cuenta de administración tiene abiertas las catorce cartas y los cuatro dorsos para probarlos (`Premios::loTieneTodo()`). Su categoría no cambia: sale de sus partidas, como la de todos, y eso es también lo que ve un rival. El perfil lo dice en lugar de contar lo que falta.
+
 ### La ayuda del tanto
 
 Es una cuenta hecha en el servidor con tus tres cartas y va solo en tu paso de la mesa (`ayudas.tanto`), así `mesa.js` sigue sin reglas. Se ve como una ficha de Oro sobre el borde de abajo de tus cartas mientras dura la primera baza: no le agrega una fila a la mesa. No cambia las jugadas permitidas ni lo que recibe el rival (test). Vale también en la mesa de a cuatro.

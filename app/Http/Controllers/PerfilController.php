@@ -38,6 +38,8 @@ class PerfilController extends Controller
             'camino' => $this->premios->camino($jugador),
             'proxima' => $this->premios->proxima($jugador),
             'dorsos' => $this->premios->dorsos($jugador),
+            // La administración tiene todo abierto para probar: la pantalla lo dice en vez de contar lo que falta.
+            'loTieneTodo' => Premios::loTieneTodo($jugador),
             // Por qué escalón va: lo que le falta para el próximo dorso está en la escalera.
             'escalon' => (new Progresos)->escalonActual($jugador),
         ]);

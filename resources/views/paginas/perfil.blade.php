@@ -65,7 +65,12 @@
                         <span class="font-semibold"><strong class="text-xl font-black tabular-nums text-oro">{{ $ganadas }}</strong> {{ $ganadas === 1 ? 'partida ganada' : 'partidas ganadas' }}</span>
                     </p>
 
-                    @if ($proxima)
+                    @if ($loTieneTodo)
+                        <p class="mt-8 max-w-[38ch] text-lg font-bold leading-snug">
+                            Sos la administración: tenés todas las cartas y los dorsos abiertos para probarlos.
+                        </p>
+                        <p class="mt-3 max-w-[40ch] leading-relaxed">Tu categoría no cambia por eso: sale de tus partidas, como la de todos.</p>
+                    @elseif ($proxima)
                         @php
                             $queViene = $partes($proxima['carta']);
                             $grupos = intdiv($tramo['pide'] + 4, 5);
@@ -90,7 +95,7 @@
                         <p class="mt-8 max-w-[34ch] text-lg font-bold leading-snug">Tenés el ancho de espada: no hay carta más alta en el truco.</p>
                     @endif
 
-                    @if ($categoria->siguiente())
+                    @if ($categoria->siguiente() && ! $loTieneTodo)
                         <p class="mt-6 max-w-[40ch] leading-relaxed">
                             Con {{ $categoria->siguiente()->desde() }} ganadas pasás a {{ mb_strtolower($categoria->siguiente()->nombre()) }}.
                             Cuentan las mismas partidas que en el ranking.

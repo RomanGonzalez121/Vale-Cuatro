@@ -143,6 +143,31 @@ class PremiosTest extends TestCase
         $this->assertSame('fabrica', $jugador->fresh()->dorso);
     }
 
+    public function test_la_administracion_tiene_todo_abierto_pero_su_categoria_sale_de_sus_partidas(): void
+    {
+        $administracion = Jugador::factory()->administrador()->create();
+
+        // Sin una sola partida elige el ancho de espada y el último dorso.
+        $this->actingAs($administracion)->put('/perfil/carta', ['carta' => '1-espada'])->assertSessionHasNoErrors();
+        $this->actingAs($administracion)->put('/perfil/dorso', ['dorso' => 'ronda'])->assertSessionHasNoErrors();
+
+        $premios = new Premios;
+        $administracion->refresh();
+
+        $this->assertSame('1-espada', $premios->cartaDe($administracion));
+        $this->assertSame('ronda', $premios->dorsoDe($administracion));
+        $this->assertTrue(collect($premios->camino($administracion))->every(fn (array $paso) => $paso['abierta']));
+        $this->assertTrue(collect($premios->dorsos($administracion))->every(fn (array $dorso) => $dorso['abierto']));
+
+        // Pero no inventa partidas: sigue siendo novato, y lo que se ve de afuera dice eso.
+        $this->assertSame(Categoria::Novato, $premios->categoria($administracion));
+        $this->assertSame('Novato', $premios->aLaVista($administracion)['categoria']);
+        $this->actingAs($administracion)->get('/perfil')->assertOk()->assertSee('tenés todas las cartas y los dorsos abiertos');
+
+        // Y una cuenta común sigue con lo suyo.
+        $this->assertFalse($premios->tieneCarta(Jugador::factory()->create(), '1-espada'));
+    }
+
     public function test_quien_juega_sin_cuenta_no_elige_carta_ni_dorso(): void
     {
         $invitado = Jugador::factory()->invitado()->create();
