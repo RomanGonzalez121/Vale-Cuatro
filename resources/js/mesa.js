@@ -28,6 +28,7 @@
 
 import { BLOQUEADOS, PRENDIDOS, SIN_AVISOS, apagarAvisos, avisarPresencia, estadoDeAvisos, prenderAvisos } from './avisos';
 import { LLEGADA, cantoEnRenglones, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
+import { hacerArrastrable } from './arrastre';
 import { escucharPartida } from './echo';
 import { apagarSonido, audioAbierto, guardarSonido, prenderSonido, sonar, sonidoGuardado } from './sonido';
 
@@ -97,6 +98,8 @@ const ENTRE_RECLAMOS = 5000;
 const SEGUNDOS_DE_APURO = 10;
 // Lo mínimo que el cierre de una mano queda a la vista cuando el reparto siguiente no lo pidió esta mesa.
 const LECTURA_DEL_CIERRE = 2500;
+// En la mesa ancha el mazo se pasa a quien reparte antes de repartir: un movimiento sobre la mesa, de 260 ms.
+const PASE_DEL_MAZO = 260;
 
 // Anotar puntos: cuánto hay entre un fósforo y el siguiente, y lo máximo que tarda en caer una suma entera.
 const ENTRE_FOSFOROS = 150;
@@ -154,6 +157,7 @@ export default (inicial, pedidos) => ({
     ganadas: [],
     repartidas: [],
     adelantada: null,
+    demoraDelReparto: 0,
     voz: { texto: '', tono: 'copa', quien: 'vos', visible: false },
     tantos: { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false },
     cierre: null,
@@ -435,6 +439,51 @@ export default (inicial, pedidos) => ({
 
     get baza() {
         return Math.max(0, this.vista.bazas.length - 1);
+    },
+
+    /**
+     * Lo que se cantó en esta mano, para la planilla del costado de la mesa ancha. Como la planilla de los
+     * cantos del bridge, cada renglón es una vuelta: lo que dijo cada uno va en su columna, y en un mismo
+     * renglón lo de la izquierda se dijo antes. Cada cosa lleva el color de su ficha en la barra de cantos.
+     * Quién ganó los tantos va en un renglón entero. Es lo que la mesa ya fue contando, para releerlo.
+     */
+    get planilla() {
+        const filas = [];
+
+        for (const dicho of this.vista.cantos ?? []) {
+            if (dicho.tipo === 'tantos') {
+                const gano = this.quien(dicho.ganador) === 'vos' ? 'ganaste vos' : `ganó ${this.rival}`;
+
+                filas.push({ resultado: `${CANTOS[dicho.canto]}: ${gano}` });
+                continue;
+            }
+
+            const lado = this.quien(dicho.asiento);
+            const cosa = dicho.tipo === 'respuesta'
+                ? { texto: dicho.quiere ? 'Quiero' : 'No quiero', tono: dicho.quiere ? 'basto' : 'copa' }
+                : { texto: CANTOS[dicho.canto], tono: TRUCOS.includes(dicho.canto) ? 'copa' : null };
+            const ultima = filas[filas.length - 1];
+            // Sigue en el mismo renglón si su lugar está libre y no queda a la izquierda de algo dicho antes.
+            const entra = ultima && ! ultima.resultado && ! ultima[lado] && ! (lado === 'vos' && ultima.rival);
+
+            if (entra) {
+                ultima[lado] = cosa;
+            } else {
+                filas.push({ vos: null, rival: null, [lado]: cosa });
+            }
+        }
+
+        return filas;
+    },
+
+    /**
+     * De dónde salen las cartas al repartir: el mazo del costado en la mesa ancha, o el de al lado del
+     * rival en las demás. Es el mismo mazo dibujado en dos lugares, y se ve uno solo.
+     */
+    get mazo() {
+        const alCostado = this.$refs.mazoAlCostado;
+
+        return alCostado && alCostado.offsetParent !== null ? alCostado : this.$refs.origen;
     },
 
     get estadoDelTruco() {
@@ -1485,7 +1534,7 @@ export default (inicial, pedidos) => ({
         switch (hecho.tipo) {
             case 'reparto':
                 this.repartir(paso, true);
-                await this.esperar(this.reducido ? 200 : 650);
+                await this.esperar(this.reducido ? 200 : 650 + this.demoraDelReparto);
                 break;
 
             case 'carta':
@@ -1577,7 +1626,7 @@ export default (inicial, pedidos) => ({
      * para cada uno, con 70 ms entre carta y carta.
      */
     llegar(elemento, orden) {
-        llegarDelMazo(elemento, this.$refs.origen, orden, { reducido: this.reducido });
+        llegarDelMazo(elemento, this.mazo, orden, { reducido: this.reducido, demora: this.demoraDelReparto });
         // Cada carta suena cuando sale, con los mismos 70 ms entre una y otra que tiene el reparto.
         this.sonar('reparto', orden * 70);
     },
@@ -1587,7 +1636,7 @@ export default (inicial, pedidos) => ({
      * que dura menos que la llegada. Devuelve la animación para saber cuándo terminó.
      */
     guardar(elemento, orden) {
-        const origen = this.$refs.origen.getBoundingClientRect();
+        const origen = this.mazo.getBoundingClientRect();
         const desde = elemento.getBoundingClientRect();
         const cuadros = this.reducido
             ? [{ opacity: 1 }, { opacity: 0 }]
@@ -1822,6 +1871,7 @@ export default (inicial, pedidos) => ({
 
         // Se reparte de a una para cada uno, y la primera es para el mano, como en la mesa de verdad.
         const soyMano = vista.mano === this.yo;
+        const pasar = this.pasarElMazo(soyMano ? 'rival' : 'vos', animar);
 
         vista.misCartas.forEach((carta, i) => {
             const boton = document.createElement('button');
@@ -1836,6 +1886,7 @@ export default (inicial, pedidos) => ({
                 evento.stopPropagation();
                 this.jugar(carta, boton);
             });
+            this.arrastrable(boton, carta);
             this.$refs.mano.children[i].replaceChildren(boton);
 
             if (animar) {
@@ -1854,7 +1905,43 @@ export default (inicial, pedidos) => ({
             }
         }
 
+        // Recién ahora: cada carta ya tomó como punto de partida el lugar nuevo del mazo, y sale cuando llega.
+        pasar();
+
         this.aviso = animar ? 'Repartiendo.' : this.aviso;
+    },
+
+    /**
+     * En la mesa ancha el mazo está delante de quien reparte, y reparte el que no es mano: en cada mano
+     * nueva se pasa al otro lado. Lo deja en su lugar nuevo y devuelve el pase, que lo trae desde donde
+     * estaba (se llama después de que las cartas midieron de dónde salen). Mientras dura el pase, las
+     * cartas esperan (demoraDelReparto). Sin mesa ancha, o sin cambio de lado, no hace nada.
+     */
+    pasarElMazo(reparte, animar) {
+        const costado = this.$refs.costadoDelMazo;
+        const pila = this.$refs.pilaAlCostado;
+
+        this.demoraDelReparto = 0;
+
+        if (! costado || costado.dataset.reparte === reparte) {
+            return () => {};
+        }
+
+        const antes = pila.getBoundingClientRect();
+
+        costado.dataset.reparte = reparte;
+
+        if (! animar || this.reducido || costado.offsetParent === null) {
+            return () => {};
+        }
+
+        const despues = pila.getBoundingClientRect();
+        this.demoraDelReparto = PASE_DEL_MAZO;
+
+        return () => pila.animate(
+            [{ transform: `translateY(${antes.top - despues.top}px)` }, { transform: 'none' }],
+            { duration: PASE_DEL_MAZO, easing: 'cubic-bezier(0.77, 0, 0.175, 1)' },
+        );
     },
 
     /**
@@ -1899,6 +1986,28 @@ export default (inicial, pedidos) => ({
      * Tocar una carta propia la mueve en el momento, sin esperar al servidor: la jugada
      * ya figura entre las válidas. Si igual volviera rechazada, la mesa se deshace sola.
      */
+    /**
+     * La carta también se juega arrastrándola a la mesa (arrastre.js). Está sobre la mesa cuando el dedo
+     * pasó el borde de arriba de tu mano; mientras tanto se marca el lugar de la baza en juego.
+     */
+    arrastrable(boton, carta) {
+        hacerArrastrable(boton, {
+            sobreLaMesa: (y) => y < this.$refs.mano.getBoundingClientRect().top,
+            alSoltar: () => {
+                const vale = ! this.ocupada && this.vista.acciones.some((accion) => accion.tipo === 'jugar' && accion.carta === carta);
+
+                if (vale) {
+                    this.jugar(carta, boton);
+                }
+
+                return vale;
+            },
+            // En la mesa de a dos se marca la baza en juego; en la de a cuatro, la cruz del centro.
+            alApuntar: (apunta) => (this.$refs.bazas ?? this.$refs.cruz)?.toggleAttribute('data-apuntada', apunta),
+            reducido: () => this.reducido,
+        });
+    },
+
     jugar(carta, boton) {
         // Mientras la mesa cuenta lo que pasó, tocar una carta la apura, igual que tocar el paño. No la juega:
         // quien la tocó todavía no terminó de ver lo que hizo el rival.

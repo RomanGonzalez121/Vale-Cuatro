@@ -275,6 +275,28 @@ class EnvidoTest extends TestCase
     /**
      * @param  array{0: int, 1: int}  $tanteo
      */
+    public function test_la_vista_lleva_lo_cantado_en_la_mano_en_orden_y_con_quien_lo_dijo(): void
+    {
+        $partida = $this->jugar($this->mano(), '0 envido', '1 real_envido', '0 quiero', '0 truco', '1 quiero');
+        $cantado = [
+            ['tipo' => 'canto', 'canto' => 'envido', 'asiento' => 0],
+            ['tipo' => 'canto', 'canto' => 'real_envido', 'asiento' => 1],
+            ['tipo' => 'respuesta', 'canto' => 'envido', 'asiento' => 0, 'quiere' => true],
+            ['tipo' => 'tantos', 'canto' => 'envido', 'ganador' => 0],
+            ['tipo' => 'canto', 'canto' => 'truco', 'asiento' => 0],
+            ['tipo' => 'respuesta', 'canto' => 'truco', 'asiento' => 1, 'quiere' => true],
+        ];
+
+        // Es lo que oyeron los dos: la misma lista para cualquier asiento.
+        $this->assertSame($cantado, $partida->vistaPara(0)['cantos']);
+        $this->assertSame($cantado, $partida->vistaPara(1)['cantos']);
+
+        // La mano siguiente arranca sin nada cantado.
+        $siguiente = $this->jugar($partida, '0 mazo')->conManos([$this->cartas(self::VEINTICINCO), $this->cartas(self::TREINTA_Y_TRES)]);
+
+        $this->assertSame([], $siguiente->vistaPara(0)['cantos']);
+    }
+
     private function mano(int $mano = 0, array $tanteo = [0, 0]): Partida
     {
         return $this->armada([self::TREINTA_Y_TRES, self::VEINTICINCO], $mano, $tanteo);

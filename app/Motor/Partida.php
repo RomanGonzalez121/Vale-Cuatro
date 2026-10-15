@@ -88,6 +88,14 @@ final class Partida
     /** @var list<array{equipo: int, puntos: int, concepto: string}> Lo que se anotó en esta mano, en orden. */
     private array $anotado = [];
 
+    /**
+     * Lo que se cantó en esta mano, en orden y con quién lo dijo: cada canto, cada respuesta y quién ganó
+     * los tantos. Es lo que oyeron todos en la mesa, así que va en la vista de cualquier asiento.
+     *
+     * @var list<array{tipo: string, canto: string, asiento?: int, quiere?: bool, ganador?: int|null}>
+     */
+    private array $cantos = [];
+
     /** @var array<string, mixed>|null El resumen de la última mano cerrada, hasta que se reparte de nuevo. */
     private ?array $cierre = null;
 
@@ -199,6 +207,7 @@ final class Partida
         $nueva->envido = self::SIN_ENVIDO;
         $nueva->flor = self::SIN_FLOR;
         $nueva->anotado = [];
+        $nueva->cantos = [];
         $nueva->cierre = null;
         $nueva->hechos = [['tipo' => 'reparto', 'numero' => $nueva->numeroDeMano, 'mano' => $this->mano]];
 
@@ -440,6 +449,8 @@ final class Partida
             $nueva->anotarFlores();
         }
 
+        $nueva->anotarCantos();
+
         // Si la partida se terminó en la mitad de una mano, la mano queda cerrada ahí.
         if ($nueva->fase === Fase::Terminada && $nueva->cierre === null) {
             $nueva->terminarMano($nueva->ganador, 'partida');
@@ -524,6 +535,7 @@ final class Partida
             'envido' => $this->envido,
             'flor' => $this->flor,
             'anotado' => $this->anotado,
+            'cantos' => $this->cantos,
             'cierre' => $this->cierre,
             'hechos' => $this->hechos,
         ];
@@ -561,10 +573,31 @@ final class Partida
             'flor' => $this->flor,
             'pendiente' => $this->fase === Fase::Jugando ? $this->pendiente() : null,
             'anotado' => $this->anotado,
+            'cantos' => $this->cantos,
             'cierre' => $this->cierre,
             'hechos' => $this->hechos,
             'acciones' => $asiento === null ? [] : array_map(fn (Accion $accion) => $accion->aArray(), $this->accionesPara($asiento)),
         ];
+    }
+
+    /**
+     * Pasa a la lista de cantos de la mano lo que se dijo con la última acción. De los tantos queda
+     * solo quién ganó: los números ya se dijeron en voz alta y están en el envido o la flor.
+     */
+    private function anotarCantos(): void
+    {
+        foreach ($this->hechos as $hecho) {
+            $canto = match ($hecho['tipo']) {
+                'canto' => ['tipo' => 'canto', 'canto' => $hecho['canto'], 'asiento' => $hecho['asiento']],
+                'respuesta' => ['tipo' => 'respuesta', 'canto' => $hecho['canto'], 'asiento' => $hecho['asiento'], 'quiere' => $hecho['quiere']],
+                'tantos' => ['tipo' => 'tantos', 'canto' => $hecho['canto'], 'ganador' => $hecho['ganador']],
+                default => null,
+            };
+
+            if ($canto !== null) {
+                $this->cantos[] = $canto;
+            }
+        }
     }
 
     private function jugarCarta(int $asiento, Carta $carta): void

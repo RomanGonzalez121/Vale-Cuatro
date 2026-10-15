@@ -126,7 +126,8 @@
         </header>
 
         {{-- Tocar la mesa apura lo que se esté mostrando (los tantos del envido). --}}
-        <div class="mesa-campo" @click="apurar()" :inert="fin !== null">
+        {{-- En pantallas anchas el campo suma dos costados (ver .con-costados en app.css). --}}
+        <div class="mesa-campo con-costados" @click="apurar()" :inert="fin !== null">
             {{--
                 La cuenta regresiva entre personas: un fósforo acostado en el borde del campo, arriba cuando
                 le toca al rival y abajo cuando te toca a vos. No ocupa lugar: la mesa mide lo mismo que sin él.
@@ -266,6 +267,60 @@
                     </ul>
                 </div>
             </section>
+
+            {{--
+                Los costados de la mesa ancha. A un lado, lo que se cantó en esta mano, para releerlo sin esperar
+                al aviso; al otro, el mazo. Sirven para jugar: no son adorno.
+                En pantallas angostas no van (el mazo está junto al rival y el aviso cuenta lo cantado).
+            --}}
+            <aside class="mesa-costado mesa-costado-cantado" aria-label="Lo cantado en esta mano">
+                <div class="costado-hoja">
+                    <p class="costado-titulo"><span class="tabular-nums" x-text="vista.numeroDeMano">{{ $vista['numeroDeMano'] }}</span>ª mano</p>
+                    {{--
+                        La planilla del anotador: una columna para cada uno, con la raya al medio. Cada renglón es una
+                        vuelta (mesa.js, planilla). Quién ganó los tantos va de lado a lado.
+                    --}}
+                    {{-- Las columnas se nombran aparte: si la hoja se llena, se tapa lo más viejo y no los nombres. --}}
+                    <div class="planilla-cabeza" x-show="planilla.length > 0" aria-hidden="true">
+                        <span>Vos</span>
+                        <span>{{ $enfrente ?? 'Máquina' }}</span>
+                    </div>
+                    <div class="planilla-hoja" x-show="planilla.length > 0">
+                        <table class="planilla" :class="{ 'planilla-apretada': planilla.length > 6 }">
+                            <thead class="sr-only">
+                                <tr>
+                                    <th scope="col">Vos</th>
+                                    <th scope="col">{{ $enfrente ?? 'Máquina' }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(fila, numero) in planilla" :key="numero">
+                                    <tr :class="{ 'planilla-resultado': fila.resultado }">
+                                        <td :colspan="fila.resultado ? 2 : 1" :data-tono="fila.vos?.tono" x-text="fila.resultado ?? fila.vos?.texto ?? ''"></td>
+                                        <td x-show="! fila.resultado" :data-tono="fila.rival?.tono" x-text="fila.rival?.texto ?? ''"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="costado-vacio" x-show="planilla.length === 0">Todavía no se cantó nada.</p>
+                </div>
+            </aside>
+
+            {{--
+                El mazo queda delante de quien repartió, como en la mesa de verdad: arriba si fue el rival, abajo si
+                fuiste vos. Reparte el que no es mano, así que en cada mano se pasa al otro lado (mesa.js, pasarElMazo).
+            --}}
+            <aside class="mesa-costado mesa-costado-mazo" aria-label="El mazo" x-ref="costadoDelMazo" data-reparte="{{ $vista['mano'] === $vista['asiento'] ? 'rival' : 'vos' }}">
+                <div x-ref="pilaAlCostado" class="costado-pila">
+                    <div x-ref="mazoAlCostado" class="mesa-mazo costado-mazo" aria-hidden="true">
+                        @foreach (range(1, 6) as $carta)
+                            <x-dorso />
+                        @endforeach
+                    </div>
+                    <p class="costado-quien" x-text="esMano ? `Repartió ${rival}` : 'Repartiste vos'"></p>
+                </div>
+            </aside>
         </div>
 
         <x-mesa.cantos :practica="$esDesafio ? $practica : null" />

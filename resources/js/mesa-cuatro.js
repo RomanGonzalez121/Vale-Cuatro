@@ -502,6 +502,7 @@ export default (inicial, pedidos) => {
                     evento.stopPropagation();
                     this.jugar(carta, boton);
                 });
+                this.arrastrable(boton, carta);
                 this.$refs.mano.children[i].replaceChildren(boton);
 
                 if (animar) {
