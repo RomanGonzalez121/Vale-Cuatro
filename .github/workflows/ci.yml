@@ -125,6 +125,10 @@ jobs:
         if: failure()
         run: |
           grep -E "FAILED|Failed asserting|Exception|Waited|tests/Browser/.*\.php:[0-9]+" storage/logs/dusk.txt | sed 's/\x1b\[[0-9;]*m//g' | head -10 | while IFS= read -r linea; do echo "::error title=Prueba de navegador::$linea"; done || true
+          # Cada prueba que falló, con las líneas que siguen (ahí está el mensaje del error), en un solo aviso.
+          sed 's/\x1b\[[0-9;]*m//g' storage/logs/dusk.txt | awk '/FAILED/{n=8; t=""} n>0{gsub(/^ +| +$/, ""); if ($0 != "") t=t " | " $0; n--; if (n==0) print t}' | head -6 | while IFS= read -r linea; do echo "::error title=Error de la prueba::$linea"; done || true
+          # Y lo que el navegador anotó en su consola (los errores de JavaScript de la página).
+          cat tests/Browser/console/*.log 2>/dev/null | head -c 3000 | tr '\n' ' ' | while IFS= read -r linea; do echo "::error title=Consola del navegador::$linea"; done || true
 
       # Si algo falla, queda lo que el navegador tenía en pantalla y lo que escribió el sitio.
       - name: Capturas y registros, si falló
