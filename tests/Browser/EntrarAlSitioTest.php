@@ -16,12 +16,12 @@ class EntrarAlSitioTest extends DuskTestCase
         $this->browse(function (Browser $navegador) {
             $navegador->visit('/')
                 ->assertSee('Vale Cuatro')
-                ->press('Jugar contra el bot')
+                ->press('Jugar contra la máquina')
                 ->waitForLocation('/mesa')
                 ->waitFor('.mesa-mano button', 15)
                 // Sin formulario en el medio: ya hay tres cartas en la mano y un rival enfrente.
                 ->assertPresent('.mesa')
-                ->assertSee('Bot');
+                ->assertSee('Máquina');
 
             $this->assertCount(3, $navegador->elements('.mesa-mano button'));
         });

@@ -10,14 +10,14 @@
     Los desafíos sueltos. Cada uno se muestra con lo que lo distingue: la mano que te toca, con las
     cartas de verdad. Están todos abiertos y se juegan en cualquier orden.
 --}}
-<x-layouts.base titulo="Desafíos" descripcion="Manos de truco armadas con un objetivo: ganar el envido, hacer que el bot no quiera, irse a tiempo. Cada una reparte siempre las mismas cartas." superficie="pano">
+<x-layouts.base titulo="Desafíos" descripcion="Manos de truco armadas con un objetivo: ganar el envido, hacer que la máquina no quiera, irse a tiempo. Cada una reparte siempre las mismas cartas." superficie="pano">
     <div class="overflow-x-clip">
         <div class="mx-auto max-w-6xl px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14">
             <header class="flex flex-wrap items-end justify-between gap-x-12 gap-y-5">
                 <div>
                     <h1 class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">Desafíos</h1>
                     <p class="mt-4 max-w-[46ch] text-lg leading-relaxed">
-                        Manos armadas con un objetivo. Las cartas son siempre las mismas y el bot contesta
+                        Manos armadas con un objetivo. Las cartas son siempre las mismas y la máquina contesta
                         siempre igual: si no sale, probá otro camino.
                     </p>
                 </div>

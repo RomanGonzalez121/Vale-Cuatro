@@ -44,7 +44,7 @@
             <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
         </button>
         {{--
-            Los avisos al celular ("Te toca"), solo con otra persona enfrente: un bot juega en el momento.
+            Los avisos al celular ("Te toca"), solo con otra persona enfrente: la máquina juega en el momento.
             El permiso se pide recién al tocar esta llave. Si el navegador no tiene avisos, el renglón no está;
             si la persona los bloqueó, lo dice y no se puede tocar: solo ella los puede volver a permitir.
         --}}

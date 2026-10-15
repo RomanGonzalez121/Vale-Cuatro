@@ -21,9 +21,9 @@
                 Ordenado por partidas ganadas. Si empatan, va primero quien tiene mejor porcentaje y después quien trae más racha.
             </p>
             <p class="mt-3 max-w-[60ch] leading-relaxed">
-                Cuentan las partidas entre personas y las de contra el bot desde Intermedio.
+                Cuentan las partidas entre personas y las de contra la máquina desde Intermedio.
                 Abandonar es perder; si el que se va es tu rival, la ganás solo si ya ibas en las buenas.
-                Los jugadores marcados como bot son de ejemplo: juegan entre ellos para que la tabla no arranque vacía.
+                Los jugadores marcados como máquina son de ejemplo: juegan entre ellos para que la tabla no arranque vacía.
             </p>
         </header>
 
@@ -43,7 +43,7 @@
                             </p>
                             @if ($jugador['bot'])
                                 <span class="mt-2 inline-flex items-center gap-1 rounded-md bg-naipe px-1.5 py-0.5 text-xs font-bold text-tinta max-sm:mt-1.5">
-                                    <x-icono nombre="bot" class="size-4" /> bot
+                                    <x-icono nombre="bot" class="size-4" /> máquina
                                 </span>
                             @elseif ($jugador['vos'])
                                 <span class="mt-2 inline-flex rounded-md bg-oro px-1.5 py-0.5 text-xs font-bold text-tinta max-sm:mt-1.5">vos</span>
@@ -87,7 +87,7 @@
                                     <span class="text-sm font-semibold"><span class="sr-only">Categoría</span> {{ mb_strtolower($jugador['categoria']) }}</span>
                                     @if ($jugador['bot'])
                                         <span class="inline-flex items-center gap-1 rounded-md bg-texto px-1.5 py-0.5 text-xs font-bold text-fondo">
-                                            <x-icono nombre="bot" class="size-4" /> bot
+                                            <x-icono nombre="bot" class="size-4" /> máquina
                                         </span>
                                     @elseif ($jugador['vos'])
                                         <span class="text-sm font-semibold">vos</span>

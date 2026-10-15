@@ -126,7 +126,7 @@ class RevanchaPorHttpTest extends TestCase
         $nueva = $this->laQueSiguioA($partida);
 
         $this->assertSame(Nivel::UltraDificil, $nueva->nivel_bot);
-        $this->actingAs($jugador)->get('/mesa')->assertOk()->assertSee('Bot ultra difícil')->assertViewHas('serie', null);
+        $this->actingAs($jugador)->get('/mesa')->assertOk()->assertSee('Máquina ultra difícil')->assertViewHas('serie', null);
 
         // El mismo toque dos veces vuelve a la misma mesa.
         $this->actingAs($jugador)->post('/revancha/pedir', ['partida' => $partida->id])->assertRedirect(route('mesa'));
@@ -153,7 +153,7 @@ class RevanchaPorHttpTest extends TestCase
 
         $this->get('/mesa')->assertOk()
             ->assertViewHas('serie', ['vos' => 0, 'rival' => 0, 'necesarias' => 2])
-            ->assertSee('Serie al mejor de tres: vos 0, el bot 0.')
+            ->assertSee('Serie al mejor de tres: vos 0, la máquina 0.')
             ->assertSee('Jugar la siguiente partida')
             ->assertSee('y con ella la serie');
     }

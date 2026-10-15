@@ -32,7 +32,7 @@
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa-cuatro en app.css. --}}
     <div x-data="mesaDeCuatro(@js($vista), @js($pedidos))" @class(['mesa mesa-cuatro mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
-        <h1 class="sr-only">Mesa de a cuatro: vos y un bot de compañero contra dos bots, los tres de nivel {{ $nivelEnPalabras }}</h1>
+        <h1 class="sr-only">Mesa de a cuatro contra la máquina: tu compañero y los dos rivales, de nivel {{ $nivelEnPalabras }}</h1>
 
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
         <header class="mesa-barra relative z-10" :inert="fin !== null">

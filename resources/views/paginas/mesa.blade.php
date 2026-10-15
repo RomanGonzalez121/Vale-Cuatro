@@ -58,7 +58,7 @@
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa en app.css. --}}
     <div x-data="mesa(@js($vista), @js($pedidos))" @class(['mesa mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
-        <h1 class="sr-only">{{ $nivel ? ($nombreDelBot ? "Mesa contra {$nombreDelBot}, bot de nivel {$nivel->nombre()}" : "Mesa contra el bot, nivel {$nivel->nombre()}") : "Mesa contra {$rival}" }}</h1>
+        <h1 class="sr-only">{{ $nivel ? ($nombreDelBot ? "Mesa contra {$nombreDelBot}, máquina de nivel {$nivel->nombre()}" : "Mesa contra la máquina, nivel {$nivel->nombre()}") : "Mesa contra {$rival}" }}</h1>
 
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
         {{-- Con los ajustes desplegados la barra sube un escalón: la ventanita no puede quedar debajo del fósforo de la cuenta regresiva. --}}
@@ -79,7 +79,7 @@
                 --}}
                 @if ($serie)
                     <p class="whitespace-nowrap text-sm font-semibold leading-none">
-                        <span class="sr-only">Serie al mejor de tres: vos {{ $serie['vos'] }}, {{ $rival ?? 'el bot' }} {{ $serie['rival'] }}.</span>
+                        <span class="sr-only">Serie al mejor de tres: vos {{ $serie['vos'] }}, {{ $rival ?? 'la máquina' }} {{ $serie['rival'] }}.</span>
                         <span aria-hidden="true">Serie <span class="font-black tabular-nums text-oro">{{ $serie['vos'] }}</span> a <span class="font-black tabular-nums text-oro">{{ $serie['rival'] }}</span></span>
                     </p>
                 @elseif ($torneo)
@@ -105,7 +105,7 @@
                         <h2 id="titulo-objetivo" class="text-xl font-black leading-[1.05] tracking-tight">{{ $practica['titulo'] }}</h2>
                         <p class="mt-2 text-[1.05rem] leading-snug">{{ $practica['consigna'] }}</p>
                         <p class="mt-2.5 text-sm leading-snug">
-                            Es una sola mano{{ $practica['escalon'] ? ", el escalón {$practica['escalon']} de la escalera" : '' }}. El bot contesta siempre igual: si no sale, probá otro camino.
+                            Es una sola mano{{ $practica['escalon'] ? ", el escalón {$practica['escalon']} de la escalera" : '' }}. La máquina contesta siempre igual: si no sale, probá otro camino.
                         </p>
                     </div>
                 @elseif ($practica)
@@ -118,7 +118,7 @@
                 {{-- El asiento propio va siempre primero: quien se sentó por invitación es el 1. --}}
                 <x-tanteador nombre="Vos" :puntos="$vista['tanteo'][$vista['asiento']]" modelo="puntos.vos" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
                 {{-- Un apodo puede tener 20 letras: si no entra en su mitad se corta, y los puntos quedan a la vista. --}}
-                <x-tanteador :nombre="$enfrente ?? 'Bot'" :puntos="$vista['tanteo'][1 - $vista['asiento']]" modelo="puntos.rival" class="min-w-0"
+                <x-tanteador :nombre="$enfrente ?? 'Máquina'" :puntos="$vista['tanteo'][1 - $vista['asiento']]" modelo="puntos.rival" class="min-w-0"
                     clase-nombre="min-w-0 truncate text-sm font-semibold" :hasta="$vista['puntosParaGanar']" />
             </section>
 
@@ -161,7 +161,7 @@
                     </span>
                     {{-- Un apodo largo ocupa dos renglones como mucho: la fila del rival mide siempre lo mismo. --}}
                     {{-- En un torneo el bot va con su apodo: que es un bot lo dicen su ícono y los fósforos de su nivel. --}}
-                    <span class="line-clamp-2">{{ $nivel ? ($nombreDelBot ?? 'Bot '.mb_strtolower($nivel->nombre())) : $rival }}</span>
+                    <span class="line-clamp-2">{{ $nivel ? ($nombreDelBot ?? 'Máquina '.$nivel->deLaMaquina()) : $rival }}</span>
                     {{-- La categoría de la otra persona, debajo de su apodo en el celular y al lado en pantallas anchas. --}}
                     @if ($socio)
                         <span class="whitespace-nowrap text-xs font-semibold sm:text-sm"><span class="sr-only">Categoría</span> {{ $socio['categoria'] }}</span>
@@ -283,14 +283,14 @@
             <div x-show="fin" x-transition:enter="aparece" x-transition:enter-start="desde-chico" class="m-auto w-full max-w-md">
                 {{-- El título recibe el foco para que el lector de pantalla lo anuncie; no es un control, así que no lleva el marco del foco. --}}
                 <h2 id="titulo-fin" x-ref="fin" tabindex="-1" class="text-[clamp(2.75rem,14cqw,4.75rem)] font-black leading-[0.94] tracking-[-0.035em] outline-none [overflow-wrap:anywhere]"
-                    x-text="fin === 'vos' ? 'Ganaste la partida' : @js($enfrente ? "Ganó {$enfrente}" : 'Ganó el bot')"></h2>
+                    x-text="fin === 'vos' ? 'Ganaste la partida' : @js($enfrente ? "Ganó {$enfrente}" : 'Ganó la máquina')"></h2>
                 <p id="tanteo-fin" class="sr-only">
-                    Vos <span x-text="puntos.vos"></span>, {{ $enfrente ?? 'el bot' }} <span x-text="puntos.rival"></span>.
+                    Vos <span x-text="puntos.vos"></span>, {{ $enfrente ?? 'la máquina' }} <span x-text="puntos.rival"></span>.
                 </p>
 
                 <div class="mt-7 grid gap-5 text-[1.5rem] sm:text-[1.75rem]" aria-hidden="true">
                     <x-tanteador nombre="Vos" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
-                    <x-tanteador :nombre="$enfrente ?? 'Bot'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
+                    <x-tanteador :nombre="$enfrente ?? 'Máquina'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                 </div>
 
                 {{-- En un torneo, qué pasa con esta partida: se pasa de ronda, se es campeón o se queda afuera. Y se vuelve a las llaves. --}}

@@ -27,7 +27,7 @@ class JugarUnaManoTest extends DuskTestCase
             // El ritmo ágil acorta las pausas para leer: la mano se juega igual, en menos tiempo.
             $navegador->script("localStorage.setItem('vale-cuatro:ritmo', 'agil')");
 
-            $navegador->press('Jugar contra el bot')
+            $navegador->press('Jugar contra la máquina')
                 ->waitForLocation('/mesa')
                 ->waitFor('.mesa-mano button', 15);
 

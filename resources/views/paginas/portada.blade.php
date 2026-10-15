@@ -22,14 +22,14 @@
                 <span class="block">mano a mano.</span>
             </h1>
             <p class="portada-bajada mt-6 max-w-[44ch] text-lg leading-relaxed max-sm:order-2 max-sm:mt-4 max-sm:leading-snug sm:text-xl">
-                Jugá una mano contra el bot ahora mismo, sin registrarte.
+                Jugá una mano contra la máquina ahora mismo, sin registrarte.
                 <span class="max-sm:hidden">O mandale un link a alguien y jueguen en vivo.</span>
             </p>
             {{-- Sin campos: apretar el botón alcanza. Quien no tiene sesión entra como invitado. --}}
             <form method="POST" action="{{ route('jugar') }}" class="mt-8 flex flex-wrap gap-3 max-sm:order-4 max-sm:mt-6">
                 @csrf
                 <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg max-sm:w-full">
-                    <x-icono nombre="bot" /> Jugar contra el bot
+                    <x-icono nombre="bot" /> Jugar contra la máquina
                 </button>
                 {{-- Los demás modos se eligen en su pantalla: este botón no entra a ninguna mesa. En el celular ya está "Jugar" en la barra de abajo. --}}
                 <a href="{{ route('modos') }}" class="boton boton-linea min-h-14 px-6 text-lg max-sm:hidden">
@@ -151,8 +151,8 @@
                 <div>
                     <h3 class="text-xl font-extrabold">Simulado</h3>
                     <p class="mt-2 max-w-[46ch] text-lg leading-relaxed">
-                        Los rivales bot y los jugadores de ejemplo del ranking.
-                        En todo el sitio aparecen marcados como bots.
+                        La máquina y los jugadores de ejemplo del ranking.
+                        En todo el sitio aparecen marcados como tales.
                     </p>
                 </div>
                 <div class="md:border-l md:border-naipe/20 md:pl-14">

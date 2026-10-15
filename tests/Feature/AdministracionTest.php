@@ -149,7 +149,7 @@ class AdministracionTest extends TestCase
 
         $respuesta = $this->actingAs($this->administrador())->get('/administracion')->assertOk()
             ->assertSee('El Zurdo contra La Tana')
-            ->assertSee('Pichón contra Bot difícil')
+            ->assertSee('Pichón contra Máquina difícil')
             ->assertSee('Hay 2 partidas en juego.');
 
         // Cada renglón trae estos datos y ninguno más: ni manos, ni cartas jugadas, ni la vista de un asiento.
@@ -194,7 +194,7 @@ class AdministracionTest extends TestCase
 
         $this->actingAs($this->administrador())->get('/administracion')->assertOk()
             ->assertSee('2 quedaron sin movimiento.')
-            ->assertSee('Cacho contra Bot intermedio');
+            ->assertSee('Cacho contra Máquina intermedia');
     }
 
     public function test_los_totales_cuentan_todas_las_partidas_aunque_las_listas_muestren_algunas(): void

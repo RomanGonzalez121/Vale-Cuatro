@@ -44,7 +44,7 @@ class Paleta
             ['texto' => 'fosforo', 'fondo' => 'pano-hondo', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Fósforos del tanteador (gráfico)'],
             ['texto' => 'tinta', 'fondo' => 'naipe', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Texto de las páginas de lectura y de las cartas'],
             ['texto' => 'tinta', 'fondo' => 'oro', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Botón de envido'],
-            ['texto' => 'naipe', 'fondo' => 'tinta', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Botón principal sobre naipe y marca de bot'],
+            ['texto' => 'naipe', 'fondo' => 'tinta', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Botón principal sobre naipe y marca de la máquina'],
             ['texto' => 'naipe', 'fondo' => 'copa', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Ficha de truco y de "no quiero"'],
             ['texto' => 'naipe', 'fondo' => 'basto', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Ficha de "quiero"'],
             ['texto' => 'naipe', 'fondo' => 'espada', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Ficha de información'],

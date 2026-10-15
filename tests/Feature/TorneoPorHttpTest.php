@@ -104,10 +104,10 @@ class TorneoPorHttpTest extends TestCase
                 continue;
             }
 
-            $nivel = mb_strtolower($torneo->nivelDe($lugar)->nombre());
+            $nivel = $torneo->nivelDe($lugar)->deLaMaquina();
 
             // Junto a su apodo, dicho para el lector de pantalla; y a la vista, el ícono del bot y los fósforos del nivel.
-            $this->assertMatchesRegularExpression('/'.preg_quote(e($inscripto['apodo']), '/').'\s*<span class="sr-only">, bot '.preg_quote($nivel, '/').'<\/span>/', $html);
+            $this->assertMatchesRegularExpression('/'.preg_quote(e($inscripto['apodo']), '/').'\s*<span class="sr-only">, máquina '.preg_quote($nivel, '/').'<\/span>/', $html);
         }
 
         // Uno por cada bot en la primera ronda, y uno más arriba: el del rival que le tocó a la persona.

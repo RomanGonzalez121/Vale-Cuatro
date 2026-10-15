@@ -43,7 +43,7 @@
         <div class="mesa repeticion-mesa superficie-pano relative overflow-hidden rounded-xl" :class="{ 'repeticion-de-cuatro': deACuatro }">
             <div class="relative z-10 grid grid-cols-2 gap-x-4 bg-pano-hondo px-4 py-3 text-[clamp(0.75rem,3.9cqw,1.05rem)]">
                 <x-tanteador nombre="Vos" nombre-vivo="deACuatro ? 'Nosotros' : 'Vos'" :puntos="0" modelo="estado.tanteo.vos" class="min-w-0" />
-                <x-tanteador nombre="Rival" nombre-vivo="deACuatro ? 'Ellos' : (resumen.bot ? 'Bot' : resumen.rival)" :puntos="0" modelo="estado.tanteo.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-sm font-semibold" />
+                <x-tanteador nombre="Rival" nombre-vivo="deACuatro ? 'Ellos' : (resumen.bot ? 'Máquina' : resumen.rival)" :puntos="0" modelo="estado.tanteo.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-sm font-semibold" />
             </div>
 
             <template x-if="! deACuatro">

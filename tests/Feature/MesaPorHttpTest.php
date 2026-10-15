@@ -88,8 +88,8 @@ class MesaPorHttpTest extends TestCase
         $partida = $this->app->make(Mesa::class)->abrir($jugador, Nivel::Dificil);
 
         $html = $this->actingAs($jugador)->get('/mesa')->assertOk()
-            ->assertSee('Mesa contra el bot, nivel Difícil')
-            ->assertSee('Bot difícil')
+            ->assertSee('Mesa contra la máquina, nivel Difícil')
+            ->assertSee('Máquina difícil')
             ->getContent();
 
         // El botón del final pide la revancha de esta partida: el servidor la arma contra el mismo nivel.
@@ -247,7 +247,7 @@ class MesaPorHttpTest extends TestCase
 
         $this->actingAs($jugador)->get('/mesa')
             ->assertRedirect('/modos')
-            ->assertSessionHas('aviso', fn (string $aviso) => preg_match('/^Tu última partida terminó \d+ a 30: ganó el bot\.$/u', $aviso) === 1);
+            ->assertSessionHas('aviso', fn (string $aviso) => preg_match('/^Tu última partida terminó \d+ a 30: ganó la máquina\.$/u', $aviso) === 1);
     }
 
     public function test_sin_partida_o_con_la_ultima_abandonada_la_mesa_no_avisa_nada(): void

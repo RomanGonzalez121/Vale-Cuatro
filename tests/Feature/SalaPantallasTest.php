@@ -77,7 +77,7 @@ class SalaPantallasTest extends TestCase
             ->assertOk()
             ->assertSee('Esa partida ya tiene sus dos jugadores.')
             ->assertDontSee('Sentarme')
-            ->assertSee('Jugar contra el bot')
+            ->assertSee('Jugar contra la máquina')
             ->assertSee('Ver otros modos');
 
         $cerrada = $this->mesa()->crearSala(Jugador::factory()->invitado()->create());
@@ -109,8 +109,8 @@ class SalaPantallasTest extends TestCase
         $this->mesa()->sentarse($sala->codigo, $rival);
 
         // Cada uno ve el nombre del otro.
-        $this->actingAs($creador)->get('/mesa')->assertOk()->assertSee('Mesa contra Zurdo')->assertDontSee('Bot ');
-        $this->actingAs($rival)->get('/mesa')->assertOk()->assertSee('Mesa contra Tana')->assertDontSee('Bot ');
+        $this->actingAs($creador)->get('/mesa')->assertOk()->assertSee('Mesa contra Zurdo')->assertDontSee('Máquina ');
+        $this->actingAs($rival)->get('/mesa')->assertOk()->assertSee('Mesa contra Tana')->assertDontSee('Máquina ');
     }
 
     public function test_un_tercero_no_ve_la_mesa_de_otros_dos(): void
@@ -138,7 +138,7 @@ class SalaPantallasTest extends TestCase
         // Los niveles quedan apagados: la pantalla dice por qué y deja cancelar la sala ahí mismo.
         $this->actingAs($creador)->get('/modos')
             ->assertOk()
-            ->assertSee('Tenés una sala abierta esperando rival. Para jugar contra el bot o en otro modo, primero cancelala.')
+            ->assertSee('Tenés una sala abierta esperando rival. Para jugar contra la máquina o en otro modo, primero cancelala.')
             ->assertSee('Volver a la sala')
             ->assertSee('Cancelar sala')
             ->assertSee('action="'.route('sala.cancelar', $sala->codigo).'"', false);
@@ -155,7 +155,7 @@ class SalaPantallasTest extends TestCase
             ->assertOk()
             ->assertDontSee('Cancelar sala')
             ->assertDontSee('Volver a la sala')
-            ->assertSee('Jugar contra el bot');
+            ->assertSee('Jugar contra la máquina');
     }
 
     public function test_con_una_partida_en_curso_con_otra_persona_los_modos_ofrecen_seguirla(): void

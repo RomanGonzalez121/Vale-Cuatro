@@ -383,7 +383,7 @@ final class Repeticion
     }
 
     /**
-     * Cómo se nombra al rival en medio de una frase: "el bot", o el apodo de la otra persona.
+     * Cómo se nombra al rival en medio de una frase: "la máquina", o el apodo de la otra persona.
      */
     public function nombreDelRival(Partida $partida, int $asiento): string
     {
@@ -392,7 +392,7 @@ final class Repeticion
         }
 
         if (! $partida->entre_personas) {
-            return 'el bot';
+            return 'la máquina';
         }
 
         return ($asiento === Mesa::JUGADOR ? $partida->invitado : $partida->jugador)?->apodo ?? 'tu rival';
@@ -413,12 +413,12 @@ final class Repeticion
 
     /**
      * El rival al empezar una frase. Un apodo es un nombre propio y va como lo escribió su dueño;
-     * lo único que cambia es la mayúscula de "el bot" y de "tu rival".
+     * lo único que cambia es la mayúscula de "la máquina" y de "tu rival".
      */
     private static function alEmpezar(string $rival): string
     {
         return match ($rival) {
-            'el bot' => 'El bot',
+            'la máquina' => 'La máquina',
             'tu rival' => 'Tu rival',
             default => $rival,
         };

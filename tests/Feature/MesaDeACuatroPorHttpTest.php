@@ -37,7 +37,7 @@ class MesaDeACuatroPorHttpTest extends TestCase
 
         $html = $this->get('/mesa')->assertOk()
             ->assertViewIs('paginas.mesa-cuatro')
-            ->assertSee('Mesa de a cuatro: vos y un bot de compañero contra dos bots, los tres de nivel difícil')
+            ->assertSee('Mesa de a cuatro contra la máquina: tu compañero y los dos rivales, de nivel difícil')
             ->assertSee('Nosotros')
             ->assertSee('Ellos')
             ->getContent();

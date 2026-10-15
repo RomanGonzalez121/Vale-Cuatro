@@ -156,18 +156,18 @@ final class Historial
     }
 
     /**
-     * Contra quién se jugó, dicho como en la mesa: "Bot intermedio" o el apodo de la otra persona.
-     * De a cuatro contra bots son dos, del mismo nivel que el compañero.
+     * Contra quién se jugó, dicho como en la mesa: "Máquina intermedia" o el apodo de la otra persona.
+     * De a cuatro, la máquina juega los dos rivales, del mismo nivel que el compañero.
      */
     private function rival(Partida $partida, int $asiento): string
     {
         if ($partida->deACuatro()) {
-            return 'dos bots de nivel '.mb_strtolower($partida->nivel_bot->nombre());
+            return 'la máquina, nivel '.mb_strtolower($partida->nivel_bot->nombre());
         }
 
         // En una partida de la escalera el bot es alguien del club, con su apodo.
         if ($partida->escalon !== null && ! $partida->esDesafio()) {
-            return Escalera::escalon($partida->escalon)['rival'] ?? 'Bot '.mb_strtolower($partida->nivel_bot->nombre());
+            return Escalera::escalon($partida->escalon)['rival'] ?? 'Máquina '.$partida->nivel_bot->deLaMaquina();
         }
 
         if (! $partida->entre_personas) {
@@ -175,7 +175,7 @@ final class Historial
 
             // En un torneo el bot tiene apodo: es uno de los jugadores de ejemplo del ranking.
             return $cruce === null
-                ? 'Bot '.mb_strtolower($partida->nivel_bot->nombre())
+                ? 'Máquina '.$partida->nivel_bot->deLaMaquina()
                 : $partida->torneo->apodoDe($cruce->rivalDe($partida->torneo->lugarDeLaPersona()));
         }
 

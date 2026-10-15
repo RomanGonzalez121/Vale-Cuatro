@@ -36,7 +36,7 @@ class HistorialTest extends TestCase
         $this->assertSame($estado['tanteo'][1], $resumen['ellos']);
         $this->assertSame(30, max($resumen['vos'], $resumen['ellos']));
         $this->assertSame($estado['numeroDeMano'], $resumen['manos']);
-        $this->assertSame('Bot difícil', $resumen['rival']);
+        $this->assertSame('Máquina difícil', $resumen['rival']);
         $this->assertTrue($resumen['bot']);
         $this->assertNull($resumen['cierre'], 'Una partida que llegó a los puntos no necesita aclaración.');
         $this->assertSame('Hoy', $resumen['dia']);

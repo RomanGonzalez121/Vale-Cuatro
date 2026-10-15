@@ -41,7 +41,7 @@
     ];
 
     // El apodo de cada lado en el tanteador de una partida: corto, para que entren los dos.
-    $enElTanteador = fn (array $partida) => [$partida['uno'], $partida['contraElBot'] ? 'Bot' : $partida['otro']];
+    $enElTanteador = fn (array $partida) => [$partida['uno'], $partida['contraElBot'] ? 'Máquina' : $partida['otro']];
 @endphp
 
 <x-layouts.base titulo="Administración" descripcion="Panel de administración de Vale Cuatro.">
@@ -81,7 +81,7 @@
         <section id="sin-movimiento" aria-labelledby="titulo-sin-movimiento" class="border-t-2 border-texto pb-8 pt-5">
             <h2 id="titulo-sin-movimiento" class="flex items-center gap-2.5 text-2xl font-extrabold tracking-tight"><x-icono nombre="tiempo" class="size-6" /> Sin movimiento</h2>
             <p class="mt-2 max-w-[64ch] leading-relaxed">
-                Una partida contra el bot queda acá después de {{ Mesa::HORAS_QUIETA_CONTRA_EL_BOT }} horas sin jugadas; una entre dos personas, después de {{ Mesa::MINUTOS_QUIETA_ENTRE_PERSONAS }} minutos.
+                Una partida contra la máquina queda acá después de {{ Mesa::HORAS_QUIETA_CONTRA_EL_BOT }} horas sin jugadas; una entre dos personas, después de {{ Mesa::MINUTOS_QUIETA_ENTRE_PERSONAS }} minutos.
                 Cerrarla no borra sus jugadas: se anota al final de su lista y deja de ser la partida en curso de quienes la jugaban. No la gana nadie, así que no cuenta para el ranking ni aparece en el historial.
             </p>
 
@@ -144,7 +144,7 @@
         <section id="cola" aria-labelledby="titulo-cola" class="border-t-2 border-texto pb-8 pt-5">
             <h2 id="titulo-cola" class="flex items-center gap-2.5 text-2xl font-extrabold tracking-tight"><x-icono nombre="bot" class="size-6" /> La cola</h2>
             <p class="mt-2 max-w-[64ch] leading-relaxed">
-                De la cola salen el turno del bot y los plazos de las partidas entre dos personas.
+                De la cola salen el turno de la máquina y los plazos de las partidas entre dos personas.
                 {{ $cola['esperan'] === 0 ? 'Ahora no espera ningún trabajo.' : 'Ahora '.($cola['esperan'] === 1 ? 'espera 1 trabajo.' : "esperan {$cola['esperan']} trabajos.") }}
             </p>
 

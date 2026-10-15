@@ -76,7 +76,7 @@
             </div>
             <form method="POST" action="{{ route('jugar') }}" class="justify-self-start">
                 @csrf
-                <button type="submit" class="boton boton-tinta"><x-icono nombre="bot" /> Jugar contra el bot</button>
+                <button type="submit" class="boton boton-tinta"><x-icono nombre="bot" /> Jugar contra la máquina</button>
             </form>
         </header>
 

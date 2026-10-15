@@ -46,6 +46,19 @@ enum Nivel: int
     }
 
     /**
+     * El nivel dicho de la máquina, que es femenino: "Máquina intermedia", "contra la máquina difícil".
+     */
+    public function deLaMaquina(): string
+    {
+        return match ($this) {
+            self::Facil => 'fácil',
+            self::Intermedio => 'intermedia',
+            self::Dificil => 'difícil',
+            self::UltraDificil => 'ultra difícil',
+        };
+    }
+
+    /**
      * Cómo juega, dicho en una línea para quien elige contra quién jugar.
      */
     public function detalle(): string

@@ -68,7 +68,7 @@ final class Escalera
 
         return [
             'titulo' => $rival,
-            'detalle' => 'Una partida a '.self::PUNTOS.' contra un bot '.mb_strtolower($nivel->nombre()).'.',
+            'detalle' => 'Una partida a '.self::PUNTOS.' contra la máquina '.$nivel->deLaMaquina().'.',
             'nivel' => $nivel,
             'rival' => $rival,
             'carta' => JugadoresDeEjemplo::cartas()[$rival],

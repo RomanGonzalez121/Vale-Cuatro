@@ -47,7 +47,7 @@ class RankingPorHttpTest extends TestCase
             ->getContent();
 
         // Seis de ejemplo, seis marcas: cuatro arriba y dos en la tabla. La cuenta no lleva ninguna.
-        $this->assertSame(6, preg_match_all('/<\/svg>\s*bot\s*<\/span>/', $pagina));
+        $this->assertSame(6, preg_match_all('/<\/svg>\s*máquina\s*<\/span>/u', $pagina));
 
     }
 

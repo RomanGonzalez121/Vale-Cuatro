@@ -24,7 +24,7 @@
     ];
 @endphp
 
-<x-layouts.base titulo="Torneo relámpago" descripcion="Las llaves de tu torneo relámpago de truco contra bots." superficie="pano">
+<x-layouts.base titulo="Torneo relámpago" descripcion="Las llaves de tu torneo relámpago de truco contra la máquina." superficie="pano">
     <div class="mx-auto max-w-6xl px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-10">
         {{--
             Lo primero es la partida que toca: dicha en una frase y puesta sobre la mesa, carta contra carta.
@@ -59,7 +59,7 @@
                                 <x-nivel-fosforos :nivel="$rival['nivel']" class="flex-none text-[0.8rem]" />
                             </span>
                             <span class="mt-1.5 block text-xl font-black tracking-tight sm:text-2xl">{{ $rival['apodo'] }}</span>
-                            <span class="block text-[0.95rem] font-semibold">Bot {{ mb_strtolower($rival['nivel']->nombre()) }}</span>
+                            <span class="block text-[0.95rem] font-semibold">Máquina {{ $rival['nivel']->deLaMaquina() }}</span>
                         </p>
                     @endif
                     <p @class(['flex items-center gap-2 text-xl font-black tracking-tight sm:text-2xl', 'text-naipe/70' => $perdio])>
@@ -122,7 +122,7 @@
         <section aria-labelledby="titulo-llaves" class="mt-12 lg:mt-14">
             <h2 id="titulo-llaves" class="text-2xl font-black tracking-tight sm:text-3xl">Las llaves</h2>
             <p class="mt-2 max-w-[64ch] leading-relaxed">
-                Son {{ $torneo->lugares }} jugadores y pasa quien gana. Los demás son bots, y la carta de cada uno dice cómo juega:
+                Son {{ $torneo->lugares }} jugadores y pasa quien gana. A los demás los juega la máquina, y la carta de cada uno dice cómo juega:
                 cuanto más alta en el truco, más difícil. Quien pierde queda boca abajo.
                 @if ($seJuega)
                     Las otras partidas se juegan a la par de la tuya: los resultados aparecen cuando terminás.
@@ -181,7 +181,7 @@
                                                     <span @class(['min-w-0 truncate', 'font-extrabold' => ! $fuera, 'font-semibold' => $fuera])>
                                                         {{ $lado['vos'] ? 'Vos' : $lado['apodo'] }}
                                                         @unless ($lado['vos'])
-                                                            <span class="sr-only">, bot {{ mb_strtolower($lado['nivel']->nombre()) }}</span>
+                                                            <span class="sr-only">, máquina {{ $lado['nivel']->deLaMaquina() }}</span>
                                                         @endunless
                                                         @if ($lado['gano'])
                                                             <span class="sr-only">, pasó</span>
@@ -229,7 +229,7 @@
                                     <span class="min-w-0 text-xl font-black leading-[1.05] tracking-tight">
                                         {{ $campeon['vos'] ? 'Vos' : $campeon['apodo'] }}
                                         @unless ($campeon['vos'])
-                                            <span class="sr-only">, bot {{ mb_strtolower($campeon['nivel']->nombre()) }}</span>
+                                            <span class="sr-only">, máquina {{ $campeon['nivel']->deLaMaquina() }}</span>
                                         @endunless
                                     </span>
                                 </p>

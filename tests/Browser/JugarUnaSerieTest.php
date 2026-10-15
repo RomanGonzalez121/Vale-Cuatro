@@ -27,7 +27,7 @@ class JugarUnaSerieTest extends DuskTestCase
 
             // La casilla de la serie y el botón de siempre.
             $navegador->script("[...document.querySelectorAll('[data-formato]')].find((casilla) => casilla.offsetParent !== null).click()");
-            $navegador->press('Jugar contra el bot')
+            $navegador->press('Jugar contra la máquina')
                 ->waitForLocation('/mesa')
                 ->waitFor('.mesa-mano button', 15)
                 ->assertSeeIn('.mesa-barra', 'Serie 0 a 0');
@@ -38,7 +38,7 @@ class JugarUnaSerieTest extends DuskTestCase
 
             // El final dice quién ganó la partida y cómo va la serie, y ofrece la que sigue: no la revancha.
             $navegador->waitForText('La serie va 0 a 1.', 10)
-                ->assertSee('Ganó el bot')
+                ->assertSee('Ganó la máquina')
                 ->assertSeeLink('Jugar la siguiente partida')
                 ->assertDontSee('Jugar la revancha');
 

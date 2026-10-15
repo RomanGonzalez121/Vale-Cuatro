@@ -405,18 +405,18 @@ export default (inicial, pedidos) => ({
      * Lo que dice la mesa mientras espera la jugada del bot.
      */
     get avisoDeEspera() {
-        return 'Juega el bot.';
+        return 'Juega la máquina.';
     },
 
     /**
-     * Cómo se nombra al rival en medio de una frase y al empezarla: "el bot", o el apodo de la otra persona.
+     * Cómo se nombra al rival en medio de una frase y al empezarla: "la máquina", o el apodo de la otra persona.
      */
     get rival() {
-        return this.pedidos.rival ?? 'el bot';
+        return this.pedidos.rival ?? 'la máquina';
     },
 
     get rivalAlEmpezar() {
-        return this.pedidos.rival ?? 'El bot';
+        return this.pedidos.rival ?? 'La máquina';
     },
 
     /**
@@ -430,7 +430,7 @@ export default (inicial, pedidos) => ({
      * De quién fue una baza. El apodo no entra en ese renglón a 360 px: con otra persona es "del rival".
      */
     deQuien(resultado) {
-        return { vos: 'tuya', rival: this.pedidos.entrePersonas ? 'del rival' : 'del bot', parda: 'parda' }[resultado];
+        return { vos: 'tuya', rival: this.pedidos.entrePersonas ? 'del rival' : 'de la máquina', parda: 'parda' }[resultado];
     },
 
     get baza() {
@@ -1983,7 +1983,7 @@ export default (inicial, pedidos) => ({
         const deLaMano = motivo === 'partida'
             ? 'Se terminó la partida'
             // Con otra persona el título no lleva su apodo: uno largo lo partiría en tres renglones.
-            : (ganador === this.yo ? 'Ganaste la mano' : (entrePersonas ? 'Perdiste la mano' : 'La mano es del bot'));
+            : (ganador === this.yo ? 'Ganaste la mano' : (entrePersonas ? 'Perdiste la mano' : 'La mano es de la máquina'));
         const titulo = this.superado === null ? deLaMano : (this.superado ? 'Desafío superado' : 'No salió esta vez');
         const razon = this.razonDelCierre(vista);
         const lineas = anotado.map((linea) => ({

@@ -118,7 +118,7 @@ class DesafiosYEscaleraPorHttpTest extends TestCase
         $mesa = $this->get('/mesa')->assertOk()
             ->assertSee('objetivo-de-la-mesa')
             ->assertSee('Parda la primera')
-            ->assertSee('El bot salió con el ancho falso. Ganá la mano.')
+            ->assertSee('La máquina salió con el ancho falso. Ganá la mano.')
             ->assertSee('Otros desafíos')
             // Un desafío no tiene revancha.
             ->assertDontSee('Jugar la revancha');

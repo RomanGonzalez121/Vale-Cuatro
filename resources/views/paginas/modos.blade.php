@@ -56,7 +56,7 @@
     };
 @endphp
 
-<x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra el bot ahora mismo, y los modos que se van sumando." superficie="pano">
+<x-layouts.base titulo="Modos de juego" descripcion="Elegí cómo jugar al truco en Vale Cuatro: mano a mano contra la máquina ahora mismo, y los modos que se van sumando." superficie="pano">
     {{-- Las cartas llegan desde afuera de la pantalla: se recorta el costado para que el reparto no agregue scroll. --}}
     <div class="overflow-x-clip">
         <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', 'modos-dos-zonas' => $abierta, $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ($sinMazo ? '' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]')])
@@ -118,9 +118,10 @@
 
                             <div @class(['modo-opciones', 'col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola, 'lg:col-start-2' => ! $unaSola]) :class="{ 'detalle-entra': eligio }" style="animation-delay: 50ms">
                                 @if (count($juego['rivales']) > 1)
-                                    <div class="flex flex-wrap gap-x-7 gap-y-1" role="group" aria-label="Contra quién">
+                                    {{-- En el celular, un punto más chicos: "Contra la máquina" y "Con otra persona" tienen que entrar en un renglón. --}}
+                                    <div class="flex flex-wrap gap-x-7 gap-y-1 max-sm:gap-x-5" role="group" aria-label="Contra quién">
                                         @foreach ($juego['rivales'] as $rival)
-                                            <button type="button" class="enlace-nav cursor-pointer text-lg font-bold"
+                                            <button type="button" class="enlace-nav cursor-pointer text-lg font-bold max-sm:text-base"
                                                 aria-pressed="{{ $rival['clave'] === $rivalElegido[$juego['clave']] ? 'true' : 'false' }}"
                                                 :aria-pressed="(rival['{{ $juego['clave'] }}'] === '{{ $rival['clave'] }}').toString()"
                                                 @click="rival['{{ $juego['clave'] }}'] = '{{ $rival['clave'] }}'">{{ $rival['nombre'] }}</button>
@@ -158,7 +159,7 @@
                                                 <p class="mt-4 max-w-[36ch] font-bold leading-relaxed">
                                                     @if ($enCurso->esperando())
                                                         {{-- Dicho de entrada y con la salida al lado: sin esto los niveles apagados parecen un error. --}}
-                                                        Tenés una sala abierta esperando rival. Para jugar contra el bot o en otro modo, primero cancelala.
+                                                        Tenés una sala abierta esperando rival. Para jugar contra la máquina o en otro modo, primero cancelala.
                                                     @elseif ($enCurso->entre_personas)
                                                         Tenés una partida sin terminar con otra persona.
                                                     @elseif ($enCurso->torneo_id)
@@ -178,7 +179,7 @@
                                                     El nivel del bot. No lleva el subrayado de los links: cuál está elegido lo dicen sus fósforos.
                                                     Con una partida sin terminar queda apagado: Naipe al 70 % sobre Paño da 4,7:1, que todavía se lee.
                                                 --}}
-                                                <div class="mt-3 grid max-w-[21rem] grid-cols-4" role="group" aria-label="Nivel del bot">
+                                                <div class="mt-3 grid max-w-[21rem] grid-cols-4" role="group" aria-label="Nivel de la máquina">
                                                     @foreach ($niveles as $opcion)
                                                         {{--
                                                             Los cuatro salen del mismo molde: una columna igual para cada uno, el mismo cuadrado de
@@ -201,9 +202,9 @@
                                                 <div class="relative mt-1 max-w-[36ch]">
                                                     @foreach ($niveles as $opcion)
                                                         @if ($deACuatro)
-                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Tres bots, nivel {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalleDeACuatro() }}</p>
+                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Máquina {{ $opcion->deLaMaquina() }}, en los tres lugares</span>{{ $opcion->detalleDeACuatro() }}</p>
                                                         @else
-                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Bot {{ mb_strtolower($opcion->nombre()) }}</span>{{ $opcion->detalle() }}</p>
+                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Máquina {{ $opcion->deLaMaquina() }}</span>{{ $opcion->detalle() }}</p>
                                                         @endif
                                                     @endforeach
 

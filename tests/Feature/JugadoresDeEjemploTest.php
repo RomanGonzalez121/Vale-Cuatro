@@ -93,7 +93,7 @@ class JugadoresDeEjemploTest extends TestCase
 
         // En la pantalla, cada uno lleva la marca.
         $pagina = $this->get('/ranking')->assertOk()->getContent();
-        $this->assertSame($cuantos, preg_match_all('/<\/svg>\s*bot\s*<\/span>/', $pagina));
+        $this->assertSame($cuantos, preg_match_all('/<\/svg>\s*máquina\s*<\/span>/u', $pagina));
 
         // Sembrar otra vez no juega nada ni duplica a nadie: se puede correr en cada publicación.
         $this->assertSame(0, $ejemplo->sembrar($mesa, vueltas: 1));

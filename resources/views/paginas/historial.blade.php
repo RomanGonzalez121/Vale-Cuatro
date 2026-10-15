@@ -108,7 +108,7 @@
                                     @elseif ($partida['practica'])
                                         {{ $partida['practica'] }}.
                                     @elseif ($deACuatro)
-                                        De a cuatro, con un bot de compañero{{ $partida['revancha'] ? ', revancha' : '' }}.
+                                        De a cuatro, con la máquina de compañero{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @else
                                         Mano a mano{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @endif
@@ -158,7 +158,7 @@
                             <form method="POST" action="{{ route('jugar') }}">
                                 @csrf
                                 <button type="submit" class="boton boton-tinta min-h-12 px-5">
-                                    <x-icono nombre="bot" /> Jugar contra el bot
+                                    <x-icono nombre="bot" /> Jugar contra la máquina
                                 </button>
                             </form>
                         @endif

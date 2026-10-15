@@ -1455,3 +1455,13 @@ Es una cuenta hecha en el servidor con tus tres cartas y va solo en tu paso de l
 - **No se probó con lector de pantalla.** Queda para el pulido final.
 - **Sin `code-review` con la skill:** fue revisión propia sobre lo cambiado.
 - Capturas en `docs/capturas/`: `perfil.png`, `perfil-celular.png`, `perfil-dorso.png`, `dorsos.png`, `ranking-con-categorias.png`, `mesa-rival-con-dorso-celular.png` y `mesa-ayuda-del-tanto-celular.png`.
+
+## "La máquina" en vez de "bot"
+
+Román pidió que la palabra "bot" no se viera: es técnica, en inglés, y desentonaba con un sitio que habla como en un club. La regla del proyecto pide decir abiertamente qué es simulado, así que la palabra nueva no podía esconder que no es una persona: se descartaron "el club" o "la casa". Quedó **"la máquina"**, que es como se dice acá ("jugar contra la máquina").
+
+- Cambian solo los textos que se ven: botones ("Jugar contra la máquina"), niveles ("Máquina intermedia"), la mesa ("Ganó la máquina", "Juega la máquina"), la marca de los jugadores de ejemplo en el ranking, el historial, el torneo, los desafíos, los modos y el panel.
+- El código sigue diciendo `Bot` (`BotDificil`, `nivel_bot`): no lo ve nadie y cambiarlo no aporta nada.
+- "Máquina" es femenino y los niveles se dicen en masculino ("nivel Intermedio"), así que se sumó `Nivel::deLaMaquina()` para concordar: "Máquina intermedia", "contra la máquina difícil".
+- La palabra es más larga: en el celular, la fila "Contra la máquina / Con otra persona" de los modos ya no entraba en un renglón y empujaba el botón de jugar debajo de la barra de abajo. Va un punto más chica en el celular; el botón quedó 4 px más arriba que antes.
+- Probado: la suite entera, las siete pruebas de navegador, y el inicio, los modos y la mesa medidos a 360 x 740, 360 x 640 y 1355 x 638, sin scroll de costado.

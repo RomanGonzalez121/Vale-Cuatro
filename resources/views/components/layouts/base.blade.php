@@ -1,6 +1,6 @@
 @props([
     'titulo' => null,
-    'descripcion' => 'Truco argentino online, mano a mano: contra el bot o contra otra persona por un link.',
+    'descripcion' => 'Truco argentino online, mano a mano: contra la máquina o contra otra persona por un link.',
     'superficie' => 'naipe',
     'encabezado' => true,
     'pie' => true,

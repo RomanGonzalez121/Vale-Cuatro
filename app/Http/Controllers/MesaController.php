@@ -399,7 +399,7 @@ class MesaController extends Controller
     {
         $asiento = $this->asientoDe($partida, $request);
         $tanteo = $this->mesa->reconstruir($partida)->tanteo();
-        $rival = $partida->entre_personas ? 'tu rival' : 'el bot';
+        $rival = $partida->entre_personas ? 'tu rival' : 'la máquina';
 
         // De a cuatro el tanteo es de la pareja: la de la persona es la primera.
         if ($partida->deACuatro()) {
@@ -421,7 +421,7 @@ class MesaController extends Controller
         }
 
         [$propias, $ajenas] = $serie->marcadorDesde($asiento);
-        $rival = $partida->entre_personas ? 'tu rival' : 'el bot';
+        $rival = $partida->entre_personas ? 'tu rival' : 'la máquina';
 
         return " La serie quedó {$propias} a {$ajenas}: ".($serie->ganador === $asiento ? 'la ganaste.' : "la ganó {$rival}.");
     }

@@ -26,7 +26,7 @@ const ALTO_QUE_OCUPA = 0.92;
 export default ({ resumen, rival, cuadros, manos }) => ({
     // Lo que la lista del historial dice de esta partida: quién ganó, el tanteo, contra quién, cuándo.
     resumen,
-    // Cómo se nombra al rival en medio de una frase: "el bot" o el apodo de la otra persona.
+    // Cómo se nombra al rival en medio de una frase: "la máquina" o el apodo de la otra persona.
     rival,
     cuadros,
     // En qué cuadro empieza cada mano.
@@ -95,7 +95,7 @@ export default ({ resumen, rival, cuadros, manos }) => ({
     /** Qué cartas del rival se ven: las del bot, todas; las de otra persona, solo las que se vieron en la mesa. */
     get nota() {
         if (this.deACuatro) {
-            return 'Jugaste con un bot de compañero. Acá se ven las cartas de los cuatro.';
+            return 'Jugaste con la máquina de compañero. Acá se ven las cartas de los cuatro.';
         }
 
         return this.resumen.bot ? 'Acá se ven las cartas de los dos.' : `De ${this.rival} se ven solo las cartas que jugó o mostró en la mesa.`;
@@ -107,7 +107,7 @@ export default ({ resumen, rival, cuadros, manos }) => ({
             return { vos: ' nuestra', rival: ' de ellos', parda: ' parda' }[this.estado.bazas[numero]] ?? '';
         }
 
-        return { vos: ', tuya', rival: this.resumen.bot ? ', del bot' : ', del rival', parda: ', parda' }[this.estado.bazas[numero].ganador] ?? '';
+        return { vos: ', tuya', rival: this.resumen.bot ? ', de la máquina' : ', del rival', parda: ', parda' }[this.estado.bazas[numero].ganador] ?? '';
     },
 
     /** De a cuatro, en la baza que está en la cruz: la carta que perdió se apaga y la que ganó queda arriba. */

@@ -109,7 +109,7 @@ export default (inicial, pedidos) => {
             const quien = OTROS.find((asiento) => this.loEsperan(asiento));
 
             // Con un canto sin contestar pueden ser los dos rivales: contesta el primero.
-            return quien === undefined || this.vista.pendiente ? 'Juegan los bots.' : `Juega ${this.nombre(quien)}.`;
+            return quien === undefined || this.vista.pendiente ? 'Juega la máquina.' : `Juega ${this.nombre(quien)}.`;
         },
 
         seFue(asiento) {

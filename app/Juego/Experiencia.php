@@ -38,9 +38,9 @@ enum Experiencia: int
     public function detalle(): string
     {
         return match ($this) {
-            self::Aprendiendo => 'Entrás contra el bot fácil y ves tu tanto de envido ya sumado junto a tus cartas.',
-            self::Seguido => 'Entrás contra el bot intermedio, sin ayudas.',
-            self::DeAnios => 'Entrás contra el bot difícil, sin ayudas.',
+            self::Aprendiendo => 'Entrás contra la máquina fácil y ves tu tanto de envido ya sumado junto a tus cartas.',
+            self::Seguido => 'Entrás contra la máquina intermedia, sin ayudas.',
+            self::DeAnios => 'Entrás contra la máquina difícil, sin ayudas.',
         };
     }
 

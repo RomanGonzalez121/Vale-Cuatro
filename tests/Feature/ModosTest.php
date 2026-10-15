@@ -86,7 +86,7 @@ class ModosTest extends TestCase
             $this->assertSame($elegido ? $nivel->value : 0, substr_count($botones[$i], 'class="fosforo puesto"'));
 
             // En la fila va el nombre corto; el completo va arriba de la frase, dicho como en la mesa.
-            $this->assertStringContainsString('Bot '.mb_strtolower($nivel->nombre())."</span>{$nivel->detalle()}", $html);
+            $this->assertStringContainsString('Máquina '.$nivel->deLaMaquina()."</span>{$nivel->detalle()}", $html);
         }
 
         // El nivel viaja en el formulario, y sin tocar nada es el de siempre.
@@ -102,7 +102,7 @@ class ModosTest extends TestCase
         $html = $this->actingAs($jugador)->get('/modos')->assertOk()
             ->assertSee('Tenés una partida sin terminar contra Difícil.')
             ->assertSee('Seguir la partida')
-            ->assertDontSee('Jugar contra el bot')
+            ->assertDontSee('Jugar contra la máquina')
             ->getContent();
 
         $botones = $this->botonesDeNivel($html);
@@ -125,7 +125,7 @@ class ModosTest extends TestCase
      */
     private function botonesDeNivel(string $html): array
     {
-        preg_match('/<div[^>]*aria-label="Nivel del bot">(.*?)<\/div>/s', $html, $grupo);
+        preg_match('/<div[^>]*aria-label="Nivel de la máquina">(.*?)<\/div>/s', $html, $grupo);
         preg_match_all('/<button.*?<\/button>/s', $grupo[1] ?? '', $botones);
 
         return $botones[0];
@@ -138,7 +138,7 @@ class ModosTest extends TestCase
         $this->actingAs(Jugador::factory()->invitado()->create())->get('/modos')
             ->assertOk()
             ->assertDontSee('sin terminar')
-            ->assertSee('Jugar contra el bot');
+            ->assertSee('Jugar contra la máquina');
     }
 
     public function test_lo_que_falta_esta_dicho_y_no_se_puede_jugar(): void
@@ -244,7 +244,7 @@ class ModosTest extends TestCase
     {
         $html = $this->get('/')->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/jugar"[^>]*>.*?Jugar contra el bot.*?<\/form>/s', $html);
+        $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/jugar"[^>]*>.*?Jugar contra la máquina.*?<\/form>/s', $html);
     }
 
     public function test_el_catalogo_de_juegos_esta_bien_armado(): void

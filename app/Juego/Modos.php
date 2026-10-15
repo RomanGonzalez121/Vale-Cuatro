@@ -32,7 +32,7 @@ final class Modos
                 'icono' => 'mano-a-mano',
                 'resumen' => 'Uno contra uno, a 30 puntos y con flor. El truco de siempre.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Entrás sin registrarte y jugás ya.', 'boton' => 'Jugar contra el bot', 'ruta' => 'jugar', 'icono' => 'bot', 'niveles' => Nivel::cases()],
+                    ['clave' => 'bots', 'nombre' => 'Contra la máquina', 'detalle' => 'Entrás sin registrarte y jugás ya.', 'boton' => 'Jugar contra la máquina', 'ruta' => 'jugar', 'icono' => 'bot', 'niveles' => Nivel::cases()],
                     ['clave' => 'personas', 'nombre' => 'Con otra persona', 'detalle' => 'Le mandás un link a alguien y juegan en vivo. Entrás sin registrarte.', 'boton' => 'Invitar a jugar', 'ruta' => 'invitar', 'icono' => 'invitar'],
                 ],
             ],
@@ -43,7 +43,7 @@ final class Modos
                 'icono' => 'de-a-cuatro',
                 'resumen' => 'Dos contra dos, con señas entre compañeros.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Con bots', 'detalle' => 'Un bot de compañero y dos de rivales.', 'boton' => 'Jugar de a cuatro', 'ruta' => 'jugar', 'icono' => 'de-a-cuatro', 'niveles' => Nivel::cases(), 'campos' => ['asientos' => 4], 'serie' => false],
+                    ['clave' => 'bots', 'nombre' => 'Con la máquina', 'detalle' => 'La máquina juega de compañero y de rivales.', 'boton' => 'Jugar de a cuatro', 'ruta' => 'jugar', 'icono' => 'de-a-cuatro', 'niveles' => Nivel::cases(), 'campos' => ['asientos' => 4], 'serie' => false],
                     ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Armás la pareja por link y juegan en vivo.', 'boton' => null],
                 ],
             ],
@@ -54,7 +54,7 @@ final class Modos
                 'icono' => 'torneo',
                 'resumen' => 'Cuatro u ocho jugadores, eliminación directa y las llaves a la vista.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra bots', 'detalle' => 'Jugás tus partidas y las demás se resuelven solas.', 'boton' => 'Armar el torneo', 'ruta' => 'torneo.crear', 'icono' => 'torneo', 'lugares' => Torneos::LUGARES],
+                    ['clave' => 'bots', 'nombre' => 'Contra la máquina', 'detalle' => 'Jugás tus partidas y las demás se resuelven solas.', 'boton' => 'Armar el torneo', 'ruta' => 'torneo.crear', 'icono' => 'torneo', 'lugares' => Torneos::LUGARES],
                     ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Se inscriben por link y se juega en vivo.', 'boton' => null],
                 ],
             ],
@@ -63,9 +63,9 @@ final class Modos
                 'nombre' => 'Desafíos',
                 'renglones' => ['Desafíos'],
                 'icono' => 'desafio',
-                'resumen' => 'Manos armadas con un objetivo: ganar esa mano, o lograr que el bot no quiera.',
+                'resumen' => 'Manos armadas con un objetivo: ganar esa mano, o lograr que la máquina no quiera.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Ocho manos. Cada una reparte siempre las mismas cartas.', 'boton' => 'Ver los desafíos', 'ruta' => 'desafios', 'icono' => 'desafio', 'enlace' => true],
+                    ['clave' => 'bots', 'nombre' => 'Contra la máquina', 'detalle' => 'Ocho manos. Cada una reparte siempre las mismas cartas.', 'boton' => 'Ver los desafíos', 'ruta' => 'desafios', 'icono' => 'desafio', 'enlace' => true],
                 ],
             ],
             [
@@ -75,7 +75,7 @@ final class Modos
                 'icono' => 'escalera',
                 'resumen' => 'Ocho escalones en orden. Pasás uno y se abre el siguiente.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra el bot', 'detalle' => 'Cada escalón es un rival más difícil o una mano con objetivo.', 'boton' => 'Ver la escalera', 'ruta' => 'escalera', 'icono' => 'escalera', 'enlace' => true],
+                    ['clave' => 'bots', 'nombre' => 'Contra la máquina', 'detalle' => 'Cada escalón es un rival más difícil o una mano con objetivo.', 'boton' => 'Ver la escalera', 'ruta' => 'escalera', 'icono' => 'escalera', 'enlace' => true],
                 ],
             ],
         ];

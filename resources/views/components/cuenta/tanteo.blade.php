@@ -9,7 +9,7 @@
     <div class="mt-6 flex flex-col gap-6 text-[clamp(1.1rem,2.7vw,2.25rem)] lg:mt-9 lg:gap-9">
         <x-tanteador nombre="Tu apodo" nombre-vivo="apodo.trim() || 'Tu apodo'" :puntos="12"
             clase-nombre="break-all text-[max(1.0625rem,0.72em)] font-extrabold tracking-tight" />
-        <x-tanteador nombre="Bot, nivel 2" :puntos="9" clase-nombre="text-[max(1.0625rem,0.72em)] font-extrabold tracking-tight" />
+        <x-tanteador nombre="La máquina" :puntos="9" clase-nombre="text-[max(1.0625rem,0.72em)] font-extrabold tracking-tight" />
     </div>
 
     <p class="mt-6 max-w-[40ch] text-sm leading-relaxed lg:mt-9">Los puntos son de ejemplo: cada fósforo es uno, de a cinco por grupo.</p>

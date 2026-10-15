@@ -46,7 +46,7 @@ class PaginasTest extends TestCase
     {
         $respuesta = $this->get('/identidad')->assertOk();
 
-        foreach (['Espada', 'Basto', 'Oro', 'Copa', 'Envido', 'Truco', 'Irse al mazo', 'Quién es mano', 'Repartir', 'Quiero', 'No quiero', 'Tiempo', 'Bot', 'Invitar', 'Ranking', 'Repetir partida', 'Sonido'] as $icono) {
+        foreach (['Espada', 'Basto', 'Oro', 'Copa', 'Envido', 'Truco', 'Irse al mazo', 'Quién es mano', 'Repartir', 'Quiero', 'No quiero', 'Tiempo', 'Máquina', 'Invitar', 'Ranking', 'Repetir partida', 'Sonido'] as $icono) {
             $respuesta->assertSee($icono);
         }
     }

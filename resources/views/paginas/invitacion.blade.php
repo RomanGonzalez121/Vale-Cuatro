@@ -31,7 +31,7 @@
                     <form method="POST" action="{{ route('jugar') }}">
                         @csrf
                         <button type="submit" class="boton boton-naipe min-h-12 px-5">
-                            <x-icono nombre="bot" /> Jugar contra el bot
+                            <x-icono nombre="bot" /> Jugar contra la máquina
                         </button>
                     </form>
                     <a href="{{ route('modos') }}" class="enlace-nav text-lg font-bold">Ver otros modos</a>

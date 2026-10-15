@@ -209,7 +209,7 @@
             <section aria-labelledby="titulo-experiencia">
                 <h2 id="titulo-experiencia" class="text-3xl font-extrabold tracking-tight">¿Cuánto truco sabés?</h2>
                 <p class="mt-3 max-w-[46ch] leading-relaxed">
-                    Solo cambia contra qué bot entrás cuando no elegís y qué ayudas ves. No cambia las reglas, ni tu categoría, ni lo que ve tu rival.
+                    Solo cambia contra qué nivel de la máquina entrás cuando no elegís y qué ayudas ves. No cambia las reglas, ni tu categoría, ni lo que ve tu rival.
                 </p>
 
                 <form method="POST" action="{{ route('perfil.experiencia') }}" class="mt-6 flex flex-col">

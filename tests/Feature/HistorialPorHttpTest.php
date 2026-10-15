@@ -25,7 +25,7 @@ class HistorialPorHttpTest extends TestCase
         $this->get('/historial')
             ->assertOk()
             ->assertSee('Todavía no terminaste ninguna partida.')
-            ->assertSee('Jugar contra el bot')
+            ->assertSee('Jugar contra la máquina')
             ->assertSee('action="'.route('jugar').'"', false)
             // Ni una partida de ejemplo: lo que no se jugó no se muestra.
             ->assertDontSee('Ver de nuevo')
@@ -45,7 +45,7 @@ class HistorialPorHttpTest extends TestCase
             ->assertOk()
             ->assertSee($resumen['gano'] ? 'Ganaste' : 'Perdiste')
             ->assertSee("{$resumen['vos']} a {$resumen['ellos']}")
-            ->assertSee('Contra Bot intermedio')
+            ->assertSee('Contra Máquina intermedia')
             ->assertSee('href="'.route('historial.ver', $partida->id).'"', false)
             ->assertDontSee('href="'.route('historial.ver', $ajena->id).'"', false)
             ->assertDontSee('Jugás sin cuenta');
@@ -158,7 +158,7 @@ class HistorialPorHttpTest extends TestCase
         $this->assertSame($delCartel, $deLaPagina);
         $this->assertSame(['resumen', 'rival', 'cuadros', 'manos'], array_keys($delCartel));
         $this->assertSame($partida->id, $delCartel['resumen']['id']);
-        $this->assertSame('el bot', $delCartel['rival']);
+        $this->assertSame('la máquina', $delCartel['rival']);
     }
 
     public function test_la_lista_trae_el_cartel_y_cada_link_sabe_donde_pedir_su_repeticion(): void

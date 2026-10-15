@@ -128,13 +128,13 @@ class HistorialDeACuatroTest extends TestCase
         $final = $this->mesa()->reconstruir($partida)->tanteo();
 
         $this->assertSame(4, $resumen['asientos']);
-        $this->assertSame('dos bots de nivel intermedio', $resumen['rival']);
+        $this->assertSame('la máquina, nivel intermedio', $resumen['rival']);
         $this->assertSame([$partida->ganador === 0, $final[0], $final[1]], [$resumen['gano'], $resumen['vos'], $resumen['ellos']]);
 
         $this->actingAs($jugador)->get('/historial')->assertOk()
             ->assertSee($partida->ganador === 0 ? 'Ganaron' : 'Perdieron')
-            ->assertSee('Contra dos bots de nivel intermedio')
-            ->assertSee('De a cuatro, con un bot de compañero')
+            ->assertSee('Contra la máquina, nivel intermedio')
+            ->assertSee('De a cuatro, con la máquina de compañero')
             ->assertSee('Nosotros')
             ->assertSee(route('historial.cuadros', $partida), false);
 

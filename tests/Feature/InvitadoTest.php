@@ -33,9 +33,9 @@ class InvitadoTest extends TestCase
         // "Jugar" también está en el menú: se busca el formulario del botón grande.
         preg_match_all('/<form[^>]*action="[^"]*\/jugar"[^>]*>(.*?)<\/form>/s', $html, $formularios);
 
-        $formulario = collect($formularios[1])->first(fn (string $contenido) => str_contains($contenido, 'Jugar contra el bot'));
+        $formulario = collect($formularios[1])->first(fn (string $contenido) => str_contains($contenido, 'Jugar contra la máquina'));
 
-        $this->assertNotNull($formulario, 'La portada no tiene el botón de jugar contra el bot.');
+        $this->assertNotNull($formulario, 'La portada no tiene el botón de jugar contra la máquina.');
 
         // El único campo es el de seguridad que agrega Laravel, y va oculto.
         preg_match_all('/<(?:input|select|textarea)\b[^>]*>/', $formulario, $campos);
