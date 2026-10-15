@@ -17,7 +17,7 @@
  | vista (las de los rivales no viajan nunca) y las propias se mandan aparte, también mientras juegan los bots.
  */
 
-import { cartasDelTanto, nombreDe, numeroDe, paloDe, plantilla } from './cartas';
+import { asentarEnLaBaza, cartasDelTanto, nombreDe, numeroDe, paloDe, plantilla } from './cartas';
 import mesa, { CALLADO, CANTOS, NIVEL_DE_TRUCO, TRUCOS } from './mesa';
 
 // El lugar de cada asiento. Se juega hacia la derecha: después de vos tira el de tu derecha.
@@ -474,7 +474,7 @@ export default (inicial, pedidos) => {
                 const hueco = this.hueco(lugar);
                 const jugada = baza?.jugadas.find(([otro]) => otro === asiento);
 
-                hueco.replaceChildren(...(jugada ? [plantilla(jugada[1])] : []));
+                hueco.replaceChildren(...(jugada ? [asentarEnLaBaza(plantilla(jugada[1]))] : []));
                 delete hueco.dataset.gana;
                 delete hueco.dataset.pierde;
 
@@ -484,7 +484,10 @@ export default (inicial, pedidos) => {
             });
 
             this.$refs.mano.removeAttribute('data-tanto');
-            [...this.$refs.mano.children].forEach((lugar) => lugar.replaceChildren());
+            [...this.$refs.mano.children].forEach((lugar) => {
+                lugar.replaceChildren();
+                lugar.hidden = false;
+            });
 
             // Se reparte de a una para cada uno, en ronda, y la primera es para el mano.
             const turnoDe = (asiento) => (asiento - vista.mano + 4) % 4;
@@ -553,6 +556,7 @@ export default (inicial, pedidos) => {
 
             this.apoyar(origen.firstElementChild, this.hueco('vos'), desde);
             origen.remove();
+            this.reacomodarMano();
         },
 
         resolverBaza(hecho, vista) {

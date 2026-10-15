@@ -27,7 +27,11 @@
  */
 
 import { BLOQUEADOS, PRENDIDOS, SIN_AVISOS, apagarAvisos, avisarPresencia, estadoDeAvisos, prenderAvisos } from './avisos';
-import { LLEGADA, cantoEnRenglones, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla } from './cartas';
+import { LLEGADA, asentarEnLaBaza, cantoEnRenglones, cartasDelTanto, llegarDelMazo, movimientoReducido, nombreDe, plantilla, resorte } from './cartas';
+
+// La carta cae en la baza con un resorte de poco rebote: se pasa apenas y se apoya. Y la mano se junta igual.
+const CAE = resorte(0.4, 0.15);
+const SE_JUNTA = resorte(0.38, 0.12);
 import { hacerArrastrable } from './arrastre';
 import { escucharPartida } from './echo';
 import { apagarSonido, audioAbierto, guardarSonido, prenderSonido, sonar, sonidoGuardado } from './sonido';
@@ -1667,24 +1671,26 @@ export default (inicial, pedidos) => ({
     },
 
     /**
-     * Mueve una carta a su lugar en la baza y la anima desde donde estaba,
-     * para que se vea de dónde salió.
+     * Mueve una carta a su lugar en la baza y la anima desde donde estaba, para que se vea de dónde salió.
+     * Cae con un resorte de poco rebote y queda con su giro de pocos grados: ninguna baza queda con regla.
      */
     apoyar(carta, destino, desde) {
-        destino.replaceChildren(carta);
+        destino.replaceChildren(asentarEnLaBaza(carta));
 
+        const giro = carta.style.transform;
+        // Se mide sin el giro, para que el vuelo salga justo de donde estaba la carta.
+        carta.style.transform = '';
         const hasta = carta.getBoundingClientRect();
+        carta.style.transform = giro;
+        // Desde el centro de la carta, como su giro: así el vuelo termina justo donde queda apoyada.
+        const escala = desde.width / hasta.width;
+        const x = desde.left - hasta.left - ((1 - escala) * hasta.width) / 2;
+        const y = desde.top - hasta.top - ((1 - escala) * hasta.height) / 2;
         const cuadros = this.reducido
             ? [{ opacity: 0 }, { opacity: 1 }]
-            : [
-                {
-                    transformOrigin: 'top left',
-                    transform: `translate(${desde.left - hasta.left}px, ${desde.top - hasta.top}px) scale(${desde.width / hasta.width})`,
-                },
-                { transformOrigin: 'top left', transform: 'none' },
-            ];
+            : [{ transform: `translate(${x}px, ${y}px) scale(${escala})` }, { transform: giro }];
 
-        carta.animate(cuadros, { duration: this.reducido ? 150 : 260, easing: LLEGADA });
+        carta.animate(cuadros, this.reducido ? { duration: 150, easing: LLEGADA } : CAE);
         // Suena cuando la carta está llegando al paño, no cuando sale de la mano.
         this.sonar('carta', this.reducido ? 0 : 150);
     },
@@ -1945,7 +1951,7 @@ export default (inicial, pedidos) => ({
                 const baza = vista.bazas[numero];
                 const jugada = baza?.jugadas.find(([otro]) => otro === asiento);
 
-                hueco.replaceChildren(...(jugada ? [plantilla(jugada[1])] : []));
+                hueco.replaceChildren(...(jugada ? [asentarEnLaBaza(plantilla(jugada[1]))] : []));
                 delete hueco.dataset.gana;
                 delete hueco.dataset.pierde;
 
@@ -1957,7 +1963,10 @@ export default (inicial, pedidos) => ({
 
         this.$refs.rival.replaceChildren();
         this.$refs.mano.removeAttribute('data-tanto');
-        [...this.$refs.mano.children].forEach((lugar) => lugar.replaceChildren());
+        [...this.$refs.mano.children].forEach((lugar) => {
+            lugar.replaceChildren();
+            lugar.hidden = false;
+        });
 
         // Se reparte de a una para cada uno, y la primera es para el mano, como en la mesa de verdad.
         const soyMano = vista.mano === this.yo;
@@ -2136,6 +2145,39 @@ export default (inicial, pedidos) => ({
 
         this.apoyar(origen.firstElementChild, this.hueco(baza, 'vos'), desde);
         origen.remove();
+        this.reacomodarMano();
+    },
+
+    /**
+     * Cuando sale una carta de la mano, las que quedan se juntan con un resorte, como cuando se acomodan
+     * las cartas en la mano de verdad. El lugar vacío se esconde mientras quede alguna carta; sin cartas,
+     * vuelven los tres lugares (ahí va el cierre de la mano) y la fila mide lo mismo.
+     */
+    reacomodarMano() {
+        const lugares = [...this.$refs.mano.children];
+        const conCarta = lugares.filter((lugar) => lugar.firstElementChild);
+
+        if (conCarta.length === 0) {
+            lugares.forEach((lugar) => (lugar.hidden = false));
+
+            return;
+        }
+
+        const antes = new Map(conCarta.map((lugar) => [lugar, lugar.getBoundingClientRect().left]));
+
+        lugares.forEach((lugar) => (lugar.hidden = ! lugar.firstElementChild));
+
+        if (this.reducido) {
+            return;
+        }
+
+        conCarta.forEach((lugar) => {
+            const corrida = antes.get(lugar) - lugar.getBoundingClientRect().left;
+
+            if (Math.abs(corrida) > 0.5) {
+                lugar.firstElementChild.animate([{ transform: `translateX(${corrida}px)` }, { transform: 'none' }], SE_JUNTA);
+            }
+        });
     },
 
     /**

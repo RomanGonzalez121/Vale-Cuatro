@@ -13,6 +13,58 @@ const NUMEROS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 
 export const movimientoReducido = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+const HAY_LINEAR = typeof CSS !== 'undefined' && CSS.supports('transition-timing-function', 'linear(0, 1)');
+
+/**
+ * Un resorte sin librerías: las opciones de una animación (WAAPI) cuya curva es la de un resorte de verdad,
+ * muestreada en una curva linear(). "duracion" es en segundos y "rebote" va de 0 (sin rebote) a 1, como
+ * los resortes de Apple. Con poco rebote se siente igual de rápido que una curva común, y al final se pasa
+ * apenas y vuelve: es lo que hace que la carta parezca apoyarse. Si el navegador no entiende linear(),
+ * usa la curva de llegada del sitio.
+ *
+ * @returns {{ duration: number, easing: string }}
+ */
+export function resorte(duracion, rebote) {
+    if (! HAY_LINEAR) {
+        return { duration: Math.round(duracion * 700), easing: LLEGADA };
+    }
+
+    const pulso = (2 * Math.PI) / duracion;
+    const freno = 1 - rebote;
+    const vaiven = pulso * Math.sqrt(1 - freno * freno);
+    const puntos = [];
+
+    for (let i = 0; i <= 32; i++) {
+        const t = (duracion * i) / 32;
+        const valor = 1 - Math.exp(-freno * pulso * t) * (Math.cos(vaiven * t) + ((freno * pulso) / vaiven) * Math.sin(vaiven * t));
+
+        puntos.push(i === 32 ? '1' : valor.toFixed(4));
+    }
+
+    return { duration: Math.round(duracion * 1000), easing: `linear(${puntos.join(', ')})` };
+}
+
+/**
+ * El giro con que queda una carta en la baza: unos pocos grados, distinto para cada carta y siempre el
+ * mismo para la misma, así al recargar la página la baza se ve igual. Ninguna baza queda dibujada con regla.
+ */
+export function giroEnLaBaza(carta) {
+    let suma = 0;
+
+    for (const letra of String(carta)) {
+        suma = (suma * 31 + letra.charCodeAt(0)) % 997;
+    }
+
+    return (suma % 7) - 3;
+}
+
+/** Deja la carta apoyada en la baza con su giro (y sin la inclinación que traía de la mano). */
+export function asentarEnLaBaza(dibujo) {
+    dibujo.style.transform = `rotate(${giroEnLaBaza(dibujo.dataset.carta ?? '')}deg)`;
+
+    return dibujo;
+}
+
 export function numeroDe(carta) {
     return Number(carta.split('-')[0]);
 }

@@ -167,6 +167,77 @@ body:has(.mesa-de-marmol) {
     border-color: #7a5a3c;
 }
 
+/*
+ | De noche cada mesa baja la luz, como el paño de fábrica: sus colores se multiplican por un mismo factor
+ | (0,7; el mármol, 0,78) y sus dibujos se oscurecen en la misma proporción (brightness sobre el adorno), así
+ | las vetas y los borrones siguen en su lugar respecto del fondo. El mármol de noche es el mismo mármol con
+ | la luz baja (lo eligió Román): su ocre y el palito de los fósforos bajan un poco más para seguir leyéndose.
+ | Las muestras del perfil llevan encima una capa pareja del mismo oscuro. Los colores y su contraste están
+ | en Paleta::MESAS ("noche").
+ */
+:root[data-modo='noche'] body:has(.mesa-de-pano-petroleo) {
+    --color-pano: #143139;
+    --color-pano-hondo: #0d2229;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-pizarron) {
+    --color-pano: #1c221f;
+    --color-pano-hondo: #131615;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-madera) {
+    --color-pano: #342218;
+    --color-pano-hondo: #20150f;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-marmol) {
+    --color-pano: #b6b3ae;
+    --color-pano-hondo: #2d3130;
+}
+
+:root[data-modo='noche'] :is(.mesa-de-pizarron, .mesa-de-madera) .mesa-campo::before,
+:root[data-modo='noche'] :is(.mesa-de-pizarron, .mesa-de-madera) .mesa-campo::after {
+    filter: brightness(0.7);
+}
+
+:root[data-modo='noche'] .mesa-de-marmol .mesa-campo::before,
+:root[data-modo='noche'] .mesa-de-marmol .mesa-campo::after {
+    filter: brightness(0.78);
+}
+
+:root[data-modo='noche'] :is(.mesa-de-marmol .mesa-campo, :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='marmol']) {
+    --color-oro: #5e3b07;
+    --color-fosforo: #74592b;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pano-petroleo'] {
+    background-color: #143139;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pizarron'] {
+    background:
+        linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)),
+        url('../mesas/pizarron-fantasma-arriba.svg') top 6% left 5% / min(34%, 10rem) auto no-repeat,
+        url('../mesas/pizarron-borrones.svg') 0 0 / 100% 100% no-repeat,
+        #28302d;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='madera'] {
+    background:
+        linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)),
+        url('../mesas/madera-nudo.svg') left 8% bottom 10% / min(40%, 8rem) auto no-repeat,
+        url('../mesas/madera-veta.svg') 0 0 / 100% 100% no-repeat,
+        #4a3022;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='marmol'] {
+    background:
+        linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)),
+        url('../mesas/marmol-arriba.svg') top left / min(70%, 26rem) auto no-repeat,
+        url('../mesas/marmol-abajo.svg') bottom right / min(70%, 26rem) auto no-repeat,
+        #e9e6df;
+}
+
 /* El pizarrón: marco de madera, la raya de tiza adentro, pasadas de borrador y lo que quedó de otras partidas. */
 .mesa-de-pizarron .mesa-campo::before {
     inset: 0.35rem;
@@ -1423,6 +1494,22 @@ html:has(body.superficie-pano) {
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;
+    }
+
+    /*
+     | Con un mouse, el dibujo de la carta bajo el cursor se inclina apenas hacia él (arrastre.js): sigue
+     | al cursor rápido y, al salir, se endereza un poco más despacio. Arrastrándola no se inclina así.
+     */
+    .naipe-jugable > .carta {
+        transition: transform 260ms var(--ease-llegada);
+    }
+
+    .naipe-jugable.al-cursor > .carta {
+        transition-duration: 120ms;
+    }
+
+    .naipe-jugable.arrastrando > .carta {
+        transition: none;
     }
 
     /* Mientras se arrastra, la carta va por encima de todo y sigue al dedo sin demora. */
@@ -4557,6 +4644,13 @@ html:has(body.superficie-pano) {
     /* Las cartas del tanto no se levantan: alcanza con que la otra se apague. */
     .mesa-mano .naipe-jugable {
         transition: opacity 150ms ease;
+    }
+
+    /* La carta no se inclina hacia el cursor (arrastre.js tampoco la mueve). */
+    .naipe-jugable > .carta,
+    .naipe-jugable.al-cursor > .carta {
+        transform: none;
+        transition: none;
     }
 
     .enlace-nav::before,

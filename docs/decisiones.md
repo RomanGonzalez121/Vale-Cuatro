@@ -1643,3 +1643,30 @@ Se descartó hacerlas con texturas generadas (ruido que imita la piedra o la vet
 - **En un navegador real:** las cuatro mesas en la mesa de juego en 1355 x 638 y 360 x 740; el perfil con cada pestaña nueva, probando y usando una pieza de cada una, en los dos tamaños.
 - **No se probó:** la mesa de a cuatro con cada mesa nueva (usa las mismas reglas); lector de pantalla (pulido final). Un test de la mesa ("recargar la mesa vuelve a la misma partida") volvió a fallar una vez en la corrida completa y pasa solo, como en M22.
 
+## Las mesas de noche y las cartas al estilo Balatro
+
+Román marcó el 15 de octubre de 2026 que las mesas que se ganan no cambiaban con el modo de día y de noche, y pidió que las cartas se movieran como en Balatro. Se buscaron referencias y eligió las recomendadas.
+
+### Las mesas de noche
+
+- **Cada mesa baja la luz, como el paño de fábrica.** Sus colores se multiplican por un mismo factor (0,7; el mármol, 0,78) y sus dibujos se oscurecen en la misma proporción (`brightness` sobre el adorno del campo), así las vetas, los borrones y el marco siguen en su lugar respecto del fondo. Las muestras del perfil llevan encima una capa pareja del mismo oscuro.
+- **El mármol de noche es el mismo mármol con la luz baja** (lo eligió Román entre ese, un mármol negro y dejarlo claro). Su ocre del envido y el palito de los fósforos bajan un poco más para seguir leyéndose (medido: 4,8 y 3,1).
+- **Un test exige que toda mesa que se gana tenga su noche**, en `Paleta::MESAS` y en los estilos, con el contraste medido.
+- **Regla para las mesas que ya son oscuras** (Román, mismo día, pensando en el mármol negro que viene): no se oscurecen de noche, porque no se notaría y se perderían contra la página; baja la luz solo de lo claro (marco, vetas, tiza) y las barras pasan a un paso más oscuro que la mesa.
+
+### Las cartas, "Balatro medido"
+
+Balatro no publica su código; lo que se tomó es lo que se observa: las cartas se inclinan hacia donde van, se apoyan con un rebote chico y cada una queda con un pequeño giro. Lo que se descartó: que floten solas todo el tiempo (la regla de "nada en loop" sigue).
+
+- **Al arrastrar,** la carta se inclina según la velocidad del dedo (hasta 14°) y se endereza cuando el dedo se frena; la inclinación se calcula cuadro a cuadro solo mientras dura el arrastre. Si se suelta antes, vuelve con un resorte.
+- **Al jugarla,** cae en la baza con un resorte de poco rebote y queda con su giro de entre −3° y 3°, que sale de la carta misma: al recargar la página la baza se ve igual.
+- **Con un mouse,** la carta bajo el cursor se inclina apenas hacia él, en 3D (hasta 7°). En el celular no, porque no hay cursor.
+- **La mano se junta** con un resorte cuando sale una carta; el lugar vacío se esconde mientras quede alguna y vuelve con la mano vacía, así la fila mide lo mismo.
+- **Los resortes, sin librerías:** `resorte(duracion, rebote)` en `cartas.js` arma una curva `linear()` con la física de un resorte (como los de Apple: una duración y un rebote) y se usa en la Web Animations API. Si el navegador no entiende `linear()`, usa la curva de llegada del sitio. Se le avisó a Román que un resorte con rebote tarda un poco más que el tope de 300 ms en quedar quieto (la caída dura 400 ms, aunque a los 250 ya está casi apoyada).
+- **Con movimiento reducido** no hay inclinación ni resorte: la carta aparece con un fundido, como antes.
+
+### Qué se probó
+
+- **Con tests:** el contraste de noche de cada mesa y que ninguna se quede sin su noche; el test de movimiento (solo se escribe `transform` desde JavaScript, nada en loop, versión reducida).
+- **En un navegador real:** las cuatro mesas de noche en la mesa y en el perfil; el arrastre de costado (se inclinó unos 6° yendo rápido y se enderezó al frenar), la inclinación hacia el cursor, la caída con su giro y la mano que se junta. **No se probó con el dedo en un celular de verdad:** cómo se siente el arrastre lo juzga Román.
+

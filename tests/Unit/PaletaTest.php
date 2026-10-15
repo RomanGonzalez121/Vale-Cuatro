@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Identidad\Paleta;
+use App\Juego\Premios;
 use PHPUnit\Framework\TestCase;
 
 class PaletaTest extends TestCase
@@ -30,6 +31,22 @@ class PaletaTest extends TestCase
                 $contraste,
                 sprintf('%s: %s sobre %s da %.2f y necesita %.1f.', $combinacion['donde'], $combinacion['texto'], $combinacion['fondo'], $contraste, $combinacion['minimo']),
             );
+        }
+    }
+
+    public function test_cada_mesa_que_se_gana_tiene_su_version_de_noche(): void
+    {
+        $estilos = file_get_contents(__DIR__.'/../../resources/css/app.css');
+
+        foreach (array_keys(Premios::POR_NIVEL['mesa']) as $mesa) {
+            if ($mesa === 'fabrica') {
+                continue;
+            }
+
+            $this->assertArrayHasKey($mesa, Paleta::MESAS, "La mesa {$mesa} no tiene sus colores en la paleta.");
+            $this->assertArrayHasKey('noche', Paleta::MESAS[$mesa], "La mesa {$mesa} no tiene su versión de noche.");
+            $this->assertStringContainsString(":root[data-modo='noche'] body:has(.mesa-de-{$mesa})", $estilos, "La mesa {$mesa} no baja la luz de noche en los estilos.");
+            $this->assertStringContainsString(Paleta::MESAS[$mesa]['noche']['mesa'], $estilos, "El color de noche de la mesa {$mesa} no está en los estilos.");
         }
     }
 

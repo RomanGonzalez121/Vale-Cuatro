@@ -127,14 +127,20 @@ class Paleta
      * club. "mesa" es el campo, "barras" el tanteador y la barra de cantos, "texto" lo que se escribe sobre
      * la mesa y "canto" el envido; "adornos", lo que se dibuja en el borde.
      *
-     * @var array<string, array{mesa: string, barras: string, texto: string, canto: string, fosforo: string, adornos: list<string>}>
+     * Cada una tiene su "noche": la misma mesa con la luz baja (sus colores por 0,7; el mármol, por 0,78).
+     *
+     * @var array<string, array{mesa: string, barras: string, texto: string, canto: string, fosforo: string, adornos: list<string>, noche: array{mesa: string, barras: string, canto: string, fosforo: string}}>
      */
     public const MESAS = [
-        'pano-petroleo' => ['mesa' => '#1c4652', 'barras' => '#12313a', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => []],
-        'pizarron' => ['mesa' => '#28302d', 'barras' => '#1b201e', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#7a5a3c', '#ecebe4', '#4d3826', '#8b6a48']],
-        'madera' => ['mesa' => '#4a3022', 'barras' => '#2e1e15', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#a57c48', '#e6d7b5', '#1b120c', '#5b3d2b', '#3c2619']],
+        'pano-petroleo' => ['mesa' => '#1c4652', 'barras' => '#12313a', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => [],
+            'noche' => ['mesa' => '#143139', 'barras' => '#0d2229', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'pizarron' => ['mesa' => '#28302d', 'barras' => '#1b201e', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#7a5a3c', '#ecebe4', '#4d3826', '#8b6a48'],
+            'noche' => ['mesa' => '#1c221f', 'barras' => '#131615', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'madera' => ['mesa' => '#4a3022', 'barras' => '#2e1e15', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#a57c48', '#e6d7b5', '#1b120c', '#5b3d2b', '#3c2619'],
+            'noche' => ['mesa' => '#342218', 'barras' => '#20150f', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
         // La única clara: el texto pasa a tinta, el envido a un ocre del oro y el palito de los fósforos se oscurece.
-        'marmol' => ['mesa' => '#e9e6df', 'barras' => '#3a3f3d', 'texto' => '#161a18', 'canto' => '#8a5a0c', 'fosforo' => '#9a7838', 'adornos' => ['#9c8754', '#b4aea2', '#c4bfb4', '#dad6cd']],
+        'marmol' => ['mesa' => '#e9e6df', 'barras' => '#3a3f3d', 'texto' => '#161a18', 'canto' => '#8a5a0c', 'fosforo' => '#9a7838', 'adornos' => ['#9c8754', '#b4aea2', '#c4bfb4', '#dad6cd'],
+            'noche' => ['mesa' => '#b6b3ae', 'barras' => '#2d3130', 'canto' => '#5e3b07', 'fosforo' => '#74592b']],
     ];
 
     /**
@@ -156,13 +162,16 @@ class Paleta
     {
         $combinaciones = [];
 
-        foreach (self::MESAS as $mesa => $c) {
-            $combinaciones[] = ['texto' => $c['texto'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: texto sobre la mesa"];
-            $combinaciones[] = ['texto' => $c['canto'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: cantos de envido"];
-            $combinaciones[] = ['texto' => '#fbfaf5', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: texto del tanteador y las barras"];
-            $combinaciones[] = ['texto' => '#f0b429', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: puntos del tanteador"];
-            $combinaciones[] = ['texto' => '#e8c98a', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_GRANDE, 'donde' => "Mesa {$mesa}: fósforos del tanteador (gráfico)"];
-            $combinaciones[] = ['texto' => $c['fosforo'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_GRANDE, 'donde' => "Mesa {$mesa}: fósforos del nivel junto al rival (gráfico)"];
+        foreach (self::MESAS as $nombre => $mesa) {
+            foreach (['de día' => $mesa, 'de noche' => ['texto' => $mesa['texto'], ...$mesa['noche']]] as $cuando => $c) {
+                $mesa = "{$nombre} {$cuando}";
+                $combinaciones[] = ['texto' => $c['texto'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: texto sobre la mesa"];
+                $combinaciones[] = ['texto' => $c['canto'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: cantos de envido"];
+                $combinaciones[] = ['texto' => '#fbfaf5', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: texto del tanteador y las barras"];
+                $combinaciones[] = ['texto' => '#f0b429', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: puntos del tanteador"];
+                $combinaciones[] = ['texto' => '#e8c98a', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_GRANDE, 'donde' => "Mesa {$mesa}: fósforos del tanteador (gráfico)"];
+                $combinaciones[] = ['texto' => $c['fosforo'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_GRANDE, 'donde' => "Mesa {$mesa}: fósforos del nivel junto al rival (gráfico)"];
+            }
         }
 
         foreach (self::ANOTADORES as $forma => $c) {
@@ -183,7 +192,7 @@ class Paleta
         $colores = [];
 
         foreach (self::MESAS as $c) {
-            array_push($colores, $c['mesa'], $c['barras'], $c['canto'], $c['fosforo'], ...$c['adornos']);
+            array_push($colores, $c['mesa'], $c['barras'], $c['canto'], $c['fosforo'], ...$c['adornos'], ...array_values($c['noche']));
         }
 
         foreach (self::ANOTADORES as $c) {
