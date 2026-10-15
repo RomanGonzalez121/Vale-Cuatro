@@ -6,18 +6,20 @@ use App\Models\Jugador;
 use App\Models\Resultado;
 
 /**
- * Lo que se gana jugando y se ve: "tu carta" de perfil y el dorso de las cartas propias.
- * Ninguno cambia nada en la mesa: son cómo te ven los demás.
+ * Lo que se gana jugando y se ve: "tu carta" de perfil y el dorso de las cartas. Ninguno cambia nada en la mesa.
  *
- * Las cartas forman un camino en el orden del truco, del 4 al ancho de espada, y cada una se destraba
- * con una cantidad de partidas ganadas (las mismas que cuentan para el ranking). Las categorías son
- * tres tramos de ese camino. Los dorsos se ganan pasando escalones de la escalera del club.
+ * Se destraban subiendo de nivel (App\Juego\Camino; el camino entero está en fichas-de-premios.php). Las
+ * cartas van cada tres niveles en el orden del truco, del 4 de copa de entrada al ancho de espada en el 40.
+ * Tres dorsos se ganan en la escalera del club. Las categorías son tramos de niveles.
  *
- * Qué tiene destrabado cada uno no se guarda: se calcula de sus resultados y de sus progresos. Lo que
- * se guarda es qué eligió, y al leerlo se vuelve a comprobar que lo tenga.
+ * Cada uno ve lo suyo: en tu pantalla todas las cartas boca abajo salen con tu dorso, también las del
+ * rival. Al otro le llega de vos solo el apodo, la categoría y tu carta.
  *
- * La cuenta de administración tiene todas las cartas y los dorsos abiertos, para ver cómo queda cada
- * premio sin inventar partidas. Su categoría no cambia: sale de sus partidas, como la de todos.
+ * Qué tiene destrabado cada uno no se guarda: se calcula de su nivel y de sus progresos. Lo que se guarda
+ * es qué eligió, y al leerlo se vuelve a comprobar que lo tenga.
+ *
+ * La cuenta de administración tiene todo abierto, para ver cómo queda cada premio sin inventar partidas.
+ * Su nivel y su categoría salen de sus partidas, como los de todos.
  */
 final class Premios
 {
@@ -26,88 +28,92 @@ final class Premios
     public const DORSO_DE_FABRICA = 'fabrica';
 
     /**
-     * El camino: cada carta y con cuántas partidas ganadas se destraba. Va de menor a mayor en el orden del truco.
+     * Las cartas y en qué nivel se destraba cada una. Va de menor a mayor en el orden del truco.
      *
      * @var array<string, int>
      */
     public const CAMINO = [
-        '4-copa' => 0,
-        '5-espada' => 2,
-        '6-oro' => 4,
-        '7-copa' => 6,
-        '10-basto' => 8,
-        '11-espada' => 10,
-        '12-oro' => 14,
-        '1-copa' => 18,
-        '2-basto' => 24,
-        '3-copa' => 31,
-        '7-oro' => 40,
-        '7-espada' => 55,
-        '1-basto' => 75,
-        '1-espada' => 100,
+        '4-copa' => 1,
+        '5-espada' => 4,
+        '6-oro' => 7,
+        '7-copa' => 10,
+        '10-basto' => 13,
+        '11-espada' => 16,
+        '12-oro' => 19,
+        '1-copa' => 22,
+        '2-basto' => 25,
+        '3-copa' => 28,
+        '7-oro' => 31,
+        '7-espada' => 34,
+        '1-basto' => 37,
+        '1-espada' => 40,
     ];
 
     /**
-     * Los dorsos: su nombre y qué escalón de la escalera hay que pasar para usarlo. El de fábrica es de todos.
+     * Los dorsos ya dibujados: su nombre y cómo se ganan, por nivel o por un escalón de la escalera. El de
+     * fábrica es de todos. Los que faltan dibujar están en el camino como "Próximamente".
      *
-     * @var array<string, array{nombre: string, escalon: int}>
+     * @var array<string, array{nombre: string, nivel?: int, escalon?: int}>
      */
     public const DORSOS = [
-        'fabrica' => ['nombre' => 'De fábrica', 'escalon' => 0],
+        'fabrica' => ['nombre' => 'Isotipos', 'nivel' => 1],
+        'rombos' => ['nombre' => 'Rombos', 'nivel' => 3],
         'fosforos' => ['nombre' => 'Fósforos', 'escalon' => 3],
         'tinta' => ['nombre' => 'Tinta', 'escalon' => 6],
         'ronda' => ['nombre' => 'Ronda', 'escalon' => 8],
     ];
 
     /**
-     * Las partidas ganadas que cuentan: las que anotó el ranking leyendo los eventos de cada partida.
+     * Las partidas ganadas que cuentan para el ranking. Ya no deciden los premios: es un número del perfil.
      */
     public function ganadas(?Jugador $jugador): int
     {
         return $jugador === null ? 0 : Resultado::query()->where('jugador_id', $jugador->getKey())->where('gano', true)->count();
     }
 
+    public function nivel(?Jugador $jugador): int
+    {
+        return Camino::nivelDe($jugador);
+    }
+
     public function categoria(?Jugador $jugador): Categoria
     {
-        return Categoria::con($this->ganadas($jugador));
+        return Categoria::delNivel($this->nivel($jugador));
     }
 
     /**
-     * El camino entero como lo ve ese jugador: qué cartas tiene abiertas, cuál eligió y en qué categoría cae cada una.
+     * Las cartas como las ve ese jugador: cuáles tiene abiertas, cuál eligió y en qué categoría cae cada una.
      *
-     * @return list<array{carta: string, ganadas: int, categoria: Categoria, abierta: bool, elegida: bool}>
+     * @return list<array{carta: string, nivel: int, categoria: Categoria, abierta: bool, elegida: bool}>
      */
     public function camino(?Jugador $jugador): array
     {
-        $ganadas = $this->ganadas($jugador);
+        $nivel = $this->nivel($jugador);
         $todo = self::loTieneTodo($jugador);
-        $elegida = self::cartaCon($jugador?->carta, $ganadas, $todo);
+        $elegida = self::cartaCon($jugador?->carta, $nivel, $todo);
 
         return array_map(fn (string $carta, int $desde) => [
             'carta' => $carta,
-            'ganadas' => $desde,
-            'categoria' => Categoria::con($desde),
-            'abierta' => $todo || $ganadas >= $desde,
+            'nivel' => $desde,
+            'categoria' => Categoria::delNivel($desde),
+            'abierta' => $todo || $nivel >= $desde,
             'elegida' => $carta === $elegida,
         ], array_keys(self::CAMINO), self::CAMINO);
     }
 
     /**
-     * La próxima carta que le falta destrabar y cuántas partidas ganadas le faltan, o null si ya tiene todas.
+     * La próxima carta que le falta y en qué nivel llega, o null si ya tiene todas.
      *
-     * @return array{carta: string, ganadas: int, faltan: int, desde: int}|null `desde` es con cuántas se destrabó la anterior.
+     * @return array{carta: string, nivel: int}|null
      */
     public function proxima(?Jugador $jugador): ?array
     {
-        $ganadas = $this->ganadas($jugador);
-        $anterior = 0;
+        $nivel = $this->nivel($jugador);
 
         foreach (self::CAMINO as $carta => $desde) {
-            if ($ganadas < $desde) {
-                return ['carta' => $carta, 'ganadas' => $desde, 'faltan' => $desde - $ganadas, 'desde' => $anterior];
+            if ($nivel < $desde) {
+                return ['carta' => $carta, 'nivel' => $desde];
             }
-
-            $anterior = $desde;
         }
 
         return null;
@@ -116,36 +122,36 @@ final class Premios
     /**
      * Los dorsos como los ve ese jugador: cuáles tiene abiertos y cuál eligió.
      *
-     * @return list<array{clave: string, nombre: string, escalon: int, abierto: bool, elegido: bool}>
+     * @return list<array{clave: string, nombre: string, nivel?: int, escalon?: int, abierto: bool, elegido: bool}>
      */
     public function dorsos(?Jugador $jugador): array
     {
+        $nivel = $this->nivel($jugador);
         $pasados = $this->escalonesPasados($jugador);
         $todo = self::loTieneTodo($jugador);
-        $elegido = self::dorsoCon($jugador?->dorso, $pasados, $todo);
+        $elegido = self::dorsoCon($jugador?->dorso, $nivel, $pasados, $todo);
 
         return array_map(fn (string $clave, array $dorso) => [
             'clave' => $clave,
             ...$dorso,
-            'abierto' => $todo || $dorso['escalon'] === 0 || in_array($dorso['escalon'], $pasados, true),
+            'abierto' => $todo || self::dorsoAbierto($dorso, $nivel, $pasados),
             'elegido' => $clave === $elegido,
         ], array_keys(self::DORSOS), self::DORSOS);
     }
 
     public function tieneCarta(Jugador $jugador, string $carta): bool
     {
-        return isset(self::CAMINO[$carta]) && (self::loTieneTodo($jugador) || $this->ganadas($jugador) >= self::CAMINO[$carta]);
+        return isset(self::CAMINO[$carta]) && (self::loTieneTodo($jugador) || $this->nivel($jugador) >= self::CAMINO[$carta]);
     }
 
     public function tieneDorso(Jugador $jugador, string $dorso): bool
     {
-        $escalon = self::DORSOS[$dorso]['escalon'] ?? null;
-
-        return $escalon !== null && (self::loTieneTodo($jugador) || $escalon === 0 || in_array($escalon, $this->escalonesPasados($jugador), true));
+        return isset(self::DORSOS[$dorso])
+            && (self::loTieneTodo($jugador) || self::dorsoAbierto(self::DORSOS[$dorso], $this->nivel($jugador), $this->escalonesPasados($jugador)));
     }
 
     /**
-     * La carta que representa a ese jugador. Un jugador de ejemplo tiene la suya, fija, según su nivel.
+     * La carta que representa a ese jugador. Un jugador de ejemplo tiene la suya, fija, según su nivel de máquina.
      */
     public function cartaDe(?Jugador $jugador): string
     {
@@ -153,21 +159,35 @@ final class Premios
             return JugadoresDeEjemplo::cartas()[$jugador->apodo] ?? self::CARTA_DE_FABRICA;
         }
 
-        return self::cartaCon($jugador?->carta, $this->ganadas($jugador), self::loTieneTodo($jugador));
+        return self::cartaCon($jugador?->carta, $this->nivel($jugador), self::loTieneTodo($jugador));
     }
 
     /**
-     * El dorso de las cartas de ese jugador: lo que ve su rival.
+     * El dorso con que ese jugador ve todas las cartas boca abajo: las suyas, las del mazo y las del rival.
      */
     public function dorsoDe(?Jugador $jugador): string
     {
-        return self::dorsoCon($jugador?->dorso, $this->escalonesPasados($jugador), self::loTieneTodo($jugador));
+        return self::dorsoCon($jugador?->dorso, $this->nivel($jugador), $this->escalonesPasados($jugador), self::loTieneTodo($jugador));
     }
 
     /**
-     * Lo único del perfil de un jugador que recibe otro: su apodo, su categoría, su carta y su dorso.
+     * El dorso de quien está mirando la página, una sola vez por pedido: lo usa cada carta boca abajo.
+     */
+    public static function dorsoPropio(): string
+    {
+        $pedido = request();
+
+        if (! $pedido->attributes->has('dorso-propio')) {
+            $pedido->attributes->set('dorso-propio', (new self)->dorsoDe($pedido->user()));
+        }
+
+        return $pedido->attributes->get('dorso-propio');
+    }
+
+    /**
+     * Lo único del perfil de un jugador que recibe otro: su apodo, su categoría y su carta.
      *
-     * @return array{apodo: string, categoria: string, carta: string, dorso: string}
+     * @return array{apodo: string, categoria: string, carta: string}
      */
     public function aLaVista(Jugador $jugador): array
     {
@@ -175,8 +195,36 @@ final class Premios
             'apodo' => $jugador->apodo,
             'categoria' => $this->categoria($jugador)->nombre(),
             'carta' => $this->cartaDe($jugador),
-            'dorso' => $this->dorsoDe($jugador),
         ];
+    }
+
+    /**
+     * Si subió de nivel desde la última vez que miró su perfil y en el medio se destrabó algo ya dibujado:
+     * el menú le marca su apodo con un puntito hasta que lo vea.
+     */
+    public function hayNovedad(?Jugador $jugador): bool
+    {
+        if ($jugador === null || $jugador->esInvitado()) {
+            return false;
+        }
+
+        $nivel = $this->nivel($jugador);
+
+        $visto = (int) ($jugador->nivel_visto ?? 1);
+
+        return $nivel > $visto && array_filter(Camino::entre($visto, $nivel), fn (array $ficha) => $ficha['listo']) !== [];
+    }
+
+    /**
+     * Ya vio sus premios hasta el nivel en que está.
+     */
+    public function marcarVisto(Jugador $jugador): void
+    {
+        $nivel = $this->nivel($jugador);
+
+        if ($jugador->nivel_visto !== $nivel) {
+            $jugador->forceFill(['nivel_visto' => $nivel])->save();
+        }
     }
 
     /**
@@ -188,22 +236,31 @@ final class Premios
     }
 
     /**
-     * La carta elegida si existe y está destrabada con esas ganadas (o lo tiene todo); si no, la de fábrica.
-     * Sirve también para quien arma una tabla y ya tiene las ganadas de cada uno.
+     * La carta elegida si existe y está destrabada en ese nivel (o lo tiene todo); si no, la de fábrica.
+     * Sirve también para quien arma una tabla y ya tiene el nivel de cada uno.
      */
-    public static function cartaCon(?string $elegida, int $ganadas, bool $todo = false): string
+    public static function cartaCon(?string $elegida, int $nivel, bool $todo = false): string
     {
-        return $elegida !== null && isset(self::CAMINO[$elegida]) && ($todo || $ganadas >= self::CAMINO[$elegida]) ? $elegida : self::CARTA_DE_FABRICA;
+        return $elegida !== null && isset(self::CAMINO[$elegida]) && ($todo || $nivel >= self::CAMINO[$elegida]) ? $elegida : self::CARTA_DE_FABRICA;
     }
 
     /**
      * @param  list<int>  $pasados  Los escalones que ya pasó.
      */
-    private static function dorsoCon(?string $elegido, array $pasados, bool $todo = false): string
+    private static function dorsoCon(?string $elegido, int $nivel, array $pasados, bool $todo = false): string
     {
-        $escalon = self::DORSOS[$elegido ?? '']['escalon'] ?? null;
+        $dorso = self::DORSOS[$elegido ?? ''] ?? null;
 
-        return $escalon !== null && ($todo || $escalon === 0 || in_array($escalon, $pasados, true)) ? (string) $elegido : self::DORSO_DE_FABRICA;
+        return $dorso !== null && ($todo || self::dorsoAbierto($dorso, $nivel, $pasados)) ? (string) $elegido : self::DORSO_DE_FABRICA;
+    }
+
+    /**
+     * @param  array{nombre: string, nivel?: int, escalon?: int}  $dorso
+     * @param  list<int>  $pasados
+     */
+    private static function dorsoAbierto(array $dorso, int $nivel, array $pasados): bool
+    {
+        return isset($dorso['escalon']) ? in_array($dorso['escalon'], $pasados, true) : $nivel >= $dorso['nivel'];
     }
 
     /**

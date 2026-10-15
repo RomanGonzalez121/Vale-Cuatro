@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Juego\Mesa;
 use App\Juego\Nivel;
-use App\Juego\Premios;
 use App\Juego\Senas;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
@@ -52,7 +51,8 @@ class MesaDeACuatroPorHttpTest extends TestCase
         }
 
         // Las 40 cartas y los cuatro dorsos, para dibujar cualquier jugada sin volver al servidor.
-        $this->assertSame(40 + count(Premios::DORSOS), substr_count($html, '<template data-plantilla='));
+        // Las 40 cartas y un solo dorso: el de quien mira.
+        $this->assertSame(41, substr_count($html, '<template data-plantilla='));
         // El botón del final pide la revancha de esta partida.
         $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/revancha\/pedir"[^>]*>.*?name="partida" value="'.$partida->id.'".*?Jugar la revancha/s', $html);
     }

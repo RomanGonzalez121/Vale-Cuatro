@@ -49,24 +49,17 @@ class PremiosTest extends TestCase
         $this->assertSame(5 - $ganoUno, $premios->ganadas($dos));
     }
 
-    public function test_se_sube_de_categoria_con_las_partidas_ganadas_y_las_perdidas_no_cuentan(): void
+    public function test_la_categoria_es_un_tramo_de_niveles(): void
     {
         $jugador = Jugador::factory()->create();
         $premios = new Premios;
 
         $this->assertSame(Categoria::Novato, $premios->categoria($jugador));
 
-        $this->anotarle($jugador, str_repeat('G', 9).str_repeat('P', 40));
-        $this->assertSame(Categoria::Novato, $premios->categoria($jugador));
-
-        $this->anotarle($jugador, 'G');
-        $this->assertSame(Categoria::Medio, $premios->categoria($jugador));
-
-        $this->anotarle($jugador, str_repeat('G', 29));
-        $this->assertSame(Categoria::Medio, $premios->categoria($jugador));
-
-        $this->anotarle($jugador, 'G');
-        $this->assertSame(Categoria::Avanzado, $premios->categoria($jugador));
+        foreach ([9 => Categoria::Novato, 10 => Categoria::Medio, 24 => Categoria::Medio, 25 => Categoria::Avanzado, 40 => Categoria::Avanzado] as $nivel => $categoria) {
+            $this->subirAlNivel($jugador, $nivel);
+            $this->assertSame($categoria, $premios->categoria($jugador->fresh()), "Nivel {$nivel}");
+        }
     }
 
     public function test_el_camino_va_en_el_orden_del_truco_y_cada_carta_pide_mas_que_la_anterior(): void
@@ -75,7 +68,7 @@ class PremiosTest extends TestCase
         $pide = array_values(Premios::CAMINO);
 
         $this->assertSame(Premios::CARTA_DE_FABRICA, $cartas[0]);
-        $this->assertSame(0, $pide[0]);
+        $this->assertSame(1, $pide[0]);
         $this->assertSame('1-espada', end($cartas));
 
         for ($i = 1; $i < count($cartas); $i++) {
@@ -91,9 +84,9 @@ class PremiosTest extends TestCase
     public function test_una_carta_se_elige_solo_si_ya_se_gano_tambien_mandando_el_pedido_a_mano(): void
     {
         $jugador = Jugador::factory()->create();
-        $this->anotarle($jugador, 'GGG');
+        $this->subirAlNivel($jugador, 6);
 
-        // Con tres ganadas tiene el 4 y el 5; el 6 pide cuatro.
+        // En el nivel 6 tiene el 4 y el 5; el 6 llega en el nivel 7.
         $this->actingAs($jugador)->put('/perfil/carta', ['carta' => '6-oro'])->assertSessionHasErrors('carta');
         $this->assertNull($jugador->fresh()->carta);
 
@@ -180,20 +173,22 @@ class PremiosTest extends TestCase
     public function test_el_perfil_muestra_la_categoria_las_ganadas_y_lo_que_falta_para_la_proxima_carta(): void
     {
         $jugador = Jugador::factory()->create(['apodo' => 'El Tano']);
-        $this->anotarle($jugador, str_repeat('G', 11));
+        $this->subirAlNivel($jugador, 17, enLaTira: 4);
 
         $this->actingAs($jugador)->get('/perfil')
             ->assertOk()
             ->assertSee('El Tano')
             ->assertSee('Medio')
-            ->assertSeeInOrder(['Te faltan', '3', 'para el 12 de oro'])
-            ->assertSee('Con 40 ganadas pasás a avanzado')
+            ->assertSeeInOrder(['Nivel', '17'])
+            ->assertSee('4 de 10 para el nivel 18')
+            ->assertSeeInOrder(['En el nivel', '19', 'llega el 12 de oro'])
+            ->assertSee('Desde el nivel 25 pasás a avanzado')
             // Tiene seis cartas para elegir y ocho boca abajo.
             ->assertSee('value="11-espada"', false)
             ->assertDontSee('value="12-oro"', false);
     }
 
-    public function test_de_la_otra_persona_la_mesa_recibe_solo_apodo_categoria_carta_y_dorso(): void
+    public function test_de_la_otra_persona_la_mesa_recibe_solo_apodo_categoria_y_carta(): void
     {
         $uno = Jugador::factory()->create(['apodo' => 'El Tano', 'email' => 'tano@example.com']);
         $dos = Jugador::factory()->create(['apodo' => 'La Tana', 'email' => 'tana@example.com']);
@@ -202,28 +197,26 @@ class PremiosTest extends TestCase
         $sala = $mesa->crearSala($uno);
         $mesa->sentarse($sala->codigo, $dos);
 
-        // La Tana ganó doce partidas, eligió el 11 y el dorso de fósforos, y declaró que juega hace años.
-        $this->anotarle($dos, str_repeat('G', 12));
-        // Las partidas que deja anotarle quedan abiertas: se cierran, así la de la sala es la que está en curso.
-        Partida::query()->where('jugador_id', $dos->id)->update(['estado' => Partida::TERMINADA]);
+        // La Tana está en el nivel 16, eligió el 11 y el dorso de fósforos, y declaró que juega hace años.
+        $this->subirAlNivel($dos, 16);
         $this->pasoElEscalon($dos, 3);
         $dos->forceFill(['carta' => '11-espada', 'dorso' => 'fosforos', 'experiencia' => Experiencia::DeAnios])->save();
 
         $respuesta = $this->actingAs($uno)->get('/mesa')->assertOk();
 
         $this->assertSame(
-            ['apodo' => 'La Tana', 'categoria' => 'Medio', 'carta' => '11-espada', 'dorso' => 'fosforos'],
+            ['apodo' => 'La Tana', 'categoria' => 'Medio', 'carta' => '11-espada'],
             $respuesta->viewData('socio'),
         );
 
-        // Sus cartas se dibujan con el dorso que eligió, y su categoría va junto al apodo.
-        $respuesta->assertSee('dorso-fosforos')->assertSee('Medio');
+        // Su dorso no viaja: el Tano ve todas las cartas boca abajo con el suyo. Su categoría va junto al apodo.
+        $respuesta->assertDontSee('href="#dorso-fosforos"', false)->assertSee('Medio');
         // De su cuenta no viaja nada más.
-        $respuesta->assertDontSee('tana@example.com')->assertDontSee('experiencia');
+        $respuesta->assertDontSee('tana@example.com')->assertDontSee('Juego hace años');
 
         // Y ella ve al Tano con lo de fábrica: no eligió nada.
         $this->assertSame(
-            ['apodo' => 'El Tano', 'categoria' => 'Novato', 'carta' => Premios::CARTA_DE_FABRICA, 'dorso' => Premios::DORSO_DE_FABRICA],
+            ['apodo' => 'El Tano', 'categoria' => 'Novato', 'carta' => Premios::CARTA_DE_FABRICA],
             $this->actingAs($dos)->get('/mesa')->viewData('socio'),
         );
     }
@@ -310,8 +303,8 @@ class PremiosTest extends TestCase
     public function test_en_el_torneo_la_persona_juega_con_su_carta_y_ningun_bot_la_repite(): void
     {
         $jugador = Jugador::factory()->create();
-        // Con cuarenta ganadas tiene el 7 de oro, que es también la carta de Doña Elvira.
-        $this->anotarle($jugador, str_repeat('G', 40));
+        // En el nivel 31 tiene el 7 de oro, que es también la carta de Doña Elvira.
+        $this->subirAlNivel($jugador, 31);
         $jugador->forceFill(['carta' => '7-oro'])->save();
 
         $torneo = $this->app->make(Torneos::class)->crear($jugador->fresh(), 8, 3);
@@ -332,6 +325,7 @@ class PremiosTest extends TestCase
         $this->anotarle($novato, 'GG');
         $this->anotarle($medio, str_repeat('G', 14));
         $this->anotarle($bot, str_repeat('G', 5));
+        $this->subirAlNivel($medio, 19);
         $medio->forceFill(['carta' => '12-oro'])->save();
         // Una carta que todavía no ganó no aparece: se ve la de fábrica.
         $novato->forceFill(['carta' => '1-espada'])->save();
@@ -344,6 +338,27 @@ class PremiosTest extends TestCase
         $this->assertSame('1-espada', $filas['Don Anselmo']['carta']);
 
         $this->get('/ranking')->assertOk()->assertSee('La Fija')->assertSee('Medio');
+    }
+
+    public function test_cada_uno_ve_las_cartas_boca_abajo_con_su_propio_dorso(): void
+    {
+        $uno = Jugador::factory()->create();
+        $dos = Jugador::factory()->create();
+
+        $mesa = $this->app->make(Mesa::class);
+        $mesa->sentarse($mesa->crearSala($uno)->codigo, $dos);
+
+        // El Tano llegó al nivel 3 y eligió los rombos; La Tana sigue con el de fábrica.
+        $this->subirAlNivel($uno, 3);
+        $this->actingAs($uno->fresh())->put('/perfil/dorso', ['dorso' => 'rombos'])->assertSessionHasNoErrors();
+
+        $this->actingAs($uno->fresh())->get('/mesa')->assertSee('href="#dorso-rombos"', false);
+        $this->actingAs($dos->fresh())->get('/mesa')->assertDontSee('href="#dorso-rombos"', false);
+    }
+
+    private function subirAlNivel(Jugador $jugador, int $nivel, int $enLaTira = 0): void
+    {
+        $jugador->forceFill(['fosforos' => ($nivel - 1) * 10 + $enLaTira])->save();
     }
 
     private function pasoElEscalon(Jugador $jugador, int $escalon): void

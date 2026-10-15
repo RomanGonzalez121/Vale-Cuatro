@@ -1514,3 +1514,51 @@ La primera pantalla no se tocó: funciona y está medida. Debajo:
 - **En un navegador real:** la mesa ancha en tres tamaños durante varias manos, el pase del mazo, la planilla con una mano de doce cantos, el arrastre (corto vuelve, hasta la mesa juega, tirón juega, tocar juega) en escritorio y celular; todas las páginas a 1355 x 638 y 360 x 740, antes y después.
 - **Un test que falló una vez y no se pudo repetir:** "recargar la mesa vuelve a la misma partida", corrido junto con otros. Pasó 15 veces solo y 3 en grupo.
 - **No se probó con lector de pantalla.** Queda para el pulido final.
+
+## Tanda 1: niveles, el camino de premios y cada uno con su dorso
+
+Primera tanda de la segunda vuelta de M18 y M20. Román eligió antes de escribir código, con dos láminas: el dorso de fábrica nuevo (entre tres variantes) y el camino entero de cuarenta niveles.
+
+### Los niveles
+
+- **Diez fósforos por nivel, siempre** (decidido por Román): la tira se lee como el tanteador, dos grupos de cinco. Ganar anota tres, perder uno y abandonar ninguno. Un desafío anota tres la primera vez que sale y repetirlo no anota.
+- **Cuentan todas las partidas terminadas:** contra la máquina de cualquier nivel (también la fácil, que no cuenta para el ranking), entre personas, de a cuatro (a la persona) y de torneo. Las de máquina contra máquina de un torneo no son partidas. Las de los jugadores de ejemplo también: así tienen nivel.
+- **Ganar porque el otro se fue** anota solo si ya ibas en las buenas, la misma regla que el ranking: así no sirve abrir una sala desde otra ventana y abandonar para regalarse fósforos.
+- **Se guarda el total en el jugador** (`jugadores.fosforos`) y se suma al cerrar cada partida (`Camino::anotar`, dentro del cierre, como el ranking). El nivel sale de ese número con una división: abrir una página no cuenta nada. **Se descartó** guardar los fósforos de cada partida en una tabla: no hace falta para nada que se vea, y lo de cada partida se puede volver a calcular.
+- **Se rehace desde las partidas** con `php artisan fosforos:recalcular`. El contenedor lo corre en cada arranque, después de sembrar los jugadores de ejemplo: así las partidas jugadas antes de que hubiera niveles también cuentan.
+- **Las categorías pasan a ser tramos de niveles:** novato del 1 al 9, medio del 10 al 24 y avanzado desde el 25. Antes salían de las partidas ganadas.
+- **Cuánto se tarda:** al nivel 40 se llega con 390 fósforos, unas 195 partidas ganando la mitad o 156 ganando tres de cada cuatro. Se le había dicho a Román "130 a 150" y era una cuenta mal hecha: se le corrigió antes de elegir, y eligió quedarse con los cuarenta niveles.
+
+### El camino
+
+- **Es un archivo de datos** (`app/Juego/fichas-de-premios.php`), como los desafíos: cada premio con su tipo, su nivel (o su escalón de la escalera) y si ya está dibujado. Lo que no está dibujado figura en el camino como "próximamente"; cuando llegue, queda abierto para quien ya pasó ese nivel, porque lo destrabado se calcula, no se guarda.
+- **El orden lo eligió Román sobre una lámina:** las catorce cartas cada tres niveles en el orden del truco (del 4 de copa de entrada al ancho de espada en el 40) y lo más fino arriba (grafito y latón en el 39, el fileteado en el 40). Cada nivel del 2 al 40 tiene uno o dos premios: 61 en total. Los nombres de los mazos se eligen en la tanda 5.
+- Un test comprueba que cada nivel destraba algo y que las cartas y los dorsos del camino son los mismos que conoce `Premios`.
+
+### El final de la partida
+
+- Después de contarse los tanteadores, en el mismo paño, aparece el nivel con su tira y los fósforos ganados caen de a uno (220 ms entre uno y otro, con el sonido del punto si está prendido). Si la tira se llena hay un respiro, el nivel sube, la tira arranca de nuevo, y abajo se dice "Subiste al nivel N:" con lo que destrabó. Con movimiento reducido la tira aparece ya contada.
+- Va en un renglón para no empujar los botones: en una ventana de 638 px de alto, "Jugar la revancha" sigue a la vista. Lo cuenta también el texto para el lector de pantalla.
+- El paso que termina la partida trae el resumen (`experiencia`: cuántos anotó, desde dónde, hasta dónde y qué destrabó). Vale justo al cerrar: es la única vez que la mesa lo muestra.
+
+### Cada uno ve lo suyo
+
+- **Decidido por Román el 14 de octubre de 2026:** en tu pantalla todas las cartas boca abajo salen con tu dorso: las tuyas, el mazo y las del rival. El rival ya no recibe tu dorso; de vos le llegan el apodo, la categoría y tu carta. Cambia lo que decía M18 ("el dorso es lo que ve el rival").
+- `<x-dorso>` sin decir cuál dibuja el de quien mira, averiguado una vez por pedido. La mesa trae una sola plantilla de dorso, la propia: es también menos peso.
+- **El dorso de fábrica nuevo es "Isotipos"** (variante B de la lámina, elegida por Román): una trama de isotipos chicos con el marco doble de las caras y el logo grande en un medallón, palito en Tinta y cabeza en Copa. Se descartaron la trama sola (en chico se lee como un textil) y los isotipos girados (en chico se confundía con los rombos). El dorso de fábrica de antes pasó a ser el premio "Rombos", en el nivel 3.
+
+### Las marcas del menú
+
+- **Elegidas por Román el 14 de octubre de 2026,** sin tocar cómo está armada la navegación: el puntito que ya tiene el subrayado de los links queda encendido, sin el subrayado.
+- **En "Jugar"**, también en la barra del celular, cuando hay una partida sin terminar o una sala esperando: "Jugar" lleva directo a la mesa.
+- **En el apodo**, cuando subió de nivel y en el medio se destrabó algo ya dibujado. Se apaga al mirar el perfil (`jugadores.nivel_visto`).
+- Las dos se averiguan una vez por pedido (`App\View\Marcas`), aunque las pregunten el menú de arriba y la barra de abajo. Las dicen también para el lector de pantalla.
+
+### El perfil
+
+No se rehizo (es la tanda 2): pasó a decir el nivel con su tira ("4 de 10 para el nivel 18"), en qué nivel llega la próxima carta y desde qué nivel se pasa de categoría. Debajo de cada carta del camino va solo el número del nivel: Román marcó que "Nivel 25" no entraba y se pisaba con el de al lado.
+
+### Qué se probó y qué no
+
+- **Con tests:** cuánto anota ganar, perder, abandonar y un desafío (la primera vez y repetido); que se suma al cerrar y que recalcular da lo mismo; el resumen del paso final; la categoría por tramos; las cartas y los dorsos por nivel, también mandando el pedido a mano; que el rival no recibe el dorso y que cada uno ve el suyo; las dos marcas del menú; la administración con todo abierto.
+- **En un navegador real:** una partida a un punto contra la máquina, a un fósforo de subir, en 1355 x 638 y 360 x 740 (el final con la tira, el nivel nuevo y la carta destrabada); el menú con y sin la marca; el perfil.

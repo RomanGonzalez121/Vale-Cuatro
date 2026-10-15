@@ -5,8 +5,8 @@ namespace App\Juego;
 /**
  * La categoría de un jugador: se gana jugando y no da ninguna ventaja en la mesa.
  *
- * Sale de las partidas ganadas que cuentan para el ranking, que a su vez salen de los eventos de
- * cada partida. No se guarda: se calcula cada vez que hace falta.
+ * Es un tramo del camino de niveles (App\Juego\Camino): novato del 1 al 9, medio del 10 al 24 y
+ * avanzado desde el 25. Decidido por Román el 14 de octubre de 2026.
  */
 enum Categoria: string
 {
@@ -15,26 +15,26 @@ enum Categoria: string
     case Avanzado = 'avanzado';
 
     /**
-     * La categoría que corresponde a esa cantidad de partidas ganadas.
+     * La categoría que corresponde a ese nivel.
      */
-    public static function con(int $ganadas): self
+    public static function delNivel(int $nivel): self
     {
         return match (true) {
-            $ganadas >= self::Avanzado->desde() => self::Avanzado,
-            $ganadas >= self::Medio->desde() => self::Medio,
+            $nivel >= self::Avanzado->desde() => self::Avanzado,
+            $nivel >= self::Medio->desde() => self::Medio,
             default => self::Novato,
         };
     }
 
     /**
-     * Desde cuántas partidas ganadas se tiene.
+     * Desde qué nivel se tiene.
      */
     public function desde(): int
     {
         return match ($this) {
-            self::Novato => 0,
+            self::Novato => 1,
             self::Medio => 10,
-            self::Avanzado => 40,
+            self::Avanzado => 25,
         };
     }
 

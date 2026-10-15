@@ -81,6 +81,7 @@ final class Simulacion
             }
 
             (new Estadisticas)->anotar($partida, $mesa);
+            (new Camino)->anotar($partida, $mesa);
 
             return $partida;
         });

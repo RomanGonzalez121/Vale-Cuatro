@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ApodoRequest;
+use App\Juego\Camino;
 use App\Juego\Categoria;
 use App\Juego\Experiencia;
 use App\Juego\Premios;
@@ -26,13 +27,17 @@ class PerfilController extends Controller
     public function ver(Request $request): View
     {
         $jugador = $request->user();
-        $ganadas = $this->premios->ganadas($jugador);
-        $categoria = Categoria::con($ganadas);
+        $nivel = $this->premios->nivel($jugador);
+
+        // Mirar el perfil es ver lo destrabado: el puntito del apodo en el menú se apaga desde acá.
+        $this->premios->marcarVisto($jugador);
 
         return view('paginas.perfil', [
             'jugador' => $jugador,
-            'ganadas' => $ganadas,
-            'categoria' => $categoria,
+            'ganadas' => $this->premios->ganadas($jugador),
+            'nivel' => $nivel,
+            'enLaTira' => Camino::enLaTira((int) $jugador->fosforos),
+            'categoria' => Categoria::delNivel($nivel),
             'carta' => $this->premios->cartaDe($jugador),
             'dorso' => $this->premios->dorsoDe($jugador),
             'camino' => $this->premios->camino($jugador),

@@ -146,6 +146,8 @@ class Jugador extends Authenticatable
             'de_ejemplo' => 'boolean',
             'es_administrador' => 'boolean',
             'experiencia' => Experiencia::class,
+            'fosforos' => 'integer',
+            'nivel_visto' => 'integer',
         ];
     }
 }

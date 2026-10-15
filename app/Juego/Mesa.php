@@ -1234,6 +1234,12 @@ final class Mesa
             $paso['vencio'] = $guardado?->tipo === EventoDePartida::VENCIMIENTO ? $guardado->asiento : null;
         }
 
+        // El paso que termina la partida dice cuántos fósforos anotó y, si subió de nivel, qué destrabó.
+        // Solo ese paso: es lo que cuenta el final de la partida.
+        if (in_array('partida_terminada', array_column($paso['hechos'], 'tipo'), true) && ! $partida->estaAbierta()) {
+            $paso['experiencia'] = (new Camino)->resumen($partida, $asiento, $this);
+        }
+
         // Quien declaró en su perfil que está aprendiendo ve su tanto de envido ya sumado. Es una cuenta
         // hecha con sus propias cartas: no cambia qué puede jugar ni viaja en el paso de nadie más.
         if ($this->personaEn($partida, $asiento)?->experiencia?->veSuTanto()) {
@@ -1506,6 +1512,13 @@ final class Mesa
         // (ranking:recalcular) y una partida no puede quedar abierta por un error de la tabla.
         try {
             (new Estadisticas)->anotar($partida, $this);
+        } catch (Throwable $falla) {
+            report($falla);
+        }
+
+        // Los fósforos de cada persona, para su nivel. Como el ranking, se pueden rehacer desde las partidas.
+        try {
+            (new Camino)->anotar($partida, $this);
         } catch (Throwable $falla) {
             report($falla);
         }
