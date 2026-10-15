@@ -6,6 +6,9 @@
         'ranking' => ['Ranking', 'ranking'],
         'historial' => ['Historial', 'repetir'],
     ];
+
+    // Con una partida sin terminar, "Jugar" lleva directo a ella y lleva el puntito encendido (App\View\Marcas).
+    $sinTerminar = \App\View\Marcas::partidaSinTerminar();
 @endphp
 
 {{--
@@ -17,9 +20,10 @@
     <ul class="mx-auto grid max-w-xl grid-cols-4">
         @foreach ($lugares as $ruta => [$texto, $icono])
             <li>
-                <a href="{{ route($ruta) }}" class="barra-lugar" @if (request()->routeIs($ruta)) aria-current="page" @endif>
+                @php($marcada = $ruta === 'modos' && $sinTerminar)
+                <a href="{{ $marcada ? route('mesa') : route($ruta) }}" @class(['barra-lugar', 'con-marca' => $marcada]) @if (request()->routeIs($ruta)) aria-current="page" @endif>
                     <x-icono :nombre="$icono" />
-                    <span class="barra-rotulo">{{ $texto }}</span>
+                    <span class="barra-rotulo">{{ $texto }}@if ($marcada)<span class="sr-only">. Tenés una partida sin terminar</span>@endif</span>
                 </a>
             </li>
         @endforeach

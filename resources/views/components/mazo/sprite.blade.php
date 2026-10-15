@@ -1,6 +1,6 @@
 {{--
     Piezas del mazo que se dibujan una sola vez por página y se reutilizan con <use>:
-    los cuatro palos, las tres figuras, el dorso y el isotipo de fósforos.
+    los cuatro palos, las tres figuras, los dorsos y el isotipo de fósforos.
 --}}
 <svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
     <defs>
@@ -13,6 +13,22 @@
             <path d="M3.5 7V30M10.5 5V28" stroke="var(--color-tinta)" stroke-width="2" stroke-linecap="round" />
             <circle cx="3.5" cy="5.5" r="2.7" fill="var(--color-copa)" />
             <circle cx="10.5" cy="29.5" r="2.7" fill="var(--color-copa)" />
+        </pattern>
+
+        {{--
+            El dorso de fábrica: un isotipo chico por baldosa de 14, palito en Tinta y cabeza en Copa, como los
+            fósforos del tanteador. La grilla queda centrada en la carta, así el dorso es igual dado vuelta.
+        --}}
+        <pattern id="trama-isotipos" x="1" y="1" width="14" height="14" patternUnits="userSpaceOnUse">
+            <g transform="translate(2 2) scale(0.357)">
+                <path d="M4 19.5V8M8.5 4H20M24 8.5V20M19.5 24H8" fill="none" stroke="var(--color-tinta)" stroke-width="2.6" stroke-linecap="round" />
+                <g fill="var(--color-copa)">
+                    <circle cx="4" cy="4.6" r="2.9" />
+                    <circle cx="23.4" cy="4" r="2.9" />
+                    <circle cx="24" cy="23.4" r="2.9" />
+                    <circle cx="4.6" cy="24" r="2.9" />
+                </g>
+            </g>
         </pattern>
 
         <clipPath id="recorte-dorso">
@@ -129,7 +145,28 @@
         </g>
     </symbol>
 
+    {{--
+        El dorso de fábrica, "Isotipos" (elegido por Román el 15 de octubre de 2026): la trama de isotipos con
+        el marco doble de las caras y el logo grande en un medallón, así se reconoce aun en chico.
+    --}}
     <symbol id="dorso" viewBox="0 0 100 156">
+        <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <rect x="8" y="8" width="84" height="140" rx="3" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <rect x="11.5" y="11.5" width="77" height="133" rx="1.5" fill="url(#trama-isotipos)" stroke="var(--color-tinta)" stroke-width="0.8" />
+        <circle cx="50" cy="78" r="19" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <g transform="translate(37 65) scale(0.93)">
+            <path d="M4 19.5V8M8.5 4H20M24 8.5V20M19.5 24H8" fill="none" stroke="var(--color-tinta)" stroke-width="2.2" stroke-linecap="round" />
+            <g fill="var(--color-copa)">
+                <circle cx="4" cy="4.6" r="2.4" />
+                <circle cx="23.4" cy="4" r="2.4" />
+                <circle cx="24" cy="23.4" r="2.4" />
+                <circle cx="4.6" cy="24" r="2.4" />
+            </g>
+        </g>
+    </symbol>
+
+    {{-- "Rombos": el dorso de fábrica hasta el 15 de octubre de 2026, que pasó a ser un premio del nivel 3. --}}
+    <symbol id="dorso-rombos" viewBox="0 0 100 156">
         <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
         <rect x="8" y="8" width="84" height="140" rx="3" fill="url(#trama-dorso)" stroke="var(--color-tinta)" stroke-width="1.5" />
         <circle cx="50" cy="78" r="18" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />

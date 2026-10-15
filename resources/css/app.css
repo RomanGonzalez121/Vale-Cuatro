@@ -403,7 +403,8 @@ html:has(body.superficie-pano) {
 
     .enlace-nav[aria-current='page']::after,
     .enlace-nav[aria-pressed='true']::after,
-    .enlace-nav:focus-visible::after {
+    .enlace-nav:focus-visible::after,
+    .enlace-nav.con-marca::after {
         opacity: 1;
         transform: scale(1);
     }
@@ -502,6 +503,7 @@ html:has(body.superficie-pano) {
     }
 
     .barra-lugar[aria-current='page'] .barra-rotulo::after,
+    .barra-lugar.con-marca .barra-rotulo::after,
     .barra-lugar:active .barra-rotulo::after,
     .barra-lugar:focus-visible .barra-rotulo::after {
         opacity: 1;

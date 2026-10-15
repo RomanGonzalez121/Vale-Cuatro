@@ -29,8 +29,6 @@
         // Entre personas, lo que hace falta para pedir avisos al celular y para decir si la mesa está a la vista.
         'avisos' => $avisos ?? null,
         'rival' => $enfrente,
-        // Con qué dorso se dibujan las cartas de quien está enfrente: el que eligió, si eligió uno.
-        'dorsoDelRival' => $socio !== null && $socio['dorso'] !== \App\Juego\Premios::DORSO_DE_FABRICA ? 'dorso-'.$socio['dorso'] : 'dorso',
         // Si la partida es de un torneo: si es la final y adónde pasa quien gana.
         'torneo' => $torneo === null ? null : ['esFinal' => $torneo['esFinal'], 'sigue' => $torneo['sigue']],
         // Si es un desafío o un escalón: si es una sola mano con objetivo, y qué escalón.
@@ -341,12 +339,15 @@
                     x-text="fin === 'vos' ? 'Ganaste la partida' : @js($enfrente ? "Ganó {$enfrente}" : 'Ganó la máquina')"></h2>
                 <p id="tanteo-fin" class="sr-only">
                     Vos <span x-text="puntos.vos"></span>, {{ $enfrente ?? 'la máquina' }} <span x-text="puntos.rival"></span>.
+                    <span x-text="fraseDelNivel"></span>
                 </p>
 
                 <div class="mt-7 grid gap-5 text-[1.5rem] sm:text-[1.75rem]" aria-hidden="true">
                     <x-tanteador nombre="Vos" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                     <x-tanteador :nombre="$enfrente ?? 'Máquina'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                 </div>
+
+                <x-mesa.experiencia />
 
                 {{-- En un torneo, qué pasa con esta partida: se pasa de ronda, se es campeón o se queda afuera. Y se vuelve a las llaves. --}}
                 @if ($torneo)

@@ -1,6 +1,11 @@
-@props(['de' => 'fabrica'])
+@props(['de' => null])
 
-{{-- Una carta boca abajo. "de" dice con qué dorso: el de fábrica, o uno de los que se ganan en la escalera. --}}
+@php
+    // Cada uno ve lo suyo: sin decir cuál, una carta boca abajo sale con el dorso de quien está mirando.
+    $de ??= \App\Juego\Premios::dorsoPropio();
+@endphp
+
+{{-- Una carta boca abajo. "de" dice con qué dorso, cuando hay que mostrar uno en particular (el perfil, la identidad). --}}
 <svg {{ $attributes->class('carta') }} viewBox="0 0 100 156" role="img" aria-label="Carta boca abajo">
     <use href="#{{ $de === 'fabrica' ? 'dorso' : 'dorso-'.$de }}" />
 </svg>

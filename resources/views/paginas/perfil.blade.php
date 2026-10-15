@@ -17,9 +17,6 @@
     $suya = $partes($carta);
     $dorsoElegido = collect($dorsos)->firstWhere('elegido', true);
 
-    // Lo que lleva hacia la próxima carta, contado con fósforos: las ganadas desde la última que destrabó.
-    $tramo = $proxima === null ? null : ['lleva' => $ganadas - $proxima['desde'], 'pide' => $proxima['ganadas'] - $proxima['desde']];
-
     // El camino partido en sus tres tramos: cada categoría es un grupo de cartas.
     $tramos = collect($camino)->groupBy(fn (array $paso) => $paso['categoria']->value);
 
@@ -48,7 +45,7 @@
 
                     <p class="mt-6 min-h-[2lh] max-w-[22ch] text-center font-semibold leading-snug sm:text-lg" aria-live="polite">
                         <span x-show="! vuelta" @if ($muestraElDorso) x-cloak @endif>Tu carta. Así te ven en el ranking y en la mesa.</span>
-                        <span x-show="vuelta" @unless ($muestraElDorso) x-cloak @endunless>Tu dorso. Es lo que ve tu rival.</span>
+                        <span x-show="vuelta" @unless ($muestraElDorso) x-cloak @endunless>Tu dorso. Con él ves todas las cartas boca abajo.</span>
                     </p>
 
                     <button type="button" class="boton boton-linea mt-3 min-h-11 py-2" @click="vuelta = ! vuelta">
@@ -62,8 +59,20 @@
 
                     <p class="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1 leading-none">
                         <span class="text-2xl font-extrabold tracking-tight sm:text-3xl">{{ $categoria->nombre() }}</span>
-                        <span class="font-semibold"><strong class="text-xl font-black tabular-nums text-oro">{{ $ganadas }}</strong> {{ $ganadas === 1 ? 'partida ganada' : 'partidas ganadas' }}</span>
+                        <span class="font-semibold">Nivel <strong class="text-xl font-black tabular-nums text-oro">{{ $nivel }}</strong></span>
                     </p>
+
+                    {{-- La tira del nivel: diez fósforos, dos grupos de cinco. Ganar anota tres; perder, uno. --}}
+                    <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <x-tira :lleva="$enLaTira" class="text-[1.9rem]" />
+                        <p class="text-sm font-semibold leading-snug">
+                            @if ($nivel < \App\Juego\Camino::NIVELES)
+                                {{ $enLaTira }} de {{ \App\Juego\Camino::POR_NIVEL }} para el nivel {{ $nivel + 1 }}
+                            @else
+                                Llegaste al último nivel
+                            @endif
+                        </p>
+                    </div>
 
                     @if ($loTieneTodo)
                         <p class="mt-8 max-w-[38ch] text-lg font-bold leading-snug">
@@ -71,25 +80,14 @@
                         </p>
                         <p class="mt-3 max-w-[40ch] leading-relaxed">Tu categoría no cambia por eso: sale de tus partidas, como la de todos.</p>
                     @elseif ($proxima)
-                        @php
-                            $queViene = $partes($proxima['carta']);
-                            $grupos = intdiv($tramo['pide'] + 4, 5);
-                        @endphp
+                        @php($queViene = $partes($proxima['carta']))
 
                         <div class="mt-8 flex items-center gap-5">
                             <div class="w-16 flex-none sm:w-20" aria-hidden="true"><x-carta :palo="$queViene['palo']" :numero="$queViene['numero']" /></div>
 
-                            <div class="min-w-0">
-                                <p class="text-lg font-bold leading-snug">
-                                    {{ $proxima['faltan'] === 1 ? 'Te falta' : 'Te faltan' }} <strong class="font-black tabular-nums text-oro">{{ $proxima['faltan'] }}</strong> para {{ $nombreDe($proxima['carta']) }}.
-                                </p>
-                                {{-- Las ganadas desde la última carta, anotadas como en el club. Lo que cuentan ya está dicho arriba. --}}
-                                <p class="perfil-cuenta mt-3 flex flex-wrap gap-[0.22em] text-[2.1rem]" aria-hidden="true">
-                                    @for ($g = 0; $g < $grupos; $g++)
-                                        <x-fosforos :grupo="$g" :puntos="$tramo['lleva']" :hasta="$tramo['pide']" class="size-[1.45em]" />
-                                    @endfor
-                                </p>
-                            </div>
+                            <p class="min-w-0 text-lg font-bold leading-snug">
+                                En el nivel <strong class="font-black tabular-nums text-oro">{{ $proxima['nivel'] }}</strong> llega {{ $nombreDe($proxima['carta']) }}.
+                            </p>
                         </div>
                     @else
                         <p class="mt-8 max-w-[34ch] text-lg font-bold leading-snug">Tenés el ancho de espada: no hay carta más alta en el truco.</p>
@@ -97,8 +95,7 @@
 
                     @if ($categoria->siguiente() && ! $loTieneTodo)
                         <p class="mt-6 max-w-[40ch] leading-relaxed">
-                            Con {{ $categoria->siguiente()->desde() }} ganadas pasás a {{ mb_strtolower($categoria->siguiente()->nombre()) }}.
-                            Cuentan las mismas partidas que en el ranking.
+                            Desde el nivel {{ $categoria->siguiente()->desde() }} pasás a {{ mb_strtolower($categoria->siguiente()->nombre()) }}.
                         </p>
                     @endif
 
@@ -112,7 +109,7 @@
                 <section aria-labelledby="titulo-camino" class="perfil-camino">
                     <h2 id="titulo-camino" class="text-3xl font-extrabold tracking-tight sm:text-4xl">El camino</h2>
                     <p class="mt-3 max-w-[58ch] leading-relaxed sm:text-lg">
-                        Catorce cartas en el orden del truco, del cuatro al ancho de espada. Cada una se gana con las partidas ganadas que dice debajo.
+                        Catorce cartas en el orden del truco, del cuatro al ancho de espada. Cada una llega en el nivel que dice debajo.
                         Tocá una de las tuyas para que te represente.
                     </p>
 
@@ -141,12 +138,12 @@
                                                 </button>
                                             @else
                                                 {{-- Lo que falta va boca abajo, con tu dorso: no se toca. --}}
-                                                <div class="camino-cerrada" role="img" aria-label="{{ ucfirst($nombreDe($paso['carta'])) }}, se gana con {{ $paso['ganadas'] }} partidas ganadas">
+                                                <div class="camino-cerrada" role="img" aria-label="{{ ucfirst($nombreDe($paso['carta'])) }}, llega en el nivel {{ $paso['nivel'] }}">
                                                     <x-dorso :de="$dorso" aria-hidden="true" />
                                                 </div>
                                             @endif
 
-                                            <p @class(['camino-pide', 'camino-tuya' => $paso['elegida']]) aria-hidden="true">{{ $paso['elegida'] ? 'Tu carta' : $paso['ganadas'] }}</p>
+                                            <p @class(['camino-pide', 'camino-tuya' => $paso['elegida']]) aria-hidden="true">{{ $paso['elegida'] ? 'Tu carta' : $paso['nivel'] }}</p>
                                         </li>
                                     @endforeach
                                 </ol>
@@ -159,8 +156,8 @@
                 <section aria-labelledby="titulo-dorsos" class="perfil-dorsos">
                     <h2 id="titulo-dorsos" class="text-3xl font-extrabold tracking-tight sm:text-4xl">Dorsos</h2>
                     <p class="mt-3 max-w-[58ch] leading-relaxed sm:text-lg">
-                        El dorso de tus cartas es lo que ve quien juega contra vos. Los nuevos se ganan pasando escalones de la
-                        <a href="{{ route('escalera') }}" class="enlace text-naipe">escalera del club</a>{{ $escalon <= \App\Juego\Escalera::cuantos() ? ": vas por el {$escalon}." : ': ya la pasaste entera.' }}
+                        Con tu dorso ves todas las cartas boca abajo, también las del rival. Se ganan subiendo de nivel y en la
+                        <a href="{{ route('escalera') }}" class="enlace text-naipe">escalera del club</a>{{ $escalon <= \App\Juego\Escalera::cuantos() ? ": vas por el escalón {$escalon}." : ', que ya pasaste entera.' }}
                     </p>
 
                     @error('dorso')
@@ -181,7 +178,7 @@
                                             <x-dorso :de="$opcion['clave']" aria-hidden="true" />
                                         </button>
                                     @else
-                                        <div class="dorso-cerrado" role="img" aria-label="Dorso {{ $opcion['nombre'] }}, se gana en el escalón {{ $opcion['escalon'] }} de la escalera">
+                                        <div class="dorso-cerrado" role="img" aria-label="Dorso {{ $opcion['nombre'] }}, {{ isset($opcion['escalon']) ? 'se gana en el escalón '.$opcion['escalon'].' de la escalera' : 'llega en el nivel '.$opcion['nivel'] }}">
                                             <x-dorso :de="$opcion['clave']" aria-hidden="true" />
                                         </div>
                                     @endif
@@ -193,7 +190,7 @@
                                         @elseif ($opcion['abierto'])
                                             Ganado
                                         @else
-                                            Escalón {{ $opcion['escalon'] }}
+                                            {{ isset($opcion['escalon']) ? 'Escalón '.$opcion['escalon'] : 'Nivel '.$opcion['nivel'] }}
                                         @endif
                                     </p>
                                 </li>

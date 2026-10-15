@@ -98,6 +98,13 @@ const ENTRE_RECLAMOS = 5000;
 const SEGUNDOS_DE_APURO = 10;
 // Lo mínimo que el cierre de una mano queda a la vista cuando el reparto siguiente no lo pidió esta mesa.
 const LECTURA_DEL_CIERRE = 2500;
+// Los fósforos del nivel en el final: uno cada tanto, después de contar los tanteadores, y un respiro al llenar la tira.
+const ENTRE_FOSFOROS_DEL_NIVEL = 220;
+const AL_LLENAR_LA_TIRA = 420;
+const POR_NIVEL = 10;
+const ULTIMO_NIVEL = 40;
+const TIPO_DE_PREMIO = { carta: 'Carta', dorso: 'Dorso', mesa: 'Mesa', mazo: 'Mazo', anotar: 'Anotar', distintivo: 'Distintivo' };
+
 // En la mesa ancha el mazo se pasa a quien reparte antes de repartir: un movimiento sobre la mesa, de 260 ms.
 const PASE_DEL_MAZO = 260;
 
@@ -158,6 +165,10 @@ export default (inicial, pedidos) => ({
     repartidas: [],
     adelantada: null,
     demoraDelReparto: 0,
+    // Lo que la partida le anotó al nivel (llega en el paso que la termina) y la tira que se cuenta en el final.
+    experiencia: null,
+    tira: { nivel: 1, lleva: 0, subio: false, contada: false },
+    tipoDePremio: TIPO_DE_PREMIO,
     voz: { texto: '', tono: 'copa', quien: 'vos', visible: false },
     tantos: { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false },
     cierre: null,
@@ -1594,6 +1605,7 @@ export default (inicial, pedidos) => ({
                 }
 
                 this.fin = quien;
+                this.experiencia = paso.experiencia ?? null;
                 this.sonar('final');
                 this.contarElFinal();
                 this.atenderLaRevancha();
@@ -1801,6 +1813,7 @@ export default (inicial, pedidos) => ({
 
         if (this.reducido) {
             this.cuenta = hasta;
+            this.contarLaTira();
 
             return;
         }
@@ -1814,10 +1827,87 @@ export default (inicial, pedidos) => ({
 
             if (faltan.length) {
                 setTimeout(caer, ENTRE_FOSFOROS_DEL_FINAL);
+            } else {
+                this.contarLaTira();
             }
         };
 
         setTimeout(caer, ANTES_DE_CONTAR_EL_FINAL);
+    },
+
+    /**
+     * Después de los tanteadores, los fósforos que la partida le anotó al nivel caen de a uno en la tira.
+     * Si la tira se llena, hay un respiro, el nivel sube y la tira arranca de nuevo. Al final se dice lo
+     * que destrabó. Con movimiento reducido, la tira aparece ya contada.
+     */
+    contarLaTira() {
+        const experiencia = this.experiencia;
+
+        if (! experiencia) {
+            return;
+        }
+
+        const enLaTira = (fosforos, nivel) => (nivel === ULTIMO_NIVEL ? POR_NIVEL : fosforos % POR_NIVEL);
+        const subio = experiencia.nivelAhora > experiencia.nivelAntes;
+
+        if (this.reducido || experiencia.ganados === 0) {
+            this.tira = { nivel: experiencia.nivelAhora, lleva: enLaTira(experiencia.ahora, experiencia.nivelAhora), subio, contada: true };
+
+            return;
+        }
+
+        this.tira = { nivel: experiencia.nivelAntes, lleva: enLaTira(experiencia.antes, experiencia.nivelAntes), subio: false, contada: false };
+
+        let anotados = 0;
+
+        const caer = () => {
+            // La tira llena: el nivel sube y se empieza otra. Va antes de terminar: el último fósforo puede ser el que la llena.
+            if (this.tira.lleva === POR_NIVEL && this.tira.nivel < experiencia.nivelAhora) {
+                this.tira.nivel++;
+                this.tira.lleva = 0;
+                setTimeout(caer, AL_LLENAR_LA_TIRA);
+
+                return;
+            }
+
+            if (anotados === experiencia.ganados) {
+                this.tira.subio = subio;
+                this.tira.contada = true;
+
+                return;
+            }
+
+            anotados++;
+            this.tira.lleva = Math.min(POR_NIVEL, this.tira.lleva + 1);
+            this.sonar('punto', 0, { tono: this.tira.lleva });
+            setTimeout(caer, ENTRE_FOSFOROS_DEL_NIVEL);
+        };
+
+        setTimeout(caer, ENTRE_FOSFOROS_DEL_NIVEL);
+    },
+
+    /**
+     * Cuántos fósforos anotó la partida, dicho al lado del nivel.
+     */
+    get fraseDeFosforos() {
+        const ganados = this.experiencia?.ganados ?? 0;
+
+        return ganados === 0 ? 'Esta partida no anota' : `+${ganados} ${ganados === 1 ? 'fósforo' : 'fósforos'}`;
+    },
+
+    /**
+     * Lo mismo para el lector de pantalla, en una frase.
+     */
+    get fraseDelNivel() {
+        const experiencia = this.experiencia;
+
+        if (! experiencia) {
+            return '';
+        }
+
+        const anoto = experiencia.ganados === 0 ? 'Esta partida no anotó fósforos.' : `Anotaste ${experiencia.ganados} ${experiencia.ganados === 1 ? 'fósforo' : 'fósforos'}.`;
+
+        return experiencia.nivelAhora > experiencia.nivelAntes ? `${anoto} Subiste al nivel ${experiencia.nivelAhora}.` : `${anoto} Nivel ${experiencia.nivelAhora}.`;
     },
 
     conceptoDe(concepto, vista) {
@@ -1897,7 +1987,7 @@ export default (inicial, pedidos) => ({
         for (let i = 0; i < vista.cartasEnMano[this.ellos]; i++) {
             const dorso = document.createElement('div');
 
-            dorso.append(plantilla(this.pedidos.dorsoDelRival ?? 'dorso'));
+            dorso.append(plantilla('dorso'));
             this.$refs.rival.append(dorso);
 
             if (animar) {
@@ -2118,7 +2208,7 @@ export default (inicial, pedidos) => ({
         while (dorsos.length < delBot.length) {
             const dorso = document.createElement('div');
 
-            dorso.append(plantilla(this.pedidos.dorsoDelRival ?? 'dorso'));
+            dorso.append(plantilla('dorso'));
             this.$refs.rival.append(dorso);
             dorsos.push(dorso);
         }

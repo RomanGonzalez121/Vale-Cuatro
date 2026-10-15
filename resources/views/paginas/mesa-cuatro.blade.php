@@ -250,12 +250,15 @@
                     x-text="fin === 'vos' ? 'Ganamos la partida' : 'Ganaron ellos'"></h2>
                 <p id="tanteo-fin" class="sr-only">
                     Nosotros <span x-text="puntos.vos"></span>, ellos <span x-text="puntos.rival"></span>.
+                    <span x-text="fraseDelNivel"></span>
                 </p>
 
                 <div class="mt-7 grid gap-5 text-[1.5rem] sm:text-[1.75rem]" aria-hidden="true">
                     <x-tanteador nombre="Nosotros" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                     <x-tanteador nombre="Ellos" modelo="cuenta.rival" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                 </div>
+
+                <x-mesa.experiencia />
 
                 <div class="mt-8 flex flex-col gap-2.5 sm:flex-row">
                     <form method="POST" action="{{ route('revancha.pedir') }}" class="flex flex-col">
