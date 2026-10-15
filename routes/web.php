@@ -32,6 +32,7 @@ Route::get('/historial/{partida}', [HistorialController::class, 'ver'])->whereNu
 Route::get('/historial/{partida}/cuadros', [HistorialController::class, 'cuadros'])->whereNumber('partida')->middleware(['auth', 'throttle:120,1,historial'])->name('historial.cuadros');
 Route::get('/como-se-juega', [PaginaController::class, 'comoSeJuega'])->name('como-se-juega');
 Route::get('/identidad', [PaginaController::class, 'identidad'])->name('identidad');
+Route::get('/jugadores/{jugador}', [PerfilController::class, 'publico'])->whereNumber('jugador')->name('jugador');
 Route::get('/modos', [PaginaController::class, 'modos'])->name('modos');
 
 // Entrar a jugar: con cuenta, o como invitado creado en el momento.

@@ -95,9 +95,24 @@ class PremiosTest extends TestCase
         $this->actingAs($jugador)->put('/perfil/carta', ['carta' => '1-oro'])->assertSessionHasErrors('carta');
         $this->assertNull($jugador->fresh()->carta);
 
-        $this->actingAs($jugador)->put('/perfil/carta', ['carta' => '5-espada'])->assertRedirect('/perfil')->assertSessionHasNoErrors();
+        $this->actingAs($jugador)->put('/perfil/carta', ['carta' => '5-espada'])->assertRedirect('/perfil#coleccion')->assertSessionHasNoErrors();
         $this->assertSame('5-espada', $jugador->fresh()->carta);
         $this->assertSame('5-espada', (new Premios)->cartaDe($jugador->fresh()));
+    }
+
+    public function test_desde_el_probador_se_elige_sin_recargar_y_el_candado_sigue_igual(): void
+    {
+        $jugador = Jugador::factory()->create();
+        $this->subirAlNivel($jugador, 6);
+
+        // La página pide JSON: contesta con el aviso, sin redirigir; lo que no se ganó se rechaza igual.
+        $this->actingAs($jugador)->putJson('/perfil/carta', ['carta' => '6-oro'])->assertUnprocessable()->assertJsonValidationErrors('carta');
+        $this->actingAs($jugador)->putJson('/perfil/dorso', ['dorso' => 'fosforos'])->assertUnprocessable()->assertJsonValidationErrors('dorso');
+        $this->assertNull($jugador->fresh()->carta);
+
+        $this->actingAs($jugador)->putJson('/perfil/carta', ['carta' => '5-espada'])->assertOk()->assertExactJson(['mensaje' => 'Carta elegida.']);
+        $this->actingAs($jugador)->putJson('/perfil/dorso', ['dorso' => 'fabrica'])->assertOk()->assertExactJson(['mensaje' => 'Dorso elegido.']);
+        $this->assertSame('5-espada', $jugador->fresh()->carta);
     }
 
     public function test_una_carta_guardada_que_no_esta_ganada_no_se_muestra(): void
@@ -126,7 +141,7 @@ class PremiosTest extends TestCase
         (new Progreso)->forceFill(['jugador_id' => $jugador->id, 'clave' => Progresos::claveDeEscalon(6), 'intentos' => 2])->save();
 
         $this->actingAs($jugador)->put('/perfil/dorso', ['dorso' => 'tinta'])->assertSessionHasErrors('dorso');
-        $this->actingAs($jugador)->put('/perfil/dorso', ['dorso' => 'fosforos'])->assertRedirect('/perfil')->assertSessionHasNoErrors();
+        $this->actingAs($jugador)->put('/perfil/dorso', ['dorso' => 'fosforos'])->assertRedirect('/perfil#coleccion')->assertSessionHasNoErrors();
 
         $this->assertSame('fosforos', $jugador->fresh()->dorso);
         $this->assertSame('fosforos', (new Premios)->dorsoDe($jugador->fresh()));
@@ -155,7 +170,7 @@ class PremiosTest extends TestCase
         // Pero no inventa partidas: sigue siendo novato, y lo que se ve de afuera dice eso.
         $this->assertSame(Categoria::Novato, $premios->categoria($administracion));
         $this->assertSame('Novato', $premios->aLaVista($administracion)['categoria']);
-        $this->actingAs($administracion)->get('/perfil')->assertOk()->assertSee('tenés todas las cartas y los dorsos abiertos');
+        $this->actingAs($administracion)->get('/perfil')->assertOk()->assertSee('tenés todo abierto para probarlo');
 
         // Y una cuenta común sigue con lo suyo.
         $this->assertFalse($premios->tieneCarta(Jugador::factory()->create(), '1-espada'));
@@ -181,11 +196,11 @@ class PremiosTest extends TestCase
             ->assertSee('Medio')
             ->assertSeeInOrder(['Nivel', '17'])
             ->assertSee('4 de 10 para el nivel 18')
-            ->assertSeeInOrder(['En el nivel', '19', 'llega el 12 de oro'])
-            ->assertSee('Desde el nivel 25 pasás a avanzado')
-            // Tiene seis cartas para elegir y ocho boca abajo.
-            ->assertSee('value="11-espada"', false)
-            ->assertDontSee('value="12-oro"', false);
+            // Lo que trae el nivel que sigue, aunque todavía no esté dibujado.
+            ->assertSeeInOrder(['En el 18:', 'Dos cruzados', '(próximamente)'])
+            // En la Colección, el 11 de espada se prueba y el 12 de oro dice cuándo llega.
+            ->assertSee('El 11 de espada, probar')
+            ->assertSee('El 12 de oro, llega en el nivel 19');
     }
 
     public function test_de_la_otra_persona_la_mesa_recibe_solo_apodo_categoria_y_carta(): void

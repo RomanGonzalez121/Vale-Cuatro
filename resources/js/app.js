@@ -1,5 +1,6 @@
 import Alpine from 'alpinejs';
 import { prepararApertura } from './apertura';
+import avisoFlotante from './aviso-flotante';
 import { repartirEn } from './cartas';
 import historial from './historial';
 import { prepararInstalacion } from './instalar';
@@ -7,6 +8,7 @@ import { prepararLogos } from './logo';
 import mesa from './mesa';
 import mesaDeCuatro from './mesa-cuatro';
 import { prepararModo } from './modo';
+import perfil from './perfil';
 import { duelo, tantoDeEnvido } from './reglas';
 import repeticion from './repeticion';
 import sala from './sala';
@@ -42,6 +44,8 @@ Alpine.directive('carta', (elemento, { expression }, { evaluateLater, effect }) 
 
 Alpine.data('mesa', mesa);
 Alpine.data('mesaDeCuatro', mesaDeCuatro);
+Alpine.data('perfil', perfil);
+Alpine.data('avisoFlotante', avisoFlotante);
 Alpine.data('duelo', duelo);
 Alpine.data('tantoDeEnvido', tantoDeEnvido);
 Alpine.data('repeticion', repeticion);

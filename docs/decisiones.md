@@ -1562,3 +1562,46 @@ No se rehizo (es la tanda 2): pasó a decir el nivel con su tira ("4 de 10 para 
 
 - **Con tests:** cuánto anota ganar, perder, abandonar y un desafío (la primera vez y repetido); que se suma al cerrar y que recalcular da lo mismo; el resumen del paso final; la categoría por tramos; las cartas y los dorsos por nivel, también mandando el pedido a mano; que el rival no recibe el dorso y que cada uno ve el suyo; las dos marcas del menú; la administración con todo abierto.
 - **En un navegador real:** una partida a un punto contra la máquina, a un fósforo de subir, en 1355 x 638 y 360 x 740 (el final con la tira, el nivel nuevo y la carta destrabada); el menú con y sin la marca; el perfil.
+
+## Tanda 2: el perfil rehecho
+
+Román dijo del perfil anterior que "estaba muy desordenado, son cosas metidas ahí porque sí", y aprobó el 14 de octubre de 2026 cómo tenía que ser. Se buscaron referencias: chess.com separa los números en su propia sección, debajo del encabezado del perfil, y en los "lockers" de los juegos lo que funciona es ver cada pieza puesta sobre el objeto del juego, no como una miniatura suelta. De ahí salen la planilla y el probador.
+
+### Cómo quedó
+
+- **Arriba, "tu mesa", sobre el paño:** el mazo apilado (con el dorso de quien mira, como todas las cartas boca abajo) y tu carta grande, que se reparte desde el mazo al entrar. Al lado: el apodo, la categoría, el nivel con su tira, lo que trae el nivel que sigue (también lo que todavía no está dibujado) y "Jugar una partida". En 1355 x 638 entra entero en la primera pantalla.
+- **Un índice quieto** (nada acompaña el scroll): Resumen, Colección, Camino, Partidas, Cuenta. En el celular se desliza de costado si no entra.
+- **Resumen como la planilla del club:** números grandes con su nombre abajo y las rayas del anotador, sin tarjetas. Partidas, ganadas (con el porcentaje), racha (con la mejor), envidos ganados, torneos ganados, escalones y desafíos. Partidas y ganadas salen de lo mismo que el ranking, así un número del perfil nunca contradice a la tabla (`App\Juego\Numeros`).
+- **Colección sobre el paño** (es lo que se usa en la mesa): pestañas de cartas, dorsos, mesas y mazos, y un probador. Tocar una pieza la muestra armada en una mesa chica: una carta de frente, un dorso con la carta dada vuelta. "Usar esta carta" o "Usar este dorso" la elige; lo que falta dice en qué nivel llega o en qué escalón se gana. Lo que todavía no está dibujado va punteado, con su nombre y su nivel. Solo se dibuja la pestaña abierta. En el celular el probador va arriba de las piezas, con la mesa y el texto lado a lado: al tocar se ve qué cambió sin tener que bajar.
+- **El camino:** ocho niveles alrededor del tuyo (los tuyos dicen "Tuyo", el que sigue va sobre paño hondo) y "Ver el camino entero" en un desplegable, con los cuarenta como planilla.
+- **Últimas partidas:** las cinco últimas, con "Ver de nuevo" y "Ver el historial".
+- **Tu cuenta al final:** cuánto truco sabés, el apodo, el email y cerrar sesión.
+- **Las secciones siguen el armado de M22:** el título con el filete doble, las planillas con sus rayas, el paño para lo que se usa en la mesa y el papel para lo que se lee.
+
+### El perfil de otro
+
+- Se abre tocando un apodo en el ranking (`/jugadores/{id}`). Muestra su mesa, su carta, su nivel, sus números y sus últimas partidas, sin links a la repetición (las partidas no son tuyas). Nada de su cuenta, ni su dorso: cada uno ve las cartas boca abajo con el suyo.
+- Solo de quien tiene cuenta y de los jugadores de ejemplo, que llevan la marca "máquina". Quien juega sin cuenta y la cuenta de administración no tienen perfil público (404). Abrir el propio lleva al perfil.
+
+### El movimiento
+
+Con el criterio de Emil Kowalski (animar solo lo que tiene un motivo, nunca lo que se toca muchas veces):
+
+- **Al entrar, tu carta se reparte desde el mazo** (la misma animación del reparto de la mesa, 280 ms): una vez por visita, dice de dónde sale tu carta.
+- **Los fósforos ganados desde la última visita caen en la tira**, de a uno: lo visto se recuerda en el navegador. Si no ganaste nada desde entonces, la tira está quieta.
+- **En el probador la carta se da vuelta** para mostrar un dorso: es una transición, así que si se toca otra pieza a mitad de camino vuelve desde donde está.
+- **Las pestañas cambian sin animación:** se tocan muchas veces. Se levantan apenas al pasar el mouse, como los botones.
+- Con movimiento reducido no hay reparto ni caída de fósforos, y la carta del probador cambia sin girar.
+
+### Lo que cambió después de que Román lo usó
+
+- **El aviso de confirmación es un cartelito abajo** ("Dorso elegido."). Antes era una franja arriba de la página que la empujaba hacia abajo y la volvía a subir al irse. Ahora sube desde abajo, queda unos segundos y baja por donde vino (240 ms al entrar, 160 al salir); con el mouse encima espera y se cierra tocándolo. En el celular va arriba de la barra de abajo. Sirve para todo el sitio: lo trae el servidor después de un formulario o lo pide la página con un evento (`resources/js/aviso-flotante.js`). Es lo segundo que queda quieto en la pantalla, después de la barra de abajo, y lo pidió él.
+- **Elegir no recarga la página ni la lleva arriba.** "Usar esta carta" y "Usar este dorso" guardan con un pedido de fondo: tu carta de arriba o el dorso de tu mazo cambian en el lugar, "En uso" pasa a la pieza nueva y el aviso lo confirma. Si el servidor lo rechaza (una pieza que no ganaste, mandada a mano), el aviso lo dice en Copa. Sin JavaScript el formulario común sigue andando: el servidor contesta JSON solo cuando se lo piden.
+- **Los links del índice bajan con un deslizamiento suave** (`scroll-behavior: smooth`), salvo con movimiento reducido.
+- **El dorso del probador quedaba en blanco al cambiar de dorso:** el mazo de arriba usaba una variable con el mismo nombre que el dorso elegido y la pisaba. Corregido.
+
+### Qué se probó y qué no
+
+- **Con tests:** elegir desde el probador contesta sin redirigir y el candado rechaza igual lo que no se ganó; los números (partidas, ganadas, porcentaje, rachas, envidos) contra resultados conocidos; el perfil de otro muestra lo suyo y nada de la cuenta; quien juega sin cuenta y la administración no tienen perfil público; el propio lleva al perfil; el ranking lleva a cada perfil; elegir carta y dorso vuelve a la Colección.
+- **En un navegador real:** el perfil propio y el de otro en 1355 x 638 y 360 x 740; el probador con un dorso; elegir una carta y un dorso sin recargar (cambian la carta y el mazo de arriba, y el aviso sube abajo); sin scroll de costado.
+- **No se probó con lector de pantalla.** Queda para el pulido final.

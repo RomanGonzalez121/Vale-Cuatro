@@ -1,11 +1,15 @@
 @php
-    use App\Juego\Categoria;
+    use App\Juego\Camino;
     use App\Juego\Experiencia;
 
     /*
-     | El perfil es una mesa: sobre el paño, tu carta y el camino de las que se ganan; en un panel de
-     | paño hondo, como el tanteador, quién sos y cuánto te falta para la próxima. Abajo, lo que se escribe.
-     | Lo fuerte de la pantalla es una sola cosa: tu carta, que se da vuelta y muestra tu dorso.
+     | El perfil. Arriba, "tu mesa": sobre el paño, tu mazo apilado y tu carta grande, que se reparte desde el
+     | mazo al entrar; al lado, quién sos, tu nivel con su tira y lo que viene. Debajo, un índice y las
+     | secciones: los números como la planilla del club, la Colección con su probador (sobre el paño, porque
+     | es lo que usás en la mesa), el camino, las últimas partidas y la cuenta.
+     |
+     | El mismo archivo dibuja el perfil de otro ($propio en false): su mesa, su carta, su nivel, sus números
+     | y sus últimas partidas. Nada de la cuenta, nada de lo que eligió para ver él.
      */
     $partes = fn (string $id) => ['numero' => (int) explode('-', $id)[0], 'palo' => explode('-', $id)[1]];
     $nombreDe = function (string $id) use ($partes) {
@@ -15,244 +19,404 @@
     };
 
     $suya = $partes($carta);
-    $dorsoElegido = collect($dorsos)->firstWhere('elegido', true);
+    $tipos = ['carta' => 'Carta', 'dorso' => 'Dorso', 'mesa' => 'Mesa', 'mazo' => 'Mazo', 'anotar' => 'Anotar', 'distintivo' => 'Distintivo'];
+    $esDeEjemplo = $jugador->esDeEjemplo();
 
-    // El camino partido en sus tres tramos: cada categoría es un grupo de cartas.
-    $tramos = collect($camino)->groupBy(fn (array $paso) => $paso['categoria']->value);
+    if ($propio) {
+        $dorsoElegido = collect($dorsos)->firstWhere('elegido', true);
+        // Si se acaba de elegir un dorso, la carta del probador arranca dada vuelta: es lo que cambió.
+        $muestraElDorso = session('muestra') === 'dorso';
+        $deTipo = fn (string $tipo) => array_values(array_filter($proximamente, fn (array $ficha) => $ficha['tipo'] === $tipo));
 
-    // Si se acaba de elegir un dorso, la carta arranca dada vuelta: es lo que cambió.
-    $muestraElDorso = session('muestra') === 'dorso';
+        // Lo que el probador muestra de entrada: tu carta, o tu dorso si recién lo cambiaste.
+        $prueba = $muestraElDorso
+            ? ['tipo' => 'dorso', 'clave' => $dorsoElegido['clave'], 'nombre' => 'Dorso '.$dorsoElegido['nombre'], 'abierta' => true, 'elegida' => true, 'pide' => '']
+            : ['tipo' => 'carta', 'clave' => $carta, 'nombre' => ucfirst($nombreDe($carta)), 'abierta' => true, 'elegida' => true, 'pide' => ''];
+    }
+
+    $secciones = $propio
+        ? ['resumen' => 'Resumen', 'coleccion' => 'Colección', 'camino' => 'Camino', 'partidas' => 'Partidas', 'cuenta' => 'Cuenta']
+        : ['resumen' => 'Resumen', 'partidas' => 'Partidas'];
 @endphp
 
-<x-layouts.base titulo="Tu perfil" descripcion="Tu carta, tu categoría y el dorso de tus cartas en Vale Cuatro.">
-    <div class="perfil" x-data="{ vuelta: {{ $muestraElDorso ? 'true' : 'false' }} }">
-        <div class="perfil-mesa superficie-pano">
-            <div class="perfil-grilla mx-auto max-w-6xl">
-                {{-- Tu carta. Al tocarla se da vuelta: del otro lado está tu dorso, que es lo que ve tu rival. --}}
-                <section aria-labelledby="titulo-carta" class="perfil-carta">
-                    <h2 id="titulo-carta" class="sr-only">Tu carta</h2>
-
-                    <div class="perfil-naipe se-reparte">
-                        <button type="button" class="naipe-boton" @click="vuelta = ! vuelta"
-                            :aria-label="vuelta ? 'Tu dorso: {{ $dorsoElegido['nombre'] }}. Dar vuelta para ver tu carta' : 'Tu carta: {{ $nombreDe($carta) }}. Dar vuelta para ver tu dorso'"
-                            aria-label="Tu carta: {{ $nombreDe($carta) }}. Dar vuelta para ver tu dorso">
-                            <span class="giro block" data-vuelta="{{ $muestraElDorso ? 'true' : 'false' }}" :data-vuelta="vuelta.toString()">
-                                <span class="block"><x-carta :palo="$suya['palo']" :numero="$suya['numero']" /></span>
-                                <span class="giro-cara block"><x-dorso :de="$dorso" /></span>
-                            </span>
-                        </button>
+<x-layouts.base :titulo="$propio ? 'Tu perfil' : $jugador->apodo" :descripcion="$propio ? 'Tu mesa, tu nivel, tus números y tu colección en Vale Cuatro.' : 'El perfil de '.$jugador->apodo.' en Vale Cuatro: su carta, su nivel y sus números.'">
+    <div class="pb-16 lg:pb-24" x-data="perfil({ jugador: {{ $jugador->id }}, fosforos: {{ (int) $jugador->fosforos }}, propio: {{ $propio ? 'true' : 'false' }}, prueba: {{ Js::from($prueba ?? null) }}, enUso: {{ Js::from($propio ? ['carta' => $carta, 'dorso' => $dorsoElegido['clave']] : null) }}, rutas: {{ Js::from($propio ? ['carta' => route('perfil.carta'), 'dorso' => route('perfil.dorso')] : null) }} })">
+        {{-- Tu mesa. --}}
+        <section aria-labelledby="titulo-perfil" class="perfil-mesa superficie-pano">
+            <div class="pagina perfil-mesa-grilla">
+                {{-- El mazo, apilado con el dorso de quien mira, y la carta de este jugador, que sale de ahí al entrar. --}}
+                <div class="perfil-naipes" aria-hidden="true">
+                    <div class="perfil-mazo" x-ref="mazo">
+                        @for ($apilada = 0; $apilada < 5; $apilada++)
+                            <x-dorso />
+                        @endfor
                     </div>
+                    <div class="perfil-naipe" x-ref="carta">
+                        <x-carta :palo="$suya['palo']" :numero="$suya['numero']" />
+                    </div>
+                </div>
 
-                    <p class="mt-6 min-h-[2lh] max-w-[22ch] text-center font-semibold leading-snug sm:text-lg" aria-live="polite">
-                        <span x-show="! vuelta" @if ($muestraElDorso) x-cloak @endif>Tu carta. Así te ven en el ranking y en la mesa.</span>
-                        <span x-show="vuelta" @unless ($muestraElDorso) x-cloak @endunless>Tu dorso. Con él ves todas las cartas boca abajo.</span>
+                <div class="perfil-quien">
+                    <h1 id="titulo-perfil" class="pagina-titulo">{{ $jugador->apodo }}</h1>
+                    <p class="sr-only">{{ $propio ? 'Tu carta' : 'Su carta' }}: {{ $nombreDe($carta) }}.</p>
+
+                    <p class="perfil-rango">
+                        <span>{{ $categoria->nombre() }}</span>
+                        <span class="perfil-nivel">Nivel <strong>{{ $nivel }}</strong></span>
+                        @if ($esDeEjemplo)
+                            <span class="inline-flex items-center gap-1 self-center rounded-md bg-naipe px-1.5 py-0.5 text-xs font-bold text-tinta">
+                                <x-icono nombre="bot" class="size-4" /> máquina
+                            </span>
+                        @endif
                     </p>
 
-                    <button type="button" class="boton boton-linea mt-3 min-h-11 py-2" @click="vuelta = ! vuelta">
-                        <x-icono nombre="repetir" /> <span x-text="vuelta ? 'Ver tu carta' : 'Ver tu dorso'">{{ $muestraElDorso ? 'Ver tu carta' : 'Ver tu dorso' }}</span>
-                    </button>
-                </section>
-
-                {{-- El panel: quién sos y cuánto falta. Es de paño hondo, como el tanteador: ahí los fósforos se leen bien. --}}
-                <section aria-labelledby="titulo-perfil" class="perfil-hoja sobre-pano bg-pano-hondo">
-                    <h1 id="titulo-perfil" class="text-[clamp(2.5rem,5.2vw,4.5rem)] font-black leading-[0.94] tracking-[-0.035em] [overflow-wrap:anywhere]">{{ $jugador->apodo }}</h1>
-
-                    <p class="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1 leading-none">
-                        <span class="text-2xl font-extrabold tracking-tight sm:text-3xl">{{ $categoria->nombre() }}</span>
-                        <span class="font-semibold">Nivel <strong class="text-xl font-black tabular-nums text-oro">{{ $nivel }}</strong></span>
-                    </p>
-
-                    {{-- La tira del nivel: diez fósforos, dos grupos de cinco. Ganar anota tres; perder, uno. --}}
-                    <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <x-tira :lleva="$enLaTira" class="text-[1.9rem]" />
+                    {{-- La tira del nivel. Los fósforos ganados desde la última visita caen al entrar (perfil.js). --}}
+                    <div class="perfil-tira">
+                        <x-tira :lleva="$enLaTira" modelo="tira" class="text-[1.9rem] sm:text-[2.2rem]" />
                         <p class="text-sm font-semibold leading-snug">
-                            @if ($nivel < \App\Juego\Camino::NIVELES)
-                                {{ $enLaTira }} de {{ \App\Juego\Camino::POR_NIVEL }} para el nivel {{ $nivel + 1 }}
+                            @if ($nivel < Camino::NIVELES)
+                                {{ $enLaTira }} de {{ Camino::POR_NIVEL }} para el nivel {{ $nivel + 1 }}
                             @else
-                                Llegaste al último nivel
+                                Llegó al último nivel
                             @endif
                         </p>
                     </div>
 
+                    @if ($proximo !== [])
+                        <p class="perfil-proximo">
+                            En el {{ $nivel + 1 }}:
+                            @foreach ($proximo as $i => $premio)
+                                <strong>{{ mb_strtolower($tipos[$premio['tipo']]) }} {{ $premio['nombre'] }}</strong>{{ $premio['listo'] ? '' : ' (próximamente)' }}{{ $i < count($proximo) - 1 ? ' y' : '' }}
+                            @endforeach
+                        </p>
+                    @endif
+
+                    @if ($propio)
+                        <form method="POST" action="{{ route('jugar') }}" class="mt-7">
+                            @csrf
+                            <button type="submit" class="boton boton-naipe"><x-icono nombre="repartir" /> Jugar una partida</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </section>
+
+        {{-- El índice: links quietos a cada sección. En el celular se desliza de costado. --}}
+        <nav aria-label="En este perfil" class="perfil-indice">
+            <ul class="pagina">
+                @foreach ($secciones as $ancla => $nombre)
+                    <li><a href="#{{ $ancla }}" class="enlace-nav">{{ $nombre }}</a></li>
+                @endforeach
+            </ul>
+        </nav>
+
+        {{-- Los números, como la planilla del club. --}}
+        <section id="resumen" aria-labelledby="titulo-resumen" class="pagina perfil-seccion">
+            <h2 id="titulo-resumen" class="seccion-titulo perfil-titulo">Resumen</h2>
+
+            @if ($numeros['partidas'] === 0 && $numeros['torneos'] === 0 && $numeros['escalones'] === 0 && $numeros['desafios'] === 0)
+                <p class="mt-6 text-lg font-semibold">{{ $propio ? 'Todavía no jugaste partidas que cuenten.' : 'Todavía no jugó partidas que cuenten.' }}</p>
+            @else
+                <dl class="planilla-numeros">
+                    <div>
+                        <dt>Partidas</dt>
+                        <dd>{{ $numeros['partidas'] }}</dd>
+                    </div>
+                    <div>
+                        <dt>Ganadas</dt>
+                        <dd>{{ $numeros['ganadas'] }}@if ($numeros['porcentaje'] !== null)<small>{{ $numeros['porcentaje'] }} %</small>@endif</dd>
+                    </div>
+                    <div>
+                        <dt>Racha</dt>
+                        <dd>{{ $numeros['racha'] }}<small>la mejor, {{ $numeros['mejorRacha'] }}</small></dd>
+                    </div>
+                    <div>
+                        <dt>Envidos ganados</dt>
+                        <dd>{{ $numeros['envidos'] === null ? '–' : $numeros['envidos'].' %' }}</dd>
+                    </div>
+                    <div>
+                        <dt>Torneos ganados</dt>
+                        <dd>{{ $numeros['torneos'] }}</dd>
+                    </div>
+                    <div>
+                        <dt>Escalera</dt>
+                        <dd>{{ $numeros['escalones'] }}<small>de {{ $numeros['escalera'] }}</small></dd>
+                    </div>
+                    <div>
+                        <dt>Desafíos</dt>
+                        <dd>{{ $numeros['desafios'] }}<small>de {{ $numeros['desafiosEnTotal'] }}</small></dd>
+                    </div>
+                </dl>
+                <p class="mt-3 text-sm">Partidas y ganadas son las que cuentan para el ranking.</p>
+            @endif
+        </section>
+
+        @if ($propio)
+            {{-- La Colección: lo que se usa en la mesa, sobre el paño. Tocar una pieza la prueba; "Usar esta" la elige. --}}
+            <section id="coleccion" aria-labelledby="titulo-coleccion" class="perfil-coleccion superficie-pano">
+                <div class="pagina">
+                    <h2 id="titulo-coleccion" class="seccion-titulo perfil-titulo">Colección</h2>
+                    <p class="mt-4 text-lg">Tocá una pieza para probarla en la mesa. Lo punteado todavía no está dibujado.</p>
+
                     @if ($loTieneTodo)
-                        <p class="mt-8 max-w-[38ch] text-lg font-bold leading-snug">
-                            Sos la administración: tenés todas las cartas y los dorsos abiertos para probarlos.
-                        </p>
-                        <p class="mt-3 max-w-[40ch] leading-relaxed">Tu categoría no cambia por eso: sale de tus partidas, como la de todos.</p>
-                    @elseif ($proxima)
-                        @php($queViene = $partes($proxima['carta']))
-
-                        <div class="mt-8 flex items-center gap-5">
-                            <div class="w-16 flex-none sm:w-20" aria-hidden="true"><x-carta :palo="$queViene['palo']" :numero="$queViene['numero']" /></div>
-
-                            <p class="min-w-0 text-lg font-bold leading-snug">
-                                En el nivel <strong class="font-black tabular-nums text-oro">{{ $proxima['nivel'] }}</strong> llega {{ $nombreDe($proxima['carta']) }}.
-                            </p>
-                        </div>
-                    @else
-                        <p class="mt-8 max-w-[34ch] text-lg font-bold leading-snug">Tenés el ancho de espada: no hay carta más alta en el truco.</p>
+                        <p class="mt-2 font-bold">Sos la administración: tenés todo abierto para probarlo. Tu nivel sale de tus partidas, como el de todos.</p>
                     @endif
-
-                    @if ($categoria->siguiente() && ! $loTieneTodo)
-                        <p class="mt-6 max-w-[40ch] leading-relaxed">
-                            Desde el nivel {{ $categoria->siguiente()->desde() }} pasás a {{ mb_strtolower($categoria->siguiente()->nombre()) }}.
-                        </p>
-                    @endif
-
-                    <form method="POST" action="{{ route('jugar') }}" class="mt-7">
-                        @csrf
-                        <button type="submit" class="boton boton-naipe"><x-icono nombre="repartir" /> Jugar una partida</button>
-                    </form>
-                </section>
-
-                {{-- El camino: las catorce cartas en el orden del truco. Boca arriba las ganadas, boca abajo las que faltan. --}}
-                <section aria-labelledby="titulo-camino" class="perfil-camino">
-                    <h2 id="titulo-camino" class="text-3xl font-extrabold tracking-tight sm:text-4xl">El camino</h2>
-                    <p class="mt-3 max-w-[58ch] leading-relaxed sm:text-lg">
-                        Catorce cartas en el orden del truco, del cuatro al ancho de espada. Cada una llega en el nivel que dice debajo.
-                        Tocá una de las tuyas para que te represente.
-                    </p>
 
                     @error('carta')
                         <p role="alert" class="mt-4 inline-flex rounded-[0.625rem] bg-copa px-4 py-2.5 font-bold leading-snug text-naipe">{{ $message }}</p>
                     @enderror
-
-                    <form method="POST" action="{{ route('perfil.carta') }}" class="camino mt-8">
-                        @csrf
-                        @method('PUT')
-
-                        @foreach (Categoria::cases() as $tramoDeCategoria)
-                            <fieldset class="camino-tramo min-w-0" style="--cartas: {{ count($tramos[$tramoDeCategoria->value]) }}">
-                                <legend class="camino-rotulo">
-                                    <span class="font-extrabold">{{ $tramoDeCategoria->nombre() }}</span>
-                                </legend>
-
-                                <ol class="camino-cartas">
-                                    @foreach ($tramos[$tramoDeCategoria->value] as $paso)
-                                        <li>
-                                            @if ($paso['abierta'])
-                                                <button type="submit" name="carta" value="{{ $paso['carta'] }}" class="naipe-boton"
-                                                    aria-pressed="{{ $paso['elegida'] ? 'true' : 'false' }}"
-                                                    aria-label="{{ ucfirst($nombreDe($paso['carta'])) }}{{ $paso['elegida'] ? ', tu carta' : ', elegir' }}">
-                                                    <x-carta :palo="$partes($paso['carta'])['palo']" :numero="$partes($paso['carta'])['numero']" />
-                                                </button>
-                                            @else
-                                                {{-- Lo que falta va boca abajo, con tu dorso: no se toca. --}}
-                                                <div class="camino-cerrada" role="img" aria-label="{{ ucfirst($nombreDe($paso['carta'])) }}, llega en el nivel {{ $paso['nivel'] }}">
-                                                    <x-dorso :de="$dorso" aria-hidden="true" />
-                                                </div>
-                                            @endif
-
-                                            <p @class(['camino-pide', 'camino-tuya' => $paso['elegida']]) aria-hidden="true">{{ $paso['elegida'] ? 'Tu carta' : $paso['nivel'] }}</p>
-                                        </li>
-                                    @endforeach
-                                </ol>
-                            </fieldset>
-                        @endforeach
-                    </form>
-                </section>
-
-                {{-- Los dorsos: se ganan en la escalera, y el elegido es el que ve el rival. --}}
-                <section aria-labelledby="titulo-dorsos" class="perfil-dorsos">
-                    <h2 id="titulo-dorsos" class="text-3xl font-extrabold tracking-tight sm:text-4xl">Dorsos</h2>
-                    <p class="mt-3 max-w-[58ch] leading-relaxed sm:text-lg">
-                        Con tu dorso ves todas las cartas boca abajo, también las del rival. Se ganan subiendo de nivel y en la
-                        <a href="{{ route('escalera') }}" class="enlace text-naipe">escalera del club</a>{{ $escalon <= \App\Juego\Escalera::cuantos() ? ": vas por el escalón {$escalon}." : ', que ya pasaste entera.' }}
-                    </p>
-
                     @error('dorso')
                         <p role="alert" class="mt-4 inline-flex rounded-[0.625rem] bg-copa px-4 py-2.5 font-bold leading-snug text-naipe">{{ $message }}</p>
                     @enderror
 
-                    <form method="POST" action="{{ route('perfil.dorso') }}" class="mt-8">
-                        @csrf
-                        @method('PUT')
+                    <div class="coleccion-grilla">
+                        <div class="min-w-0">
+                            <div role="tablist" aria-label="Qué mirar" class="coleccion-pestanas">
+                                @foreach (['cartas' => 'Cartas', 'dorsos' => 'Dorsos', 'mesas' => 'Mesas', 'mazos' => 'Mazos'] as $clave => $nombre)
+                                    <button type="button" role="tab" id="pestana-{{ $clave }}" class="pestana" aria-controls="piezas-{{ $clave }}"
+                                        :aria-selected="(pestana === '{{ $clave }}').toString()" aria-selected="{{ $clave === ($muestraElDorso ? 'dorsos' : 'cartas') ? 'true' : 'false' }}"
+                                        @click="pestana = '{{ $clave }}'">{{ $nombre }}</button>
+                                @endforeach
+                            </div>
 
-                        <ol class="dorsos-fila">
-                            @foreach ($dorsos as $opcion)
-                                <li>
-                                    @if ($opcion['abierto'])
-                                        <button type="submit" name="dorso" value="{{ $opcion['clave'] }}" class="naipe-boton"
-                                            aria-pressed="{{ $opcion['elegido'] ? 'true' : 'false' }}"
-                                            aria-label="Dorso {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ', elegir' }}">
-                                            <x-dorso :de="$opcion['clave']" aria-hidden="true" />
-                                        </button>
-                                    @else
-                                        <div class="dorso-cerrado" role="img" aria-label="Dorso {{ $opcion['nombre'] }}, {{ isset($opcion['escalon']) ? 'se gana en el escalón '.$opcion['escalon'].' de la escalera' : 'llega en el nivel '.$opcion['nivel'] }}">
-                                            <x-dorso :de="$opcion['clave']" aria-hidden="true" />
-                                        </div>
-                                    @endif
+                            {{-- Solo se dibuja la pestaña abierta. --}}
+                            <template x-if="pestana === 'cartas'">
+                                <ol id="piezas-cartas" role="tabpanel" aria-labelledby="pestana-cartas" class="coleccion-piezas">
+                                    @foreach ($camino as $paso)
+                                        @php($nombre = ucfirst($nombreDe($paso['carta'])))
+                                        <li>
+                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'carta' && prueba.clave === '{{ $paso['carta'] }}').toString()"
+                                                aria-label="{{ $nombre }}{{ $paso['elegida'] ? ', en uso' : ($paso['abierta'] ? ', probar' : ', llega en el nivel '.$paso['nivel']) }}"
+                                                :aria-label="'{{ $nombre }}' + (enUso.carta === '{{ $paso['carta'] }}' ? ', en uso' : '{{ $paso['abierta'] ? ', probar' : ', llega en el nivel '.$paso['nivel'] }}')"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'carta', 'clave' => $paso['carta'], 'nombre' => $nombre, 'abierta' => $paso['abierta'], 'elegida' => $paso['elegida'], 'pide' => 'Llega en el nivel '.$paso['nivel'].'.']) }})">
+                                                <span @class(['block', 'pieza-cerrada' => ! $paso['abierta']])><x-carta :palo="$partes($paso['carta'])['palo']" :numero="$partes($paso['carta'])['numero']" /></span>
+                                            </button>
+                                            <p class="pieza-rotulo" x-text="enUso.carta === '{{ $paso['carta'] }}' ? 'En uso' : '{{ $paso['abierta'] ? '' : 'Nivel '.$paso['nivel'] }}'"></p>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </template>
 
-                                    <p class="mt-3 text-[0.9rem] font-extrabold leading-tight sm:text-base" aria-hidden="true">{{ $opcion['nombre'] }}</p>
-                                    <p class="mt-0.5 text-sm font-semibold leading-snug" aria-hidden="true">
-                                        @if ($opcion['elegido'])
-                                            En uso
-                                        @elseif ($opcion['abierto'])
-                                            Ganado
-                                        @else
-                                            {{ isset($opcion['escalon']) ? 'Escalón '.$opcion['escalon'] : 'Nivel '.$opcion['nivel'] }}
-                                        @endif
-                                    </p>
-                                </li>
+                            <template x-if="pestana === 'dorsos'">
+                                <ol id="piezas-dorsos" role="tabpanel" aria-labelledby="pestana-dorsos" class="coleccion-piezas">
+                                    @foreach ($dorsos as $opcion)
+                                        @php($pide = isset($opcion['escalon']) ? 'Se gana en el escalón '.$opcion['escalon'].' de la escalera.' : 'Llega en el nivel '.$opcion['nivel'].'.')
+                                        <li>
+                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'dorso' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                                aria-label="Dorso {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : '') }}"
+                                                :aria-label="'Dorso {{ $opcion['nombre'] }}' + (enUso.dorso === '{{ $opcion['clave'] }}' ? ', en uso' : '{{ $opcion['abierto'] ? ', probar' : '' }}')"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'dorso', 'clave' => $opcion['clave'], 'nombre' => 'Dorso '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'elegida' => $opcion['elegido'], 'pide' => $pide]) }})">
+                                                <span @class(['block', 'pieza-cerrada' => ! $opcion['abierto']])><x-dorso :de="$opcion['clave']" /></span>
+                                            </button>
+                                            <p class="pieza-rotulo">
+                                                {{ $opcion['nombre'] }}
+                                                <span class="block font-semibold" x-text="enUso.dorso === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : (isset($opcion['escalon']) ? 'Escalón '.$opcion['escalon'] : 'Nivel '.$opcion['nivel']) }}'"></span>
+                                            </p>
+                                        </li>
+                                    @endforeach
+                                    @foreach ($deTipo('dorso') as $ficha)
+                                        <li>
+                                            <div class="pieza-proxima" role="img" aria-label="Dorso {{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
+                                            <p class="pieza-rotulo">{{ $ficha['nombre'] }}<span class="block font-semibold">Nivel {{ $ficha['nivel'] }}</span></p>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </template>
+
+                            @foreach (['mesas' => ['mesa', 'Paño verde'], 'mazos' => ['mazo', 'Mazo de fábrica']] as $pestana => [$tipo, $deFabrica])
+                                <template x-if="pestana === '{{ $pestana }}'">
+                                    <ol id="piezas-{{ $pestana }}" role="tabpanel" aria-labelledby="pestana-{{ $pestana }}" class="coleccion-piezas">
+                                        <li>
+                                            <button type="button" class="naipe-boton" aria-pressed="false"
+                                                @click="probar($el, {{ Js::from(['tipo' => $tipo, 'clave' => 'fabrica', 'nombre' => $deFabrica, 'abierta' => true, 'elegida' => true, 'pide' => '']) }})">
+                                                @if ($tipo === 'mesa')
+                                                    <span class="pieza-mesa" aria-hidden="true"></span>
+                                                @else
+                                                    <x-carta palo="espada" :numero="1" />
+                                                @endif
+                                            </button>
+                                            <p class="pieza-rotulo">{{ $deFabrica }}<span class="block font-semibold">En uso</span></p>
+                                        </li>
+                                        @foreach ($deTipo($tipo) as $ficha)
+                                            <li>
+                                                <div class="pieza-proxima" role="img" aria-label="{{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
+                                                <p class="pieza-rotulo">{{ $ficha['nombre'] }}<span class="block font-semibold">Nivel {{ $ficha['nivel'] }}</span></p>
+                                            </li>
+                                        @endforeach
+                                    </ol>
+                                </template>
                             @endforeach
-                        </ol>
-                    </form>
-                </section>
-            </div>
-        </div>
+                        </div>
 
-        {{-- Lo que se escribe y se declara, en la superficie de lectura. --}}
-        <div class="mx-auto grid max-w-6xl gap-x-16 gap-y-14 px-5 pb-16 pt-12 sm:px-8 lg:grid-cols-2 lg:pt-16">
-            <section aria-labelledby="titulo-experiencia">
-                <h2 id="titulo-experiencia" class="text-3xl font-extrabold tracking-tight">¿Cuánto truco sabés?</h2>
-                <p class="mt-3 max-w-[46ch] leading-relaxed">
-                    Solo cambia contra qué nivel de la máquina entrás cuando no elegís y qué ayudas ves. No cambia las reglas, ni tu categoría, ni lo que ve tu rival.
-                </p>
+                        {{--
+                            El probador: la pieza armada sobre la mesa antes de elegirla. Una carta se ve de frente; un dorso,
+                            con la carta dada vuelta. "Usar esta" la elige; lo que falta dice cuándo llega.
+                        --}}
+                        <aside class="probador" aria-label="Probador">
+                            <div class="probador-mesa">
+                                <div class="probador-naipe">
+                                    <span class="giro block" data-vuelta="{{ $muestraElDorso ? 'true' : 'false' }}" :data-vuelta="(prueba.tipo === 'dorso').toString()">
+                                        <span class="block" x-ref="cara"><x-carta :palo="$suya['palo']" :numero="$suya['numero']" /></span>
+                                        <span class="giro-cara block" x-ref="dorso"><x-dorso :de="$dorso" /></span>
+                                    </span>
+                                </div>
+                            </div>
 
-                <form method="POST" action="{{ route('perfil.experiencia') }}" class="mt-6 flex flex-col">
-                    @csrf
-                    @method('PUT')
+                            <div class="probador-pie" aria-live="polite">
+                                <p class="text-xl font-extrabold leading-tight" x-text="prueba.nombre">{{ $prueba['nombre'] }}</p>
+                                <p class="mt-1 min-h-[1lh] font-semibold" x-text="esLaQueUsa ? 'Es la que usás.' : (prueba.abierta ? 'Es tuya.' : prueba.pide)">Es la que usás.</p>
 
-                    @foreach (Experiencia::cases() as $opcion)
-                        <button type="submit" name="experiencia" value="{{ $opcion->value }}" class="experiencia nivel-opcion"
-                            aria-pressed="{{ $jugador->experiencia === $opcion ? 'true' : 'false' }}">
-                            <x-nivel-fosforos :nivel="$opcion->nivel()" :puesto="$jugador->experiencia === $opcion" class="mt-0.5 text-[1.25rem]" />
-                            <span class="min-w-0">
-                                <span class="block text-lg font-extrabold leading-tight">{{ $opcion->nombre() }}</span>
-                                <span class="mt-1 block leading-snug">{{ $opcion->detalle() }}</span>
-                            </span>
-                        </button>
-                    @endforeach
-                </form>
-            </section>
-
-            <section aria-labelledby="titulo-cuenta" x-data="{ apodo: {{ Js::from(old('apodo', $jugador->apodo)) }} }">
-                <h2 id="titulo-cuenta" class="text-3xl font-extrabold tracking-tight">Tu cuenta</h2>
-
-                <form method="POST" action="{{ route('perfil') }}" class="mt-6 flex max-w-[29rem] flex-col gap-6">
-                    @csrf
-                    @method('PUT')
-
-                    <x-campo nombre="apodo" rotulo="Apodo" ayuda="De 3 a 20 caracteres. Es el nombre que ve tu rival."
-                        :valor="$jugador->apodo" x-model="apodo" maxlength="20" autocomplete="nickname" autocapitalize="words" required />
-
-                    <div>
-                        <x-boton-enviar texto="Guardar apodo" enviando="Guardando…" class="boton-tinta" />
+                                <form method="POST" :action="prueba.tipo === 'dorso' ? @js(route('perfil.dorso')) : @js(route('perfil.carta'))" class="mt-4"
+                                    x-show="['carta', 'dorso'].includes(prueba.tipo) && prueba.abierta && ! esLaQueUsa" x-cloak @submit.prevent="usar()">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" :name="prueba.tipo" :value="prueba.clave">
+                                    <button type="submit" class="boton boton-naipe" :disabled="guardando" x-text="prueba.tipo === 'dorso' ? 'Usar este dorso' : 'Usar esta carta'">Usar esta carta</button>
+                                </form>
+                            </div>
+                        </aside>
                     </div>
-                </form>
-
-                <dl class="mt-10 max-w-[29rem] border-t border-current/15 pt-6">
-                    <dt class="font-bold">Email</dt>
-                    <dd class="mt-0.5 break-words">{{ $jugador->email }}</dd>
-                </dl>
-
-                <form method="POST" action="{{ route('salir') }}" class="mt-8">
-                    @csrf
-                    <button type="submit" class="boton boton-linea">
-                        <x-icono nombre="salir" /> Cerrar sesión
-                    </button>
-                </form>
+                </div>
             </section>
-        </div>
+
+            {{-- El camino: unos niveles antes y después del tuyo, y el camino entero a un toque. --}}
+            <section id="camino" aria-labelledby="titulo-camino" class="pagina perfil-seccion">
+                <h2 id="titulo-camino" class="seccion-titulo perfil-titulo">El camino</h2>
+                <p class="mt-4 text-lg">Diez fósforos por nivel. Ganar anota tres; perder, uno.</p>
+
+                <ol class="camino-cerca">
+                    @foreach ($cerca as $numero => $premios)
+                        <li @class(['camino-paso', 'es-pasado' => $numero <= $nivel, 'es-proximo' => $numero === $nivel + 1])>
+                            <p class="camino-numero"><span class="sr-only">Nivel</span> {{ $numero }}</p>
+                            <p class="camino-estado">{{ $numero <= $nivel ? 'Tuyo' : ($numero === $nivel + 1 ? 'El que sigue' : '') }}</p>
+                            <ul class="camino-premios">
+                                @foreach ($premios as $premio)
+                                    <li>
+                                        <span class="block text-sm">{{ $tipos[$premio['tipo']] }}</span>
+                                        <span class="block font-bold leading-tight">{{ $premio['nombre'] }}</span>
+                                        @unless ($premio['listo'])
+                                            <span class="block text-sm">Próximamente</span>
+                                        @endunless
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </li>
+                    @endforeach
+                </ol>
+
+                <x-pagina.desplegable titulo="Ver el camino entero">
+                    <table class="tabla">
+                        <caption class="sr-only">Los cuarenta niveles y lo que destraba cada uno</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col" class="w-16">Nivel</th>
+                                <th scope="col">Premios</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($niveles as $numero => $premios)
+                                <tr @class(['font-bold' => $numero === $nivel])>
+                                    <td class="text-xl font-black tabular-nums">{{ $numero }}</td>
+                                    <td>
+                                        @foreach ($premios as $i => $premio)
+                                            {{ $tipos[$premio['tipo']] }} {{ $premio['nombre'] }}{{ $premio['listo'] ? '' : ' (próximamente)' }}{{ $i < count($premios) - 1 ? ',' : '' }}
+                                        @endforeach
+                                        @if ($numero <= $nivel)
+                                            <span class="text-sm font-semibold">, tuyo</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </x-pagina.desplegable>
+            </section>
+        @endif
+
+        {{-- Las últimas partidas. --}}
+        <section id="partidas" aria-labelledby="titulo-partidas" class="pagina perfil-seccion">
+            <h2 id="titulo-partidas" class="seccion-titulo perfil-titulo">Últimas partidas</h2>
+
+            @if ($ultimas === [])
+                <p class="mt-6 text-lg font-semibold">{{ $propio ? 'Todavía no terminaste ninguna partida.' : 'Todavía no terminó ninguna partida.' }}</p>
+            @else
+                <ol class="perfil-partidas">
+                    @foreach ($ultimas as $partida)
+                        <li>
+                            <p @class(['font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>
+                                {{ $partida['esDesafio'] ? ($partida['gano'] ? 'Superado' : 'No salió') : ($propio ? ($partida['gano'] ? 'Ganaste' : 'Perdiste') : ($partida['gano'] ? 'Ganó' : 'Perdió')) }}
+                            </p>
+                            <p class="text-2xl font-black tabular-nums leading-none">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</p>
+                            <p class="min-w-0 leading-snug"><span class="font-bold">Contra {{ $partida['rival'] }}</span> <span class="block text-sm">{{ $partida['dia'] }}, {{ $partida['hora'] }}</span></p>
+                            @if ($propio)
+                                <a href="{{ route('historial.ver', $partida['id']) }}" class="enlace-nav font-bold">Ver de nuevo</a>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+
+                @if ($propio)
+                    <p class="mt-5"><a href="{{ route('historial') }}" class="enlace-nav font-bold">Ver el historial</a></p>
+                @endif
+            @endif
+        </section>
+
+        @if ($propio)
+            {{-- La cuenta, compacta, al final: lo que se declara y lo que se escribe. --}}
+            <section id="cuenta" aria-labelledby="titulo-cuenta-entera" class="pagina perfil-seccion">
+                <h2 id="titulo-cuenta-entera" class="seccion-titulo perfil-titulo">Tu cuenta</h2>
+
+                <div class="mt-8 grid gap-x-16 gap-y-12 lg:grid-cols-2">
+                    <section aria-labelledby="titulo-experiencia">
+                        <h3 id="titulo-experiencia" class="text-xl font-extrabold">¿Cuánto truco sabés?</h3>
+                        <p class="mt-2 max-w-[46ch] leading-relaxed">Cambia contra qué nivel de la máquina entrás si no elegís y qué ayudas ves. Nada más.</p>
+
+                        <form method="POST" action="{{ route('perfil.experiencia') }}" class="mt-5 flex flex-col">
+                            @csrf
+                            @method('PUT')
+
+                            @foreach (Experiencia::cases() as $opcion)
+                                <button type="submit" name="experiencia" value="{{ $opcion->value }}" class="experiencia nivel-opcion"
+                                    aria-pressed="{{ $jugador->experiencia === $opcion ? 'true' : 'false' }}">
+                                    <x-nivel-fosforos :nivel="$opcion->nivel()" :puesto="$jugador->experiencia === $opcion" class="mt-0.5 text-[1.25rem]" />
+                                    <span class="min-w-0">
+                                        <span class="block text-lg font-extrabold leading-tight">{{ $opcion->nombre() }}</span>
+                                        <span class="mt-1 block leading-snug">{{ $opcion->detalle() }}</span>
+                                    </span>
+                                </button>
+                            @endforeach
+                        </form>
+                    </section>
+
+                    <section aria-labelledby="titulo-cuenta" x-data="{ apodo: {{ Js::from(old('apodo', $jugador->apodo)) }} }">
+                        <h3 id="titulo-cuenta" class="text-xl font-extrabold">Apodo y sesión</h3>
+
+                        <form method="POST" action="{{ route('perfil') }}" class="mt-5 flex max-w-[29rem] flex-col gap-6">
+                            @csrf
+                            @method('PUT')
+
+                            <x-campo nombre="apodo" rotulo="Apodo" ayuda="De 3 a 20 caracteres. Es el nombre que ve tu rival."
+                                :valor="$jugador->apodo" x-model="apodo" maxlength="20" autocomplete="nickname" autocapitalize="words" required />
+
+                            <div>
+                                <x-boton-enviar texto="Guardar apodo" enviando="Guardando…" class="boton-tinta" />
+                            </div>
+                        </form>
+
+                        <dl class="mt-8 max-w-[29rem] border-t border-current/15 pt-5">
+                            <dt class="font-bold">Email</dt>
+                            <dd class="mt-0.5 break-words">{{ $jugador->email }}</dd>
+                        </dl>
+
+                        <form method="POST" action="{{ route('salir') }}" class="mt-6">
+                            @csrf
+                            <button type="submit" class="boton boton-linea">
+                                <x-icono nombre="salir" /> Cerrar sesión
+                            </button>
+                        </form>
+                    </section>
+                </div>
+            </section>
+        @endif
     </div>
 </x-layouts.base>
