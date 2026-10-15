@@ -16,17 +16,54 @@ const ANTES_DE_CONTAR = 420;
 
 const movimientoReducido = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-export default ({ jugador, fosforos, propio, prueba, enUso, rutas }) => ({
-    // Si se acaba de elegir un dorso, la Colección vuelve abierta en los dorsos: es lo que se estaba mirando.
-    pestana: prueba?.tipo === 'dorso' ? 'dorsos' : 'cartas',
+// Lo que dice el botón de usar, según lo que se está probando.
+const USAR = {
+    carta: 'Usar esta carta',
+    dorso: 'Usar este dorso',
+    mesa: 'Usar esta mesa',
+    anotar: 'Anotar así',
+    titulo: 'Usar este título',
+    distintivo: 'Usar este distintivo',
+};
+
+export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titulos }) => ({
+    // Si se acaba de elegir algo con el formulario común, la Colección vuelve abierta en esa pestaña.
+    pestana: pestana ?? 'cartas',
     prueba,
+    rutas: rutas ?? {},
+    // Cómo se lee el título que se está probando: Cantor o Cantora. Arranca como lo usa hoy.
+    femenino: enUso?.femenino ?? false,
     tira: fosforos % POR_NIVEL,
     // Lo que usás ahora: elegir algo lo cambia acá, sin recargar la página.
     enUso: enUso ?? {},
     guardando: false,
 
     get esLaQueUsa() {
-        return this.prueba?.clave !== undefined && this.enUso[this.prueba.tipo] === this.prueba.clave;
+        if (this.prueba?.clave === undefined || this.enUso[this.prueba.tipo] !== this.prueba.clave) {
+            return false;
+        }
+
+        // Un título es el que usa solo si además se lee igual.
+        return this.prueba.tipo !== 'titulo' || this.enUso.femenino === this.femenino;
+    },
+
+    get textoDeUsar() {
+        if (this.prueba?.tipo === 'distintivo' && this.prueba.clave === 'ninguno') {
+            return 'Sacar el distintivo';
+        }
+
+        if (this.prueba?.tipo === 'titulo' && this.enUso.titulo === this.prueba.clave) {
+            return 'Usarlo así';
+        }
+
+        return USAR[this.prueba?.tipo] ?? 'Usar';
+    },
+
+    /** Cómo se lee un título en una de sus dos formas. */
+    tituloDe(clave, femenino) {
+        const titulo = titulos?.find((uno) => uno.clave === clave);
+
+        return titulo ? (femenino ? titulo.femenino : titulo.nombre) : '';
     },
 
     init() {
@@ -88,6 +125,20 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas }) => ({
             this.$refs.dorso.replaceChildren(dibujo.cloneNode(true));
         }
 
+        // Una mesa se prueba con tu carta encima, la que se ve arriba.
+        if (pieza.tipo === 'mesa') {
+            const tuya = this.$refs.carta.querySelector('svg');
+
+            if (tuya) {
+                this.$refs.cara.replaceChildren(tuya.cloneNode(true));
+            }
+        }
+
+        // Un título se prueba como lo leés hoy; después se puede cambiar a la otra forma.
+        if (pieza.tipo === 'titulo') {
+            this.femenino = this.enUso.femenino;
+        }
+
         this.prueba = pieza;
     },
 
@@ -98,21 +149,21 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas }) => ({
     async usar() {
         const { tipo, clave } = this.prueba ?? {};
 
-        if (this.guardando || ! rutas?.[tipo]) {
+        if (this.guardando || ! this.rutas[tipo]) {
             return;
         }
 
         this.guardando = true;
 
         try {
-            const respuesta = await fetch(rutas[tipo], {
+            const respuesta = await fetch(this.rutas[tipo], {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content ?? '',
                 },
-                body: new URLSearchParams({ _method: 'PUT', [tipo]: clave }),
+                body: new URLSearchParams({ _method: 'PUT', [tipo]: clave, ...(tipo === 'titulo' ? { femenino: this.femenino ? '1' : '0' } : {}) }),
             });
             const datos = await respuesta.json().catch(() => ({}));
 
@@ -121,6 +172,11 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas }) => ({
             }
 
             this.enUso[tipo] = clave;
+
+            if (tipo === 'titulo') {
+                this.enUso.femenino = this.femenino;
+            }
+
             this.ponerEnLaMesa(tipo);
             this.avisar('hecho', datos.mensaje);
         } catch (error) {
@@ -130,8 +186,15 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas }) => ({
         }
     },
 
-    /** Lleva lo elegido a tu mesa de arriba: la carta grande, o el dorso de cada carta del mazo. */
+    /**
+     * Lleva lo elegido a tu mesa de arriba: la carta grande o el dorso de cada carta del mazo. La mesa, el
+     * título y el distintivo de arriba siguen solos a lo que se usa (enUso).
+     */
     ponerEnLaMesa(tipo) {
+        if (! ['carta', 'dorso'].includes(tipo)) {
+            return;
+        }
+
         if (tipo === 'carta') {
             const cara = this.$refs.cara.querySelector('svg');
 

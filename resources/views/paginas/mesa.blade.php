@@ -12,7 +12,7 @@
     $nombreDelBot = $torneo['rival'] ?? $practica['rival'] ?? null;
     // Cómo se nombra a quien está enfrente: el apodo de la otra persona, el del bot del torneo, o nada (es "el bot").
     $enfrente = $rival ?? $nombreDelBot;
-    // De otra persona se ve además su categoría, su carta y el dorso que eligió para sus cartas.
+    // De otra persona se ve además su categoría, su carta, su título y su distintivo.
     $socio ??= null;
     $cartaDelSocio = $socio === null ? null : explode('-', $socio['carta']);
 
@@ -49,13 +49,17 @@
     ];
 
     $serie ??= null;
+    // La mesa de quien mira (la eligió en su Colección). Con una elegida, la del Ultra no oscurece el paño.
+    $mesaPropia = \App\Juego\Premios::propia('mesa');
+    // Y cómo anota: los dos tanteadores de su pantalla salen con su forma.
+    $anotarPropio = \App\Juego\Premios::propia('anotar');
 @endphp
 
 <x-layouts.base titulo="Mesa" superficie="pano" :encabezado="false" :pie="false">
     <x-mazo.plantillas />
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa en app.css. --}}
-    <div x-data="mesa(@js($vista), @js($pedidos))" @class(['mesa mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
+    <div x-data="mesa(@js($vista), @js($pedidos))" @class(['mesa mesa-completa relative', 'mesa-de-'.$mesaPropia => $mesaPropia !== 'fabrica', 'mesa-ultra' => $mesaPropia === 'fabrica' && $nivel === \App\Juego\Nivel::UltraDificil])>
         <h1 class="sr-only">{{ $nivel ? ($nombreDelBot ? "Mesa contra {$nombreDelBot}, máquina de nivel {$nivel->nombre()}" : "Mesa contra la máquina, nivel {$nivel->nombre()}") : "Mesa contra {$rival}" }}</h1>
 
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
@@ -114,9 +118,9 @@
 
             <section aria-label="Tanteador" class="grid grid-cols-2 gap-x-4 text-[clamp(0.8rem,4.1cqw,1.3rem)] [grid-area:tanteo] lg:gap-x-12">
                 {{-- El asiento propio va siempre primero: quien se sentó por invitación es el 1. --}}
-                <x-tanteador nombre="Vos" :puntos="$vista['tanteo'][$vista['asiento']]" modelo="puntos.vos" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
+                <x-tanteador :forma="$anotarPropio" nombre="Vos" :puntos="$vista['tanteo'][$vista['asiento']]" modelo="puntos.vos" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
                 {{-- Un apodo puede tener 20 letras: si no entra en su mitad se corta, y los puntos quedan a la vista. --}}
-                <x-tanteador :nombre="$enfrente ?? 'Máquina'" :puntos="$vista['tanteo'][1 - $vista['asiento']]" modelo="puntos.rival" class="min-w-0"
+                <x-tanteador :forma="$anotarPropio" :nombre="$enfrente ?? 'Máquina'" :puntos="$vista['tanteo'][1 - $vista['asiento']]" modelo="puntos.rival" class="min-w-0"
                     clase-nombre="min-w-0 truncate text-sm font-semibold" :hasta="$vista['puntosParaGanar']" />
             </section>
 
@@ -160,10 +164,10 @@
                     </span>
                     {{-- Un apodo largo ocupa dos renglones como mucho: la fila del rival mide siempre lo mismo. --}}
                     {{-- En un torneo el bot va con su apodo: que es un bot lo dicen su ícono y los fósforos de su nivel. --}}
-                    <span class="line-clamp-2">{{ $nivel ? ($nombreDelBot ?? 'Máquina '.$nivel->deLaMaquina()) : $rival }}</span>
-                    {{-- La categoría de la otra persona, debajo de su apodo en el celular y al lado en pantallas anchas. --}}
+                    <span class="line-clamp-2">{{ $nivel ? ($nombreDelBot ?? 'Máquina '.$nivel->deLaMaquina()) : $rival }}@if ($socio) <x-distintivo :de="$socio['distintivo']" />@endif</span>
+                    {{-- La categoría y el título de la otra persona, en un renglón: debajo de su apodo en el celular y al lado en pantallas anchas. --}}
                     @if ($socio)
-                        <span class="whitespace-nowrap text-xs font-semibold sm:text-sm"><span class="sr-only">Categoría</span> {{ $socio['categoria'] }}</span>
+                        <span class="whitespace-nowrap text-xs font-semibold sm:text-sm"><span class="sr-only">Categoría</span> {{ $socio['categoria'] }} <span class="sr-only">, título</span> <em>{{ $socio['titulo'] }}</em></span>
                     @endif
                 </p>
                 <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
@@ -343,8 +347,8 @@
                 </p>
 
                 <div class="mt-7 grid gap-5 text-[1.5rem] sm:text-[1.75rem]" aria-hidden="true">
-                    <x-tanteador nombre="Vos" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
-                    <x-tanteador :nombre="$enfrente ?? 'Máquina'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
+                    <x-tanteador :forma="$anotarPropio" nombre="Vos" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
+                    <x-tanteador :forma="$anotarPropio" :nombre="$enfrente ?? 'Máquina'" modelo="cuenta.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                 </div>
 
                 <x-mesa.experiencia />

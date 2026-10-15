@@ -74,7 +74,7 @@ final class Ranking
 
         $mira = $quienMira?->getKey();
 
-        return DB::table('resultados as r')
+        $filas = DB::table('resultados as r')
             ->join('jugadores as j', 'j.id', '=', 'r.jugador_id')
             ->leftJoinSub($ultimaPerdida, 'p', 'p.jugador_id', '=', 'r.jugador_id')
             ->where(function (Builder $consulta) use ($mira) {
@@ -90,7 +90,13 @@ final class Ranking
             ->selectRaw('sum(case when r.gano = 1 then 1 else 0 end) as ganadas')
             ->selectRaw('sum(r.envidos_jugados) as envidos_jugados, sum(r.envidos_ganados) as envidos_ganados')
             ->selectRaw('sum(case when r.gano = 1 and (p.ultima is null or r.terminada_en > p.ultima) then 1 else 0 end) as racha')
-            ->get()
+            ->get();
+
+        // El título y el distintivo salen del jugador entero (sus cuentas y lo que eligió): se traen todos de una vez.
+        $jugadores = Jugador::query()->whereKey($filas->pluck('id'))->get()->keyBy('id');
+        $premios = new Premios;
+
+        return $filas
             ->map(fn (object $fila) => [
                 'id' => (int) $fila->id,
                 'apodo' => $fila->apodo,
@@ -104,6 +110,8 @@ final class Ranking
                 'carta' => $fila->de_ejemplo
                     ? (JugadoresDeEjemplo::cartas()[$fila->apodo] ?? Premios::CARTA_DE_FABRICA)
                     : Premios::cartaCon($fila->carta, Camino::nivelCon((int) $fila->fosforos), (bool) $fila->es_administrador),
+                'titulo' => $premios->tituloDe($jugadores[$fila->id] ?? null),
+                'distintivo' => $premios->elegidaDe('distintivo', $jugadores[$fila->id] ?? null),
                 'jugadas' => (int) $fila->jugadas,
                 'racha' => (int) $fila->racha,
                 // El porcentaje de envidos ganados, o null si todavía no jugó ninguno.

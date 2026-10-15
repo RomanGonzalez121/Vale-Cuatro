@@ -24,8 +24,20 @@
 
     if ($propio) {
         $dorsoElegido = collect($dorsos)->firstWhere('elegido', true);
-        // Si se acaba de elegir un dorso, la carta del probador arranca dada vuelta: es lo que cambió.
-        $muestraElDorso = session('muestra') === 'dorso';
+        // Si se acaba de elegir algo con el formulario común, la Colección vuelve abierta en esa pestaña, y si
+        // fue un dorso, la carta del probador arranca dada vuelta: es lo que cambió.
+        $muestra = session('muestra');
+        $muestraElDorso = $muestra === 'dorso';
+        $pestanaInicial = ['dorso' => 'dorsos', 'mesa' => 'mesas', 'anotar' => 'anotar', 'distintivo' => 'distintivos', 'titulo' => 'titulos'][$muestra] ?? 'cartas';
+        $pestanas = ['cartas' => 'Cartas', 'dorsos' => 'Dorsos', 'mesas' => 'Mesas', 'mazos' => 'Mazos', 'anotar' => 'Anotar', 'titulos' => 'Títulos', 'distintivos' => 'Distintivos'];
+        $rutas = [
+            'carta' => route('perfil.carta'),
+            'dorso' => route('perfil.dorso'),
+            'mesa' => route('perfil.mesa'),
+            'anotar' => route('perfil.anotar'),
+            'distintivo' => route('perfil.distintivo'),
+            'titulo' => route('perfil.titulo'),
+        ];
         $deTipo = fn (string $tipo) => array_values(array_filter($proximamente, fn (array $ficha) => $ficha['tipo'] === $tipo));
 
         // Lo que el probador muestra de entrada: tu carta, o tu dorso si recién lo cambiaste.
@@ -40,9 +52,9 @@
 @endphp
 
 <x-layouts.base :titulo="$propio ? 'Tu perfil' : $jugador->apodo" :descripcion="$propio ? 'Tu mesa, tu nivel, tus números y tu colección en Vale Cuatro.' : 'El perfil de '.$jugador->apodo.' en Vale Cuatro: su carta, su nivel y sus números.'">
-    <div class="pb-16 lg:pb-24" x-data="perfil({ jugador: {{ $jugador->id }}, fosforos: {{ (int) $jugador->fosforos }}, propio: {{ $propio ? 'true' : 'false' }}, prueba: {{ Js::from($prueba ?? null) }}, enUso: {{ Js::from($propio ? ['carta' => $carta, 'dorso' => $dorsoElegido['clave']] : null) }}, rutas: {{ Js::from($propio ? ['carta' => route('perfil.carta'), 'dorso' => route('perfil.dorso')] : null) }} })">
+    <div class="pb-16 lg:pb-24" x-data="perfil({ jugador: {{ $jugador->id }}, fosforos: {{ (int) $jugador->fosforos }}, propio: {{ $propio ? 'true' : 'false' }}, prueba: {{ Js::from($prueba ?? null) }}, enUso: {{ Js::from($enUso ?? null) }}, rutas: {{ Js::from($rutas ?? null) }}, pestana: {{ Js::from($pestanaInicial ?? 'cartas') }}, titulos: {{ Js::from(collect($titulos ?? [])->map(fn ($t) => ['clave' => $t['clave'], 'nombre' => $t['nombre'], 'femenino' => $t['femenino']])->values()) }} })">
         {{-- Tu mesa. --}}
-        <section aria-labelledby="titulo-perfil" class="perfil-mesa superficie-pano">
+        <section aria-labelledby="titulo-perfil" class="perfil-mesa superficie-pano" data-mesa="{{ $propio ? $enUso['mesa'] : 'fabrica' }}" @if ($propio) :data-mesa="enUso.mesa" @endif>
             <div class="pagina perfil-mesa-grilla">
                 {{-- El mazo, apilado con el dorso de quien mira, y la carta de este jugador, que sale de ahí al entrar. --}}
                 <div class="perfil-naipes" aria-hidden="true">
@@ -57,7 +69,20 @@
                 </div>
 
                 <div class="perfil-quien">
-                    <h1 id="titulo-perfil" class="pagina-titulo">{{ $jugador->apodo }}</h1>
+                    <h1 id="titulo-perfil" class="pagina-titulo">
+                        {{ $jugador->apodo }}
+                        @if ($propio)
+                            {{-- El que usa, y los demás que ganó listos para cambiar sin recargar. --}}
+                            @foreach ($distintivos as $opcion)
+                                @if ($opcion['abierto'])
+                                    <span @if (! $opcion['elegido']) x-cloak @endif x-show="enUso.distintivo === '{{ $opcion['clave'] }}'"><x-distintivo :de="$opcion['clave']" class="size-[0.8em]" /></span>
+                                @endif
+                            @endforeach
+                        @else
+                            <x-distintivo :de="$distintivo" class="size-[0.8em]" />
+                        @endif
+                    </h1>
+                    <p class="perfil-lema"><span class="sr-only">Título: </span><span @if ($propio) x-text="tituloDe(enUso.titulo, enUso.femenino)" @endif>{{ $titulo }}</span></p>
                     <p class="sr-only">{{ $propio ? 'Tu carta' : 'Su carta' }}: {{ $nombreDe($carta) }}.</p>
 
                     <p class="perfil-rango">
@@ -172,9 +197,9 @@
                     <div class="coleccion-grilla">
                         <div class="min-w-0">
                             <div role="tablist" aria-label="Qué mirar" class="coleccion-pestanas">
-                                @foreach (['cartas' => 'Cartas', 'dorsos' => 'Dorsos', 'mesas' => 'Mesas', 'mazos' => 'Mazos'] as $clave => $nombre)
+                                @foreach ($pestanas as $clave => $nombre)
                                     <button type="button" role="tab" id="pestana-{{ $clave }}" class="pestana" aria-controls="piezas-{{ $clave }}"
-                                        :aria-selected="(pestana === '{{ $clave }}').toString()" aria-selected="{{ $clave === ($muestraElDorso ? 'dorsos' : 'cartas') ? 'true' : 'false' }}"
+                                        :aria-selected="(pestana === '{{ $clave }}').toString()" aria-selected="{{ $clave === $pestanaInicial ? 'true' : 'false' }}"
                                         @click="pestana = '{{ $clave }}'">{{ $nombre }}</button>
                                 @endforeach
                             </div>
@@ -223,29 +248,118 @@
                                 </ol>
                             </template>
 
-                            @foreach (['mesas' => ['mesa', 'Paño verde'], 'mazos' => ['mazo', 'Mazo de fábrica']] as $pestana => [$tipo, $deFabrica])
-                                <template x-if="pestana === '{{ $pestana }}'">
-                                    <ol id="piezas-{{ $pestana }}" role="tabpanel" aria-labelledby="pestana-{{ $pestana }}" class="coleccion-piezas">
+                            {{-- Las mesas: cada una en chico, con su color y su dibujo. --}}
+                            <template x-if="pestana === 'mesas'">
+                                <ol id="piezas-mesas" role="tabpanel" aria-labelledby="pestana-mesas" class="coleccion-piezas">
+                                    @foreach ($mesas as $opcion)
                                         <li>
-                                            <button type="button" class="naipe-boton" aria-pressed="false"
-                                                @click="probar($el, {{ Js::from(['tipo' => $tipo, 'clave' => 'fabrica', 'nombre' => $deFabrica, 'abierta' => true, 'elegida' => true, 'pide' => '']) }})">
-                                                @if ($tipo === 'mesa')
-                                                    <span class="pieza-mesa" aria-hidden="true"></span>
-                                                @else
-                                                    <x-carta palo="espada" :numero="1" />
-                                                @endif
+                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'mesa' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                                aria-label="Mesa {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'mesa', 'clave' => $opcion['clave'], 'nombre' => 'Mesa '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
+                                                <span @class(['block', 'pieza-cerrada' => ! $opcion['abierto']])><span class="pieza-mesa" data-mesa="{{ $opcion['clave'] }}" aria-hidden="true"></span></span>
                                             </button>
-                                            <p class="pieza-rotulo">{{ $deFabrica }}<span class="block font-semibold">En uso</span></p>
+                                            <p class="pieza-rotulo">
+                                                {{ $opcion['nombre'] }}
+                                                <span class="block font-semibold" x-text="enUso.mesa === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
+                                            </p>
                                         </li>
-                                        @foreach ($deTipo($tipo) as $ficha)
-                                            <li>
-                                                <div class="pieza-proxima" role="img" aria-label="{{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
-                                                <p class="pieza-rotulo">{{ $ficha['nombre'] }}<span class="block font-semibold">Nivel {{ $ficha['nivel'] }}</span></p>
-                                            </li>
-                                        @endforeach
-                                    </ol>
-                                </template>
-                            @endforeach
+                                    @endforeach
+                                    @foreach ($deTipo('mesa') as $ficha)
+                                        <li>
+                                            <div class="pieza-proxima" role="img" aria-label="Mesa {{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
+                                            <p class="pieza-rotulo">{{ $ficha['nombre'] }}<span class="block font-semibold">Nivel {{ $ficha['nivel'] }}</span></p>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </template>
+
+                            <template x-if="pestana === 'mazos'">
+                                <ol id="piezas-mazos" role="tabpanel" aria-labelledby="pestana-mazos" class="coleccion-piezas">
+                                    <li>
+                                        <div class="naipe-boton" aria-hidden="true"><x-carta palo="espada" :numero="1" /></div>
+                                        <p class="pieza-rotulo">Mazo de fábrica<span class="block font-semibold">En uso</span></p>
+                                    </li>
+                                    @foreach ($deTipo('mazo') as $ficha)
+                                        <li>
+                                            <div class="pieza-proxima" role="img" aria-label="{{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
+                                            <p class="pieza-rotulo">{{ $ficha['nombre'] }}<span class="block font-semibold">Nivel {{ $ficha['nivel'] }}</span></p>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </template>
+
+                            {{-- Cómo anotás: un grupo de cinco con cada forma, sobre su superficie. --}}
+                            <template x-if="pestana === 'anotar'">
+                                <ol id="piezas-anotar" role="tabpanel" aria-labelledby="pestana-anotar" class="coleccion-piezas">
+                                    @foreach ($formas as $opcion)
+                                        <li>
+                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'anotar' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                                aria-label="Anotar con {{ mb_strtolower($opcion['nombre']) }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'anotar', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
+                                                <span @class(['pieza-anotar', 'pieza-cerrada' => ! $opcion['abierto']]) data-anotar="{{ $opcion['clave'] }}"><x-fosforos :grupo="0" :puntos="5" :forma="$opcion['clave']" /></span>
+                                            </button>
+                                            <p class="pieza-rotulo">
+                                                {{ $opcion['nombre'] }}
+                                                <span class="block font-semibold" x-text="enUso.anotar === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
+                                            </p>
+                                        </li>
+                                    @endforeach
+                                    @foreach ($deTipo('anotar') as $ficha)
+                                        <li>
+                                            <div class="pieza-proxima pieza-proxima-cuadrada" role="img" aria-label="{{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
+                                            <p class="pieza-rotulo">{{ $ficha['nombre'] }}<span class="block font-semibold">Nivel {{ $ficha['nivel'] }}</span></p>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </template>
+
+                            {{-- Los títulos: se ganan haciendo cosas en la mesa, y cada uno elige cómo se lee el suyo. --}}
+                            <template x-if="pestana === 'titulos'">
+                                <ol id="piezas-titulos" role="tabpanel" aria-labelledby="pestana-titulos" class="coleccion-titulos">
+                                    @foreach ($titulos as $opcion)
+                                        <li>
+                                            <button type="button" class="titulo-boton" :aria-pressed="(prueba.tipo === 'titulo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'titulo', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Pide '.$opcion['pide'].'.']) }})">
+                                                <span class="titulo-nombre">{{ $opcion['nombre'] === $opcion['femenino'] ? $opcion['nombre'] : $opcion['nombre'].' o '.mb_strtolower($opcion['femenino']) }}</span>
+                                                <span class="titulo-pide">{{ $opcion['pide'] }}</span>
+                                                <span class="titulo-estado" x-text="enUso.titulo === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? 'Ganado' : 'Llevás '.min($opcion['lleva'], $opcion['hace']).' de '.$opcion['hace'] }}'"></span>
+                                            </button>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </template>
+
+                            {{-- Los distintivos: el sello que va al lado del apodo. También se puede no llevar ninguno. --}}
+                            <template x-if="pestana === 'distintivos'">
+                                <ol id="piezas-distintivos" role="tabpanel" aria-labelledby="pestana-distintivos" class="coleccion-piezas">
+                                    <li>
+                                        <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'distintivo' && prueba.clave === 'ninguno').toString()" aria-label="Sin distintivo"
+                                            @click="probar($el, {{ Js::from(['tipo' => 'distintivo', 'clave' => 'ninguno', 'nombre' => 'Sin distintivo', 'abierta' => true, 'pide' => '']) }})">
+                                            <span class="pieza-distintivo" aria-hidden="true"></span>
+                                        </button>
+                                        <p class="pieza-rotulo">Ninguno<span class="block font-semibold" x-text="enUso.distintivo === 'ninguno' ? 'En uso' : ''"></span></p>
+                                    </li>
+                                    @foreach ($distintivos as $opcion)
+                                        <li>
+                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'distintivo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                                aria-label="Distintivo {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'distintivo', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
+                                                <span @class(['pieza-distintivo', 'pieza-cerrada' => ! $opcion['abierto']])><x-distintivo :de="$opcion['clave']" class="size-[2.2rem]" /></span>
+                                            </button>
+                                            <p class="pieza-rotulo">
+                                                {{ $opcion['nombre'] }}
+                                                <span class="block font-semibold" x-text="enUso.distintivo === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
+                                            </p>
+                                        </li>
+                                    @endforeach
+                                    @foreach ($deTipo('distintivo') as $ficha)
+                                        <li>
+                                            <div class="pieza-proxima pieza-proxima-cuadrada" role="img" aria-label="Distintivo {{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
+                                            <p class="pieza-rotulo">{{ $ficha['nombre'] }}<span class="block font-semibold">Nivel {{ $ficha['nivel'] }}</span></p>
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            </template>
                         </div>
 
                         {{--
@@ -253,25 +367,52 @@
                             con la carta dada vuelta. "Usar esta" la elige; lo que falta dice cuándo llega.
                         --}}
                         <aside class="probador" aria-label="Probador">
-                            <div class="probador-mesa">
-                                <div class="probador-naipe">
+                            <div class="probador-mesa" data-mesa="{{ $enUso['mesa'] }}" :data-mesa="prueba.tipo === 'mesa' ? prueba.clave : enUso.mesa">
+                                <div class="probador-naipe" x-show="['carta', 'dorso', 'mesa'].includes(prueba.tipo)">
                                     <span class="giro block" data-vuelta="{{ $muestraElDorso ? 'true' : 'false' }}" :data-vuelta="(prueba.tipo === 'dorso').toString()">
                                         <span class="block" x-ref="cara"><x-carta :palo="$suya['palo']" :numero="$suya['numero']" /></span>
                                         <span class="giro-cara block" x-ref="dorso"><x-dorso :de="$dorso" /></span>
                                     </span>
                                 </div>
+
+                                {{-- Una forma de anotar se prueba en un tanteador de verdad, con un tanteo a la mitad. --}}
+                                <div class="probador-tanteo" x-show="prueba.tipo === 'anotar'" x-cloak>
+                                    @foreach ($formas as $opcion)
+                                        <div x-show="prueba.clave === '{{ $opcion['clave'] }}'">
+                                            <x-tanteador nombre="Vos" :puntos="17" :forma="$opcion['clave']" class="rounded-md px-3 py-2.5" />
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                {{-- Un título o un distintivo se prueban junto al apodo, como los van a ver los demás. --}}
+                                <div class="probador-firma" x-show="['titulo', 'distintivo'].includes(prueba.tipo)" x-cloak>
+                                    <p class="text-2xl font-black leading-tight [overflow-wrap:anywhere]">
+                                        {{ $jugador->apodo }}
+                                        @foreach ($distintivos as $opcion)
+                                            <span x-show="(prueba.tipo === 'distintivo' ? prueba.clave : enUso.distintivo) === '{{ $opcion['clave'] }}'"><x-distintivo :de="$opcion['clave']" class="size-[0.85em]" /></span>
+                                        @endforeach
+                                    </p>
+                                    <p class="perfil-lema mt-1" x-text="prueba.tipo === 'titulo' ? tituloDe(prueba.clave, femenino) : tituloDe(enUso.titulo, enUso.femenino)"></p>
+                                </div>
                             </div>
 
                             <div class="probador-pie" aria-live="polite">
-                                <p class="text-xl font-extrabold leading-tight" x-text="prueba.nombre">{{ $prueba['nombre'] }}</p>
-                                <p class="mt-1 min-h-[1lh] font-semibold" x-text="esLaQueUsa ? 'Es la que usás.' : (prueba.abierta ? 'Es tuya.' : prueba.pide)">Es la que usás.</p>
+                                <p class="text-xl font-extrabold leading-tight" x-text="prueba.tipo === 'titulo' ? tituloDe(prueba.clave, femenino) : prueba.nombre">{{ $prueba['nombre'] }}</p>
+                                <p class="mt-1 min-h-[1lh] font-semibold" x-text="esLaQueUsa ? 'Es lo que usás.' : (prueba.abierta ? 'Es tuyo.' : prueba.pide)">Es la que usás.</p>
 
-                                <form method="POST" :action="prueba.tipo === 'dorso' ? @js(route('perfil.dorso')) : @js(route('perfil.carta'))" class="mt-4"
-                                    x-show="['carta', 'dorso'].includes(prueba.tipo) && prueba.abierta && ! esLaQueUsa" x-cloak @submit.prevent="usar()">
+                                {{-- Cómo se lee el título: lo elige cada uno. --}}
+                                <div class="mt-3 flex gap-2" role="group" aria-label="Cómo se lee" x-show="prueba.tipo === 'titulo' && prueba.abierta && tituloDe(prueba.clave, false) !== tituloDe(prueba.clave, true)" x-cloak>
+                                    <button type="button" class="pestana" :aria-pressed="(! femenino).toString()" @click="femenino = false" x-text="tituloDe(prueba.clave, false)"></button>
+                                    <button type="button" class="pestana" :aria-pressed="femenino.toString()" @click="femenino = true" x-text="tituloDe(prueba.clave, true)"></button>
+                                </div>
+
+                                <form method="POST" :action="rutas[prueba.tipo]" class="mt-4"
+                                    x-show="prueba.tipo !== 'mazo' && prueba.abierta && ! esLaQueUsa" x-cloak @submit.prevent="usar()">
                                     @csrf
                                     @method('PUT')
                                     <input type="hidden" :name="prueba.tipo" :value="prueba.clave">
-                                    <button type="submit" class="boton boton-naipe" :disabled="guardando" x-text="prueba.tipo === 'dorso' ? 'Usar este dorso' : 'Usar esta carta'">Usar esta carta</button>
+                                    <input type="hidden" name="femenino" :value="femenino ? 1 : 0" :disabled="prueba.tipo !== 'titulo'">
+                                    <button type="submit" class="boton boton-naipe" :disabled="guardando" x-text="textoDeUsar">Usar esta carta</button>
                                 </form>
                             </div>
                         </aside>

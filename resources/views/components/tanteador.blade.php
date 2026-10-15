@@ -1,4 +1,4 @@
-@props(['nombre', 'puntos' => 0, 'modelo' => null, 'rotulos' => false, 'nombreVivo' => null, 'claseNombre' => 'text-sm font-semibold', 'hasta' => 30])
+@props(['nombre', 'puntos' => 0, 'modelo' => null, 'rotulos' => false, 'nombreVivo' => null, 'claseNombre' => 'text-sm font-semibold', 'hasta' => 30, 'forma' => 'fabrica'])
 
 {{--
     Tres grupos de malas y tres de buenas; cada grupo de cinco lo dibuja <x-fosforos>.
@@ -6,6 +6,8 @@
     Con "nombreVivo" (otra expresión) el nombre sigue lo que se va escribiendo.
     "hasta" es a cuántos puntos va la partida. A 15 (una partida de torneo) son tres grupos
     y no hay raya: las malas y las buenas son de la partida a 30.
+    "forma" es cómo anota quien mira: con fósforos sobre el paño hondo, con palotes en un papelito o
+    con tiza en una pizarrita. La superficie va detrás de los grupos y no cambia el alto del tanteador.
 --}}
 
 @php
@@ -21,12 +23,12 @@
         <span class="sr-only">puntos</span>
     </p>
 
-    <div class="mt-2 flex items-center gap-[0.2em]" aria-hidden="true">
+    <div @class(['mt-2 flex items-center gap-[0.2em]', 'anotador anotador-'.$forma => $forma !== 'fabrica']) aria-hidden="true">
         @for ($g = 0; $g < $grupos; $g++)
             @if ($g === $raya)
                 <span class="mx-[0.25em] h-[1.3em] w-px bg-naipe/45"></span>
             @endif
-            <x-fosforos :grupo="$g" :puntos="$puntos" :modelo="$modelo" class="size-[1.45em]" />
+            <x-fosforos :grupo="$g" :puntos="$puntos" :modelo="$modelo" :forma="$forma" class="size-[1.45em]" />
         @endfor
     </div>
 

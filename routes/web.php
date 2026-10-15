@@ -125,5 +125,9 @@ Route::middleware('con-cuenta')->group(function () {
     Route::put('/perfil', [PerfilController::class, 'guardar']);
     Route::put('/perfil/carta', [PerfilController::class, 'elegirCarta'])->name('perfil.carta');
     Route::put('/perfil/dorso', [PerfilController::class, 'elegirDorso'])->name('perfil.dorso');
+    Route::put('/perfil/mesa', [PerfilController::class, 'elegirMesa'])->name('perfil.mesa');
+    Route::put('/perfil/anotar', [PerfilController::class, 'elegirAnotar'])->name('perfil.anotar');
+    Route::put('/perfil/distintivo', [PerfilController::class, 'elegirDistintivo'])->name('perfil.distintivo');
+    Route::put('/perfil/titulo', [PerfilController::class, 'elegirTitulo'])->name('perfil.titulo');
     Route::put('/perfil/experiencia', [PerfilController::class, 'declarar'])->name('perfil.experiencia');
 });

@@ -115,8 +115,138 @@ class Paleta
             ['texto' => 'tinta', 'fondo' => 'naipe', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Trama de los dorsos Fósforos y Ronda'],
             ['texto' => 'copa', 'fondo' => 'naipe', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Cabezas del dorso Fósforos'],
             ['texto' => 'naipe', 'fondo' => 'tinta', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Isotipo del dorso Tinta'],
+            ['texto' => 'espada', 'fondo' => 'naipe', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Casillas del dorso Damero'],
+            ['texto' => 'copa', 'fondo' => 'naipe', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Puntos del dorso Lunares y raya del Zigzag'],
+            ['texto' => 'tinta', 'fondo' => 'naipe', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Renglones del dorso Zigzag'],
         ];
     }
+
+    /**
+     * Las mesas que se ganan (resources/css/app.css, "Las mesas que se ganan subiendo de nivel"). Los colores
+     * de premio pueden ser nuevos si son de la familia (esDeLaFamilia): tintas de imprenta y materiales de
+     * club. "mesa" es el campo, "barras" el tanteador y la barra de cantos, "texto" lo que se escribe sobre
+     * la mesa y "canto" el envido; "adornos", lo que se dibuja en el borde.
+     *
+     * @var array<string, array{mesa: string, barras: string, texto: string, canto: string, fosforo: string, adornos: list<string>}>
+     */
+    public const MESAS = [
+        'pano-petroleo' => ['mesa' => '#1c4652', 'barras' => '#12313a', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => []],
+        'pizarron' => ['mesa' => '#28302d', 'barras' => '#1b201e', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#7a5a3c', '#ecebe4', '#4d3826', '#8b6a48']],
+        'madera' => ['mesa' => '#4a3022', 'barras' => '#2e1e15', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#a57c48', '#e6d7b5', '#1b120c', '#5b3d2b', '#3c2619']],
+        // La única clara: el texto pasa a tinta, el envido a un ocre del oro y el palito de los fósforos se oscurece.
+        'marmol' => ['mesa' => '#e9e6df', 'barras' => '#3a3f3d', 'texto' => '#161a18', 'canto' => '#8a5a0c', 'fosforo' => '#9a7838', 'adornos' => ['#9c8754', '#b4aea2', '#c4bfb4', '#dad6cd']],
+    ];
+
+    /**
+     * Las formas de anotar que traen su superficie: el trazo sobre el fondo, y el tanteo en Oro (o en tinta, sobre papel).
+     *
+     * @var array<string, array{trazo: string, fondo: string, tanteo: string}>
+     */
+    public const ANOTADORES = [
+        'palotes' => ['trazo' => '#3f4447', 'fondo' => '#fbfaf5', 'tanteo' => '#161a18'],
+        'tiza' => ['trazo' => '#ecebe4', 'fondo' => '#28302d', 'tanteo' => '#f0b429'],
+    ];
+
+    /**
+     * Las combinaciones de cada mesa y cada anotador, con colores escritos (no nombres de la paleta).
+     *
+     * @return list<array{texto: string, fondo: string, minimo: float, donde: string}>
+     */
+    public static function combinacionesDeLosPremios(): array
+    {
+        $combinaciones = [];
+
+        foreach (self::MESAS as $mesa => $c) {
+            $combinaciones[] = ['texto' => $c['texto'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: texto sobre la mesa"];
+            $combinaciones[] = ['texto' => $c['canto'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: cantos de envido"];
+            $combinaciones[] = ['texto' => '#fbfaf5', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: texto del tanteador y las barras"];
+            $combinaciones[] = ['texto' => '#f0b429', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Mesa {$mesa}: puntos del tanteador"];
+            $combinaciones[] = ['texto' => '#e8c98a', 'fondo' => $c['barras'], 'minimo' => self::TEXTO_GRANDE, 'donde' => "Mesa {$mesa}: fósforos del tanteador (gráfico)"];
+            $combinaciones[] = ['texto' => $c['fosforo'], 'fondo' => $c['mesa'], 'minimo' => self::TEXTO_GRANDE, 'donde' => "Mesa {$mesa}: fósforos del nivel junto al rival (gráfico)"];
+        }
+
+        foreach (self::ANOTADORES as $forma => $c) {
+            $combinaciones[] = ['texto' => $c['trazo'], 'fondo' => $c['fondo'], 'minimo' => self::TEXTO_GRANDE, 'donde' => "Anotar con {$forma}: el trazo (gráfico)"];
+            $combinaciones[] = ['texto' => $c['tanteo'], 'fondo' => $c['fondo'], 'minimo' => self::TEXTO_NORMAL, 'donde' => "Anotar con {$forma}: el tanteo"];
+        }
+
+        return $combinaciones;
+    }
+
+    /**
+     * Los colores nuevos de los premios: los que tienen que ser de la familia.
+     *
+     * @return list<string>
+     */
+    public static function coloresDeLosPremios(): array
+    {
+        $colores = [];
+
+        foreach (self::MESAS as $c) {
+            array_push($colores, $c['mesa'], $c['barras'], $c['canto'], $c['fosforo'], ...$c['adornos']);
+        }
+
+        foreach (self::ANOTADORES as $c) {
+            array_push($colores, $c['trazo'], $c['fondo']);
+        }
+
+        // Los de la paleta fija (el oro, el fósforo, el naipe) no son nuevos: no pasan por la regla de la familia.
+        $deLaPaleta = array_map(fn (array $color) => strtolower($color['hex']), self::COLORES);
+
+        return array_values(array_diff(array_unique(array_map('strtolower', $colores)), $deLaPaleta));
+    }
+
+    /**
+     * Contraste WCAG 2 entre dos colores escritos (#rrggbb), de 1 a 21.
+     */
+    public static function contrasteEntre(string $hexA, string $hexB): float
+    {
+        $a = self::luminancia($hexA);
+        $b = self::luminancia($hexB);
+
+        return (max($a, $b) + 0.05) / (min($a, $b) + 0.05);
+    }
+
+    /**
+     * Si un color de premio es de la familia del sitio: tintas de imprenta y materiales de club. No pasa de un
+     * tope de intensidad (nada fluorescente), no cae en la franja de rosas y violetas, y no es un celeste
+     * claro de bebé. Lo decidió Román el 14 de octubre de 2026.
+     */
+    public static function esDeLaFamilia(string $hex): bool
+    {
+        [$r, $g, $b] = array_map(fn (string $par) => hexdec($par) / 255, str_split(ltrim($hex, '#'), 2));
+        $mayor = max($r, $g, $b);
+        $menor = min($r, $g, $b);
+        $intensidad = $mayor - $menor;
+        $luz = ($mayor + $menor) / 2;
+
+        if ($intensidad > self::INTENSIDAD_MAXIMA) {
+            return false;
+        }
+
+        // Casi gris: no tiene tono que mirar.
+        if ($intensidad < 0.08) {
+            return true;
+        }
+
+        $tono = match ($mayor) {
+            $r => 60 * fmod(($g - $b) / $intensidad, 6),
+            $g => 60 * (($b - $r) / $intensidad + 2),
+            default => 60 * (($r - $g) / $intensidad + 4),
+        };
+        $tono = $tono < 0 ? $tono + 360 : $tono;
+
+        $rosaOVioleta = $tono >= 260 && $tono <= 345;
+        $celesteDeBebe = $tono >= 180 && $tono <= 230 && $luz > 0.75;
+
+        return ! $rosaOVioleta && ! $celesteDeBebe;
+    }
+
+    /**
+     * El tope de intensidad de un color de premio (la diferencia entre su canal más alto y el más bajo).
+     * El oro de la paleta, que no es de premio, pasa de largo (0,78); un color fluorescente anda cerca de 1.
+     */
+    public const INTENSIDAD_MAXIMA = 0.55;
 
     public static function nombre(string $color): string
     {

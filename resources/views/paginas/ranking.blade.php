@@ -35,7 +35,7 @@
                             <div class="max-w-36"><x-carta :palo="$cartasQueMandan[$i][0]" :numero="$cartasQueMandan[$i][1]" /></div>
                             <p class="mt-4 flex items-baseline gap-2.5 leading-none max-lg:flex-col max-lg:gap-1.5 max-sm:mt-2.5">
                                 <span class="text-4xl font-black text-oro max-sm:text-2xl">{{ $jugador['puesto'] }}</span>
-                                <a href="{{ route('jugador', $jugador['id']) }}" class="enlace-nav text-xl font-extrabold leading-tight [overflow-wrap:anywhere] max-lg:min-h-[2lh] max-sm:text-[0.8rem]">{{ $jugador['apodo'] }}</a>
+                                <a href="{{ route('jugador', $jugador['id']) }}" class="enlace-nav text-xl font-extrabold leading-tight [overflow-wrap:anywhere] max-lg:min-h-[2lh] max-sm:text-[0.8rem]">{{ $jugador['apodo'] }}<x-distintivo :de="$jugador['distintivo']" class="ml-1" /></a>
                             </p>
                             @if ($jugador['bot'])
                                 <span class="mt-2 inline-flex items-center gap-1 rounded-md bg-naipe px-1.5 py-0.5 text-xs font-bold text-tinta max-sm:mt-1.5">
@@ -49,6 +49,7 @@
                             </p>
                             {{-- La categoría sale de esas mismas ganadas. --}}
                             <p class="mt-1 text-sm font-semibold max-sm:text-[0.7rem]"><span class="sr-only">Categoría</span> {{ $jugador['categoria'] }}</p>
+                            <p class="text-sm italic max-sm:text-[0.7rem]"><span class="sr-only">Título</span> {{ $jugador['titulo'] }}</p>
                             <p class="mt-1.5 max-sm:text-[0.7rem]"><x-racha :cantidad="$jugador['racha']" /></p>
                         </li>
                     @endforeach
@@ -80,8 +81,8 @@
                                     {{-- Cada uno va con su carta: la que eligió entre las que ganó. Es dibujo; la categoría va escrita al lado. --}}
                                     <span class="w-6 flex-none sm:w-7" aria-hidden="true"><x-carta :palo="explode('-', $jugador['carta'])[1]" :numero="(int) explode('-', $jugador['carta'])[0]" /></span>
                                     {{-- El apodo lleva a su perfil. --}}
-                                    <a href="{{ route('jugador', $jugador['id']) }}" class="enlace-nav text-lg font-bold leading-tight [overflow-wrap:anywhere]">{{ $jugador['apodo'] }}</a>
-                                    <span class="text-sm font-semibold"><span class="sr-only">Categoría</span> {{ mb_strtolower($jugador['categoria']) }}</span>
+                                    <a href="{{ route('jugador', $jugador['id']) }}" class="enlace-nav text-lg font-bold leading-tight [overflow-wrap:anywhere]">{{ $jugador['apodo'] }}<x-distintivo :de="$jugador['distintivo']" class="ml-1" /></a>
+                                    <span class="text-sm font-semibold"><span class="sr-only">Categoría</span> {{ mb_strtolower($jugador['categoria']) }} <span class="sr-only">, título</span> <em>{{ mb_strtolower($jugador['titulo']) }}</em></span>
                                     @if ($jugador['bot'])
                                         <span class="inline-flex items-center gap-1 rounded-md bg-texto px-1.5 py-0.5 text-xs font-bold text-fondo">
                                             <x-icono nombre="bot" class="size-4" /> máquina

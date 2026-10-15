@@ -148,6 +148,11 @@ class Jugador extends Authenticatable
             'experiencia' => Experiencia::class,
             'fosforos' => 'integer',
             'nivel_visto' => 'integer',
+            'titulo_femenino' => 'boolean',
+            'envidos_cantados' => 'integer',
+            'envidos_ganados' => 'integer',
+            'trucos_ganados' => 'integer',
+            'flores_cantadas' => 'integer',
         ];
     }
 }

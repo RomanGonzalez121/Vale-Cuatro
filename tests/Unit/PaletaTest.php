@@ -20,6 +20,32 @@ class PaletaTest extends TestCase
         }
     }
 
+    public function test_las_mesas_y_las_formas_de_anotar_alcanzan_su_minimo_de_contraste(): void
+    {
+        foreach (Paleta::combinacionesDeLosPremios() as $combinacion) {
+            $contraste = Paleta::contrasteEntre($combinacion['texto'], $combinacion['fondo']);
+
+            $this->assertGreaterThanOrEqual(
+                $combinacion['minimo'],
+                $contraste,
+                sprintf('%s: %s sobre %s da %.2f y necesita %.1f.', $combinacion['donde'], $combinacion['texto'], $combinacion['fondo'], $contraste, $combinacion['minimo']),
+            );
+        }
+    }
+
+    public function test_los_colores_de_los_premios_son_de_la_familia_del_sitio(): void
+    {
+        foreach (Paleta::coloresDeLosPremios() as $color) {
+            $this->assertTrue(Paleta::esDeLaFamilia($color), "{$color} no es de la familia del sitio.");
+        }
+
+        // Y la regla deja afuera lo que tiene que dejar afuera.
+        $this->assertFalse(Paleta::esDeLaFamilia('#ff2bd6'), 'Un rosa fluorescente');
+        $this->assertFalse(Paleta::esDeLaFamilia('#8a4fc9'), 'Un violeta');
+        $this->assertFalse(Paleta::esDeLaFamilia('#bfe3f5'), 'Un celeste de bebé');
+        $this->assertFalse(Paleta::esDeLaFamilia('#39ff14'), 'Un verde fluorescente');
+    }
+
     public function test_cada_combinacion_del_modo_de_noche_alcanza_su_minimo_de_contraste(): void
     {
         foreach (Paleta::combinacionesDeNoche() as $combinacion) {

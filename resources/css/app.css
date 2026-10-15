@@ -88,6 +88,160 @@ body:has(.mesa-ultra) {
 }
 
 /*
+ | Las mesas que se ganan subiendo de nivel (tanda 3). Cada una pisa los dos colores del paño en el body,
+ | como la del Ultra, y dibuja su adorno detrás de las cartas, en el borde del campo (.mesa-campo::before,
+ | detrás del contenido). Las ve solo su dueño y no cambian de día a de noche. Los dibujos están en
+ | resources/mesas: lo que tiene forma va en las esquinas a tamaño fijo, solo lo informe se estira.
+ | El contraste de cada una está medido en Paleta::combinacionesDeLasMesas().
+ */
+body:has(.mesa-de-pano-petroleo) {
+    --color-pano: #1c4652;
+    --color-pano-hondo: #12313a;
+    --color-sombra: #0a2026;
+}
+
+body:has(.mesa-de-pizarron) {
+    --color-pano: #28302d;
+    --color-pano-hondo: #1b201e;
+    --color-sombra: #0f1311;
+}
+
+body:has(.mesa-de-madera) {
+    --color-pano: #4a3022;
+    --color-pano-hondo: #2e1e15;
+    --color-sombra: #1c120c;
+}
+
+/* La única clara: las barras son el hierro del pie de la mesa y la sombra de las cartas, gris. */
+body:has(.mesa-de-marmol) {
+    --color-pano: #e9e6df;
+    --color-pano-hondo: #3a3f3d;
+    --color-sombra: #a39e93;
+}
+
+:is(.mesa-de-pizarron, .mesa-de-madera, .mesa-de-marmol) .mesa-campo::before {
+    z-index: -1;
+}
+
+/*
+ | Las muestras de cada mesa en el perfil (la pieza de la Colección, el probador y "tu mesa" de arriba): el
+ | mismo color y los mismos dibujos, sin el marco, que en chico no se lee. Los dibujos se cargan solo
+ | cuando hay una muestra de esa mesa en la página.
+ */
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pano-petroleo'] {
+    background-color: #1c4652;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pizarron'] {
+    background:
+        url('../mesas/pizarron-fantasma-arriba.svg') top 6% left 5% / min(34%, 10rem) auto no-repeat,
+        url('../mesas/pizarron-borrones.svg') 0 0 / 100% 100% no-repeat,
+        #28302d;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='madera'] {
+    background:
+        url('../mesas/madera-nudo.svg') left 8% bottom 10% / min(40%, 8rem) auto no-repeat,
+        url('../mesas/madera-veta.svg') 0 0 / 100% 100% no-repeat,
+        #4a3022;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='marmol'] {
+    background:
+        url('../mesas/marmol-arriba.svg') top left / min(70%, 26rem) auto no-repeat,
+        url('../mesas/marmol-abajo.svg') bottom right / min(70%, 26rem) auto no-repeat,
+        #e9e6df;
+    color: var(--color-naipe);
+}
+
+/* En chico, el marco de cada una: madera clara, latón o el marco del pizarrón. */
+.pieza-mesa[data-mesa='madera'] {
+    border-color: #a57c48;
+}
+
+.pieza-mesa[data-mesa='marmol'] {
+    border-color: #9c8754;
+}
+
+.pieza-mesa[data-mesa='pizarron'] {
+    border-color: #7a5a3c;
+}
+
+/* El pizarrón: marco de madera, la raya de tiza adentro, pasadas de borrador y lo que quedó de otras partidas. */
+.mesa-de-pizarron .mesa-campo::before {
+    inset: 0.35rem;
+    border: 0.7rem solid #7a5a3c;
+    border-image: url('../mesas/pizarron-marco.svg') 30 / 0.7rem round;
+    border-radius: 0;
+    background:
+        url('../mesas/pizarron-tiza.svg') 0 0 / 100% 100% no-repeat,
+        url('../mesas/pizarron-fantasma-arriba.svg') top 1.7rem left 2.3rem / min(28%, 9.5rem) auto no-repeat,
+        url('../mesas/pizarron-fantasma-abajo.svg') bottom 1.6rem right 2.3rem / min(28%, 9.5rem) auto no-repeat,
+        url('../mesas/pizarron-borrones.svg') 0 0 / 100% 100% no-repeat;
+}
+
+/* La madera: la banda clara con su filete oscuro, y adentro un filete de boj; la veta y un nudo cerca del borde. */
+.mesa-de-madera .mesa-campo::before {
+    inset: 0.45rem;
+    border: 0.5rem solid #a57c48;
+    border-radius: 2px;
+    outline: 1.5px solid #1b120c;
+    background:
+        url('../mesas/madera-nudo.svg') left 10% bottom 18% / 8rem auto no-repeat,
+        url('../mesas/madera-veta.svg') 0 0 / 100% 100% no-repeat;
+}
+
+.mesa-de-madera .mesa-campo::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 1.2rem;
+    border: 1px solid #e6d7b5;
+    border-radius: 1px;
+    outline: 1.5px solid #1b120c;
+    pointer-events: none;
+}
+
+/* El mármol: vetas de Carrara desde dos esquinas, nubes apenas grises y el filete doble de latón. */
+.mesa-de-marmol .mesa-campo::before {
+    inset: 0.3rem;
+    border: 2px solid #9c8754;
+    border-radius: 0.4rem;
+    background:
+        url('../mesas/marmol-arriba.svg') top left / min(60%, 26rem) auto no-repeat,
+        url('../mesas/marmol-abajo.svg') bottom right / min(60%, 26rem) auto no-repeat,
+        url('../mesas/marmol-nubes.svg') 0 0 / 100% 100% no-repeat;
+}
+
+.mesa-de-marmol .mesa-campo::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0.62rem;
+    border: 1px solid #9c8754;
+    border-radius: 0.25rem;
+    pointer-events: none;
+}
+
+/*
+ | Sobre el mármol el texto de la mesa pasa a tinta y el oro de los cantos a un ocre del mismo color, más
+ | oscuro, para que se lea en lo claro. Las cartas y lo que va sobre papel o paño hondo vuelven a sus tintas.
+ */
+.mesa-de-marmol .mesa-campo,
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='marmol'] {
+    --color-naipe: #161a18;
+    --color-oro: #8a5a0c;
+    --color-fosforo: #9a7838;
+    /* El texto sin color propio lo hereda ya resuelto desde la página (naipe): acá se vuelve a pedir. */
+    color: var(--color-naipe);
+}
+
+:is(.mesa-de-marmol .mesa-campo, [data-mesa='marmol']) :is(.carta, .mini-naipe, .costado-hoja, .tanto-ficha, .bg-pano-hondo, .ficha-de-mano, .boton) {
+    --color-naipe: #fbfaf5;
+    --color-oro: #f0b429;
+}
+
+/*
  | La apertura de la aplicación instalada (resources/js/apertura.js). Sigue a la
  | pantalla que dibuja el sistema al abrirla, que usa el paño de día sea cual sea
  | el modo: por eso el fondo va fijo y no con --color-pano. Solo se ve mientras
@@ -2417,6 +2571,48 @@ html:has(body.superficie-pano) {
     }
 
     /*
+     | Los palotes y la tiza no caen como un fósforo: el trazo aparece en su lugar, creciendo apenas,
+     | como cuando se anota a mano. Cada forma trae su superficie, detrás de los grupos y sin ocupar
+     | lugar: los palotes un papelito, la tiza una pizarrita con su marco. Sobre el papel, las marcas
+     | de lo que falta y la raya de malas y buenas pasan a tinta.
+     */
+    .fosforo.a-mano {
+        transform: scale(0.82);
+    }
+
+    .fosforo.a-mano.puesto {
+        transform: none;
+    }
+
+    .anotador {
+        position: relative;
+        isolation: isolate;
+        width: fit-content;
+    }
+
+    .anotador::before {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        inset: -0.22rem -0.25rem;
+        border-radius: 3px;
+    }
+
+    .anotador-palotes {
+        --color-naipe: #161a18;
+    }
+
+    .anotador-palotes::before {
+        background-color: #fbfaf5;
+    }
+
+    .anotador-tiza::before {
+        inset: -0.3rem -0.32rem;
+        border: 0.16rem solid #7a5a3c;
+        background-color: #28302d;
+    }
+
+    /*
      | El nivel del bot contado con fósforos. Los del nivel elegido caen de a uno,
      | como los puntos; los de los otros muestran su lugar, más marcado que en el
      | tanteador porque acá esa marca es lo que dice cuántos tiene cada nivel.
@@ -3237,6 +3433,124 @@ html:has(body.superficie-pano) {
         border-radius: 8% / 5.13%;
         background-color: var(--color-pano);
         box-shadow: inset 0 0 0 5px var(--color-pano), inset 0 0 0 6px color-mix(in srgb, var(--color-naipe) 45%, transparent);
+    }
+
+    /* Lo que todavía no está dibujado y no es una carta (una forma de anotar, un distintivo): el lugar en cuadrado. */
+    .pieza-proxima-cuadrada {
+        aspect-ratio: 1;
+        border-radius: 0.5rem;
+    }
+
+    /* Una mesa elegida en chico va sin el anillo del paño: su borde dice de qué es (madera, latón, el marco). */
+    .pieza-mesa[data-mesa]:not([data-mesa='fabrica']) {
+        box-shadow: none;
+    }
+
+    /*
+     | Una forma de anotar en chico: un grupo de cinco sobre su superficie. Los fósforos sobre el paño hondo,
+     | los palotes sobre papel (las marcas de lo que falta, en tinta) y la tiza en una pizarrita con su marco.
+     */
+    .pieza-anotar {
+        display: grid;
+        aspect-ratio: 1;
+        place-items: center;
+        padding: 18%;
+        border-radius: 0.5rem;
+        background-color: var(--color-pano-hondo);
+    }
+
+    .pieza-anotar > svg {
+        width: 100%;
+        height: auto;
+    }
+
+    .pieza-anotar[data-anotar='palotes'] {
+        --color-naipe: #161a18;
+        background-color: #fbfaf5;
+    }
+
+    .pieza-anotar[data-anotar='tiza'] {
+        border: 0.2rem solid #7a5a3c;
+        background-color: #28302d;
+    }
+
+    /* Un distintivo en chico: el sello solo, en Naipe, sobre el paño hondo. Sin distintivo, el cuadro vacío. */
+    .pieza-distintivo {
+        display: grid;
+        aspect-ratio: 1;
+        place-items: center;
+        border-radius: 0.5rem;
+        background-color: var(--color-pano-hondo);
+        color: var(--color-naipe);
+    }
+
+    /* Los títulos van en renglones: el nombre en sus dos formas, lo que pide y cuánto llevás. */
+    .coleccion-titulos {
+        display: grid;
+        gap: 0.6rem;
+        margin-top: 1.6rem;
+    }
+
+    .titulo-boton {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 1.5px solid color-mix(in srgb, var(--color-naipe) 30%, transparent);
+        border-radius: 0.6rem;
+        background-color: var(--color-pano-hondo);
+        color: var(--color-naipe);
+        text-align: left;
+        cursor: pointer;
+        transition: transform 200ms var(--ease-llegada);
+    }
+
+    .titulo-boton[aria-pressed='true'] {
+        border-color: var(--color-oro);
+        transform: translateX(0.35rem);
+    }
+
+    .titulo-boton:active {
+        transform: translateX(0.2rem) scale(0.99);
+    }
+
+    .titulo-nombre {
+        font-style: italic;
+        font-weight: 800;
+        font-size: 1.1rem;
+    }
+
+    .titulo-pide {
+        grid-column: 1;
+        font-size: 0.85rem;
+    }
+
+    .titulo-estado {
+        grid-row: 1 / span 2;
+        grid-column: 2;
+        align-self: center;
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--color-oro);
+    }
+
+    /* El título, debajo del apodo: en cursiva, como se dice un apodo de club. */
+    .perfil-lema {
+        font-size: 1.15rem;
+        font-style: italic;
+        font-weight: 600;
+    }
+
+    /* Las dos formas de un título se eligen como las pestañas: la elegida, llena en Naipe. */
+    .probador-pie .pestana[aria-pressed='true'] {
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+    }
+
+    /* En el probador, un tanteador para la forma de anotar y la firma (apodo, distintivo y título). */
+    .probador-tanteo,
+    .probador-firma {
+        width: 100%;
     }
 
     /*
@@ -4182,6 +4496,10 @@ html:has(body.superficie-pano) {
     .naipe-boton:not([aria-pressed='true']):hover {
         transform: translateY(-4%);
     }
+
+    .titulo-boton:not([aria-pressed='true']):hover {
+        transform: translateX(0.2rem);
+    }
 }
 
 /* Con movimiento reducido todo pasa a un fundido corto: se quedan la opacidad y el color. */
@@ -4198,14 +4516,18 @@ html:has(body.superficie-pano) {
 
     /* El escalón elegido queda levantado, sin viaje; los demás no se asoman. */
     .escalon,
-    .naipe-boton {
+    .naipe-boton,
+    .titulo-boton {
         transition: none;
     }
 
     .escalon[aria-pressed='false']:hover,
     .escalon:active,
     .naipe-boton:not([aria-pressed='true']):hover,
-    .naipe-boton:active {
+    .naipe-boton:active,
+    .titulo-boton[aria-pressed='true'],
+    .titulo-boton:not([aria-pressed='true']):hover,
+    .titulo-boton:active {
         transform: none;
     }
 
@@ -4340,7 +4662,9 @@ html:has(body.superficie-pano) {
     }
 
     .fosforo,
-    .fosforo.puesto {
+    .fosforo.puesto,
+    .fosforo.a-mano,
+    .fosforo.a-mano.puesto {
         transform: none;
         transition: opacity 150ms ease;
     }

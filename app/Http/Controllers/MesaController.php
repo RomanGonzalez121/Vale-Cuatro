@@ -458,9 +458,9 @@ class MesaController extends Controller
      * El apodo de la otra persona, o null si se juega contra el bot. Si su cuenta ya no existe, "Tu rival".
      */
     /**
-     * Lo que se ve del perfil de la otra persona: apodo, categoría, carta y dorso. Contra el bot, nada.
+     * Lo que se ve del perfil de la otra persona: apodo, categoría, carta, título y distintivo. Contra la máquina, nada.
      *
-     * @return array{apodo: string, categoria: string, carta: string, dorso: string}|null
+     * @return array{apodo: string, categoria: string, carta: string, titulo: string, distintivo: string|null}|null
      */
     private function socioDeEnfrente(Partida $partida, int $asiento): ?array
     {

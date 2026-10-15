@@ -203,7 +203,7 @@ class PremiosTest extends TestCase
             ->assertSee('El 12 de oro, llega en el nivel 19');
     }
 
-    public function test_de_la_otra_persona_la_mesa_recibe_solo_apodo_categoria_y_carta(): void
+    public function test_de_la_otra_persona_la_mesa_recibe_solo_apodo_categoria_carta_titulo_y_distintivo(): void
     {
         $uno = Jugador::factory()->create(['apodo' => 'El Tano', 'email' => 'tano@example.com']);
         $dos = Jugador::factory()->create(['apodo' => 'La Tana', 'email' => 'tana@example.com']);
@@ -212,26 +212,33 @@ class PremiosTest extends TestCase
         $sala = $mesa->crearSala($uno);
         $mesa->sentarse($sala->codigo, $dos);
 
-        // La Tana está en el nivel 16, eligió el 11 y el dorso de fósforos, y declaró que juega hace años.
+        // La Tana está en el nivel 16, eligió el 11, el dorso de fósforos, la mesa de mármol, anotar con palotes,
+        // el grupo de cinco y el título de Cantora (cantó 30 envidos), y declaró que juega hace años.
         $this->subirAlNivel($dos, 16);
         $this->pasoElEscalon($dos, 3);
-        $dos->forceFill(['carta' => '11-espada', 'dorso' => 'fosforos', 'experiencia' => Experiencia::DeAnios])->save();
+        $dos->forceFill([
+            'carta' => '11-espada', 'dorso' => 'fosforos', 'experiencia' => Experiencia::DeAnios,
+            'mesa' => 'marmol', 'anotar' => 'palotes', 'distintivo' => 'grupo-de-cinco',
+            'titulo' => 'cantor', 'titulo_femenino' => true, 'envidos_cantados' => 30,
+        ])->save();
 
         $respuesta = $this->actingAs($uno)->get('/mesa')->assertOk();
 
         $this->assertSame(
-            ['apodo' => 'La Tana', 'categoria' => 'Medio', 'carta' => '11-espada'],
+            ['apodo' => 'La Tana', 'categoria' => 'Medio', 'carta' => '11-espada', 'titulo' => 'Cantora', 'distintivo' => 'grupo-de-cinco'],
             $respuesta->viewData('socio'),
         );
 
-        // Su dorso no viaja: el Tano ve todas las cartas boca abajo con el suyo. Su categoría va junto al apodo.
-        $respuesta->assertDontSee('href="#dorso-fosforos"', false)->assertSee('Medio');
+        // Su dorso, su mesa y su forma de anotar no viajan: el Tano ve todo con lo suyo. Su categoría y su título van junto al apodo.
+        $respuesta->assertDontSee('href="#dorso-fosforos"', false)->assertSee('Medio')->assertSee('Cantora')
+            ->assertDontSee('mesa-de-marmol')->assertDontSee('anotador-palotes')
+            ->assertSee('Distintivo: Grupo de cinco');
         // De su cuenta no viaja nada más.
         $respuesta->assertDontSee('tana@example.com')->assertDontSee('Juego hace años');
 
         // Y ella ve al Tano con lo de fábrica: no eligió nada.
         $this->assertSame(
-            ['apodo' => 'El Tano', 'categoria' => 'Novato', 'carta' => Premios::CARTA_DE_FABRICA],
+            ['apodo' => 'El Tano', 'categoria' => 'Novato', 'carta' => Premios::CARTA_DE_FABRICA, 'titulo' => 'Pichón', 'distintivo' => null],
             $this->actingAs($dos)->get('/mesa')->viewData('socio'),
         );
     }

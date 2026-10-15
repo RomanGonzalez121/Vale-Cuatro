@@ -6,14 +6,16 @@ use App\Models\Jugador;
 use App\Models\Resultado;
 
 /**
- * Lo que se gana jugando y se ve: "tu carta" de perfil y el dorso de las cartas. Ninguno cambia nada en la mesa.
+ * Lo que se gana jugando y se ve: "tu carta" de perfil, el dorso de las cartas, la mesa, la forma de anotar,
+ * el distintivo y el título. Ninguno cambia nada del juego.
  *
  * Se destraban subiendo de nivel (App\Juego\Camino; el camino entero está en fichas-de-premios.php). Las
  * cartas van cada tres niveles en el orden del truco, del 4 de copa de entrada al ancho de espada en el 40.
  * Tres dorsos se ganan en la escalera del club. Las categorías son tramos de niveles.
  *
  * Cada uno ve lo suyo: en tu pantalla todas las cartas boca abajo salen con tu dorso, también las del
- * rival. Al otro le llega de vos solo el apodo, la categoría y tu carta.
+ * rival, y lo mismo tu mesa y tu forma de anotar. Al otro le llega de vos solo el apodo, la categoría, tu
+ * carta, tu título y tu distintivo.
  *
  * Qué tiene destrabado cada uno no se guarda: se calcula de su nivel y de sus progresos. Lo que se guarda
  * es qué eligió, y al leerlo se vuelve a comprobar que lo tenga.
@@ -58,10 +60,47 @@ final class Premios
     public const DORSOS = [
         'fabrica' => ['nombre' => 'Isotipos', 'nivel' => 1],
         'rombos' => ['nombre' => 'Rombos', 'nivel' => 3],
+        'damero' => ['nombre' => 'Damero', 'nivel' => 8],
+        'lunares' => ['nombre' => 'Lunares', 'nivel' => 12],
+        'zigzag' => ['nombre' => 'Zigzag', 'nivel' => 16],
         'fosforos' => ['nombre' => 'Fósforos', 'escalon' => 3],
         'tinta' => ['nombre' => 'Tinta', 'escalon' => 6],
         'ronda' => ['nombre' => 'Ronda', 'escalon' => 8],
     ];
+
+    /**
+     * Las mesas, las formas de anotar y los distintivos ya dibujados, con el nivel en que se ganan. La mesa y
+     * la forma de anotar de fábrica son de todos; el distintivo no tiene uno de fábrica: sin elegir, no hay.
+     * Cada uno ve su mesa y su forma de anotar; el distintivo, como el título, lo ven todos.
+     *
+     * @var array<string, array<string, array{nombre: string, nivel: int}>>
+     */
+    public const POR_NIVEL = [
+        'mesa' => [
+            'fabrica' => ['nombre' => 'Paño', 'nivel' => 1],
+            'pano-petroleo' => ['nombre' => 'Paño petróleo', 'nivel' => 5],
+            'marmol' => ['nombre' => 'Mármol de café', 'nivel' => 10],
+            'pizarron' => ['nombre' => 'Pizarrón', 'nivel' => 14],
+            'madera' => ['nombre' => 'Madera del club', 'nivel' => 17],
+        ],
+        'anotar' => [
+            'fabrica' => ['nombre' => 'Fósforos', 'nivel' => 1],
+            'palotes' => ['nombre' => 'Palotes con lápiz', 'nivel' => 7],
+            'tiza' => ['nombre' => 'Tiza', 'nivel' => 13],
+        ],
+        'distintivo' => [
+            'un-fosforo' => ['nombre' => 'Un fósforo', 'nivel' => 2],
+            'cuadrado' => ['nombre' => 'El cuadrado', 'nivel' => 6],
+            'grupo-de-cinco' => ['nombre' => 'Grupo de cinco', 'nivel' => 11],
+            'quince' => ['nombre' => 'El 15', 'nivel' => 15],
+            'cruzados' => ['nombre' => 'Dos cruzados', 'nivel' => 18],
+        ],
+    ];
+
+    /**
+     * Los títulos que muestran los jugadores de ejemplo: el primero de esta lista que ganaron en sus partidas.
+     */
+    private const TITULOS_DE_EJEMPLO = ['truquero', 'tantero', 'florido', 'cantor'];
 
     /**
      * Las partidas ganadas que cuentan para el ranking. Ya no deciden los premios: es un número del perfil.
@@ -139,6 +178,114 @@ final class Premios
         ], array_keys(self::DORSOS), self::DORSOS);
     }
 
+    /**
+     * Las mesas, formas de anotar o distintivos como los ve ese jugador: cuáles tiene abiertos y cuál eligió.
+     *
+     * @return list<array{clave: string, nombre: string, nivel: int, abierto: bool, elegido: bool}>
+     */
+    public function piezas(string $tipo, ?Jugador $jugador): array
+    {
+        $nivel = $this->nivel($jugador);
+        $todo = self::loTieneTodo($jugador);
+        $elegida = $this->elegidaDe($tipo, $jugador);
+
+        return array_map(fn (string $clave, array $pieza) => [
+            'clave' => $clave,
+            ...$pieza,
+            'abierto' => $todo || $nivel >= $pieza['nivel'],
+            'elegido' => $clave === $elegida,
+        ], array_keys(self::POR_NIVEL[$tipo]), self::POR_NIVEL[$tipo]);
+    }
+
+    public function tiene(string $tipo, Jugador $jugador, string $clave): bool
+    {
+        $pieza = self::POR_NIVEL[$tipo][$clave] ?? null;
+
+        return $pieza !== null && (self::loTieneTodo($jugador) || $this->nivel($jugador) >= $pieza['nivel']);
+    }
+
+    /**
+     * Lo que ese jugador eligió de ese tipo, si todavía lo tiene. Si no, lo de fábrica (o null: sin distintivo).
+     */
+    public function elegidaDe(string $tipo, ?Jugador $jugador): ?string
+    {
+        $elegida = $jugador?->{$tipo};
+        $fabrica = isset(self::POR_NIVEL[$tipo]['fabrica']) ? 'fabrica' : null;
+
+        if ($elegida === null || $jugador === null || ! $this->tiene($tipo, $jugador, $elegida)) {
+            return $fabrica;
+        }
+
+        return $elegida;
+    }
+
+    /**
+     * La mesa o la forma de anotar de quien está mirando la página, una sola vez por pedido.
+     */
+    public static function propia(string $tipo): string
+    {
+        $pedido = request();
+        $clave = "{$tipo}-propia";
+
+        if (! $pedido->attributes->has($clave)) {
+            $pedido->attributes->set($clave, (new self)->elegidaDe($tipo, $pedido->user()) ?? 'fabrica');
+        }
+
+        return $pedido->attributes->get($clave);
+    }
+
+    /**
+     * Los títulos como los ve ese jugador: cuáles ganó, cuál eligió y cuánto le falta para cada uno.
+     *
+     * @return list<array{clave: string, nombre: string, femenino: string, pide: string, lleva: int, hace: int, abierto: bool, elegido: bool}>
+     */
+    public function titulos(?Jugador $jugador): array
+    {
+        $todo = self::loTieneTodo($jugador);
+        $elegido = $this->tituloElegido($jugador);
+
+        return array_map(fn (string $clave, array $titulo) => [
+            'clave' => $clave,
+            'nombre' => $titulo['nombre'],
+            'femenino' => $titulo['femenino'],
+            'pide' => $titulo['cuenta'] === null ? 'De entrada' : $titulo['pide'].' '.Titulos::QUE_PIDE[$titulo['cuenta']],
+            'lleva' => $titulo['cuenta'] === null ? 0 : (int) ($jugador?->{$titulo['cuenta']} ?? 0),
+            'hace' => $titulo['pide'],
+            'abierto' => $todo || Titulos::gano($jugador, $clave),
+            'elegido' => $clave === $elegido,
+        ], array_keys(Titulos::TODOS), Titulos::TODOS);
+    }
+
+    public function tieneTitulo(Jugador $jugador, string $titulo): bool
+    {
+        return isset(Titulos::TODOS[$titulo]) && (self::loTieneTodo($jugador) || Titulos::gano($jugador, $titulo));
+    }
+
+    /**
+     * El título que muestra ese jugador, ya en la forma que eligió. Un jugador de ejemplo muestra el mejor que ganó.
+     */
+    public function tituloDe(?Jugador $jugador): string
+    {
+        return Titulos::nombre($this->tituloElegido($jugador), (bool) ($jugador?->titulo_femenino ?? false));
+    }
+
+    public function tituloElegido(?Jugador $jugador): string
+    {
+        if ($jugador?->esDeEjemplo()) {
+            foreach (self::TITULOS_DE_EJEMPLO as $titulo) {
+                if (Titulos::gano($jugador, $titulo)) {
+                    return $titulo;
+                }
+            }
+
+            return Titulos::DE_FABRICA;
+        }
+
+        $elegido = $jugador?->titulo;
+
+        return $elegido !== null && $jugador !== null && $this->tieneTitulo($jugador, $elegido) ? $elegido : Titulos::DE_FABRICA;
+    }
+
     public function tieneCarta(Jugador $jugador, string $carta): bool
     {
         return isset(self::CAMINO[$carta]) && (self::loTieneTodo($jugador) || $this->nivel($jugador) >= self::CAMINO[$carta]);
@@ -185,9 +332,10 @@ final class Premios
     }
 
     /**
-     * Lo único del perfil de un jugador que recibe otro: su apodo, su categoría y su carta.
+     * Lo único del perfil de un jugador que recibe otro: su apodo, su categoría, su carta, su título y su
+     * distintivo. Su mesa, su dorso y su forma de anotar son para él: no salen de su pantalla.
      *
-     * @return array{apodo: string, categoria: string, carta: string}
+     * @return array{apodo: string, categoria: string, carta: string, titulo: string, distintivo: string|null}
      */
     public function aLaVista(Jugador $jugador): array
     {
@@ -195,6 +343,8 @@ final class Premios
             'apodo' => $jugador->apodo,
             'categoria' => $this->categoria($jugador)->nombre(),
             'carta' => $this->cartaDe($jugador),
+            'titulo' => $this->tituloDe($jugador),
+            'distintivo' => $this->elegidaDe('distintivo', $jugador),
         ];
     }
 

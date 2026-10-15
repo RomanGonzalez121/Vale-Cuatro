@@ -31,6 +31,26 @@
             </g>
         </pattern>
 
+        {{--
+            Los dorsos de la tanda 3, en la tradición de los dorsos del siglo XIX: una trama chica y pareja que
+            no distrae. Las tres grillas quedan centradas en la carta, así el dorso es igual dado vuelta.
+            Damero: casillas de 7 en Espada, doce por veinte (las dos cuentas pares, así la esquina de arriba
+            y la de abajo tienen el mismo color). Lunares: puntos en Copa, en tresbolillo, uno justo en el centro.
+        --}}
+        <pattern id="trama-damero" x="8" y="8" width="14" height="14" patternUnits="userSpaceOnUse">
+            <path d="M0 0H7V7H0ZM7 7H14V14H7Z" fill="var(--color-espada)" />
+        </pattern>
+
+        <pattern id="trama-lunares" x="0" y="-2" width="10" height="10" patternUnits="userSpaceOnUse">
+            <g fill="var(--color-copa)">
+                <circle cx="0" cy="0" r="2.3" />
+                <circle cx="10" cy="0" r="2.3" />
+                <circle cx="0" cy="10" r="2.3" />
+                <circle cx="10" cy="10" r="2.3" />
+                <circle cx="5" cy="5" r="2.3" />
+            </g>
+        </pattern>
+
         <clipPath id="recorte-dorso">
             <rect x="8" y="8" width="84" height="140" rx="3" />
         </clipPath>
@@ -202,6 +222,44 @@
             <circle cx="50" cy="78" r="86" />
         </g>
         <circle cx="50" cy="78" r="3.4" fill="var(--color-tinta)" />
+        <rect x="8" y="8" width="84" height="140" rx="3" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
+    </symbol>
+
+    <symbol id="dorso-damero" viewBox="0 0 100 156">
+        <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <rect x="8" y="8" width="84" height="140" rx="3" fill="url(#trama-damero)" stroke="var(--color-tinta)" stroke-width="1.5" />
+    </symbol>
+
+    <symbol id="dorso-lunares" viewBox="0 0 100 156">
+        <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <rect x="8" y="8" width="84" height="140" rx="3" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <rect x="11.5" y="11.5" width="77" height="133" rx="1.5" fill="url(#trama-lunares)" stroke="var(--color-tinta)" stroke-width="0.8" />
+    </symbol>
+
+    @php
+        /*
+         | Zigzag: arriba las puntas miran para arriba y abajo para abajo, y en el medio una raya doble en Copa.
+         | Cada renglón de abajo es el de arriba dado vuelta, así el dorso es igual girado media vuelta.
+         */
+        $renglon = function (float $y, int $hacia): string {
+            $puntos = [];
+            for ($k = 0; $k <= 14; $k++) {
+                $puntos[] = sprintf('%.1f %.1f', 11.5 + 5.5 * $k, $y - ($k % 2) * 4 * $hacia);
+            }
+
+            return 'M'.implode('L', $puntos);
+        };
+        $zigzag = '';
+        foreach ([19, 26.5, 34, 41.5, 49, 56.5, 64] as $y) {
+            $zigzag .= $renglon($y, 1).$renglon(156 - $y, -1);
+        }
+    @endphp
+    <symbol id="dorso-zigzag" viewBox="0 0 100 156">
+        <rect x="0.75" y="0.75" width="98.5" height="154.5" rx="8" fill="var(--color-naipe)" stroke="var(--color-tinta)" stroke-width="1.5" />
+        <g clip-path="url(#recorte-dorso)">
+            <path d="{{ $zigzag }}" fill="none" stroke="var(--color-tinta)" stroke-width="2" stroke-linejoin="miter" />
+        </g>
+        <path d="M8 74.5H92M8 81.5H92" stroke="var(--color-copa)" stroke-width="2" />
         <rect x="8" y="8" width="84" height="140" rx="3" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
     </symbol>
 </svg>

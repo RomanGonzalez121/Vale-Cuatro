@@ -25,13 +25,17 @@
     // Los lugares de la cruz con su asiento, en el orden en que se apilan: los de los costados quedan debajo de los del medio.
     $lugares = ['izquierda' => 3, 'derecha' => 1, 'companero' => 2, 'vos' => 0];
     $nivelEnPalabras = mb_strtolower($nivel->nombre());
+    // La mesa de quien mira (la eligió en su Colección). Con una elegida, la del Ultra no oscurece el paño.
+    $mesaPropia = \App\Juego\Premios::propia('mesa');
+    // Y cómo anota: los dos tanteadores de su pantalla salen con su forma.
+    $anotarPropio = \App\Juego\Premios::propia('anotar');
 @endphp
 
 <x-layouts.base titulo="Mesa de a cuatro" superficie="pano" :encabezado="false" :pie="false">
     <x-mazo.plantillas />
 
     {{-- La mesa ocupa la pantalla completa y nunca hace scroll: ver .mesa-cuatro en app.css. --}}
-    <div x-data="mesaDeCuatro(@js($vista), @js($pedidos))" @class(['mesa mesa-cuatro mesa-completa relative', 'mesa-ultra' => $nivel === \App\Juego\Nivel::UltraDificil])>
+    <div x-data="mesaDeCuatro(@js($vista), @js($pedidos))" @class(['mesa mesa-cuatro mesa-completa relative', 'mesa-de-'.$mesaPropia => $mesaPropia !== 'fabrica', 'mesa-ultra' => $mesaPropia === 'fabrica' && $nivel === \App\Juego\Nivel::UltraDificil])>
         <h1 class="sr-only">Mesa de a cuatro contra la máquina: tu compañero y los dos rivales, de nivel {{ $nivelEnPalabras }}</h1>
 
         {{-- Con el final de la partida a la vista, lo de atrás queda tapado: tampoco recibe el foco ni el lector de pantalla. --}}
@@ -48,8 +52,8 @@
 
             {{-- El tanteo es de las parejas, y se anota como en el club: "nosotros" y "ellos". --}}
             <section aria-label="Tanteador" class="grid grid-cols-2 gap-x-4 text-[clamp(0.8rem,4.1cqw,1.3rem)] [grid-area:tanteo] lg:gap-x-12">
-                <x-tanteador nombre="Nosotros" :puntos="$vista['tanteo'][0]" modelo="puntos.vos" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
-                <x-tanteador nombre="Ellos" :puntos="$vista['tanteo'][1]" modelo="puntos.rival" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
+                <x-tanteador :forma="$anotarPropio" nombre="Nosotros" :puntos="$vista['tanteo'][0]" modelo="puntos.vos" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
+                <x-tanteador :forma="$anotarPropio" nombre="Ellos" :puntos="$vista['tanteo'][1]" modelo="puntos.rival" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
             </section>
 
             <x-mesa.ajustes />
@@ -254,8 +258,8 @@
                 </p>
 
                 <div class="mt-7 grid gap-5 text-[1.5rem] sm:text-[1.75rem]" aria-hidden="true">
-                    <x-tanteador nombre="Nosotros" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
-                    <x-tanteador nombre="Ellos" modelo="cuenta.rival" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
+                    <x-tanteador :forma="$anotarPropio" nombre="Nosotros" modelo="cuenta.vos" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
+                    <x-tanteador :forma="$anotarPropio" nombre="Ellos" modelo="cuenta.rival" class="min-w-0" clase-nombre="text-base font-semibold" :hasta="$vista['puntosParaGanar']" />
                 </div>
 
                 <x-mesa.experiencia />

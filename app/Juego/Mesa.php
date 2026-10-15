@@ -1523,6 +1523,13 @@ final class Mesa
             report($falla);
         }
 
+        // Lo que hizo cada uno en la mesa, para los títulos. También se rehace desde las partidas.
+        try {
+            (new Titulos)->anotar($partida, $this);
+        } catch (Throwable $falla) {
+            report($falla);
+        }
+
         // Si era un desafío o un escalón de la escalera, queda anotado en lo que el jugador lleva pasado.
         (new Progresos)->anotar($partida);
 

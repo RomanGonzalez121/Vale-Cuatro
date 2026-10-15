@@ -1605,3 +1605,41 @@ Con el criterio de Emil Kowalski (animar solo lo que tiene un motivo, nunca lo q
 - **Con tests:** elegir desde el probador contesta sin redirigir y el candado rechaza igual lo que no se ganó; los números (partidas, ganadas, porcentaje, rachas, envidos) contra resultados conocidos; el perfil de otro muestra lo suyo y nada de la cuenta; quien juega sin cuenta y la administración no tienen perfil público; el propio lleva al perfil; el ranking lleva a cada perfil; elegir carta y dorso vuelve a la Colección.
 - **En un navegador real:** el perfil propio y el de otro en 1355 x 638 y 360 x 740; el probador con un dorso; elegir una carta y un dorso sin recargar (cambian la carta y el mazo de arriba, y el aviso sube abajo); sin scroll de costado.
 - **No se probó con lector de pantalla.** Queda para el pulido final.
+
+## Tanda 3: los primeros premios dibujados
+
+Román aprobó el plan el 15 de octubre de 2026 y pidió buscar referencias y usar las skills de diseño ("no tiene que quedar feo"). Todo se eligió primero en una lámina con las piezas juntas; él aprobó dorsos, formas de anotar, distintivos y títulos de entrada, y pidió más detalle en tres mesas.
+
+### Lo que trae
+
+- **Cuatro mesas:** Paño petróleo (nivel 5), Mármol de café (10), Pizarrón (14) y Madera del club (17). Se ven solo en la mesa de juego de quien la eligió (mano a mano y de a cuatro) y en su perfil. Cada una pisa los dos colores del paño, como la mesa del Ultra difícil, y dibuja su adorno detrás de las cartas, en el borde del campo. Con una mesa elegida, la del Ultra no oscurece el paño.
+- **Tres dorsos:** Damero (8), Lunares (12) y Zigzag (16), en la tradición de los dorsos del siglo XIX: una trama chica y pareja que no distrae. Los tres son iguales dados vuelta (las grillas están centradas en la carta; en el zigzag, cada renglón de abajo es el de arriba girado).
+- **Dos formas de anotar:** Palotes con lápiz (7) y Tiza (13). Son el mismo cuadrado con su diagonal del anotador de truco, a mano: cada trazo se corre y se curva apenas, siempre igual para el mismo lugar. Cada forma trae su superficie (un papelito, una pizarrita con marco) detrás de los grupos, sin cambiar el alto del tanteador, así la cuenta de la mesa no se mueve. No caen como un fósforo: aparecen en su lugar, creciendo apenas.
+- **Cinco distintivos:** Un fósforo (2), El cuadrado (6), Grupo de cinco (11), El 15 (15) y Dos cruzados (18), con el trazo de los íconos propios (rectas de 2 px con su cabeza, en una sola tinta). Dos cruzados va más parado que el ícono de "No quiero" y uno pasa por debajo del otro, para que no se confundan. Se puede no llevar ninguno.
+- **Cinco títulos:** Pichón (de entrada), Cantor (25 envidos cantados), Tantero (25 envidos ganados), Truquero (25 trucos queridos ganados) y Florido (10 flores cantadas). Cada uno elige cómo se lee el suyo (Cantor o Cantora); nunca se adivina por el apodo. Los jugadores de ejemplo muestran el mejor que ganaron en sus partidas.
+- **Todo se elige en la Colección** (pedido de Román): siete pestañas (cartas, dorsos, mesas, mazos, anotar, títulos y distintivos), cada una con su probador y "Usar" sin recargar. Arriba del perfil, "tu mesa" toma la mesa elegida, y el apodo lleva su distintivo y su título.
+
+### Las tres mesas con detalle
+
+La primera versión del mármol, el pizarrón y la madera le pareció plana a Román. Se buscaron referencias y eligió, entre opciones, las tres recomendadas:
+
+- **Pizarrón, "pizarra usada":** pasadas de borrador tenues que se pisan, y en dos esquinas lo que quedó de otras partidas a medio borrar (unos palotes y un 30). El marco de madera tiene su veta y las esquinas en diagonal. Marcó que los palotes viejos se pisaban con la raya de tiza: se corrieron hacia adentro.
+- **Mármol, "Carrara de café":** vetas finas y quebradas que corren en diagonal desde dos esquinas, con ramitas que se abren en ángulo chico, nubes grises apenas marcadas y el filete doble de latón. Es la única clara: sobre ella el texto pasa a tinta, el envido a un ocre del oro y el palito de los fósforos se oscurece; las cartas, el papel de la planilla y los botones vuelven a sus colores.
+- **Madera, "mesa de juego antigua":** la veta del nogal con un nudo cerca del borde, una banda clara con su filete oscuro y un filete de boj adentro. Los abanicos de marquetería de las esquinas se probaron y se sacaron (Román: "están de más"), y el marco hecho como imagen en nueve partes se rehízo con líneas, porque a ciertos tamaños sus esquinas no encajaban.
+
+Se descartó hacerlas con texturas generadas (ruido que imita la piedra o la veta): todo está dibujado trazo por trazo, que es lo que permite la regla de "nada de texturas" desde que las mesas pueden tener diseño.
+
+### Cómo está hecho
+
+- **Los dibujos de las mesas** están en `resources/mesas/` (SVG). Lo que tiene forma (vetas, el nudo, lo que quedó a medio borrar) va en las esquinas a tamaño fijo, para que no se deforme entre el celular y la computadora; solo lo informe (vetas largas, borrones) se estira. Vite los compila como archivos aparte, y el navegador los pide solo si hay una mesa de esas en la página.
+- **Qué tiene cada uno:** `Premios::POR_NIVEL` (mesas, formas de anotar y distintivos con su nivel), `piezas()`, `tiene()`, `elegidaDe()`, `propia()` (la de quien mira, una vez por pedido), `titulos()`, `tieneTitulo()`, `tituloDe()`. Lo elegido se guarda en `jugadores.mesa`, `anotar`, `distintivo`, `titulo` y `titulo_femenino`, y al leerlo se vuelve a comprobar que lo tenga. La administración tiene todo abierto.
+- **Los títulos** salen de `App\Juego\Titulos`: al cerrar cada partida se suman, desde los hechos del motor, los envidos cantados, los envidos ganados, los trucos queridos ganados (la mano se cerró con un truco que valía 2 o más a favor de su equipo) y las flores cantadas, y se guardan en el jugador. `fosforos:recalcular` también los rehace. Los desafíos no cuentan: reintentar la misma mano no puede ser la forma de ganar un título.
+- **Lo que recibe el rival** pasa a ser apodo, categoría, carta, título y distintivo (`Premios::aLaVista()`). Su mesa, su dorso y su forma de anotar no salen de su pantalla.
+- **La paleta:** `Paleta::MESAS` y `ANOTADORES` con sus combinaciones (`combinacionesDeLosPremios()`, contraste medido) y `esDeLaFamilia()`: un color de premio no pasa de un tope de intensidad, no cae en la franja de rosas y violetas y no es un celeste claro de bebé. Los colores de la paleta fija (el oro, el fósforo) no pasan por esa regla.
+
+### Qué se probó y qué no
+
+- **Con tests:** las cuentas de los títulos coinciden con las jugadas guardadas y con el ranking, y se rehacen igual; un título se gana al llegar a lo que pide y se lee como se eligió; el candado de mesa, forma de anotar, distintivo y título, también mandando el pedido a mano; la administración tiene todo; lo que recibe el rival; la mesa y la forma de anotar se ven en la mesa de juego; los distintivos son rectas con su cabeza y no repiten un ícono; lo dibujado coincide con el camino; el contraste y la familia de color de las mesas y las formas de anotar.
+- **En un navegador real:** las cuatro mesas en la mesa de juego en 1355 x 638 y 360 x 740; el perfil con cada pestaña nueva, probando y usando una pieza de cada una, en los dos tamaños.
+- **No se probó:** la mesa de a cuatro con cada mesa nueva (usa las mismas reglas); lector de pantalla (pulido final). Un test de la mesa ("recargar la mesa vuelve a la misma partida") volvió a fallar una vez en la corrida completa y pasa solo, como en M22.
+

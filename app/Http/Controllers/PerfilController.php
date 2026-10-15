@@ -10,6 +10,7 @@ use App\Juego\Historial;
 use App\Juego\Numeros;
 use App\Juego\Premios;
 use App\Juego\Progresos;
+use App\Juego\Titulos;
 use App\Models\Jugador;
 use App\Models\Partida;
 use Illuminate\Contracts\View\View;
@@ -43,6 +44,20 @@ class PerfilController extends Controller
             'dorso' => $this->premios->dorsoDe($jugador),
             'camino' => $this->premios->camino($jugador),
             'dorsos' => $this->premios->dorsos($jugador),
+            'mesas' => $this->premios->piezas('mesa', $jugador),
+            'formas' => $this->premios->piezas('anotar', $jugador),
+            'distintivos' => $this->premios->piezas('distintivo', $jugador),
+            'titulos' => $this->premios->titulos($jugador),
+            // Lo que usa ahora de cada cosa, para que la Colección lo marque y el probador arranque ahí.
+            'enUso' => [
+                'carta' => $this->premios->cartaDe($jugador),
+                'dorso' => $this->premios->dorsoDe($jugador),
+                'mesa' => $this->premios->elegidaDe('mesa', $jugador),
+                'anotar' => $this->premios->elegidaDe('anotar', $jugador),
+                'distintivo' => $this->premios->elegidaDe('distintivo', $jugador) ?? 'ninguno',
+                'titulo' => $this->premios->tituloElegido($jugador),
+                'femenino' => (bool) $jugador->titulo_femenino,
+            ],
             // Lo que todavía no se dibujó (mesas, mazos) también está en la Colección, con su nivel.
             'proximamente' => array_values(array_filter(Camino::fichas(), fn (array $ficha) => ! $ficha['listo'])),
             // El camino entero, nivel por nivel, para "Ver el camino entero".
@@ -89,6 +104,9 @@ class PerfilController extends Controller
             'enLaTira' => Camino::enLaTira((int) $jugador->fosforos),
             'categoria' => Categoria::delNivel($nivel),
             'carta' => $this->premios->cartaDe($jugador),
+            // Lo que ven todos de un jugador además de su carta: su título y su distintivo.
+            'titulo' => $this->premios->tituloDe($jugador),
+            'distintivo' => $this->premios->elegidaDe('distintivo', $jugador),
             'proximo' => $nivel < Camino::NIVELES ? Camino::entre($nivel, $nivel + 1) : [],
             'numeros' => (new Numeros)->de($jugador),
             'ultimas' => $this->historial->cerradasDe($jugador)->limit(5)->get()
@@ -175,6 +193,83 @@ class PerfilController extends Controller
 
         // Al volver, la carta del perfil se muestra dada vuelta: es el dorso lo que se acaba de cambiar.
         return redirect()->to(route('perfil').'#coleccion')->with('hecho', 'Dorso elegido.')->with('muestra', 'dorso');
+    }
+
+    /**
+     * Elige su mesa, su forma de anotar o su distintivo entre los que ganó. El distintivo se puede sacar ("ninguno").
+     */
+    public function elegirMesa(Request $request): RedirectResponse|JsonResponse
+    {
+        return $this->elegirPieza($request, 'mesa');
+    }
+
+    public function elegirAnotar(Request $request): RedirectResponse|JsonResponse
+    {
+        return $this->elegirPieza($request, 'anotar');
+    }
+
+    public function elegirDistintivo(Request $request): RedirectResponse|JsonResponse
+    {
+        return $this->elegirPieza($request, 'distintivo');
+    }
+
+    private function elegirPieza(Request $request, string $tipo): RedirectResponse|JsonResponse
+    {
+        $claves = array_keys(Premios::POR_NIVEL[$tipo]);
+
+        if ($tipo === 'distintivo') {
+            $claves[] = 'ninguno';
+        }
+
+        $clave = $request->validate([$tipo => ['required', 'string', Rule::in($claves)]])[$tipo];
+        $jugador = $request->user();
+        $ninguno = $tipo === 'distintivo' && $clave === 'ninguno';
+
+        if (! $ninguno && ! $this->premios->tiene($tipo, $jugador, $clave)) {
+            throw ValidationException::withMessages([$tipo => match ($tipo) {
+                'mesa' => 'Esa mesa todavía no la ganaste.',
+                'anotar' => 'Esa forma de anotar todavía no la ganaste.',
+                default => 'Ese distintivo todavía no lo ganaste.',
+            }]);
+        }
+
+        $jugador->forceFill([$tipo => $ninguno ? null : $clave])->save();
+
+        $mensaje = match ($tipo) {
+            'mesa' => 'Mesa elegida.',
+            'anotar' => 'Forma de anotar elegida.',
+            default => $ninguno ? 'Sin distintivo.' : 'Distintivo elegido.',
+        };
+
+        if ($request->expectsJson()) {
+            return response()->json(['mensaje' => $mensaje]);
+        }
+
+        return redirect()->to(route('perfil').'#coleccion')->with('hecho', $mensaje)->with('muestra', $tipo);
+    }
+
+    /**
+     * Elige su título entre los que ganó, y cómo se lee: Cantor o Cantora. Lo elige cada uno; no se adivina.
+     */
+    public function elegirTitulo(Request $request): RedirectResponse|JsonResponse
+    {
+        $datos = $request->validate([
+            'titulo' => ['required', 'string', Rule::in(array_keys(Titulos::TODOS))],
+            'femenino' => ['required', 'boolean'],
+        ]);
+        $jugador = $request->user();
+
+        if (! $this->premios->tieneTitulo($jugador, $datos['titulo'])) {
+            throw ValidationException::withMessages(['titulo' => 'Ese título todavía no lo ganaste.']);
+        }
+
+        $jugador->forceFill(['titulo' => $datos['titulo'], 'titulo_femenino' => (bool) $datos['femenino']])->save();
+
+        if ($request->expectsJson()) {
+            return response()->json(['mensaje' => 'Título elegido.']);
+        }
+
+        return redirect()->to(route('perfil').'#coleccion')->with('hecho', 'Título elegido.')->with('muestra', 'titulo');
     }
 
     /**
