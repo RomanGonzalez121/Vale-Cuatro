@@ -13,33 +13,26 @@
 <x-layouts.base titulo="Historial" descripcion="Tus partidas de Vale Cuatro, para volver a verlas jugada por jugada.">
     <x-mazo.plantillas />
 
-    <div class="mx-auto max-w-5xl px-5 pb-24 sm:px-8" x-data="historial">
-        <header class="grid items-end gap-8 pb-10 pt-10 sm:pt-16 md:grid-cols-[1fr_auto]">
-            <div>
-                <h1 class="text-5xl font-black tracking-tight sm:text-7xl">Historial</h1>
-                <p class="mt-5 max-w-[56ch] text-lg leading-relaxed">
-                    Cada partida queda guardada jugada por jugada. Por eso se puede volver a ver entera.
+    <div class="pagina" x-data="historial">
+        <x-pagina.encabezado titulo="Historial" bajada="Cada partida queda guardada jugada por jugada, para volver a verla.">
+            {{-- Quien juega sin cuenta ve lo de su sesión. Se le dice de entrada, con la salida al lado. --}}
+            @if ($esInvitado)
+                <p class="mt-3 max-w-[60ch] leading-relaxed">
+                    Jugás sin cuenta: acá están las partidas de esta sesión.
+                    <a href="{{ route('registro') }}" class="enlace">Creá una cuenta</a> y te quedan guardadas, también las de antes.
                 </p>
+            @endif
 
-                {{-- Quien juega sin cuenta ve lo de su sesión. Se le dice de entrada, con la salida al lado. --}}
-                @if ($esInvitado)
-                    <p class="mt-4 max-w-[56ch] leading-relaxed">
-                        Jugás sin cuenta: acá están las partidas de esta sesión.
-                        <a href="{{ route('registro') }}" class="enlace">Creá una cuenta</a> y te quedan guardadas, también las de antes.
-                    </p>
-                @endif
-
-                @if ($enCurso)
-                    <p class="mt-4 leading-relaxed">
-                        Tenés una partida sin terminar.
-                        <a href="{{ route('mesa') }}" class="enlace">Seguila en la mesa</a>
-                    </p>
-                @endif
-            </div>
+            @if ($enCurso)
+                <p class="mt-3 leading-relaxed">
+                    Tenés una partida sin terminar.
+                    <a href="{{ route('mesa') }}" class="enlace">Seguila en la mesa</a>
+                </p>
+            @endif
 
             {{-- La tira: una marca por partida, de la más vieja a la más nueva. Alta si la ganaste, baja si la perdiste. --}}
             @if ($lista->isNotEmpty())
-                <div>
+                <x-slot:aparte>
                     <ul class="flex h-10 items-end gap-1.5" aria-hidden="true">
                         @foreach ($lista->reverse() as $partida)
                             <li @class(['w-4 rounded-sm', 'h-10 bg-gana' => $partida['gano'], 'h-4 bg-pierde' => ! $partida['gano']])></li>
@@ -53,12 +46,12 @@
                             en esta página
                         @endif
                     </p>
-                </div>
+                </x-slot:aparte>
             @endif
-        </header>
+        </x-pagina.encabezado>
 
         @forelse ($porDia as $dia => $delDia)
-            <section aria-labelledby="dia-{{ $loop->index }}" class="border-t-2 border-texto pb-6 pt-5">
+            <section aria-labelledby="dia-{{ $loop->index }}" class="border-t-2 border-texto pb-6 pt-5 first-of-type:border-t-0 first-of-type:pt-0">
                 <h2 id="dia-{{ $loop->index }}" class="text-xl font-extrabold">{{ $dia }}</h2>
 
                 <ul>

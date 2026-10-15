@@ -343,7 +343,7 @@ class PremiosTest extends TestCase
         // Un jugador de ejemplo tiene su carta fija, la de su nivel.
         $this->assertSame('1-espada', $filas['Don Anselmo']['carta']);
 
-        $this->get('/ranking')->assertOk()->assertSee('La Fija')->assertSee('medio');
+        $this->get('/ranking')->assertOk()->assertSee('La Fija')->assertSee('Medio');
     }
 
     private function pasoElEscalon(Jugador $jugador, int $escalon): void

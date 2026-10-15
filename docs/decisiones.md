@@ -1465,3 +1465,52 @@ Román pidió que la palabra "bot" no se viera: es técnica, en inglés, y desen
 - "Máquina" es femenino y los niveles se dicen en masculino ("nivel Intermedio"), así que se sumó `Nivel::deLaMaquina()` para concordar: "Máquina intermedia", "contra la máquina difícil".
 - La palabra es más larga: en el celular, la fila "Contra la máquina / Con otra persona" de los modos ya no entraba en un renglón y empujaba el botón de jugar debajo de la barra de abajo. Va un punto más chica en el celular; el botón quedó 4 px más arriba que antes.
 - Probado: la suite entera, las siete pruebas de navegador, y el inicio, los modos y la mesa medidos a 360 x 740, 360 x 640 y 1355 x 638, sin scroll de costado.
+
+## M22. Unificación visual
+
+Román pidió una opinión honesta de la identidad del sitio. Lo bueno era la mesa, el tanteador, el mazo y la disciplina de color y movimiento; lo flojo, que cada pantalla se había armado en un momento distinto y se notaba, que sobraba texto explicativo, que la mesa de escritorio era una columna angosta en un campo enorme y que había mucho verde plano. M22 junta todo eso en una pasada, antes de los niveles y los premios, así lo nuevo se construye sobre el sistema unificado.
+
+### La mesa ancha
+
+- **Problema:** en una pantalla de escritorio el juego ocupaba una columna de unos 450 px en un paño de más de 1.300.
+- **Elegido (entre tres disposiciones con capturas):** la mesa del centro queda igual y gana dos costados que sirven para jugar, no adornos. Solo desde `lg`; el celular no cambia.
+- **A la izquierda, la planilla de lo cantado:** una hoja de anotador (papel naipe apenas torcido, con la sombra corta de las cartas, porque está apoyada en la mesa). Se descartaron el texto suelto sobre el paño y un panel de paño hondo: el papel es lo único que se lee de un vistazo junto a las cartas.
+- **En dos columnas, como la planilla de cantos del bridge:** "Vos" y el rival con la raya al medio, cada renglón una vuelta. Se eligió así porque la queja más repetida de los historiales de juegos de cartas es que no se entiende quién hizo cada cosa. Truco y "No quiero" van en Copa y "Quiero" en Basto, los colores de sus botones (medidos sobre naipe). Con una mano muy cantada la letra baja un paso; si igual no entra, lo más viejo queda tapado arriba y lo último siempre se ve.
+- **Para saber quién dijo qué, el motor entrega `cantos` en la vista:** cada canto, cada respuesta y quién ganó los tantos, en orden y con su asiento. Es lo que oyeron los dos en la mesa, así que va igual a cualquier asiento (test). Se descartó juntarlo en el navegador a medida que llega: al recargar la página se perdía.
+- **A la derecha, el mazo delante de quien repartió:** arriba si repartió el rival, abajo si repartiste vos, y dice quién. Reparte el que no es mano, así que en cada mano nueva el mazo se desliza al otro lado antes de repartir (260 ms) y las cartas salen de su lugar nuevo. Es una pila de seis dorsos corridos para que se vea el canto. La primera versión decía "Sos mano" ahí, y repetía la marca que ya está junto a tu mano.
+- **Medido:** sin scroll en 1024 x 768, 1355 x 638 y 1920 x 1080, también con doce cantos en la planilla. La mesa de a cuatro no lleva costados: la cruz ya usa ese lugar.
+
+### Arrastrar la carta a la mesa
+
+- Una forma más de jugar, que le recomendaron a Román. Tocar la carta sigue igual (y el teclado y el lector de pantalla).
+- `resources/js/arrastre.js`, sin librerías: eventos de puntero, el puntero queda capturado por la carta y un segundo dedo se ignora. Solo se mueve con `transform`.
+- **En el truco no hay deshacer:** hasta los 10 px es un toque; juega si se suelta sobre la mesa o con un tirón rápido hacia arriba (0,6 px por milisegundo y al menos 30 px); hacia abajo la carta se resiste. Si no juega, vuelve a la mano en 200 ms. Mientras está sobre la mesa se marca el lugar de la baza.
+
+### Las piezas compartidas
+
+- **Un mismo molde** (`.pagina`): el mismo ancho y los mismos márgenes en todas las páginas. Antes había dos anchos y cada título tenía su tamaño.
+- **El encabezado** (`<x-pagina.encabezado>`): título, bajada de un renglón, lugar a la derecha para lo que la página cuenta de un vistazo, y el cierre con el **filete doble** de los impresos (una raya gruesa y una fina). Se buscaron referencias de impresos de club argentinos (carteleras, programas del hipódromo) y no apareció material útil; de lo que sí apareció se tomaron las tablas con filetes de la imprenta de plomo y la letra pesada que se lee de lejos.
+- **Las tablas son planillas:** la cabeza cierra con el mismo filete doble y las columnas van separadas por una raya, como la planilla de la mesa. Vale para el ranking, cómo se juega e identidad.
+- **El desplegable** (`<x-pagina.desplegable>`) para las explicaciones que no todos necesitan: es un `<details>` (se abre con teclado y el lector dice si está abierto), con una cruz que gira y queda en equis y el texto que entra con un fundido de 180 ms.
+- **Dónde va cada superficie** (decidido por Román): donde se elige qué jugar va el paño (modos, desafíos, escalera, torneo); donde se lee, el papel (ranking, historial, cómo se juega, identidad). Las páginas de elegir juego que entran en una pantalla (modos, escalera, torneo, sala) usan el mismo título y bajada pero no el filete, que las haría más altas.
+- **Los links dentro de un texto sobre el paño** van en el color del texto, subrayados: Espada no se lee sobre el paño. Los del pie pasaron al subrayado de fósforo de toda la navegación.
+
+### Menos texto
+
+- Cada bajada entra en un renglón en escritorio. Lo largo pasó a desplegables: "Cómo se cuenta" (ranking), "Cómo funcionan" (desafíos), "De dónde sale" (identidad).
+- **Lo simulado se dice en el pie de todas las páginas, una sola vez** (decidido por Román): una línea y un "Más" con el detalle. El inicio tenía además una sección propia que lo repetía justo encima del pie.
+
+### El inicio
+
+La primera pantalla no se tocó: funciona y está medida. Debajo:
+
+- **Formas de jugar:** las cartas de modo de los juegos que ya se juegan, con una línea cada una y el link directo (a los modos con ese juego elegido, o a desafíos y escalera). En el celular, un renglón por juego; en escritorio, en fila y apenas giradas, como una mano tirada en la mesa. Al pasar el mouse la carta se levanta y se endereza, el mismo gesto que los botones.
+- **Instalar, después de los juegos:** tres ventajas en renglones de planilla y el botón; en el iPhone, los dos pasos con el dibujo de sus botones (íconos nuevos `compartir` y `agregar`, con el trazo de los demás).
+- **El tanteador y las cuatro que mandan,** con una línea cada uno.
+
+### Qué se probó y qué no
+
+- **Con tests:** la vista lleva lo cantado en orden y con quién lo dijo, igual para los dos asientos, y se vacía al repartir. La suite entera y `MovimientoTest` (todo lo nuevo se mueve solo con `transform` y `opacity` y tiene su versión de movimiento reducido).
+- **En un navegador real:** la mesa ancha en tres tamaños durante varias manos, el pase del mazo, la planilla con una mano de doce cantos, el arrastre (corto vuelve, hasta la mesa juega, tirón juega, tocar juega) en escritorio y celular; todas las páginas a 1355 x 638 y 360 x 740, antes y después.
+- **Un test que falló una vez y no se pudo repetir:** "recargar la mesa vuelve a la misma partida", corrido junto con otros. Pasó 15 veces solo y 3 en grupo.
+- **No se probó con lector de pantalla.** Queda para el pulido final.

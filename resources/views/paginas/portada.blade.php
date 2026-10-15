@@ -5,6 +5,21 @@
         ['espada', 7, 'El siete de espada'],
         ['oro', 7, 'El siete de oro'],
     ];
+
+    // Los juegos que ya se juegan, cada uno con su carta, una línea y el camino directo a su pantalla.
+    $juegos = array_values(array_filter(App\Juego\Modos::juegos(), App\Juego\Modos::seJuega(...)));
+    $enUnaLinea = [
+        'mano-a-mano' => 'Uno contra uno, a 30 y con flor.',
+        'de-a-cuatro' => 'Dos contra dos, con señas.',
+        'torneo' => 'Cuatro u ocho, eliminación directa.',
+        'desafios' => 'Manos armadas con un objetivo.',
+        'escalera' => 'Ocho escalones, de a uno.',
+    ];
+    $destino = fn (array $juego) => match ($juego['clave']) {
+        'desafios' => route('desafios'),
+        'escalera' => route('escalera'),
+        default => route('modos', ['juego' => $juego['clave']]),
+    };
 @endphp
 
 <x-layouts.base superficie="pano" :apertura="true">
@@ -63,47 +78,74 @@
     </section>
 
     {{--
-        Instalarlo como aplicación. La franja aparece solo cuando se puede (resources/js/instalar.js): si el
+        Debajo de la primera pantalla, todo con el mismo armado: el título de sección del sitio, una línea y
+        lo que se puede tocar. Primero los juegos, que es a lo que se viene.
+    --}}
+    <section aria-labelledby="titulo-juegos" class="border-t border-naipe/20">
+        <div class="mx-auto max-w-6xl px-5 py-14 sm:px-8 lg:py-20">
+            <h2 id="titulo-juegos" class="seccion-titulo">Formas de jugar.</h2>
+
+            {{-- En el celular, un renglón por juego con su carta chica; desde `md`, las cartas en fila, como una mano. --}}
+            <ul class="portada-juegos mt-8">
+                @foreach ($juegos as $juego)
+                    <li>
+                        <a href="{{ $destino($juego) }}" class="portada-juego">
+                            <span class="portada-juego-carta" aria-hidden="true">
+                                <x-carta-modo :icono="$juego['icono']" :nombre="$juego['nombre']" :renglones="$juego['renglones']" />
+                            </span>
+                            <span class="min-w-0">
+                                <span class="enlace-nav text-lg font-extrabold leading-tight">{{ $juego['nombre'] }}</span>
+                                <span class="mt-1 block leading-snug">{{ $enUnaLinea[$juego['clave']] ?? $juego['resumen'] }}</span>
+                            </span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </section>
+
+    {{--
+        Instalarlo como aplicación. La sección aparece solo cuando se puede (resources/js/instalar.js): si el
         navegador no lo ofrece o ya está instalado, no ocupa lugar. El dibujo es el ícono con su nombre debajo,
-        tal como queda en la pantalla del celular. En un iPhone se instala a mano, y en vez del botón se dice cómo.
+        tal como queda en la pantalla del celular. En un iPhone se instala a mano: en vez del botón, los dos pasos.
     --}}
     <section aria-labelledby="titulo-instalar" class="border-t border-naipe/20" data-donde-instalar hidden>
-        {{-- En el celular: el ícono junto al título, y debajo la frase y el botón a todo el ancho. Desde `sm`, todo en un renglón. --}}
-        <div class="mx-auto grid max-w-6xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5 gap-y-4 px-5 py-9 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-10 sm:gap-y-2 sm:px-8 sm:py-12">
-            <figure class="text-center sm:row-span-2" aria-hidden="true">
-                <img src="/iconos/icono-192.png" alt="" width="192" height="192" class="size-16 rounded-[22%] border-2 border-naipe/25 sm:size-24">
-                <figcaption class="mt-1.5 text-xs font-semibold sm:mt-2 sm:text-sm">Vale Cuatro</figcaption>
+        <div class="mx-auto grid max-w-6xl items-center gap-x-10 gap-y-7 px-5 py-14 sm:px-8 md:grid-cols-[auto_minmax(0,1fr)_auto] lg:py-16">
+            <figure class="flex items-center gap-4 md:block md:text-center" aria-hidden="true">
+                <img src="/iconos/icono-192.png" alt="" width="192" height="192" class="size-16 rounded-[22%] border-2 border-naipe/25 md:size-24">
+                <figcaption class="text-sm font-semibold md:mt-2">Vale Cuatro</figcaption>
             </figure>
 
-            <h2 id="titulo-instalar" class="text-[1.75rem] font-black leading-[1.02] tracking-tight sm:self-end sm:text-3xl">
-                Llevalo en el celular.
-            </h2>
-            <p class="max-w-[44ch] leading-snug max-sm:col-span-2 sm:col-start-2 sm:self-start sm:text-lg">
-                Se instala desde acá, sin tienda. Si jugás con otra persona, te avisa cuando te toca.
-            </p>
+            <div>
+                <h2 id="titulo-instalar" class="seccion-titulo">Llevalo en el celular.</h2>
+                {{-- Lo que gana quien lo instala, en tres renglones cortos de la misma planilla. --}}
+                <ul class="instalar-ventajas mt-5">
+                    <li>Abre a pantalla completa, como una aplicación.</li>
+                    <li>Te avisa cuando te toca, si jugás con otra persona.</li>
+                    <li>Se instala desde acá, sin tienda.</li>
+                </ul>
+            </div>
 
-            <div class="max-sm:col-span-2 sm:col-start-3 sm:row-span-2 sm:row-start-1">
-                <button type="button" class="boton boton-naipe min-h-14 px-6 text-lg max-sm:w-full" data-instalar hidden>
+            <div>
+                <button type="button" class="boton boton-naipe min-h-14 px-6 text-lg max-md:w-full" data-instalar hidden>
                     <x-icono nombre="instalar" /> Instalar
                 </button>
-                <p class="max-w-[30ch] font-semibold leading-snug" data-instalar-en-iphone hidden>
-                    En el iPhone: tocá Compartir y después «Agregar a inicio».
-                </p>
+
+                {{-- En el iPhone no hay botón: se hace desde el navegador. Los dos pasos, con los dibujos de sus botones. --}}
+                <ol class="instalar-pasos" data-instalar-en-iphone hidden>
+                    <li><x-icono nombre="compartir" class="size-7" /> <span><strong>1.</strong> Tocá Compartir</span></li>
+                    <li><x-icono nombre="agregar" class="size-7" /> <span><strong>2.</strong> Elegí «Agregar a inicio»</span></li>
+                </ol>
             </div>
         </div>
     </section>
 
     <section aria-labelledby="titulo-fosforos" class="sobre-pano bg-pano-hondo" x-data="{ vos: 13 }">
-        <div class="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:py-20">
+        <div class="mx-auto grid max-w-6xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:items-center lg:py-20">
             <div>
-                <h2 id="titulo-fosforos" class="text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl">
-                    Se anota con fósforos, como en el club.
-                </h2>
-                <p class="mt-5 max-w-[48ch] text-lg leading-relaxed">
-                    Cuatro fósforos en cuadrado y uno cruzado son cinco puntos.
-                    Quince malas, quince buenas, y gana quien llega a treinta.
-                </p>
-                <button type="button" class="boton boton-oro mt-7" :disabled="vos >= 30" @click="vos++">
+                <h2 id="titulo-fosforos" class="seccion-titulo">Se anota con fósforos.</h2>
+                <p class="mt-4 max-w-[48ch] text-lg leading-relaxed">Cuatro en cuadrado y uno cruzado son cinco puntos.</p>
+                <button type="button" class="boton boton-oro mt-6" :disabled="vos >= 30" @click="vos++">
                     Anotar un punto
                 </button>
             </div>
@@ -115,17 +157,13 @@
         </div>
     </section>
 
-    <section aria-labelledby="titulo-mandan" class="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
-        <h2 id="titulo-mandan" class="max-w-[18ch] text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl">
-            Las cuatro que mandan.
-        </h2>
-        <p class="mt-5 max-w-[52ch] text-lg leading-relaxed">
-            En el truco las cartas no valen por su número. Estas cuatro le ganan a todas las demás, en este orden.
-            El mazo es propio: las 40 cartas están dibujadas para este sitio.
-        </p>
+    <section aria-labelledby="titulo-mandan" class="mx-auto max-w-6xl px-5 py-14 sm:px-8 lg:py-20">
+        <h2 id="titulo-mandan" class="seccion-titulo">Las cuatro que mandan.</h2>
+        {{-- El mazo es propio: las 40 cartas están dibujadas para este sitio. --}}
+        <p class="mt-4 max-w-[52ch] text-lg leading-relaxed">Le ganan a todas las demás, en este orden.</p>
 
         {{-- Las cuatro en un solo renglón, también en el celular: el orden se lee de izquierda a derecha. --}}
-        <ol class="mt-10 grid grid-cols-4 gap-x-2.5 max-sm:mt-8 sm:gap-x-8">
+        <ol class="mt-8 grid grid-cols-4 gap-x-2.5 sm:gap-x-8">
             @foreach ($mandan as $i => [$palo, $numero, $apodo])
                 <li>
                     <div class="max-w-44"><x-carta :palo="$palo" :numero="$numero" /></div>
@@ -137,32 +175,9 @@
             @endforeach
         </ol>
 
-        <p class="mt-10">
-            <a href="{{ route('como-se-juega') }}" class="boton boton-linea">Ver el orden completo y las reglas</a>
+        <p class="mt-8">
+            <a href="{{ route('como-se-juega') }}#cartas" class="enlace-nav font-bold">Ver el orden completo</a>
         </p>
     </section>
 
-    <section aria-labelledby="titulo-real" class="border-t border-naipe/20">
-        <div class="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
-            <h2 id="titulo-real" class="text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl">
-                Qué es simulado y qué es real.
-            </h2>
-            <div class="mt-9 grid gap-9 md:grid-cols-2 md:gap-14">
-                <div>
-                    <h3 class="text-xl font-extrabold">Simulado</h3>
-                    <p class="mt-2 max-w-[46ch] text-lg leading-relaxed">
-                        La máquina y los jugadores de ejemplo del ranking.
-                        En todo el sitio aparecen marcados como tales.
-                    </p>
-                </div>
-                <div class="md:border-l md:border-naipe/20 md:pl-14">
-                    <h3 class="text-xl font-extrabold">Real</h3>
-                    <p class="mt-2 max-w-[46ch] text-lg leading-relaxed">
-                        El motor de reglas, las partidas en vivo entre dos personas,
-                        el historial que se puede volver a ver mano por mano y el ranking.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
 </x-layouts.base>

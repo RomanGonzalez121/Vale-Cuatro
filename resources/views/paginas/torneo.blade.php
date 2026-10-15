@@ -31,7 +31,7 @@
             En el celular van el título, las cartas y el resto; en pantallas anchas las cartas van a la derecha.
         --}}
         <header class="torneo-inicio grid items-start gap-x-14 gap-y-6 [grid-template-areas:'titulo'_'duelo'_'resto'] lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_1fr] lg:[grid-template-areas:'titulo_duelo'_'resto_duelo']">
-            <h1 class="max-w-[16ch] text-[clamp(2.25rem,5.6vw,4rem)] font-black leading-[0.98] tracking-[-0.035em] [grid-area:titulo] [overflow-wrap:anywhere]">
+            <h1 class="pagina-titulo max-w-[16ch] [grid-area:titulo]">
                 @switch ($vos['estado'])
                     @case (Llaves::POR_JUGAR)
                         Jugás {{ $vos['partido'] }} contra {{ $rival['apodo'] }}

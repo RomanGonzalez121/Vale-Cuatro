@@ -29,9 +29,9 @@
         <div class="mx-auto grid max-w-6xl gap-y-5 px-5 pb-16 pt-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-8 lg:pb-24 lg:pt-8"
             x-data="{ elegido: {{ $elegido }}, eligio: false }">
             <header class="lg:col-start-1 lg:row-start-1">
-                <h1 class="text-[clamp(2.25rem,10.5vw,3.5rem)] font-black leading-[0.96] tracking-[-0.035em]">Escalera del club</h1>
-                <p class="mt-3 max-w-[40ch] leading-snug sm:text-lg sm:leading-relaxed">
-                    {{ $completa ? 'Llegaste arriba. Podés volver a jugar cualquier escalón.' : 'Ocho escalones, de a uno. Pasás uno y se abre el siguiente.' }}
+                <h1 class="pagina-titulo">Escalera del club</h1>
+                <p class="pagina-bajada">
+                    {{ $completa ? 'Llegaste arriba: jugá el que quieras.' : 'Pasás un escalón y se abre el siguiente.' }}
                 </p>
 
                 @if ($enCurso)

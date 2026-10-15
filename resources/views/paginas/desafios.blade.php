@@ -12,35 +12,34 @@
 --}}
 <x-layouts.base titulo="Desafíos" descripcion="Manos de truco armadas con un objetivo: ganar el envido, hacer que la máquina no quiera, irse a tiempo. Cada una reparte siempre las mismas cartas." superficie="pano">
     <div class="overflow-x-clip">
-        <div class="mx-auto max-w-6xl px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14">
-            <header class="flex flex-wrap items-end justify-between gap-x-12 gap-y-5">
-                <div>
-                    <h1 class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">Desafíos</h1>
-                    <p class="mt-4 max-w-[46ch] text-lg leading-relaxed">
-                        Manos armadas con un objetivo. Las cartas son siempre las mismas y la máquina contesta
-                        siempre igual: si no sale, probá otro camino.
+        <div class="pagina">
+            <x-pagina.encabezado titulo="Desafíos" bajada="Manos armadas con un objetivo. Se juegan en cualquier orden.">
+                <x-pagina.desplegable titulo="Cómo funcionan">
+                    <p>Cada desafío reparte siempre las mismas cartas, y la máquina contesta siempre igual: es un acertijo con solución. Si no sale, probá otro camino.</p>
+                    <p>No cuentan para el ranking.</p>
+                </x-pagina.desplegable>
+
+                @if ($enCurso)
+                    <p class="mt-3 max-w-[60ch] font-bold leading-relaxed">
+                        Tenés {{ $enCurso->esDePractica() ? ($enCurso->escalon ? 'un escalón' : 'un desafío') : 'una partida' }} sin terminar.
+                        Para empezar otro desafío, primero terminá o abandoná desde la mesa.
+                        <a href="{{ route('mesa') }}" class="enlace">Volver a la mesa</a>
                     </p>
-                </div>
+                @endif
 
                 {{-- Cuántos van, contados como se cuenta en el club. --}}
-                <p class="sobre-pano flex items-center gap-3 rounded-xl bg-pano-hondo px-4 py-3 font-semibold leading-none">
-                    <span class="text-3xl font-black tabular-nums text-oro">{{ $superados }}</span>
-                    <span>de {{ $total }} superados</span>
-                    <x-administracion.cuenta :cantidad="$superados" class="text-[1.05rem]" />
-                </p>
-            </header>
-
-            @if ($enCurso)
-                <p class="mt-8 max-w-[52ch] font-bold leading-relaxed">
-                    Tenés {{ $enCurso->esDePractica() ? ($enCurso->escalon ? 'un escalón' : 'un desafío') : 'una partida' }} sin terminar.
-                    Para empezar otro desafío, primero terminá o abandoná desde la mesa.
-                    <a href="{{ route('mesa') }}" class="underline underline-offset-4">Volver a la mesa</a>
-                </p>
-            @endif
+                <x-slot:aparte>
+                    <p class="sobre-pano flex items-center gap-3 rounded-xl bg-pano-hondo px-4 py-3 font-semibold leading-none">
+                        <span class="text-3xl font-black tabular-nums text-oro">{{ $superados }}</span>
+                        <span>de {{ $total }} superados</span>
+                        <x-administracion.cuenta :cantidad="$superados" class="text-[1.05rem]" />
+                    </p>
+                </x-slot:aparte>
+            </x-pagina.encabezado>
 
             @foreach ($porTema as $tema => $delTema)
-                <section aria-labelledby="tema-{{ Str::slug($tema) }}" class="mt-12 lg:mt-14">
-                    <h2 id="tema-{{ Str::slug($tema) }}" class="text-3xl font-black leading-none tracking-tight sm:text-4xl">{{ $tema }}</h2>
+                <section aria-labelledby="tema-{{ Str::slug($tema) }}" class="mt-12 first-of-type:mt-0 lg:mt-14">
+                    <h2 id="tema-{{ Str::slug($tema) }}" class="seccion-titulo">{{ $tema }}</h2>
 
                     <ul class="mt-5 divide-y divide-naipe/20 border-y border-naipe/20">
                         @foreach ($delTema as $n => $desafio)
@@ -83,7 +82,7 @@
             @endforeach
 
             <p class="mt-12 max-w-[52ch] leading-relaxed">
-                ¿Querés ir de menor a mayor? La <a href="{{ route('escalera') }}" class="font-semibold underline underline-offset-4">escalera del club</a>
+                ¿Querés ir de menor a mayor? La <a href="{{ route('escalera') }}" class="enlace">escalera del club</a>
                 mezcla manos como estas con partidas cortas contra rivales cada vez más difíciles.
             </p>
         </div>

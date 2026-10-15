@@ -65,30 +65,26 @@
 <x-layouts.base titulo="Cómo se juega" descripcion="El reglamento de truco que usa Vale Cuatro, explicado con las cartas del sitio y para probar.">
     <x-mazo.plantillas />
 
-    <div class="mx-auto max-w-6xl px-5 pb-24 sm:px-8">
-        <header class="grid items-end gap-8 pb-10 pt-10 sm:pt-16 lg:grid-cols-[1fr_auto]">
-            <div>
-                <h1 class="text-5xl font-black tracking-tight sm:text-7xl">Cómo se juega</h1>
-                <p class="mt-5 max-w-[56ch] text-lg leading-relaxed sm:text-xl">
-                    El truco cambia en cada provincia. Este es el reglamento de Vale Cuatro, explicado para quien nunca jugó.
-                    Cada regla tiene una mesa para probarla.
-                </p>
-            </div>
-            <form method="POST" action="{{ route('jugar') }}" class="justify-self-start">
-                @csrf
-                <button type="submit" class="boton boton-tinta"><x-icono nombre="bot" /> Jugar contra la máquina</button>
-            </form>
-        </header>
+    <div class="pagina">
+        {{-- El truco cambia en cada provincia: este es el reglamento de Vale Cuatro, y cada regla tiene una mesa para probarla. --}}
+        <x-pagina.encabezado titulo="Cómo se juega" bajada="El reglamento de Vale Cuatro, para quien nunca jugó.">
+            <nav aria-label="En esta página" class="mt-4">
+                <ul class="flex flex-wrap gap-x-7 gap-y-1">
+                    @foreach ($secciones as $ancla => $nombre)
+                        <li><a href="#{{ $ancla }}" class="enlace-nav">{{ $nombre }}</a></li>
+                    @endforeach
+                </ul>
+            </nav>
 
-        <nav aria-label="En esta página" class="border-y-2 border-texto py-4">
-            <ul class="flex flex-wrap gap-x-7 gap-y-1">
-                @foreach ($secciones as $ancla => $nombre)
-                    <li><a href="#{{ $ancla }}" class="enlace-nav">{{ $nombre }}</a></li>
-                @endforeach
-            </ul>
-        </nav>
+            <x-slot:aparte>
+                <form method="POST" action="{{ route('jugar') }}">
+                    @csrf
+                    <button type="submit" class="boton boton-tinta"><x-icono nombre="bot" /> Jugar contra la máquina</button>
+                </form>
+            </x-slot:aparte>
+        </x-pagina.encabezado>
 
-        <section id="basico" class="grid scroll-mt-6 items-center gap-10 py-14 lg:grid-cols-2 lg:gap-16">
+        <section id="basico" class="grid scroll-mt-6 items-center gap-10 pb-14 lg:grid-cols-2 lg:gap-16">
             <div>
                 <h2 class="text-4xl font-black tracking-tight sm:text-5xl">Lo básico</h2>
                 <div class="mt-5 max-w-[52ch] space-y-4 text-lg leading-relaxed">

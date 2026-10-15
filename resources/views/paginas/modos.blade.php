@@ -12,7 +12,8 @@
         $rivalElegido[$juego['clave']] = collect($juego['rivales'])->firstWhere('boton', '!==', null)['clave'];
     }
 
-    $juegoElegido = $enLaMano[0]['clave'] ?? null;
+    // Desde la portada se llega con un juego ya elegido (?juego=de-a-cuatro); si no se juega, el primero.
+    $juegoElegido = collect($enLaMano)->firstWhere('clave', request('juego'))['clave'] ?? $enLaMano[0]['clave'] ?? null;
     $unaSola = count($enLaMano) === 1;
 
     // Con una partida sin terminar no se elige nivel: se sigue esa, contra el bot que ya tenía.
@@ -62,7 +63,7 @@
         <div @class(['modos-inicio mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-14', 'modos-dos-zonas' => $abierta, $unaSola ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : ($sinMazo ? '' : 'lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]')])
             x-data="{ juego: {{ Js::from($juegoElegido) }}, rival: {{ Js::from($rivalElegido) }}, nivel: {{ $nivelElegido->value }}, serie: false, lugares: {{ $lugaresElegidos }}, eligio: false }">
             <section aria-labelledby="titulo-modos">
-                <h1 id="titulo-modos" class="text-[clamp(2.5rem,6.4vw,4.5rem)] font-black leading-[0.96] tracking-[-0.035em]">
+                <h1 id="titulo-modos" class="pagina-titulo">
                     ¿Cómo querés jugar?
                 </h1>
 

@@ -16,17 +16,14 @@
 @endphp
 
 <x-layouts.base titulo="Identidad" descripcion="Logo, colores, tipografías, mazo e íconos de Vale Cuatro, en uso.">
-    <div class="mx-auto max-w-6xl px-5 pb-24 sm:px-8">
-        <header class="max-w-[62ch] pt-10 pb-14 sm:pt-16">
-            <h1 class="text-5xl font-black tracking-tight sm:text-6xl">Identidad</h1>
-            <p class="mt-5 text-lg leading-relaxed">
-                Todo sale del mundo del truco: la baraja española impresa en tintas planas, el paño de la mesa
-                del club y el tanteo con fósforos. No es un casino. Esta página muestra cada pieza en uso y
-                se actualiza sola, porque usa los mismos componentes que el resto del sitio.
-            </p>
-        </header>
+    <div class="pagina">
+        <x-pagina.encabezado titulo="Identidad" bajada="La baraja impresa, el paño del club y el tanteo con fósforos.">
+            <x-pagina.desplegable titulo="De dónde sale">
+                <p>Todo sale del mundo del truco, y no es un casino. Esta página muestra cada pieza en uso y se actualiza sola, porque usa los mismos componentes que el resto del sitio.</p>
+            </x-pagina.desplegable>
+        </x-pagina.encabezado>
 
-        <section aria-labelledby="titulo-logo" class="border-t-2 border-texto py-12">
+        <section aria-labelledby="titulo-logo" class="pb-12">
             <h2 id="titulo-logo" class="text-3xl font-extrabold tracking-tight">Logo</h2>
             <p class="mt-3 max-w-[62ch] leading-relaxed">
                 El isotipo son cuatro fósforos en cuadrado: el grupo de cuatro del tanteador.

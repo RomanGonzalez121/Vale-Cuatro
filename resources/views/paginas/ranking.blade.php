@@ -14,23 +14,19 @@
 @endphp
 
 <x-layouts.base titulo="Ranking" descripcion="Ranking de Vale Cuatro por partidas ganadas, rachas y envidos.">
-    <div class="mx-auto max-w-5xl px-5 pb-16 sm:px-8">
-        <header class="pb-10 pt-10 sm:pt-16">
-            <h1 class="text-5xl font-black tracking-tight sm:text-7xl">Ranking</h1>
-            <p class="mt-5 max-w-[60ch] text-lg leading-relaxed">
-                Ordenado por partidas ganadas. Si empatan, va primero quien tiene mejor porcentaje y después quien trae más racha.
-            </p>
-            <p class="mt-3 max-w-[60ch] leading-relaxed">
-                Cuentan las partidas entre personas y las de contra la máquina desde Intermedio.
-                Abandonar es perder; si el que se va es tu rival, la ganás solo si ya ibas en las buenas.
-                Los jugadores marcados como máquina son de ejemplo: juegan entre ellos para que la tabla no arranque vacía.
-            </p>
-        </header>
+    <div class="pagina">
+        <x-pagina.encabezado titulo="Ranking" bajada="Ordenado por partidas ganadas.">
+            <x-pagina.desplegable titulo="Cómo se cuenta">
+                <p>Si dos tienen las mismas ganadas, va primero el de mejor porcentaje y después el que trae más racha.</p>
+                <p>Cuentan las partidas entre personas y las de contra la máquina desde la intermedia. Abandonar es perder; si el que se va es tu rival, la ganás solo si ya ibas en las buenas.</p>
+                <p>Los jugadores marcados como máquina son de ejemplo: juegan entre ellos para que la tabla no arranque vacía.</p>
+            </x-pagina.desplegable>
+        </x-pagina.encabezado>
 
         @if ($primeros !== [])
             <section aria-labelledby="titulo-mandan" class="superficie-pano rounded-xl p-5 sm:p-9">
-                <h2 id="titulo-mandan" class="text-2xl font-extrabold sm:text-3xl">Los cuatro que mandan</h2>
-                <p class="mt-2 max-w-[52ch] leading-relaxed">Cada uno de los cuatro primeros tiene una de las cuatro cartas más fuertes del truco.</p>
+                {{-- Cada uno de los cuatro primeros tiene una de las cuatro cartas más fuertes del truco: lo dicen las cartas. --}}
+                <h2 id="titulo-mandan" class="seccion-titulo">Los cuatro que mandan</h2>
 
                 {{-- Los cuatro en un renglón, también en el celular. Ahí cada dato baja a su propia línea. --}}
                 <ol class="mt-7 grid grid-cols-4 gap-x-2.5 max-sm:mt-5 sm:gap-x-5 lg:gap-x-8">
@@ -60,7 +56,7 @@
             </section>
         @else
             {{-- Sin ninguna partida que cuente (un sitio recién instalado): se dice, y no se rellena con nada. --}}
-            <p class="border-t-2 border-texto pt-8 text-2xl font-black leading-tight tracking-tight">Todavía no hay partidas que cuenten.</p>
+            <p class="text-2xl font-black leading-tight tracking-tight">Todavía no hay partidas que cuenten.</p>
         @endif
 
         @if ($resto !== [])
@@ -95,7 +91,7 @@
                                 </span>
                             </td>
                             <td class="numero">
-                                <span class="text-lg font-bold">{{ $jugador['ganadas'] }}</span>
+                                <span class="text-xl font-black sm:text-2xl">{{ $jugador['ganadas'] }}</span>
                                 <span class="hidden text-sm sm:inline">de {{ $jugador['jugadas'] }}</span>
                             </td>
                             <td class="text-[0.8rem] sm:text-[0.95rem]"><x-racha :cantidad="$jugador['racha']" /></td>

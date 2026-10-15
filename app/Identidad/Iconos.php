@@ -42,6 +42,9 @@ final class Iconos
         // Instalar: un fósforo que baja a su caja. Avisos: una carta con una cabeza encendida en la esquina.
         'instalar' => ['M12 3.5V11M5.5 15.5V20.5H18.5V15.5', [[12, 13.2, 2.2]]],
         'aviso' => ['M5.5 7.5H14.5V20.5H5.5Z', [[17.4, 5.8, 2.6]]],
+        // Los dos pasos para instalar en un iPhone: la caja de Compartir y el cuadrado de Agregar a inicio.
+        'compartir' => ['M9 9.5H5.5V20.5H18.5V9.5H15M12 15V6.4', [[12, 4.2, 2.2]]],
+        'agregar' => ['M5.5 5.5H18.5V18.5H5.5ZM12 15.5V10.8M8.6 13H15.4', [[12, 8.7, 1.8]]],
         'flor' => ['M12 20.5V8M12 20.5 6.9 10.4M12 20.5 17.1 10.4', [[12, 5.6, 2.2], [5.8, 8.2, 2.2], [18.2, 8.2, 2.2]]],
         // Los juegos: dos fósforos (uno por jugador), cuatro en la mesa, las llaves del torneo, un fósforo de bandera y los escalones.
         'mano-a-mano' => ['M8 20.5V8.4M16 20.5V8.4', [[8, 5.9, 2.4], [16, 5.9, 2.4]]],
