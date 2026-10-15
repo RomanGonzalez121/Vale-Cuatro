@@ -31,7 +31,7 @@ class ArmarUnTorneoTest extends DuskTestCase
 
             // De las llaves a la mesa: la partida va contra un bot con apodo y la barra dice qué partido es.
             $navegador->press('Jugar la semifinal')
-                ->waitForLocation('/mesa')
+                ->waitForLocation('/mesa', 15)
                 ->waitFor('.mesa-mano button', 15)
                 ->assertSeeIn('.mesa-barra', 'Semifinal');
 

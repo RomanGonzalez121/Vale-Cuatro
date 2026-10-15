@@ -42,6 +42,8 @@ abstract class DuskTestCase extends BaseTestCase
             '--no-sandbox',
             '--disable-search-engine-choice-screen',
             '--disable-smooth-scrolling',
+            // En las máquinas de GitHub la memoria compartida es chica: sin esto la pestaña se puede caer.
+            '--disable-dev-shm-usage',
         ]);
 
         // En una máquina sin Chrome instalado se le puede decir cuál usar (cualquier Chromium sirve).

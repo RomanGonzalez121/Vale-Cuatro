@@ -30,7 +30,7 @@ class JugarDeACuatroTest extends DuskTestCase
             $navegador->waitFor('.naipe-juego')->script("document.querySelector('.naipe-juego:has([data-modo=de-a-cuatro])').click()");
             $navegador->waitForText('Jugar de a cuatro')
                 ->press('Jugar de a cuatro')
-                ->waitForLocation('/mesa')
+                ->waitForLocation('/mesa', 15)
                 ->waitFor('.mesa-cuatro .mesa-mano button', 15);
 
             $navegador->waitUsing(20, self::PAUSA, fn () => ! $this->mesa($navegador)['ocupada']);

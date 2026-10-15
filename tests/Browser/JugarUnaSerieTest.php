@@ -28,7 +28,7 @@ class JugarUnaSerieTest extends DuskTestCase
             // La casilla de la serie y el botón de siempre.
             $navegador->script("[...document.querySelectorAll('[data-formato]')].find((casilla) => casilla.offsetParent !== null).click()");
             $navegador->press('Jugar contra la máquina')
-                ->waitForLocation('/mesa')
+                ->waitForLocation('/mesa', 15)
                 ->waitFor('.mesa-mano button', 15)
                 ->assertSeeIn('.mesa-barra', 'Serie 0 a 0');
 

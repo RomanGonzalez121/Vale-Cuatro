@@ -27,7 +27,7 @@ class JugarUnDesafioTest extends DuskTestCase
 
             // "Parda la primera": el bot salió con el ancho falso. Se emparda con el otro ancho falso y se gana la segunda.
             $navegador->click('form[action$="/desafios/parda-la-primera"] button')
-                ->waitForLocation('/mesa')
+                ->waitForLocation('/mesa', 15)
                 ->waitFor('.mesa-mano button[data-carta="1-copa"]', 15);
 
             // El objetivo se muestra solo al llegar, y se corre con la primera jugada.

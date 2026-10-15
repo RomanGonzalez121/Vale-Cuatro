@@ -28,7 +28,7 @@ class JugarUnaManoTest extends DuskTestCase
             $navegador->script("localStorage.setItem('vale-cuatro:ritmo', 'agil')");
 
             $navegador->press('Jugar contra la máquina')
-                ->waitForLocation('/mesa')
+                ->waitForLocation('/mesa', 15)
                 ->waitFor('.mesa-mano button', 15);
 
             $this->assertSame(1, $this->mesa($navegador)['mano']);

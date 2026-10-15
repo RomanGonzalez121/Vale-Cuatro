@@ -108,7 +108,8 @@ jobs:
 
       - name: Sitio de prueba
         run: |
-          php artisan serve --host=127.0.0.1 --port=8010 > storage/logs/servidor.log 2>&1 &
+          # Cuatro pedidos a la vez: con uno solo, una jugada lenta de la máquina traba la página siguiente.
+          PHP_CLI_SERVER_WORKERS=4 php artisan serve --host=127.0.0.1 --port=8010 > storage/logs/servidor.log 2>&1 &
           for intento in $(seq 1 30); do
             curl --silent --fail http://127.0.0.1:8010/up > /dev/null && exit 0
             sleep 1
