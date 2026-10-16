@@ -196,8 +196,9 @@ class PremiosTest extends TestCase
             ->assertSee('Medio')
             ->assertSeeInOrder(['Nivel', '17'])
             ->assertSee('4 de 10 para el nivel 18')
-            // Lo que trae el nivel que sigue, aunque todavía no esté dibujado.
-            ->assertSeeInOrder(['En el 18:', 'Dos cruzados', '(próximamente)'])
+            // Lo que trae el nivel que sigue (desde la tanda 6 ya está todo dibujado: nada dice "próximamente").
+            ->assertSeeInOrder(['En el 18:', 'Dos cruzados'])
+            ->assertDontSee('(próximamente)')
             // En la Colección, el 11 de espada se prueba y el 12 de oro dice cuándo llega.
             ->assertSee('El 11 de espada, probar')
             ->assertSee('El 12 de oro, llega en el nivel 19');

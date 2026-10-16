@@ -9,11 +9,16 @@ namespace App\Juego;
  *
  * - La tinta: la de fábrica, la de noche (la carta en negro, con los tonos de noche) o una sola tinta. Es solo
  *   color: se cambia con las variables de la carta.
- * - Los palos: los de fábrica o los de trazo de fósforo (la línea con cabeza de los íconos).
+ * - Los palos: los de fábrica, los de trazo de fósforo (la línea con cabeza de los íconos), los grabados (rayado
+ *   de billete) o los de afiche (macizos y geométricos, con su fantasma en tinta).
  * - Las figuras: las de fábrica, las de medio cuerpo (los retratos: cabeza y torso grandes, en un marco en arco) o
- *   las de cuerpo entero (las de los mazos de fósforo).
+ *   las de cuerpo entero (las de los mazos de fósforo) o las catalanas (anchas, de túnica corta y calzas a rayas).
  * - El marco: el de fábrica o el arco de los retratos, una ventana que no pisa los números de las esquinas. Con el
  *   arco, también las cartas de número acomodan sus palos adentro.
+ *
+ * - La carta: la de fábrica o la de su mundo. Los mazos de nivel alto no son el de fábrica con una pieza cambiada:
+ *   cada uno se arma con su propia carta (resources/views/components/cartas), con su marco, sus números y sus
+ *   figuras, y se reconoce de lejos (pedido de Román, 16 de octubre de 2026).
  *
  * Cada uno ve su mazo solo en la mesa de juego y en su Colección: las demás páginas siguen con el de fábrica.
  */
@@ -22,22 +27,27 @@ final class Mazos
     public const DE_FABRICA = 'fabrica';
 
     /**
-     * @var array<string, array{tinta: string, palos: string, figuras: string, marco: string}>
+     * @var array<string, array{tinta: string, palos: string, figuras: string, marco: string, carta: string}>
      */
     public const TODOS = [
-        'fabrica' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica'],
-        'noche' => ['tinta' => 'noche', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica'],
-        'una-tinta' => ['tinta' => 'una', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica'],
-        'palos-de-fosforo' => ['tinta' => 'fabrica', 'palos' => 'fosforo', 'figuras' => 'entero', 'marco' => 'fabrica'],
-        'retratos' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'medio', 'marco' => 'arco'],
-        'fosforo-de-noche' => ['tinta' => 'noche', 'palos' => 'fosforo', 'figuras' => 'entero', 'marco' => 'fabrica'],
-        'imprenta' => ['tinta' => 'una', 'palos' => 'fabrica', 'figuras' => 'medio', 'marco' => 'arco'],
+        'fabrica' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
+        'noche' => ['tinta' => 'noche', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
+        'una-tinta' => ['tinta' => 'una', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
+        'palos-de-fosforo' => ['tinta' => 'fabrica', 'palos' => 'fosforo', 'figuras' => 'entero', 'marco' => 'fabrica', 'carta' => 'fabrica'],
+        'retratos' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'medio', 'marco' => 'arco', 'carta' => 'fabrica'],
+        'fosforo-de-noche' => ['tinta' => 'noche', 'palos' => 'fosforo', 'figuras' => 'entero', 'marco' => 'fabrica', 'carta' => 'fabrica'],
+        'imprenta' => ['tinta' => 'una', 'palos' => 'fabrica', 'figuras' => 'medio', 'marco' => 'arco', 'carta' => 'fabrica'],
+        'billete' => ['tinta' => 'fabrica', 'palos' => 'grabado', 'figuras' => 'billete', 'marco' => 'fabrica', 'carta' => 'billete'],
+        'afiche' => ['tinta' => 'fabrica', 'palos' => 'macizo', 'figuras' => 'afiche', 'marco' => 'fabrica', 'carta' => 'afiche'],
+        'catalan' => ['tinta' => 'fabrica', 'palos' => 'antiguo', 'figuras' => 'catalan-antigua', 'marco' => 'fabrica', 'carta' => 'catalan'],
+        'fileteado' => ['tinta' => 'fabrica', 'palos' => 'filete', 'figuras' => 'filete', 'marco' => 'fabrica', 'carta' => 'fileteado'],
+        'criollo' => ['tinta' => 'fabrica', 'palos' => 'criollo', 'figuras' => 'criollo', 'marco' => 'fabrica', 'carta' => 'criollo'],
     ];
 
     /**
      * Las piezas de ese mazo; uno que no existe es el de fábrica.
      *
-     * @return array{tinta: string, palos: string, figuras: string, marco: string}
+     * @return array{tinta: string, palos: string, figuras: string, marco: string, carta: string}
      */
     public static function de(?string $mazo): array
     {

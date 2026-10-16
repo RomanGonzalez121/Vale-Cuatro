@@ -134,6 +134,42 @@ class Paleta
     ];
 
     /**
+     * Las barajas propias de los mazos de nivel alto (resources/views/components/cartas): cada una con su papel,
+     * su número y las tintas de su dibujo. El número es texto; las tintas, dibujo. Los colores nuevos son de la
+     * familia (tintas de imprenta, papel, cuero, tierra).
+     *
+     * @var array<string, list<array{texto: string, fondo: string, minimo: float, donde: string}>>
+     */
+    public const BARAJAS = [
+        'billete' => [
+            ['texto' => '#161a18', 'fondo' => '#f3ebd6', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número en su medallón'],
+            ['texto' => '#8a5f12', 'fondo' => '#f3ebd6', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tinta de grabado del oro'],
+            ['texto' => '#a3271d', 'fondo' => '#f3ebd6', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tinta de grabado de la copa'],
+            ['texto' => '#24508f', 'fondo' => '#f3ebd6', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tinta de grabado de la espada'],
+            ['texto' => '#22663f', 'fondo' => '#f3ebd6', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tinta de grabado del basto'],
+        ],
+        'afiche' => [
+            ['texto' => '#161a18', 'fondo' => '#f0b429', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número sobre la franja del oro'],
+            ['texto' => '#fbfaf5', 'fondo' => '#c93327', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número sobre la franja de la copa'],
+            ['texto' => '#fbfaf5', 'fondo' => '#2a5caa', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número sobre la franja de la espada'],
+            ['texto' => '#fbfaf5', 'fondo' => '#2a7d4f', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número sobre la franja del basto'],
+        ],
+        'catalan' => [
+            ['texto' => '#161a18', 'fondo' => '#ece0c0', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número en su recuadro y línea de taco'],
+        ],
+        'fileteado' => [
+            ['texto' => '#f0b429', 'fondo' => '#15191a', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número en oro'],
+            ['texto' => '#c8564a', 'fondo' => '#15191a', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Copa de las figuras'],
+            ['texto' => '#5d8fd6', 'fondo' => '#15191a', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Espada de los palos y las figuras'],
+            ['texto' => '#3f9b67', 'fondo' => '#15191a', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Basto de los palos y las figuras'],
+        ],
+        'criollo' => [
+            ['texto' => '#2a1f17', 'fondo' => '#f0e6d0', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y línea de campo'],
+            ['texto' => '#b8483a', 'fondo' => '#2a1f17', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Guarda pampa'],
+        ],
+    ];
+
+    /**
      * Las mesas que se ganan (resources/css/app.css, "Las mesas que se ganan subiendo de nivel"). Los colores
      * de premio pueden ser nuevos si son de la familia (esDeLaFamilia): tintas de imprenta y materiales de
      * club. "mesa" es el campo, "barras" el tanteador y la barra de cantos, "texto" lo que se escribe sobre

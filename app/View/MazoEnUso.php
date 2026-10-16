@@ -43,11 +43,12 @@ final class MazoEnUso
         $juegos = $pedido->attributes->get(self::JUEGOS, []);
         $juegos["palos:{$piezas['palos']}"] = true;
         $juegos["figuras:{$piezas['figuras']}"] = true;
+        $juegos["carta:{$piezas['carta']}"] = true;
         $pedido->attributes->set(self::JUEGOS, $juegos);
     }
 
     /**
-     * Si la página necesita ese juego de piezas ("palos" o "figuras"). Los de fábrica van siempre: los usan
+     * Si la página necesita ese juego de piezas ("palos", "figuras" o "carta"). Los de fábrica van siempre: los usan
      * también los dorsos y los íconos.
      */
     public static function hace(string $pieza, string $juego): bool

@@ -1744,6 +1744,105 @@ html:has(body.superficie-pano) {
         fill: var(--color-tinta);
     }
 
+    /* Las tintas de grabado del Billete: cada palo en una tinta más honda, como la de un billete, que se lee sobre el papel crema. */
+    .billete-oro {
+        color: #8a5f12;
+    }
+
+    .billete-copa {
+        color: #a3271d;
+    }
+
+    .billete-espada {
+        color: #24508f;
+    }
+
+    .billete-basto {
+        color: #22663f;
+    }
+
+    /* El Afiche: la franja del color del palo y su número enorme, en naipe (en tinta sobre el oro, que es claro). */
+    .afiche-franja-oro {
+        fill: var(--color-oro);
+    }
+
+    .afiche-franja-copa {
+        fill: var(--color-copa);
+    }
+
+    .afiche-franja-espada {
+        fill: var(--color-espada);
+    }
+
+    .afiche-franja-basto {
+        fill: var(--color-basto);
+    }
+
+    .afiche-numero {
+        font-family: var(--font-sans);
+        font-size: 19px;
+        font-weight: 900;
+        letter-spacing: -0.08em;
+        fill: var(--color-naipe);
+    }
+
+    .afiche-numero-oro {
+        fill: var(--color-tinta);
+    }
+
+    .afiche-palo {
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 0.3em;
+    }
+
+    /* El Fileteado: el número en oro con su sombra en Copa honda, y los colores de las figuras aclarados para el negro. */
+    .filete-numero {
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-style: italic;
+        font-weight: 900;
+        fill: #f0b429;
+    }
+
+    .filete-numero-sombra {
+        fill: #8a1f17;
+    }
+
+    .filete-oro {
+        color: #f0b429;
+    }
+
+    .filete-copa {
+        color: #c8564a;
+    }
+
+    .filete-espada {
+        color: #5d8fd6;
+    }
+
+    .filete-basto {
+        color: #3f9b67;
+    }
+
+    /* El número del Criollo, en su recuadro junto al palo clásico. */
+    .carta-indice-criollo {
+        font-size: 11.5px;
+        fill: #2a1f17;
+    }
+
+    /* El número del Catalán, en su recuadro. */
+    .carta-indice-catalan {
+        font-size: 12px;
+    }
+
+    /* El número del Billete, en su medallón: más chico y en itálica, como los valores de un billete. */
+    .carta-indice-billete {
+        font-size: 10.5px;
+        font-style: italic;
+        font-weight: 800;
+    }
+
     .tinta-oro {
         color: var(--color-oro);
     }

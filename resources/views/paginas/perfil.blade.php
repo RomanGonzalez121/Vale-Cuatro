@@ -49,6 +49,11 @@
             'retratos' => [['oro', 1], ['copa', 6], ['espada', 12]],
             'fosforo-de-noche' => [['oro', 7], ['basto', 4], ['copa', 10]],
             'imprenta' => [['copa', 1], ['espada', 5], ['basto', 11]],
+            'billete' => [['espada', 1], ['copa', 4], ['oro', 12]],
+            'afiche' => [['copa', 7], ['oro', 3], ['espada', 12]],
+            'catalan' => [['oro', 1], ['basto', 6], ['copa', 10]],
+            'fileteado' => [['basto', 1], ['oro', 5], ['copa', 11]],
+            'criollo' => [['copa', 1], ['espada', 7], ['oro', 12]],
         ][$mazo] ?? [['espada', 1], ['oro', 7], ['copa', 12]];
         $deTipo = fn (string $tipo) => array_values(array_filter($proximamente, fn (array $ficha) => $ficha['tipo'] === $tipo));
 

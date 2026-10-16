@@ -1820,3 +1820,36 @@ Quedaban seis mesas (niveles 32 a 40) y el dorso Monograma (35). Román pidió i
 - **Con tests:** las seis mesas en el camino y dibujadas; el candado (la fileteada no se usa antes del nivel 40) y la administración con todas; la placa solo en la mesa de grafito de su dueño y con su apodo, y nunca en la pantalla del rival; la leyenda solo en la fileteada; el contraste de cada mesa de día y de noche y la familia de color de sus adornos (`PaletaTest`).
 - **En un navegador real:** la lámina de las seis mesas con cartas encima; las mesas fileteada y de grafito en 1355 x 638 y en 360 x 740 (sin scroll), y las seis de noche. 906 tests, Pint y las siete pruebas de navegador en verde.
 - **Fuentes de la investigación:** Ciudad de Buenos Aires (fileteado porteño), Universidad de Palermo / SciELO ("El fileteado porteño: motivos decorativos en el margen de la comunicación publicitaria"), Sección Ciudad (borde, talón, banda, filete, bolitas), notas sobre pulperías con reja (Canal 26, La Capital de Mar del Plata), Museo de la Ciudad (calderas y pavas de cobre), mesas de juego Art Déco (Jules Leleu, Léon Jallot) y Ken Lodge en The World of Playing Cards (dorsos de Owen Jones para De La Rue).
+
+
+## Tanda 6, segunda parte: cinco mazos con baraja propia
+
+### Qué problema había
+
+Quedaban cinco mazos (niveles 31 a 39). La primera propuesta los armaba como los de la tanda 5, cambiando una pieza del de fábrica (palos grabados, palos de afiche, figuras catalanas). Román la frenó: "quiero que cada mazo se vea diferente, no todos una copia del de fábrica; por eso te pedí tantas búsquedas". Con el mismo marco, los mismos números y la misma disposición, todos se parecían.
+
+### Qué se eligió
+
+- **Cada mazo de nivel alto es una baraja propia.** `Mazos::TODOS` suma la pieza `carta`, y la carta se arma con la plantilla de su mundo (`resources/views/components/cartas/<carta>.blade.php`), con su papel, su marco, sus números, sus palos y sus figuras. El de fábrica y los de la tanda 5 siguen con la carta de fábrica. Román aprobó el primero (el Billete: "es exactamente lo que quería") antes de hacer los otros cuatro.
+- **Billete (31):** papel crema, guarda de guilloche en tintas de grabado más hondas que las del palo (para leerse sobre el crema), el número en medallones de roseta, una roseta tenue de fondo como marca de agua, los palos grabados con rayado de billete y las figuras como retratos de grabado en un óvalo con fondo de líneas finas.
+- **Afiche (33):** un cartel constructivista: franja vertical del color del palo con el número enorme (en tinta sobre el oro) y el nombre del palo a lo largo, los palos macizos con su fantasma corrido (el oro como sol, la copa, la espada y el basto reducidos a su geometría, en la línea de las New Spanish Playing Cards de David Genco, sin copiarlas) y las figuras armadas solo con esa geometría.
+- **Catalán (35):** baraja antigua de madera coloreada a mano: papel envejecido con manchas, marco de taco con una banda del color del palo, números en recuadros, línea negra gruesa y el color corrido como cuando se pintaba con plantilla, rayado de taco en las ropas; el oro es un sol con cara y la copa una huevera, como en el patrón catalán; figuras anchas de calzas a rayas y el caballero a pie, tirando de las bridas.
+- **Fileteado (37):** la carta negra de un filete: borde en oro, una voluta con su acanto en dos esquinas y el número en oro con sombra en Copa en las otras dos; los palos pintados como los pinta un fileteador (color plano, sombra, filo de luz y sombra proyectada); las figuras como emblemas en un óvalo de banda: el compadrito de funyi, la cabeza del caballo de carro con penacho y el rey de corona de oro. Los colores de la espada, el basto y la copa se aclararon para leerse sobre el negro.
+- **Criollo (39, el más alto):** guarda pampa arriba y abajo; los palos como objetos de campo (el patacón con el sol, el mate con su bombilla y el pie de la copa, el facón con gavilanes y el rebenque), cada uno con el color y la silueta de su palo y **el palo clásico en chico junto al número**, para que nunca se confundan (pedido de Román: "que se reconozca sin que se confunda"); figuras con proporciones de almanaque criollo (sombreros grandes, ponchos), paradas sobre el horizonte: el paisano de boina, el gaucho a caballo y el patrón de estancia.
+- **Las cartas de número** de cada baraja propia llevan la disposición del arco llevada a su zona (`Carta::ZONAS`), para no pisar sus números ni sus guardas.
+- **Rendimiento:** cada carta anota su baraja (`MazoEnUso`, `carta:<mundo>`) y la página trae solo esos dibujos; la mesa, solo el mazo elegido.
+
+### Qué se descartó
+
+- Los cinco mazos armados cambiando una pieza del de fábrica (y con eso, las figuras catalanas sueltas de esa primera propuesta).
+
+### Qué se probó y qué no
+
+- **Con tests:** cada baraja propia se arma con su plantilla y no con el marco ni el número de fábrica; cada carta de número de una baraja propia lleva tantos palos como vale y queda adentro de la carta; el Criollo lleva el palo clásico junto al número; el contraste del número y de las tintas de cada baraja, y la familia de color de sus colores nuevos (`Paleta::BARAJAS`).
+- **En un navegador real:** la lámina de los cinco junto al de fábrica (también a 60 px) y la mesa con el Criollo (1355 x 638 y 360 x 740) y el Fileteado (360 x 740), sin scroll. 909 tests (uno de la mesa, "recargar la mesa", falló una vez en la corrida completa y pasa solo: el mismo que ya había fallado así el 15 de octubre), Pint y las siete pruebas de navegador.
+- **Fuentes:** patrones de la baraja española (Wikipedia, Fournier, The Joker House), New Spanish Playing Cards de David Genco, el estilo de grabado de billete (Bicycle Legal Tender, la tesis de Carleton sobre rayado) y el fileteado porteño de la primera parte.
+
+### Lo que sigue (decidido por Román)
+
+- **Rehacer como mundos nuevos** los mazos de la tanda 5 que son el de fábrica con algo cambiado (De noche, A una tinta, Palos de fósforo, Fósforo de noche e Imprenta); Retratos queda. Propuesta: Tango, Diario, Caja de fósforos, Pizarrón y Tipográfico.
+- **Cuatro mazos más**, en niveles que hoy tienen un solo premio (quedan 16).

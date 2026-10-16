@@ -117,6 +117,11 @@ final class Premios
             'retratos' => ['nombre' => 'Retratos', 'nivel' => 22],
             'fosforo-de-noche' => ['nombre' => 'Fósforo de noche', 'nivel' => 26],
             'imprenta' => ['nombre' => 'Imprenta', 'nivel' => 29],
+            'billete' => ['nombre' => 'Billete', 'nivel' => 31],
+            'afiche' => ['nombre' => 'Afiche', 'nivel' => 33],
+            'catalan' => ['nombre' => 'Catalán', 'nivel' => 35],
+            'fileteado' => ['nombre' => 'Fileteado', 'nivel' => 37],
+            'criollo' => ['nombre' => 'Criollo', 'nivel' => 39],
         ],
         'anotar' => [
             'fabrica' => ['nombre' => 'Fósforos', 'nivel' => 1],

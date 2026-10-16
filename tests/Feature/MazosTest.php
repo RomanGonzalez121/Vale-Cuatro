@@ -25,9 +25,15 @@ class MazosTest extends TestCase
 
         foreach (Mazos::TODOS as $clave => $piezas) {
             $this->assertContains($piezas['tinta'], ['fabrica', 'noche', 'una'], $clave);
-            $this->assertContains($piezas['palos'], ['fabrica', 'fosforo'], $clave);
-            $this->assertContains($piezas['figuras'], ['fabrica', 'medio', 'entero'], $clave);
+            $this->assertContains($piezas['palos'], ['fabrica', 'fosforo', 'grabado', 'macizo', 'antiguo', 'filete', 'criollo'], $clave);
+            $this->assertContains($piezas['figuras'], ['fabrica', 'medio', 'entero', 'billete', 'afiche', 'catalan-antigua', 'filete', 'criollo'], $clave);
             $this->assertContains($piezas['marco'], ['fabrica', 'arco'], $clave);
+            $this->assertContains($piezas['carta'], ['fabrica', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'], $clave);
+
+            // Cada baraja propia tiene su plantilla.
+            if ($piezas['carta'] !== 'fabrica') {
+                $this->assertFileExists(resource_path("views/components/cartas/{$piezas['carta']}.blade.php"), $clave);
+            }
         }
 
         // Ninguno repite al de otro: si no, serían el mismo premio dos veces.
@@ -138,6 +144,42 @@ class MazosTest extends TestCase
         $this->assertStringContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="4" mazo="retratos" />'));
         $this->assertStringNotContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="4" mazo="palos-de-fosforo" />'));
         $this->assertStringNotContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="12" mazo="retratos" />'));
+    }
+
+    public function test_cada_baraja_propia_se_arma_con_su_carta_y_no_con_la_de_fabrica(): void
+    {
+        foreach (['billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
+            foreach ([[1, 'espada'], [7, 'oro'], [12, 'copa']] as [$numero, $palo]) {
+                $carta = Blade::render('<x-carta :palo="$palo" :numero="$numero" :mazo="$mazo" />', compact('palo', 'numero', 'mazo'));
+
+                // Ni el marco con los cortes del palo ni el número de fábrica: su propio marco y su propio número.
+                $this->assertStringNotContainsString((new Carta($palo, $numero, 'fabrica'))->marco(), $carta, "{$mazo} {$numero}");
+                $this->assertStringContainsString('<text', $carta, "{$mazo} {$numero}");
+                $this->assertSame($numero === 12 ? 1 : $numero, substr_count($carta, "palo-{$palo}-"), "{$mazo} {$numero} de {$palo}");
+            }
+        }
+
+        // El Criollo, que cambia los palos de objeto, lleva el palo clásico junto al número.
+        $this->assertStringContainsString('href="#palo-copa"', Blade::render('<x-carta palo="copa" :numero="3" mazo="criollo" />'));
+    }
+
+    public function test_cada_carta_de_numero_de_una_baraja_propia_queda_adentro_de_la_carta(): void
+    {
+        foreach (['billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
+            foreach (Carta::PALOS as $palo) {
+                foreach ([1, 2, 3, 4, 5, 6, 7] as $numero) {
+                    $pintas = (new Carta($palo, $numero, $mazo))->pintas();
+                    $this->assertCount($numero, $pintas);
+
+                    foreach ($pintas as [$x, $y, $ancho, $alto]) {
+                        $this->assertGreaterThanOrEqual(10, $x, "{$mazo} {$numero} de {$palo}");
+                        $this->assertLessThanOrEqual(92, $x + $ancho, "{$mazo} {$numero} de {$palo}");
+                        $this->assertGreaterThanOrEqual(14, $y, "{$mazo} {$numero} de {$palo}");
+                        $this->assertLessThanOrEqual(142, $y + $alto, "{$mazo} {$numero} de {$palo}");
+                    }
+                }
+            }
+        }
     }
 
     public function test_en_el_arco_cada_carta_de_numero_lleva_tantos_palos_como_vale_y_adentro_del_arco(): void

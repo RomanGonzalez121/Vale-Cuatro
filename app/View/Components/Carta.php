@@ -51,6 +51,62 @@ class Carta extends Component
     ];
 
     /**
+     * En el Catalán: el rey y la sota lo alzan a la derecha; el caballero, a pie, a la izquierda.
+     */
+    private const PALO_EN_MANO_CATALAN = [
+        'sota' => [57, 49, 20, 30],
+        'caballo' => [19, 30, 18, 27],
+        'rey' => [65, 26, 21, 31.5],
+    ];
+
+    /**
+     * En el Billete el palo va en un medallón chico debajo del retrato.
+     */
+    private const PALO_EN_MANO_BILLETE = [
+        'sota' => [45.5, 124.5, 9, 13.5],
+        'caballo' => [45.5, 124.5, 9, 13.5],
+        'rey' => [45.5, 124.5, 9, 13.5],
+    ];
+
+    /**
+     * En el Afiche las figuras son de geometría y alzan el palo a la derecha, junto al borde.
+     */
+    private const PALO_EN_MANO_AFICHE = [
+        'sota' => [79, 97, 14, 21],
+        'caballo' => [68, 28, 15, 22.5],
+        'rey' => [80, 36, 16, 24],
+    ];
+
+    /**
+     * En el Fileteado el palo va debajo del óvalo del emblema.
+     */
+    private const PALO_EN_MANO_FILETE = [
+        'sota' => [43, 123.5, 14, 21],
+        'caballo' => [43, 123.5, 14, 21],
+        'rey' => [43, 123.5, 14, 21],
+    ];
+
+    /**
+     * En el Criollo cada figura alza su objeto de campo con la mano derecha.
+     */
+    private const PALO_EN_MANO_CRIOLLO = [
+        'sota' => [65.5, 72, 14, 21],
+        'caballo' => [65, 30, 14, 21],
+        'rey' => [71, 37, 14, 21],
+    ];
+
+    /**
+     * Dónde van los palos de las cartas de número en las cartas de otro mundo, como [x desde, x hasta, y desde,
+     * y hasta]: la disposición del arco se lleva a esa zona (en el Afiche, el papel a la derecha de la franja).
+     */
+    private const ZONAS = [
+        'afiche' => [35, 91, 16, 140],
+        'catalan' => [12, 88, 24, 134],
+        'fileteado' => [14, 86, 30, 128],
+        'criollo' => [14, 86, 30, 126],
+    ];
+
+    /**
      * El marco en arco de los mazos que lo llevan: la misma ventana que enmarca a sus figuras.
      */
     public const ARCO = 'M16 128V58A34 34 0 0 1 84 58V128Z';
@@ -172,6 +228,14 @@ class Carta extends Component
         return $this->figura() === null && Mazos::de($this->mazo)['marco'] === 'arco';
     }
 
+    /**
+     * Con qué carta se arma: la de fábrica o la del mundo de su mazo (resources/views/components/cartas).
+     */
+    public function estilo(): string
+    {
+        return Mazos::de($this->mazo)['carta'];
+    }
+
     public function figura(): ?string
     {
         return self::FIGURAS[$this->numero] ?? null;
@@ -188,19 +252,37 @@ class Carta extends Component
             $enMano = match (Mazos::de($this->mazo)['figuras']) {
                 'medio' => self::PALO_EN_MANO_MEDIO,
                 'entero' => self::PALO_EN_MANO_ENTERO,
+                'catalan-antigua' => self::PALO_EN_MANO_CATALAN,
+                'billete' => self::PALO_EN_MANO_BILLETE,
+                'afiche' => self::PALO_EN_MANO_AFICHE,
+                'filete' => self::PALO_EN_MANO_FILETE,
+                'criollo' => self::PALO_EN_MANO_CRIOLLO,
                 default => self::PALO_EN_MANO,
             };
 
             return [$enMano[$this->figura()]];
         }
 
-        $disposicion = (Mazos::de($this->mazo)['marco'] === 'arco' ? self::DISPOSICION_EN_ARCO : self::DISPOSICION)[$this->numero];
+        // Con el arco, o en una carta de otro mundo (con medallones en las esquinas), los palos van más adentro.
+        $adentro = Mazos::de($this->mazo)['marco'] === 'arco' || $this->estilo() !== 'fabrica';
+        $disposicion = ($adentro ? self::DISPOSICION_EN_ARCO : self::DISPOSICION)[$this->numero];
+        $centros = $disposicion['centros'];
         $ancho = $disposicion['ancho'];
+
+        // En una zona propia, la disposición del arco (16 a 84 de ancho, 24 a 128 de alto) se lleva a esa zona.
+        if (isset(self::ZONAS[$this->estilo()])) {
+            [$x0, $x1, $y0, $y1] = self::ZONAS[$this->estilo()];
+            $ex = ($x1 - $x0) / 68;
+            $ey = ($y1 - $y0) / 104;
+            $centros = array_map(fn (array $c) => [$x0 + ($c[0] - 16) * $ex, $y0 + ($c[1] - 24) * $ey], $centros);
+            $ancho *= min($ex, $ey);
+        }
+
         $alto = $ancho * 1.5;
 
         return array_map(
             fn (array $centro) => [$centro[0] - $ancho / 2, $centro[1] - $alto / 2, $ancho, $alto],
-            $disposicion['centros'],
+            $centros,
         );
     }
 

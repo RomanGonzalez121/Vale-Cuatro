@@ -132,6 +132,24 @@ class PaletaTest extends TestCase
         }
     }
 
+    public function test_cada_baraja_propia_se_lee_y_sus_colores_son_de_la_familia(): void
+    {
+        $delSitio = array_map('strtolower', array_merge(array_column(Paleta::COLORES, 'hex'), array_column(Paleta::DE_NOCHE, 'hex')));
+
+        foreach (Paleta::BARAJAS as $baraja => $combinaciones) {
+            foreach ($combinaciones as $combinacion) {
+                $contraste = Paleta::contrasteEntre($combinacion['texto'], $combinacion['fondo']);
+                $this->assertGreaterThanOrEqual($combinacion['minimo'], $contraste, sprintf('%s, %s: %.2f.', $baraja, $combinacion['donde'], $contraste));
+
+                foreach ([$combinacion['texto'], $combinacion['fondo']] as $color) {
+                    if (! in_array(strtolower($color), $delSitio, true)) {
+                        $this->assertTrue(Paleta::esDeLaFamilia($color), "{$baraja}: {$color} no es de la familia.");
+                    }
+                }
+            }
+        }
+    }
+
     public function test_los_colores_de_palo_sin_aclarar_no_alcanzan_como_texto_sobre_tinta(): void
     {
         // Por esto existen los tonos de noche: sin aclararlos, no se leen.
