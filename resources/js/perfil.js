@@ -179,6 +179,15 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titu
         }
 
         this.prueba = pieza;
+
+        if (! this.$refs.probador.open) {
+            this.$refs.probador.showModal();
+        }
+    },
+
+    /** Cierra el probador; el foco vuelve solo a la pieza que lo abrió. */
+    cerrarProbador() {
+        this.$refs.probador.close();
     },
 
     /**
@@ -217,6 +226,7 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titu
             }
 
             this.ponerEnLaMesa(tipo);
+            this.cerrarProbador();
             this.avisar('hecho', datos.mensaje);
         } catch (error) {
             this.avisar('error', error instanceof TypeError ? 'No hay conexión. Probá de nuevo.' : error.message);

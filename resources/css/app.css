@@ -4891,27 +4891,82 @@ html:has(body.superficie-pano) {
     }
 
     /*
-     | El probador: la pieza armada sobre una mesa en chico, con lo que dice y el botón para usarla. En el
-     | celular va arriba de las piezas, con la mesa y el texto lado a lado: así se ve qué cambió al tocar.
+     | El probador: una ventanita con la pieza armada sobre la mesa, lo que dice y los botones. Se abre al tocar
+     | una pieza; en el celular sube desde abajo, en escritorio aparece en el medio. Entra con un fundido y un
+     | desplazamiento corto; al cerrar se va de una (las salidas son más cortas).
      */
     .probador {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        align-items: center;
-        gap: 1.1rem;
-        order: -1;
+        width: min(100% - 2rem, 24rem);
+        max-width: none;
+        max-height: calc(var(--alto, 100dvh) - 2rem);
+        margin: auto;
+        padding: 0;
+        border: 0;
+        border-radius: 1rem;
+        overflow-y: auto;
+        background-color: var(--color-pano);
+        color: var(--color-naipe);
+    }
+
+    .probador[open] {
+        transition:
+            opacity 200ms var(--ease-llegada),
+            transform 240ms var(--ease-llegada);
+
+        @starting-style {
+            opacity: 0;
+            transform: translateY(1.5rem) scale(0.97);
+        }
+    }
+
+    .probador::backdrop {
+        background-color: color-mix(in srgb, var(--color-tinta) 60%, transparent);
+    }
+
+    .probador-cuerpo {
+        padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+    }
+
+    .probador-cerrar {
+        border-color: color-mix(in srgb, var(--color-naipe) 45%, transparent);
+        background-color: transparent;
+        color: var(--color-naipe);
+    }
+
+    /* En el celular, la ventanita es una hoja que sube desde abajo y ocupa el ancho. */
+    @media (width < 40rem) {
+        .probador {
+            width: 100%;
+            margin: auto 0 0;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .probador[open] {
+            @starting-style {
+                transform: translateY(100%);
+            }
+        }
+    }
+
+    /* Con el probador abierto, la página de atrás no se desliza. */
+    html:has(.probador[open]) {
+        overflow: hidden;
+    }
+
+    .probador-pie {
+        margin-top: 1rem;
     }
 
     .probador-mesa {
         display: grid;
         place-items: center;
-        padding: 1rem 1.25rem;
+        padding: 1.5rem 1.25rem;
         border-radius: 1rem;
         background-color: var(--color-pano-hondo);
     }
 
     .probador-naipe {
-        width: 5.25rem;
+        width: 8rem;
     }
 
     /*
@@ -5045,19 +5100,8 @@ html:has(body.superficie-pano) {
             width: min(6.25rem, calc((var(--alto, 100dvh) - 13rem) * 0.31));
         }
 
-        .coleccion-grilla {
-            grid-template-columns: minmax(0, 1fr) 19rem;
-            align-items: start;
-            gap: 3.5rem;
-        }
-
         .coleccion-piezas {
             grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr));
-        }
-
-        .probador {
-            display: block;
-            order: 0;
         }
 
         .probador-mesa {
@@ -5066,10 +5110,6 @@ html:has(body.superficie-pano) {
 
         .probador-naipe {
             width: 9rem;
-        }
-
-        .probador-pie {
-            margin-top: 1rem;
         }
 
         .camino-cerca {
@@ -6096,6 +6136,16 @@ html:has(body.superficie-pano) {
     /* Lo que aparece, aparece: sin cambiar de tamaño. */
     .aparece {
         transition: opacity 150ms ease;
+    }
+
+    /* El probador entra con un fundido, sin subir. */
+    .probador[open] {
+        transition: opacity 150ms ease;
+
+        @starting-style {
+            opacity: 0;
+            transform: none;
+        }
     }
 
     .nivel-opcion .nivel-fosforos,

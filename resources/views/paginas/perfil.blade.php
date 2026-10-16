@@ -262,11 +262,11 @@
         </section>
 
         @if ($propio)
-            {{-- La Colección: lo que se usa en la mesa, sobre el paño. Tocar una pieza la prueba; "Usar esta" la elige. --}}
+            {{-- La Colección: lo que se usa en la mesa, sobre el paño. Tocar una pieza la abre en el probador; "Usar" la elige. --}}
             <section id="coleccion" aria-labelledby="titulo-coleccion" class="perfil-coleccion superficie-pano">
                 <div class="pagina">
                     <h2 id="titulo-coleccion" class="seccion-titulo perfil-titulo">Colección</h2>
-                    <p class="mt-4 text-lg">Tocá una pieza para probarla en la mesa.</p>
+                    <p class="mt-4 text-lg">Tocá una pieza para verla en la mesa y usarla.</p>
 
                     @if ($loTieneTodo)
                         <p class="mt-2 font-bold">Sos la administración: tenés todo abierto para probarlo. Tu nivel sale de tus partidas, como el de todos.</p>
@@ -461,10 +461,13 @@
                         </div>
 
                         {{--
-                            El probador: la pieza armada sobre la mesa antes de elegirla. Una carta se ve de frente; un dorso,
-                            con la carta dada vuelta. "Usar esta" la elige; lo que falta dice cuándo llega.
+                            El probador: una ventanita que se abre al tocar una pieza, con la pieza armada sobre la mesa antes
+                            de elegirla. Una carta se ve de frente; un dorso, con la carta dada vuelta. "Usar" la elige; lo
+                            que falta dice cuándo llega. En el celular sube desde abajo; en escritorio aparece en el medio
+                            (Román, 16 de octubre de 2026: con la Colección larga, el probador fijo quedaba lejos de la pieza).
                         --}}
-                        <aside class="probador" aria-label="Probador">
+                        <dialog class="probador" x-ref="probador" aria-labelledby="probador-nombre" @click.self="cerrarProbador()">
+                            <div class="probador-cuerpo">
                             <div class="probador-mesa" data-mesa="{{ $enUso['mesa'] }}" :data-mesa="prueba.tipo === 'mesa' ? prueba.clave : enUso.mesa">
                                 <div class="probador-naipe" x-show="['carta', 'dorso', 'mesa'].includes(prueba.tipo)">
                                     <span class="giro block" data-vuelta="{{ $muestraElDorso ? 'true' : 'false' }}" :data-vuelta="(prueba.tipo === 'dorso').toString()">
@@ -506,7 +509,7 @@
                             </div>
 
                             <div class="probador-pie" aria-live="polite">
-                                <p class="text-xl font-extrabold leading-tight" x-text="prueba.tipo === 'titulo' ? tituloDe(prueba.clave, femenino) : prueba.nombre">{{ $prueba['nombre'] }}</p>
+                                <p id="probador-nombre" class="text-xl font-extrabold leading-tight" x-text="prueba.tipo === 'titulo' ? tituloDe(prueba.clave, femenino) : prueba.nombre">{{ $prueba['nombre'] }}</p>
                                 <p class="mt-1 min-h-[1lh] font-semibold" x-text="esLaQueUsa ? 'Es lo que usás.' : (prueba.abierta ? 'Es tuyo.' : prueba.pide)">Es la que usás.</p>
 
                                 {{-- Cómo se lee el título: lo elige cada uno. --}}
@@ -515,16 +518,20 @@
                                     <button type="button" class="pestana" :aria-pressed="femenino.toString()" @click="femenino = true" x-text="tituloDe(prueba.clave, true)"></button>
                                 </div>
 
-                                <form method="POST" :action="rutas[prueba.tipo]" class="mt-4"
-                                    x-show="prueba.abierta && ! esLaQueUsa" x-cloak @submit.prevent="usar()">
-                                    @csrf
-                                    @method('PUT')
-                                    <input type="hidden" :name="prueba.tipo" :value="prueba.clave">
-                                    <input type="hidden" name="femenino" :value="femenino ? 1 : 0" :disabled="prueba.tipo !== 'titulo'">
-                                    <button type="submit" class="boton boton-naipe" :disabled="guardando" x-text="textoDeUsar">Usar esta carta</button>
-                                </form>
+                                <div class="mt-4 flex flex-wrap gap-2">
+                                    <form method="POST" :action="rutas[prueba.tipo]"
+                                        x-show="prueba.abierta && ! esLaQueUsa" x-cloak @submit.prevent="usar()">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="hidden" :name="prueba.tipo" :value="prueba.clave">
+                                        <input type="hidden" name="femenino" :value="femenino ? 1 : 0" :disabled="prueba.tipo !== 'titulo'">
+                                        <button type="submit" class="boton boton-naipe" :disabled="guardando" x-text="textoDeUsar">Usar esta carta</button>
+                                    </form>
+                                    <button type="button" class="boton probador-cerrar" @click="cerrarProbador()">Cerrar</button>
+                                </div>
                             </div>
-                        </aside>
+                            </div>
+                        </dialog>
                     </div>
                 </div>
             </section>
