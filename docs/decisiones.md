@@ -1916,3 +1916,53 @@ Román decidió sumar cuatro mazos más, en niveles que tenían un solo premio, 
 ### Lo que sigue (decidido por Román)
 
 - Rehacer Retratos como baraja propia.
+
+
+## El probador como ventanita y tres mazos más: Clásico, Tarot y Gatos
+
+### Qué problema había
+
+- Con la Colección larga, había que subir hasta el probador para tocar "Usar". La primera solución fue un botón "Usar" sobre cada pieza. En el celular tapaba el nombre del mazo, y Román lo marcó.
+- Román pidió además tres mazos más: un clásico, uno inspirado en el tarot y uno de gatos.
+
+### Qué se eligió
+
+- **El probador pasa a ser una ventanita (`<dialog>`), elegida por Román entre tres opciones.**
+  - Al tocar una pieza se abre con la pieza armada sobre la mesa, el nombre, si es tuya o cuándo llega, "Usar" y "Cerrar".
+  - En el celular sube desde abajo como una hoja; en escritorio aparece en el medio.
+  - Se cierra con Esc, tocando afuera, con "Cerrar" o al usar la pieza. El foco vuelve a la pieza que la abrió.
+  - La Colección ocupa todo el ancho.
+  - Entra con un fundido y un desplazamiento corto. Con movimiento reducido, solo el fundido.
+  - Se descartaron:
+    - el probador pegado al costado, porque choca con la regla de nada pegado al scroll;
+    - el botón debajo del nombre, porque dejaba el costado vacío en escritorio.
+- **Clásico (nivel 5):** el aire de la baraja castellana, la de Augusto Rius para Fournier de 1889, redibujado entero en tintas planas y sin calcar nada.
+  - El marco lleva la pinta.
+  - Espadas de hoja azul con guarnición roja y dorada, copas doradas con nudos rojos y oros con roseta.
+  - El basto es un garrote de madera con nudos y dos hojitas: en verde parecía un cactus.
+  - Las figuras van de cuerpo entero: el paje, el caballero y el rey con armiño.
+- **Tarot (nivel 40):** grabado en madera estilo Marsella, la baraja prima de la española (mismos palos y misma corte).
+  - Número en romano ("IIII") en la cinta de arriba y nombre en la de abajo.
+  - Trazo negro grueso, cuatro tintas planas, sombras de rayitas y florcitas en las esquinas.
+  - La carta tiene un derecho, como un tarot: el número va solo arriba.
+  - Sin arcanos mayores ni símbolos esotéricos.
+- **Gatos (nivel 6):**
+  - El índice es una cabeza de gato con el número adentro y el palo clásico chiquito debajo, como el Criollo.
+  - Los palos son cosas de gato que guardan la silueta y el color del palo: ovillo de lana, copa con leche, espina de pescado y rascador.
+  - Las figuras son un gato atigrado de boina, un gato de esmoquin a caballo y un gato gris gordo con corona.
+  - Huellas tenues cruzan las cartas de número.
+
+### Qué se probó y qué no
+
+- **Con tests:** los de mazos, paleta, premios, títulos, camino y perfil. Hubo dos ajustes de color:
+  - el azul del Tarot, que pasó a `#4f7db5`;
+  - la medida del basto clásico, que pasó a ser la del contorno sobre la madera, porque el basto se recorta por el contorno.
+- **En un navegador real:** la ventanita, que se abre, se cierra con Esc, tocando afuera y al usar, y no da errores. También la lámina de los tres mazos.
+- **Sin correr, a pedido de Román ("no es necesaria la suite completa, solo subila"):** la suite completa y las pruebas de navegador de esta subida. La subida anterior, con la ventanita, sí pasó las siete pruebas de navegador.
+- **Fuentes:**
+  - The World of Playing Cards (el patrón castellano de Fournier);
+  - LearnTarot y Source Library (el tarot de Nicolas Conver, 1760);
+  - EcuRed (los palos del tarot);
+  - Hachette (Royal Cats Playing Cards);
+  - Fotoeins (los gatos del Jardín Botánico);
+  - Chess.com, Chess Club, WFP e Indie Klem (cómo se elige y se prueba una pieza).

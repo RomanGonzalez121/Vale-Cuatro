@@ -26,7 +26,9 @@ return [
     ['tipo' => 'dorso', 'clave' => 'rombos', 'nombre' => 'Rombos', 'nivel' => 3, 'listo' => true],
     ['tipo' => 'carta', 'clave' => '5-espada', 'nombre' => 'El 5 de espada', 'nivel' => 4, 'listo' => true],
     ['tipo' => 'mesa', 'clave' => 'pano-petroleo', 'nombre' => 'Paño petróleo', 'nivel' => 5, 'listo' => true],
+    ['tipo' => 'mazo', 'clave' => 'clasico', 'nombre' => 'Clásico', 'nivel' => 5, 'listo' => true],
     ['tipo' => 'distintivo', 'clave' => 'cuadrado', 'nombre' => 'El cuadrado', 'nivel' => 6, 'listo' => true],
+    ['tipo' => 'mazo', 'clave' => 'gatos', 'nombre' => 'Gatos', 'nivel' => 6, 'listo' => true],
     ['tipo' => 'carta', 'clave' => '6-oro', 'nombre' => 'El 6 de oro', 'nivel' => 7, 'listo' => true],
     ['tipo' => 'anotar', 'clave' => 'palotes', 'nombre' => 'Palotes con lápiz', 'nivel' => 7, 'listo' => true],
     ['tipo' => 'dorso', 'clave' => 'damero', 'nombre' => 'Damero', 'nivel' => 8, 'listo' => true],
@@ -96,4 +98,5 @@ return [
     ['tipo' => 'carta', 'clave' => '1-espada', 'nombre' => 'El ancho de espada', 'nivel' => 40, 'listo' => true],
     ['tipo' => 'mesa', 'clave' => 'fileteado', 'nombre' => 'Fileteado porteño', 'nivel' => 40, 'listo' => true],
     ['tipo' => 'dorso', 'clave' => 'las-que-mandan', 'nombre' => 'Las que mandan', 'nivel' => 40, 'listo' => true],
+    ['tipo' => 'mazo', 'clave' => 'tarot', 'nombre' => 'Tarot', 'nivel' => 40, 'listo' => true],
 ];

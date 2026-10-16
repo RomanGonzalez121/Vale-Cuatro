@@ -168,6 +168,33 @@ class Carta extends Component
     ];
 
     /**
+     * En el Clásico cada figura alza el palo con la mano derecha, como en la baraja castellana.
+     */
+    private const PALO_EN_MANO_CLASICO = [
+        'sota' => [62, 28, 13.4, 20.1],
+        'caballo' => [57.2, 15.6, 13.4, 20.1],
+        'rey' => [63.4, 34.6, 13.4, 20.1],
+    ];
+
+    /**
+     * En el Tarot cada figura alza el palo, como las del tarot de Marsella.
+     */
+    private const PALO_EN_MANO_TAROT = [
+        'sota' => [61, 33, 12, 18],
+        'caballo' => [56, 24, 12, 18],
+        'rey' => [63, 41, 12, 18],
+    ];
+
+    /**
+     * En los Gatos cada gato alza el palo con la pata.
+     */
+    private const PALO_EN_MANO_GATOS = [
+        'sota' => [60, 42, 11, 16.5],
+        'caballo' => [56, 34, 11, 16.5],
+        'rey' => [61, 52, 11, 16.5],
+    ];
+
+    /**
      * Dónde van los palos de las cartas de número en las cartas de otro mundo, como [x desde, x hasta, y desde,
      * y hasta]: la disposición del arco se lleva a esa zona (en el Afiche, el papel a la derecha de la franja).
      */
@@ -185,6 +212,9 @@ class Carta extends Component
         'bordado' => [17, 83, 27, 129],
         'azulejo' => [16, 84, 35, 121],
         'murga' => [17, 83, 39, 119],
+        'clasico' => [12, 88, 22, 134],
+        'tarot' => [16, 84, 30, 126],
+        'gatos' => [18, 82, 40, 128],
     ];
 
     /**
@@ -346,6 +376,9 @@ class Carta extends Component
                 'bordado' => self::PALO_EN_MANO_BORDADO,
                 'azulejo' => self::PALO_EN_MANO_AZULEJO,
                 'murga' => self::PALO_EN_MANO_MURGA,
+                'clasico' => self::PALO_EN_MANO_CLASICO,
+                'tarot' => self::PALO_EN_MANO_TAROT,
+                'gatos' => self::PALO_EN_MANO_GATOS,
                 default => self::PALO_EN_MANO,
             };
 

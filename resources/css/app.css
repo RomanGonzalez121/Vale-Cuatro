@@ -2114,6 +2114,46 @@ html:has(body.superficie-pano) {
         fill: #f3e7cf;
     }
 
+    /* El número del Clásico, arriba a la izquierda dentro del marco de la pinta. */
+    .clasico-numero {
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        fill: #161a18;
+    }
+
+    /* El Tarot: el número en romano y el nombre en las cintas, como en las cartas de Marsella. */
+    .tarot-romano {
+        font-family: var(--font-sans);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        fill: #161a18;
+    }
+
+    .tarot-nombre {
+        font-family: var(--font-sans);
+        font-size: 6.4px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        fill: #161a18;
+    }
+
+    /* Los Gatos: el número en crema adentro de la cabeza de gato. */
+    .gatos-numero {
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        fill: #f7f0e3;
+    }
+
+    .gatos-numero-doble {
+        font-size: 9px;
+        letter-spacing: -0.08em;
+    }
+
     .estampilla-numero {
         font-family: var(--font-sans);
         font-size: 11px;

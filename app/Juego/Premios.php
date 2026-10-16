@@ -114,6 +114,8 @@ final class Premios
             // Las dos variantes del de fábrica: de todos desde el principio y fuera del camino (Román, 16 de octubre de 2026).
             'noche' => ['nombre' => 'De fábrica, de noche', 'nivel' => 1],
             'una-tinta' => ['nombre' => 'De fábrica, a una tinta', 'nivel' => 1],
+            'clasico' => ['nombre' => 'Clásico', 'nivel' => 5],
+            'gatos' => ['nombre' => 'Gatos', 'nivel' => 6],
             'azulejo' => ['nombre' => 'Azulejo de subte', 'nivel' => 8],
             'tango' => ['nombre' => 'Tango', 'nivel' => 9],
             'murga' => ['nombre' => 'Murga', 'nivel' => 12],
@@ -129,6 +131,7 @@ final class Premios
             'estampilla' => ['nombre' => 'Estampilla', 'nivel' => 36],
             'fileteado' => ['nombre' => 'Fileteado', 'nivel' => 37],
             'criollo' => ['nombre' => 'Criollo', 'nivel' => 39],
+            'tarot' => ['nombre' => 'Tarot', 'nivel' => 40],
         ],
         'anotar' => [
             'fabrica' => ['nombre' => 'Fósforos', 'nivel' => 1],

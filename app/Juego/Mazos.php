@@ -32,6 +32,8 @@ final class Mazos
         'fabrica' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
         'noche' => ['tinta' => 'noche', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
         'una-tinta' => ['tinta' => 'una', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
+        'clasico' => ['tinta' => 'fabrica', 'palos' => 'clasico', 'figuras' => 'clasico', 'marco' => 'fabrica', 'carta' => 'clasico'],
+        'gatos' => ['tinta' => 'fabrica', 'palos' => 'gatos', 'figuras' => 'gatos', 'marco' => 'fabrica', 'carta' => 'gatos'],
         'azulejo' => ['tinta' => 'fabrica', 'palos' => 'azulejo', 'figuras' => 'azulejo', 'marco' => 'fabrica', 'carta' => 'azulejo'],
         'tango' => ['tinta' => 'fabrica', 'palos' => 'tango', 'figuras' => 'tango', 'marco' => 'fabrica', 'carta' => 'tango'],
         'murga' => ['tinta' => 'fabrica', 'palos' => 'murga', 'figuras' => 'murga', 'marco' => 'fabrica', 'carta' => 'murga'],
@@ -47,6 +49,7 @@ final class Mazos
         'estampilla' => ['tinta' => 'fabrica', 'palos' => 'estampilla', 'figuras' => 'estampilla', 'marco' => 'fabrica', 'carta' => 'estampilla'],
         'fileteado' => ['tinta' => 'fabrica', 'palos' => 'filete', 'figuras' => 'filete', 'marco' => 'fabrica', 'carta' => 'fileteado'],
         'criollo' => ['tinta' => 'fabrica', 'palos' => 'criollo', 'figuras' => 'criollo', 'marco' => 'fabrica', 'carta' => 'criollo'],
+        'tarot' => ['tinta' => 'fabrica', 'palos' => 'tarot', 'figuras' => 'tarot', 'marco' => 'fabrica', 'carta' => 'tarot'],
     ];
 
     /**

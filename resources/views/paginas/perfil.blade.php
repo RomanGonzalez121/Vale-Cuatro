@@ -60,6 +60,9 @@
             'bordado' => [['copa', 1], ['basto', 5], ['oro', 12]],
             'azulejo' => [['oro', 1], ['espada', 6], ['copa', 11]],
             'murga' => [['basto', 7], ['copa', 3], ['espada', 12]],
+            'clasico' => [['espada', 1], ['copa', 4], ['oro', 12]],
+            'tarot' => [['oro', 1], ['espada', 7], ['copa', 11]],
+            'gatos' => [['oro', 1], ['copa', 5], ['basto', 10]],
         ][$mazo] ?? [['espada', 1], ['oro', 7], ['copa', 12]];
         $deTipo = fn (string $tipo) => array_values(array_filter($proximamente, fn (array $ficha) => $ficha['tipo'] === $tipo));
 

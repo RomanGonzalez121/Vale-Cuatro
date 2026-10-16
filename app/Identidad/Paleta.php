@@ -219,6 +219,21 @@ class Paleta
             ['texto' => '#f3e7cf', 'fondo' => '#1d4730', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y nombre sobre el raso del basto'],
             ['texto' => '#55a86f', 'fondo' => '#1d4730', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Lentejuelas del basto'],
         ],
+        'clasico' => [
+            ['texto' => '#161a18', 'fondo' => '#fbfaf5', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número dentro del marco de la pinta'],
+            ['texto' => '#5f8fcf', 'fondo' => '#fbfaf5', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Hoja de la espada'],
+            ['texto' => '#161a18', 'fondo' => '#c59a55', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Contorno del basto sobre la madera'],
+        ],
+        'tarot' => [
+            ['texto' => '#161a18', 'fondo' => '#efe2c4', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número romano y nombre en las cintas'],
+            ['texto' => '#b23a2e', 'fondo' => '#efe2c4', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Rojo de grabado'],
+            ['texto' => '#4f7db5', 'fondo' => '#efe2c4', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Azul de grabado'],
+        ],
+        'gatos' => [
+            ['texto' => '#f7f0e3', 'fondo' => '#2a2622', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número en la cabeza de gato'],
+            ['texto' => '#2a2622', 'fondo' => '#f7f0e3', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Contornos sobre el papel'],
+            ['texto' => '#c27a3a', 'fondo' => '#f7f0e3', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Gato atigrado'],
+        ],
         'criollo' => [
             ['texto' => '#2a1f17', 'fondo' => '#f0e6d0', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y línea de campo'],
             ['texto' => '#b8483a', 'fondo' => '#2a1f17', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Guarda pampa'],
