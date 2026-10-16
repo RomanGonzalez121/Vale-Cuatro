@@ -2055,3 +2055,14 @@ Román jugando vio "dos 11" en la mano. Eran dos 11 de palos distintos: en el Cl
 
 - el palo, chico, va debajo del número en las dos esquinas, como en el Criollo y en los Gatos;
 - el palo que tiene cada figura en la mano es más grande.
+
+## El envido en las mesas claras
+
+Román marcó que en las mesas claras (mármol, baldosa, mantel y diario) el envido "se veía muy contrastado" y el amarillo, marrón. Pasaba porque en esas mesas el oro se oscurecía a un ocre, para leerse sobre el fondo claro: el amarillo verdadero da menos de 2:1 sobre crema, y cualquier ocre que se lea tira a marrón.
+
+Eligió la recomendada:
+
+- **la palabra del envido y los tantos van en tinta sobre una franja plana del oro de verdad (9:1)**, con la forma de las fichas del truco y del quiero;
+- en las mesas oscuras sigue igual.
+
+Se descartó un ocre más claro (`#9c6e1a`), porque seguía viéndose marrón.

@@ -324,6 +324,19 @@ body:has(.mesa-de-marmol-negro) {
     filter: brightness(0.62);
 }
 
+/*
+ | En las mesas claras el envido no va en ocre (se veía marrón): la palabra y los tantos van en tinta sobre una
+ | franja plana del oro de verdad, con la forma de las fichas del truco y del quiero (Román, 16 de octubre de 2026).
+ */
+:is(.mesa-de-marmol, .mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo .canto-oro {
+    width: fit-content;
+    margin-inline: auto;
+    padding: 0.06em 0.3em 0.16em;
+    border-radius: 0.07em;
+    background-color: #f0b429;
+    color: #161a18;
+}
+
 /* Las claras, como el mármol: texto en tinta y el oro en un ocre que se lee sobre lo claro. */
 :is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo,
 :is(.perfil-mesa, .probador-mesa, .pieza-mesa):is([data-mesa='baldosa'], [data-mesa='mantel'], [data-mesa='diario']) {
