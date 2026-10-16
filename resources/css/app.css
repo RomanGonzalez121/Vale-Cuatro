@@ -238,6 +238,271 @@ body:has(.mesa-de-marmol) {
         #e9e6df;
 }
 
+/*
+ | Las mesas de la tanda 4. Tres claras (baldosa calcárea, mantel de bodegón y diario de café), que como el
+ | mármol pasan el texto a tinta y de noche bajan la luz entera, y tres oscuras (milonga, pana del club inglés
+ | y mármol negro), que de noche no se oscurecen: baja solo la luz de lo claro (el ribete, las vetas de latón)
+ | y las barras pasan a un paso más oscuro que la mesa (lo decidió Román el 15 de octubre de 2026).
+ */
+body:has(.mesa-de-baldosa) {
+    --color-pano: #e4dac8;
+    --color-pano-hondo: #3d3a33;
+    --color-sombra: #a59c8c;
+}
+
+body:has(.mesa-de-mantel) {
+    --color-pano: #ece2d2;
+    --color-pano-hondo: #4a2b29;
+    --color-sombra: #ab9f8e;
+}
+
+body:has(.mesa-de-diario) {
+    --color-pano: #e7e3d6;
+    --color-pano-hondo: #2f302c;
+    --color-sombra: #a8a397;
+}
+
+body:has(.mesa-de-milonga) {
+    --color-pano: #4a1f25;
+    --color-pano-hondo: #2e1317;
+    --color-sombra: #1e0c0f;
+}
+
+body:has(.mesa-de-pana) {
+    --color-pano: #203a2c;
+    --color-pano-hondo: #14261c;
+    --color-sombra: #0b1610;
+}
+
+body:has(.mesa-de-marmol-negro) {
+    --color-pano: #161d1c;
+    --color-pano-hondo: #0c1110;
+    --color-sombra: #050707;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-baldosa) {
+    --color-pano: #b2aa9c;
+    --color-pano-hondo: #302d28;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-mantel) {
+    --color-pano: #b8b0a4;
+    --color-pano-hondo: #3a2220;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-diario) {
+    --color-pano: #b4b1a7;
+    --color-pano-hondo: #252522;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-milonga) {
+    --color-pano: #34161a;
+    --color-pano-hondo: #1e0b0d;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-pana) {
+    --color-pano: #162920;
+    --color-pano-hondo: #0b160f;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-marmol-negro) {
+    --color-pano: #0f1414;
+    --color-pano-hondo: #070a0a;
+}
+
+:is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario, .mesa-de-milonga, .mesa-de-pana, .mesa-de-marmol-negro) .mesa-campo::before {
+    z-index: -1;
+}
+
+:root[data-modo='noche'] :is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo::before,
+:root[data-modo='noche'] :is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo::after {
+    filter: brightness(0.78);
+}
+
+:root[data-modo='noche'] :is(.mesa-de-milonga, .mesa-de-pana, .mesa-de-marmol-negro) .mesa-campo::before,
+:root[data-modo='noche'] :is(.mesa-de-milonga, .mesa-de-pana, .mesa-de-marmol-negro) .mesa-campo::after {
+    filter: brightness(0.62);
+}
+
+/* Las claras, como el mármol: texto en tinta y el oro en un ocre que se lee sobre lo claro. */
+:is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo,
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa):is([data-mesa='baldosa'], [data-mesa='mantel'], [data-mesa='diario']) {
+    --color-naipe: #161a18;
+    --color-oro: #7d5209;
+    --color-fosforo: #8f7034;
+    color: var(--color-naipe);
+}
+
+:root[data-modo='noche'] :is(:is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo, :is(.perfil-mesa, .probador-mesa, .pieza-mesa):is([data-mesa='baldosa'], [data-mesa='mantel'], [data-mesa='diario'])) {
+    --color-oro: #553506;
+    --color-fosforo: #6b5228;
+}
+
+:is(:is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo, [data-mesa='baldosa'], [data-mesa='mantel'], [data-mesa='diario']) :is(.carta, .mini-naipe, .costado-hoja, .tanto-ficha, .bg-pano-hondo, .ficha-de-mano, .boton, .canto-copa, .canto-basto, .canto-naipe) {
+    --color-naipe: #fbfaf5;
+    --color-oro: #f0b429;
+}
+
+/* La baldosa: la junta del piso, tenue, y una baldosa entera con su roseta en cada esquina; filete bordó y ocre. */
+.mesa-de-baldosa .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #7a2e2a;
+    border-radius: 0.3rem;
+    background:
+        url('../mesas/baldosa-esquina.svg') top 0.5rem left 0.5rem / min(16%, 6.5rem) auto no-repeat,
+        url('../mesas/baldosa-esquina.svg') top 0.5rem right 0.5rem / min(16%, 6.5rem) auto no-repeat,
+        url('../mesas/baldosa-esquina.svg') bottom 0.5rem right 0.5rem / min(16%, 6.5rem) auto no-repeat,
+        url('../mesas/baldosa-esquina.svg') bottom 0.5rem left 0.5rem / min(16%, 6.5rem) auto no-repeat,
+        url('../mesas/baldosa-junta.svg') center / 4rem 4rem repeat;
+}
+
+.mesa-de-baldosa .mesa-campo::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0.7rem;
+    border: 1px solid #a8834a;
+    border-radius: 0.2rem;
+    pointer-events: none;
+}
+
+/* El mantel: los cuadros bordó apagados que se repiten, y el dobladillo cosido en el borde. */
+.mesa-de-mantel .mesa-campo::before {
+    inset: 0.4rem;
+    border: 2px dashed color-mix(in srgb, #8c3a35 55%, transparent);
+    border-radius: 0.6rem;
+    background: url('../mesas/mantel-cuadros.svg') center / 2.6rem 2.6rem repeat;
+}
+
+/* La milonga: paño bordó con su ribete crema doble y un rombo en cada esquina, como un salón de tango. */
+.mesa-de-milonga .mesa-campo::before {
+    inset: 0.45rem;
+    border: 1.4px solid #e6d7b5;
+    border-radius: 0.3rem;
+    background:
+        url('../mesas/milonga-arriba-izquierda.svg') top 0.05rem left 0.05rem / 2.3rem no-repeat,
+        url('../mesas/milonga-arriba-derecha.svg') top 0.05rem right 0.05rem / 2.3rem no-repeat,
+        url('../mesas/milonga-abajo-derecha.svg') bottom 0.05rem right 0.05rem / 2.3rem no-repeat,
+        url('../mesas/milonga-abajo-izquierda.svg') bottom 0.05rem left 0.05rem / 2.3rem no-repeat;
+}
+
+.mesa-de-milonga .mesa-campo::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 1.6rem;
+    border: 0.8px solid color-mix(in srgb, #e6d7b5 75%, transparent);
+    border-radius: 0.2rem;
+    pointer-events: none;
+}
+
+/* El diario: columnas de letra chica muy tenues y el filete del nombre del diario arriba. Una sola tinta. */
+.mesa-de-diario .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1px solid color-mix(in srgb, #2b2d29 25%, transparent);
+    border-radius: 0.2rem;
+    background:
+        url('../mesas/diario-cabecera.svg') top 0.9rem left 1rem / min(38%, 15rem) auto no-repeat,
+        url('../mesas/diario-columnas.svg') top 3rem center / 13rem auto repeat;
+}
+
+/* La pana: costillas finas que se repiten de costado, y un filete de latón apagado. */
+.mesa-de-pana .mesa-campo::before {
+    inset: 0.4rem;
+    border: 1.5px solid #9c8754;
+    border-radius: 0.4rem;
+    background: url('../mesas/pana-costillas.svg') left top / 0.42rem 100% repeat-x;
+}
+
+/* El mármol negro (Portoro): vetas de latón apagado desde dos esquinas y el filete doble de latón. */
+.mesa-de-marmol-negro .mesa-campo::before {
+    inset: 0.3rem;
+    border: 2px solid #9c8754;
+    border-radius: 0.4rem;
+    background:
+        url('../mesas/marmol-negro-arriba.svg') top left / min(60%, 26rem) auto no-repeat,
+        url('../mesas/marmol-negro-abajo.svg') bottom right / min(60%, 26rem) auto no-repeat;
+}
+
+.mesa-de-marmol-negro .mesa-campo::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0.62rem;
+    border: 1px solid #9c8754;
+    border-radius: 0.25rem;
+    pointer-events: none;
+}
+
+/* Sus muestras del perfil: el mismo color y su dibujo principal; de noche, las claras con la luz baja. */
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='baldosa'] {
+    background: url('../mesas/baldosa-esquina.svg') top 6% left 5% / min(30%, 6rem) auto no-repeat, url('../mesas/baldosa-junta.svg') center / 3rem 3rem repeat, #e4dac8;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='mantel'] {
+    background: url('../mesas/mantel-cuadros.svg') center / 2rem 2rem repeat, #ece2d2;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='diario'] {
+    background: url('../mesas/diario-cabecera.svg') top 8% left 6% / min(50%, 14rem) auto no-repeat, url('../mesas/diario-columnas.svg') top 30% center / 10rem auto repeat, #e7e3d6;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='milonga'] {
+    background: url('../mesas/milonga-arriba-izquierda.svg') top 4% left 4% / 1.8rem no-repeat, url('../mesas/milonga-abajo-derecha.svg') bottom 4% right 4% / 1.8rem no-repeat, #4a1f25;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pana'] {
+    background: url('../mesas/pana-costillas.svg') left top / 0.42rem 100% repeat-x, #203a2c;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='marmol-negro'] {
+    background: url('../mesas/marmol-negro-arriba.svg') top left / min(70%, 26rem) auto no-repeat, url('../mesas/marmol-negro-abajo.svg') bottom right / min(70%, 26rem) auto no-repeat, #161d1c;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='milonga'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/milonga-arriba-izquierda.svg') top 4% left 4% / 1.8rem no-repeat, url('../mesas/milonga-abajo-derecha.svg') bottom 4% right 4% / 1.8rem no-repeat, #4a1f25;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pana'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/pana-costillas.svg') left top / 0.42rem 100% repeat-x, #203a2c;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='marmol-negro'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/marmol-negro-arriba.svg') top left / min(70%, 26rem) auto no-repeat, url('../mesas/marmol-negro-abajo.svg') bottom right / min(70%, 26rem) auto no-repeat, #161d1c;
+}
+
+.pieza-mesa[data-mesa='baldosa'] {
+    border-color: #7a2e2a;
+}
+
+.pieza-mesa[data-mesa='mantel'] {
+    border-color: #8c3a35;
+}
+
+.pieza-mesa[data-mesa='diario'] {
+    border-color: #2b2d29;
+}
+
+:is(.pieza-mesa)[data-mesa='milonga'] {
+    border-color: #e6d7b5;
+}
+
+:is(.pieza-mesa):is([data-mesa='pana'], [data-mesa='marmol-negro']) {
+    border-color: #9c8754;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='baldosa'] {
+    background: linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)), url('../mesas/baldosa-esquina.svg') top 6% left 5% / min(30%, 6rem) auto no-repeat, url('../mesas/baldosa-junta.svg') center / 3rem 3rem repeat, #e4dac8;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='mantel'] {
+    background: linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)), url('../mesas/mantel-cuadros.svg') center / 2rem 2rem repeat, #ece2d2;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='diario'] {
+    background: linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)), url('../mesas/diario-cabecera.svg') top 8% left 6% / min(50%, 14rem) auto no-repeat, url('../mesas/diario-columnas.svg') top 30% center / 10rem auto repeat, #e7e3d6;
+}
+
 /* El pizarrón: marco de madera, la raya de tiza adentro, pasadas de borrador y lo que quedó de otras partidas. */
 .mesa-de-pizarron .mesa-campo::before {
     inset: 0.35rem;
@@ -307,7 +572,7 @@ body:has(.mesa-de-marmol) {
     color: var(--color-naipe);
 }
 
-:is(.mesa-de-marmol .mesa-campo, [data-mesa='marmol']) :is(.carta, .mini-naipe, .costado-hoja, .tanto-ficha, .bg-pano-hondo, .ficha-de-mano, .boton) {
+:is(.mesa-de-marmol .mesa-campo, [data-mesa='marmol']) :is(.carta, .mini-naipe, .costado-hoja, .tanto-ficha, .bg-pano-hondo, .ficha-de-mano, .boton, .canto-copa, .canto-basto, .canto-naipe) {
     --color-naipe: #fbfaf5;
     --color-oro: #f0b429;
 }
@@ -2691,6 +2956,16 @@ html:has(body.superficie-pano) {
 
     .anotador-palotes::before {
         background-color: #fbfaf5;
+    }
+
+    /* Los porotos van sobre la tapa de madera clara de la caja donde se guardan, con su borde más oscuro. */
+    .anotador-porotos {
+        --color-naipe: #161a18;
+    }
+
+    .anotador-porotos::before {
+        border: 0.12rem solid #a9864f;
+        background-color: #efe6d2;
     }
 
     .anotador-tiza::before {

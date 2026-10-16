@@ -141,7 +141,14 @@ class TitulosTest extends TestCase
         }
 
         foreach (Premios::POR_NIVEL as $tipo => $piezas) {
-            $niveles = array_map(fn (array $pieza) => $pieza['nivel'], array_filter($piezas, fn (string $clave) => $clave !== 'fabrica', ARRAY_FILTER_USE_KEY));
+            // Varias piezas pueden salir de una sola ficha (los cuatro palos): se cuentan por su ficha.
+            $niveles = [];
+
+            foreach ($piezas as $clave => $pieza) {
+                if ($clave !== 'fabrica') {
+                    $niveles[$pieza['ficha'] ?? $clave] = $pieza['nivel'];
+                }
+            }
 
             $this->assertEquals($niveles, $listas[$tipo] ?? [], "Las piezas de {$tipo} no coinciden con las fichas listas del camino.");
         }
@@ -162,10 +169,12 @@ class TitulosTest extends TestCase
             }
         }
 
-        // Y ninguno repite el dibujo de un ícono de la interfaz.
+        // Y ninguno repite el dibujo de un ícono de la interfaz, salvo los cuatro palos, que son sus íconos a propósito.
         foreach (Distintivos::TODOS as $clave => [$trazos]) {
             foreach (Iconos::TODOS as $icono => [$deIcono]) {
-                $this->assertNotSame($deIcono, $trazos, "El distintivo {$clave} es igual al ícono {$icono}.");
+                if ($clave !== 'palo-'.$icono) {
+                    $this->assertNotSame($deIcono, $trazos, "El distintivo {$clave} es igual al ícono {$icono}.");
+                }
             }
         }
     }

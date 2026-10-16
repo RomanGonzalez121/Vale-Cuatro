@@ -61,8 +61,20 @@ final class Premios
         'fabrica' => ['nombre' => 'Isotipos', 'nivel' => 1],
         'rombos' => ['nombre' => 'Rombos', 'nivel' => 3],
         'damero' => ['nombre' => 'Damero', 'nivel' => 8],
+        'esterilla' => ['nombre' => 'Esterilla', 'nivel' => 11],
         'lunares' => ['nombre' => 'Lunares', 'nivel' => 12],
+        'aros' => ['nombre' => 'Aros', 'nivel' => 14],
         'zigzag' => ['nombre' => 'Zigzag', 'nivel' => 16],
+        'guarda-griega' => ['nombre' => 'Guarda griega', 'nivel' => 18],
+        'ramitas' => ['nombre' => 'Ramitas', 'nivel' => 20],
+        'cuadros' => ['nombre' => 'Cuadros', 'nivel' => 21],
+        'abanicos' => ['nombre' => 'Abanicos', 'nivel' => 23],
+        'ondas' => ['nombre' => 'Ondas', 'nivel' => 24],
+        'tanteador' => ['nombre' => 'Tanteador', 'nivel' => 27],
+        'estrella' => ['nombre' => 'Estrella', 'nivel' => 30],
+        'grabado' => ['nombre' => 'Grabado', 'nivel' => 39],
+        'las-que-mandan' => ['nombre' => 'Las que mandan', 'nivel' => 40],
+        'guarda-pampa' => ['nombre' => 'Guarda pampa', 'nivel' => 32],
         'fosforos' => ['nombre' => 'Fósforos', 'escalon' => 3],
         'tinta' => ['nombre' => 'Tinta', 'escalon' => 6],
         'ronda' => ['nombre' => 'Ronda', 'escalon' => 8],
@@ -73,7 +85,7 @@ final class Premios
      * la forma de anotar de fábrica son de todos; el distintivo no tiene uno de fábrica: sin elegir, no hay.
      * Cada uno ve su mesa y su forma de anotar; el distintivo, como el título, lo ven todos.
      *
-     * @var array<string, array<string, array{nombre: string, nivel: int}>>
+     * @var array<string, array<string, array{nombre: string, nivel: int, ficha?: string}>>
      */
     public const POR_NIVEL = [
         'mesa' => [
@@ -82,11 +94,18 @@ final class Premios
             'marmol' => ['nombre' => 'Mármol de café', 'nivel' => 10],
             'pizarron' => ['nombre' => 'Pizarrón', 'nivel' => 14],
             'madera' => ['nombre' => 'Madera del club', 'nivel' => 17],
+            'baldosa' => ['nombre' => 'Baldosa calcárea', 'nivel' => 20],
+            'mantel' => ['nombre' => 'Mantel de bodegón', 'nivel' => 23],
+            'milonga' => ['nombre' => 'Milonga', 'nivel' => 25],
+            'marmol-negro' => ['nombre' => 'Mármol negro', 'nivel' => 26],
+            'diario' => ['nombre' => 'Diario de café', 'nivel' => 28],
+            'pana' => ['nombre' => 'Pana del club inglés', 'nivel' => 30],
         ],
         'anotar' => [
             'fabrica' => ['nombre' => 'Fósforos', 'nivel' => 1],
             'palotes' => ['nombre' => 'Palotes con lápiz', 'nivel' => 7],
             'tiza' => ['nombre' => 'Tiza', 'nivel' => 13],
+            'porotos' => ['nombre' => 'Porotos y garbanzos', 'nivel' => 27],
         ],
         'distintivo' => [
             'un-fosforo' => ['nombre' => 'Un fósforo', 'nivel' => 2],
@@ -94,6 +113,15 @@ final class Premios
             'grupo-de-cinco' => ['nombre' => 'Grupo de cinco', 'nivel' => 11],
             'quince' => ['nombre' => 'El 15', 'nivel' => 15],
             'cruzados' => ['nombre' => 'Dos cruzados', 'nivel' => 18],
+            'siete' => ['nombre' => 'El 7', 'nivel' => 21],
+            'cuatro' => ['nombre' => 'El 4', 'nivel' => 24],
+            'treinta' => ['nombre' => 'El 30', 'nivel' => 29],
+            'treinta-y-tres' => ['nombre' => 'El 33', 'nivel' => 33],
+            // Los cuatro palos son un solo premio del camino: al ganarlo se abren los cuatro y cada uno elige cuál lleva.
+            'palo-oro' => ['nombre' => 'Oro', 'nivel' => 38, 'ficha' => 'cuatro-palos'],
+            'palo-copa' => ['nombre' => 'Copa', 'nivel' => 38, 'ficha' => 'cuatro-palos'],
+            'palo-espada' => ['nombre' => 'Espada', 'nivel' => 38, 'ficha' => 'cuatro-palos'],
+            'palo-basto' => ['nombre' => 'Basto', 'nivel' => 38, 'ficha' => 'cuatro-palos'],
         ],
     ];
 
@@ -248,7 +276,7 @@ final class Premios
             'clave' => $clave,
             'nombre' => $titulo['nombre'],
             'femenino' => $titulo['femenino'],
-            'pide' => $titulo['cuenta'] === null ? 'De entrada' : $titulo['pide'].' '.Titulos::QUE_PIDE[$titulo['cuenta']],
+            'pide' => $titulo['cuenta'] === null ? 'De entrada' : ($titulo['dice'] ?? $titulo['pide'].' '.Titulos::QUE_PIDE[$titulo['cuenta']]),
             'lleva' => $titulo['cuenta'] === null ? 0 : (int) ($jugador?->{$titulo['cuenta']} ?? 0),
             'hace' => $titulo['pide'],
             'abierto' => $todo || Titulos::gano($jugador, $clave),

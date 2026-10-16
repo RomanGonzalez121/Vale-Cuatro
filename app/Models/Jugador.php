@@ -153,6 +153,14 @@ class Jugador extends Authenticatable
             'envidos_ganados' => 'integer',
             'trucos_ganados' => 'integer',
             'flores_cantadas' => 'integer',
+            'retrucos_ganados' => 'integer',
+            'chamuyos' => 'integer',
+            'manos_con_parda' => 'integer',
+            'faltas_ganadas' => 'integer',
+            'vale_cuatros_ganados' => 'integer',
+            'torneos_ganados' => 'integer',
+            'escalones_pasados' => 'integer',
+            'desafios_pasados' => 'integer',
         ];
     }
 }

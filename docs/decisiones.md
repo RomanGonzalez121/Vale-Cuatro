@@ -1670,3 +1670,51 @@ Balatro no publica su código; lo que se tomó es lo que se observa: las cartas 
 - **Con tests:** el contraste de noche de cada mesa y que ninguna se quede sin su noche; el test de movimiento (solo se escribe `transform` desde JavaScript, nada en loop, versión reducida).
 - **En un navegador real:** las cuatro mesas de noche en la mesa y en el perfil; el arrastre de costado (se inclinó unos 6° yendo rápido y se enderezó al frenar), la inclinación hacia el cursor, la caída con su giro y la mano que se junta. **No se probó con el dedo en un celular de verdad:** cómo se siente el arrastre lo juzga Román.
 
+
+
+## Tanda 4: premios II
+
+Pedida por Román el 15 de octubre de 2026 ("seguí con lo que sigue"). Se armó una lámina con todo junto y él la aprobó, con tres pedidos en el camino: que la noche se note en las mesas oscuras, un dorso clásico de cuadros (y otros dos de los que mandó de ejemplo) y dos dorsos más para completar la fila de la Colección, "más creativos, de recompensa para los últimos niveles".
+
+### Lo que trae
+
+- **Seis mesas:** Baldosa calcárea (20), Mantel de bodegón (23), Milonga (25), Mármol negro (26), Diario de café (28) y Pana del club inglés (30). Siguen el patrón de la tanda 3: el detalle dibujado en SVG en los bordes, el medio limpio para que las cartas y el texto se lean.
+- **Doce dorsos:** Esterilla (11), Aros (14), Guarda griega (18), Ramitas (20), Cuadros (21), Abanicos (23), Ondas (24), Tanteador (27), Estrella (30), Guarda pampa (32), Grabado (39) y Las que mandan (40). Con los de antes son veinte; con el Monograma, que falta dibujar, la Colección queda en tres filas de siete.
+- **Anotar con porotos y garbanzos (27):** cada punto es un poroto acostado sobre su lado del cuadrado y el quinto es un garbanzo en el medio, como cuando se cambian cinco porotos por un garbanzo. Van sobre la tapa clara de la caja: sobre el paño un poroto bordó casi no se ve.
+- **Distintivos:** el 7 (21), el 4 (24), el 30 (29), el 33 (33) y los cuatro palos (38). Los cuatro palos son un solo premio del camino: al ganarlo se abren los cuatro y cada uno elige cuál lleva (`ficha` en `Premios::POR_NIVEL`).
+- **Ocho títulos:** Retruquero (10 retrucos queridos ganados), Chamuyero (10 trucos ganados sin que te quieran y sin cartas bravas), Pardero (10 manos ganadas después de una primera parda), Falta envido y Vale cuatro (ganar uno querido), Campeón (un torneo), Del club (la escalera entera) y Desafiante (los ocho desafíos).
+
+### Los dorsos de los últimos niveles
+
+Román pidió referencias. Las que sirvieron: los 173 dorsos que Owen Jones dibujó para De La Rue entre 1844 y 1863, armados sobre grillas geométricas con arabescos, y la idea de un dorso que no sea una trama que se repite sino una pieza. De ahí salieron dos:
+
+- **Grabado (39):** un rosetón de líneas finas que se cruzan, como la trama de seguridad de un billete viejo, con una guarda de ondas y el isotipo en el medio. Es trabajo de imprenta: va con la identidad de tintas planas.
+- **Las que mandan (40):** un medallón de dos cabezas, como las figuras, con el ancho de espada y el de basto cruzados, un oro en cada punta y un siete y un uno en las esquinas, sobre Copa. Es el premio más alto y dice algo del truco.
+
+Todos los dorsos quedan iguales dados vuelta: se dibuja la mitad de arriba y la de abajo es la misma girada media vuelta, o la trama está centrada en la carta.
+
+### Cómo se cuentan los títulos
+
+Se cuentan desde los hechos del motor al cerrar cada partida, como los de la tanda 3, y se rehacen con `fosforos:recalcular`. Lo que hizo falta recordar de cada mano: las cartas repartidas (para saber si había cartas bravas), quién cantó el último truco, si la primera baza fue parda y si lo que se quiso fue un falta envido. Un truco querido ganado vale 2 o más puntos; 3 o más es un retruco y 4 un vale cuatro.
+
+Campeón, Del club y Desafiante salen de los otros juegos: `Titulos::ponerAlDia()` los pone al día desde los torneos y los progresos cuando se cierra una partida de la escalera o de un desafío y cuando un torneo tiene campeón. Se guardan en el jugador, como el resto, para que ninguna página cuente nada al abrirse.
+
+Cada caso tiene su mano armada en `TitulosDeLaTandaCuatroTest`, jugada de punta a punta.
+
+### Las mesas oscuras de noche
+
+Primero las mesas oscuras no se oscurecían de noche (era la regla que había pedido Román): solo bajaba un 15 % lo claro y las barras un tono. Así, el mármol negro y la pana quedaban iguales de día y de noche, y lo marcó. Entre tres opciones con capturas eligió la que se nota en todas: la mesa baja un paso (cerca del 70 % de su color) y lo claro baja más, como en las mesas claras. Se descartó bajar solo lo claro (en la pana casi no se nota) y una "luz de luna" que pasaba el latón a gris.
+
+### Un error que apareció: Truco en tinta sobre rojo
+
+Román preguntó si el contraste de los cantos había cambiado. Era un error de la tanda 3: en las mesas claras el texto de la mesa pasa a tinta, y la ficha roja del Truco tomaba ese color en vez de su blanco. Ahora las fichas de los cantos vuelven a su texto claro, como las cartas y los botones, y un test lo cuida.
+
+### Cada página trae solo sus dorsos
+
+Con veinte dorsos, el mazo que va en cada página pesaba 70 KB. Ahora cada `<x-dorso>` anota el suyo en el pedido (`App\View\DorsosEnUso`) y el mazo, que se dibuja después del contenido, trae solo esos y el de quien mira. La portada y la mesa traen uno; la Colección del perfil, todos. Lo cuida un test.
+
+### Qué se probó y qué no
+
+- **Con tests:** las cuentas de cada título nuevo con manos armadas, los títulos de la escalera y los desafíos, el candado de los premios nuevos y que la administración los tenga todos, el contraste y la familia de color de las mesas y los porotos, y los dorsos por página.
+- **En un navegador real:** las seis mesas de día y de noche, los dorsos grandes y a 60 px, los porotos en el tanteador, los distintivos sobre el paño y sobre papel, y la Colección con todo lo nuevo.
+- **No se probó:** cómo se ve cada mesa nueva en el celular con una partida avanzada, y los títulos ganados en partidas reales (las cuentas salen de las mismas manos que en los tests).

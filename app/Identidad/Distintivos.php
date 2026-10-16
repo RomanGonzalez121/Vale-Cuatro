@@ -21,5 +21,19 @@ final class Distintivos
         'quince' => ['M5 20.5V7.2M10.5 20.5H19V12.3H11.5V4.5H16.3', [[5, 4.6, 2.2], [18.7, 4.5, 2.2]]],
         // Más parados que el "No quiero", y uno pasa por debajo del otro (el corte lo dice): no se confunden.
         'cruzados' => ['M7.5 21 14.9 5.8M16.5 21 13.6 15M11.2 10.2 9.1 5.8', [[16, 3.6, 2.2], [8, 3.6, 2.2]]],
+        // Los números del truco, con el trazo de los fósforos: cada uno arranca en su cabeza.
+        // El 7: los sietes bravos.
+        'siete' => ['M7.4 5H18.5L10.5 20.8', [[4.8, 5, 2.3]]],
+        // El 4: vale cuatro. La raya del medio termina en la cabeza.
+        'cuatro' => ['M14.5 20.8V4.4L5 15.6H17.6', [[19.9, 15.6, 2.3]]],
+        // El 30: la partida.
+        'treinta' => ['M4.6 4.8H10V12.2H5.6M10 12.2V19.6H2.6M14.4 7.4V19.6H21.4V4.8H16.8', [[2.6, 4.8, 2], [14.4, 4.8, 2]]],
+        // El 33: el mejor envido.
+        'treinta-y-tres' => ['M4.6 4.8H10V12.2H5.6M10 12.2V19.6H2.6M16.4 4.8H21.8V12.2H17.4M21.8 12.2V19.6H14.4', [[2.6, 4.8, 2], [14.4, 4.8, 2]]],
+        // Los cuatro palos: son los íconos de los palos, y cada uno elige cuál lleva.
+        'palo-oro' => Iconos::TODOS['oro'],
+        'palo-copa' => Iconos::TODOS['copa'],
+        'palo-espada' => Iconos::TODOS['espada'],
+        'palo-basto' => Iconos::TODOS['basto'],
     ];
 }

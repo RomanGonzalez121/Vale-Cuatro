@@ -1533,6 +1533,15 @@ final class Mesa
         // Si era un desafío o un escalón de la escalera, queda anotado en lo que el jugador lleva pasado.
         (new Progresos)->anotar($partida);
 
+        // Y lo que lleva pasado cuenta para los títulos de la escalera y de los desafíos.
+        if (Progresos::claveDe($partida) !== null) {
+            try {
+                (new Titulos)->ponerAlDia(Jugador::find($partida->jugador_id));
+            } catch (Throwable $falla) {
+                report($falla);
+            }
+        }
+
         $this->seguirLaSerie($partida);
 
         // Si era de un torneo, las llaves se ponen al día aparte, cuando esto ya quedó guardado: hay que

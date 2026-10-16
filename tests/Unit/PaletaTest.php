@@ -137,4 +137,13 @@ class PaletaTest extends TestCase
         $this->assertEqualsWithDelta(1.0, Paleta::luminancia('#FFFFFF'), 0.0001);
         $this->assertEqualsWithDelta(0.0, Paleta::luminancia('#000000'), 0.0001);
     }
+
+    public function test_en_las_mesas_claras_los_cantos_en_ficha_vuelven_a_su_texto_claro(): void
+    {
+        // En una mesa clara el texto pasa a tinta; las fichas de los cantos (Truco en Copa, Quiero en Basto)
+        // tienen que volver a su texto claro, como las cartas y los botones. Pasó una vez: Truco salía en tinta.
+        $estilos = file_get_contents(__DIR__.'/../../resources/css/app.css');
+
+        $this->assertSame(2, substr_count($estilos, '.boton, .canto-copa, .canto-basto, .canto-naipe) {'));
+    }
 }

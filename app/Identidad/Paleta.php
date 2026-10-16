@@ -141,6 +141,19 @@ class Paleta
         // La única clara: el texto pasa a tinta, el envido a un ocre del oro y el palito de los fósforos se oscurece.
         'marmol' => ['mesa' => '#e9e6df', 'barras' => '#3a3f3d', 'texto' => '#161a18', 'canto' => '#8a5a0c', 'fosforo' => '#9a7838', 'adornos' => ['#9c8754', '#b4aea2', '#c4bfb4', '#dad6cd'],
             'noche' => ['mesa' => '#b6b3ae', 'barras' => '#2d3130', 'canto' => '#5e3b07', 'fosforo' => '#74592b']],
+        'baldosa' => ['mesa' => '#e4dac8', 'barras' => '#3d3a33', 'texto' => '#161a18', 'canto' => '#7d5209', 'fosforo' => '#8f7034', 'adornos' => ['#7a2e2a', '#3f5b4a', '#a8834a', '#d3c8b3'],
+            'noche' => ['mesa' => '#b2aa9c', 'barras' => '#302d28', 'canto' => '#553506', 'fosforo' => '#6b5228']],
+        'mantel' => ['mesa' => '#ece2d2', 'barras' => '#4a2b29', 'texto' => '#161a18', 'canto' => '#7d5209', 'fosforo' => '#8f7034', 'adornos' => ['#8c3a35'],
+            'noche' => ['mesa' => '#b8b0a4', 'barras' => '#3a2220', 'canto' => '#553506', 'fosforo' => '#6b5228']],
+        'diario' => ['mesa' => '#e7e3d6', 'barras' => '#2f302c', 'texto' => '#161a18', 'canto' => '#7d5209', 'fosforo' => '#8f7034', 'adornos' => ['#2b2d29'],
+            'noche' => ['mesa' => '#b4b1a7', 'barras' => '#252522', 'canto' => '#553506', 'fosforo' => '#6b5228']],
+        // Las oscuras también bajan de noche: la mesa un paso y lo claro más, para que la noche se note (Román, 15 de octubre de 2026).
+        'milonga' => ['mesa' => '#4a1f25', 'barras' => '#2e1317', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#e6d7b5'],
+            'noche' => ['mesa' => '#34161a', 'barras' => '#1e0b0d', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'pana' => ['mesa' => '#203a2c', 'barras' => '#14261c', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#9c8754', '#2b4a3a', '#15281e'],
+            'noche' => ['mesa' => '#162920', 'barras' => '#0b160f', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'marmol-negro' => ['mesa' => '#161d1c', 'barras' => '#0c1110', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#9c8754', '#b49a5c', '#8f7a4c', '#d8ccae', '#24302d'],
+            'noche' => ['mesa' => '#0f1414', 'barras' => '#070a0a', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
     ];
 
     /**
@@ -151,6 +164,7 @@ class Paleta
     public const ANOTADORES = [
         'palotes' => ['trazo' => '#3f4447', 'fondo' => '#fbfaf5', 'tanteo' => '#161a18'],
         'tiza' => ['trazo' => '#ecebe4', 'fondo' => '#28302d', 'tanteo' => '#f0b429'],
+        'porotos' => ['trazo' => '#6b2c22', 'fondo' => '#efe6d2', 'tanteo' => '#161a18'],
     ];
 
     /**
