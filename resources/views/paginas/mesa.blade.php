@@ -132,6 +132,12 @@
         {{-- Tocar la mesa apura lo que se esté mostrando (los tantos del envido). --}}
         {{-- En pantallas anchas el campo suma dos costados (ver .con-costados en app.css). --}}
         <div class="mesa-campo con-costados" @click="apurar()" :inert="fin !== null">
+            @if ($mesaPropia === 'grafito')
+                <x-mesa.placa :apodo="auth()->user()->apodo" />
+            @endif
+            @if ($mesaPropia === 'fileteado')
+                <x-mesa.leyenda />
+            @endif
             {{--
                 La cuenta regresiva entre personas: un fósforo acostado en el borde del campo, arriba cuando
                 le toca al rival y abajo cuando te toca a vos. No ocupa lugar: la mesa mide lo mismo que sin él.

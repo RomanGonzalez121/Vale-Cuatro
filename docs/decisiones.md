@@ -1789,3 +1789,34 @@ Los mazos del camino de niveles (niveles 9, 15, 19, 22, 26 y 29) figuraban como 
 - **Con tests (`MazosTest`, `PaletaTest`):** cada mazo armado con piezas que existen y sin repetir otro; el candado (no se usa sin ganarlo, tampoco mandando el pedido a mano); bajar de nivel vuelve al de fábrica; la administración los tiene todos; elegir sin recargar; la mesa con el mazo propio y las demás páginas con el de fábrica, sin piezas de más; el rival no recibe el mazo; cada carta con los símbolos de su mazo; los palos dentro del arco; y el contraste de las dos tintas.
 - **En un navegador real:** la lámina de los siete mazos (también a 60 px), la Colección y el probador en 1355 x 638 y 360 x 740, y la mesa con Fósforo de noche y con Retratos, sin scroll.
 - **No se probó:** las pruebas de navegador (Dusk) de esta subida; Román pidió subirlo directo.
+
+
+## Tanda 6, primera parte: las seis mesas de nivel alto y el dorso Monograma
+
+### Qué problema había
+
+Quedaban seis mesas (niveles 32 a 40) y el dorso Monograma (35). Román pidió investigar antes de dibujar: "no quiero que se vean iguales a las otras, tienen que verse hermosas". Las diez mesas hechas comparten una fórmula (un material, un adorno en el borde, el medio limpio), y repetirla seis veces más las iba a volver intercambiables.
+
+### Qué se eligió
+
+- **Cada mesa tiene un elemento propio que cuenta dónde se juega**, salido de la investigación:
+  - **Cuero de estancia (32):** el canto quemado, el doble pespunte de talabartería, flores repujadas en las esquinas, el grano del cuero y, en el medio, la marca de la estancia quemada (el isotipo como hierro de marcar). La marca se probó corrida a un costado para que no quedara detrás de las bazas; Román la prefirió en el medio.
+  - **Pulpería (34):** tablones de mostrador con sus clavos y, del lado del rival, la reja de hierro con volutas que separaba al pulpero del público (la tienen todavía las pulperías de Mar Chiquita, Bolívar o San Telmo). Es la única mesa con un costado distinto del otro.
+  - **Cobre de la pava (36):** cobre martillado (el picado de panal, en tinta plana), chapas remachadas en las esquinas, una costura de remaches y el verde cardenillo alrededor de cada remache, para que no parezca dorado de casino. El cobre se oscureció hasta que el Oro del envido llegó a 4,5:1.
+  - **Art Déco (38):** un abanico de marquetería de dos maderas que nace del lugar de cada jugador, como las mesas de juego de los años 30, con filetes de latón y esquinas escalonadas.
+  - **Grafito y latón (39):** grafito mate, dos filetes de latón, esquineras de latón atornilladas (como las de los muebles de viaje) y un rombo de latón en cada costado. Román marcó que la primera versión podía mejorar. Lleva **una placa de latón grabada con "La mesa de" y el apodo** (`<x-mesa.placa>`), que ve solo su dueño; en el celular va arriba de la mano.
+  - **Fileteado porteño (40):** la estructura del filete (borde en oro, talón, la banda que se enrosca en voluta, la hoja de acanto, la flor, las bolitas y el filete fino que acompaña a la banda), con el volumen en tramos planos (color, sombra, luz), **pintado con las cuatro tintas del mazo** (decidido por Román: así no rompe la regla de familia de color). La primera versión parecía de Navidad (hojas verdes como acebo, cintas azules sueltas) y se rehízo: la hoja de acanto en oro y la flor en espada, como las flores celestes del filete. **Lleva su leyenda, "Quiero vale cuatro"** (elegida por Román), en la letra de los cantos (es un canto), en Oro con la sombra proyectada en Copa honda (una copia del texto corrida, no una sombra de CSS: la única sombra del sitio sigue siendo la de las cartas). Las bandas rectas son cuatro dibujos, uno por lado, porque el filete de oro va siempre hacia adentro y la sombra cae siempre abajo a la derecha.
+- **De noche** las seis bajan como las otras mesas oscuras (la mesa un paso, el dibujo `brightness(0.62)`); el filete baja menos (0,8), porque con la luz muy baja sus tintas se embarran.
+- **El dorso Monograma (35):** la V y la C entrelazadas en un cartucho, a la manera de los dorsos de Owen Jones para De La Rue, sobre un fondo punteado en Copa. Va dos veces, una dada vuelta, como las figuras de dos cabezas: un dorso no puede decir para qué lado está la carta.
+
+### Qué se descartó
+
+- Repetir la fórmula de borde y medio limpio en las seis.
+- Los colores tradicionales del filete (rojo, amarillo, verde y celeste vivos): habrían pedido cambiar la regla de familia de color.
+- La primera versión del filete (hojas verdes, cintas azules) y la del grafito (solo líneas).
+
+### Qué se probó y qué no
+
+- **Con tests:** las seis mesas en el camino y dibujadas; el candado (la fileteada no se usa antes del nivel 40) y la administración con todas; la placa solo en la mesa de grafito de su dueño y con su apodo, y nunca en la pantalla del rival; la leyenda solo en la fileteada; el contraste de cada mesa de día y de noche y la familia de color de sus adornos (`PaletaTest`).
+- **En un navegador real:** la lámina de las seis mesas con cartas encima; las mesas fileteada y de grafito en 1355 x 638 y en 360 x 740 (sin scroll), y las seis de noche. 906 tests, Pint y las siete pruebas de navegador en verde.
+- **Fuentes de la investigación:** Ciudad de Buenos Aires (fileteado porteño), Universidad de Palermo / SciELO ("El fileteado porteño: motivos decorativos en el margen de la comunicación publicitaria"), Sección Ciudad (borde, talón, banda, filete, bolitas), notas sobre pulperías con reja (Canal 26, La Capital de Mar del Plata), Museo de la Ciudad (calderas y pavas de cobre), mesas de juego Art Déco (Jules Leleu, Léon Jallot) y Ken Lodge en The World of Playing Cards (dorsos de Owen Jones para De La Rue).

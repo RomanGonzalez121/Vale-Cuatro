@@ -166,6 +166,20 @@ class Paleta
             'noche' => ['mesa' => '#162920', 'barras' => '#0b160f', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
         'marmol-negro' => ['mesa' => '#161d1c', 'barras' => '#0c1110', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#9c8754', '#b49a5c', '#8f7a4c', '#d8ccae', '#24302d'],
             'noche' => ['mesa' => '#0f1414', 'barras' => '#070a0a', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        // La tanda 6: cada una con su elemento propio. El fileteado se pinta con las tintas del mazo (que no suman
+        // colores) y sus sombras; el cobre lleva el verde del cardenillo para no parecer dorado de casino.
+        'cuero' => ['mesa' => '#5c3a22', 'barras' => '#382314', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#2e1c10', '#8f6340', '#6d4529', '#d8c29a', '#24140a', '#40271a'],
+            'noche' => ['mesa' => '#402918', 'barras' => '#26180e', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'pulperia' => ['mesa' => '#4a3828', 'barras' => '#2b2018', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#271c13', '#5c4633', '#1b140e', '#1c1a18', '#4f4943', '#634b38'],
+            'noche' => ['mesa' => '#34271c', 'barras' => '#1e1611', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'cobre' => ['mesa' => '#743c24', 'barras' => '#4f2a18', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#b06a43', '#5a2e1b', '#5e8a78', '#a86c45', '#4f2a19', '#874c2f'],
+            'noche' => ['mesa' => '#673921', 'barras' => '#371d11', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'art-deco' => ['mesa' => '#3b2418', 'barras' => '#24160e', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#4b2e1d', '#5a3824', '#a8905a', '#1a120c', '#c9a97a'],
+            'noche' => ['mesa' => '#291911', 'barras' => '#190f0a', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'grafito' => ['mesa' => '#2c2f31', 'barras' => '#1c1e20', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#a8905a', '#6f5d36', '#4a3d22', '#8f7a4b', '#2e2615'],
+            'noche' => ['mesa' => '#1f2122', 'barras' => '#131516', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'fileteado' => ['mesa' => '#15191a', 'barras' => '#0b0d0e', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#8a1f17', '#9a6c1a', '#1a5434', '#1b3d73'],
+            'noche' => ['mesa' => '#0f1212', 'barras' => '#070909', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
     ];
 
     /**

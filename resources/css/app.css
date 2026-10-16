@@ -434,6 +434,290 @@ body:has(.mesa-de-marmol-negro) {
     pointer-events: none;
 }
 
+/*
+ | Las mesas de la tanda 6, las de nivel más alto. Cada una tiene un elemento propio que cuenta dónde se juega:
+ | la marca quemada del cuero, la reja de la pulpería, los remaches del cobre, los abanicos del Art Déco, la placa
+ | de latón del grafito y el filete. Todas oscuras: de noche bajan como las otras oscuras.
+ */
+body:has(.mesa-de-cuero) {
+    --color-pano: #5c3a22;
+    --color-pano-hondo: #382314;
+    --color-sombra: #1e120a;
+}
+
+body:has(.mesa-de-pulperia) {
+    --color-pano: #4a3828;
+    --color-pano-hondo: #2b2018;
+    --color-sombra: #150f0a;
+}
+
+body:has(.mesa-de-cobre) {
+    --color-pano: #743c24;
+    --color-pano-hondo: #4f2a18;
+    --color-sombra: #26140b;
+}
+
+body:has(.mesa-de-art-deco) {
+    --color-pano: #3b2418;
+    --color-pano-hondo: #24160e;
+    --color-sombra: #120b07;
+}
+
+body:has(.mesa-de-grafito) {
+    --color-pano: #2c2f31;
+    --color-pano-hondo: #1c1e20;
+    --color-sombra: #0d0e0f;
+}
+
+body:has(.mesa-de-fileteado) {
+    --color-pano: #15191a;
+    --color-pano-hondo: #0b0d0e;
+    --color-sombra: #000000;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-cuero) {
+    --color-pano: #402918;
+    --color-pano-hondo: #26180e;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-pulperia) {
+    --color-pano: #34271c;
+    --color-pano-hondo: #1e1611;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-cobre) {
+    --color-pano: #673921;
+    --color-pano-hondo: #371d11;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-art-deco) {
+    --color-pano: #291911;
+    --color-pano-hondo: #190f0a;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-grafito) {
+    --color-pano: #1f2122;
+    --color-pano-hondo: #131516;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-fileteado) {
+    --color-pano: #0f1212;
+    --color-pano-hondo: #070909;
+}
+
+:is(.mesa-de-cuero, .mesa-de-pulperia, .mesa-de-cobre, .mesa-de-art-deco, .mesa-de-grafito, .mesa-de-fileteado) .mesa-campo::before,
+:is(.mesa-de-cuero, .mesa-de-pulperia, .mesa-de-cobre, .mesa-de-art-deco, .mesa-de-grafito, .mesa-de-fileteado) .mesa-campo::after {
+    z-index: -1;
+}
+
+:root[data-modo='noche'] :is(.mesa-de-cuero, .mesa-de-pulperia, .mesa-de-cobre, .mesa-de-art-deco, .mesa-de-grafito, .mesa-de-fileteado) .mesa-campo::before,
+:root[data-modo='noche'] :is(.mesa-de-cuero, .mesa-de-pulperia, .mesa-de-cobre, .mesa-de-art-deco, .mesa-de-grafito, .mesa-de-fileteado) .mesa-campo::after {
+    filter: brightness(0.62);
+}
+
+/* El cuero: el canto quemado, el doble pespunte, las flores repujadas y la marca de la estancia, tenue, en el medio. */
+.mesa-de-cuero .mesa-campo::before {
+    inset: 0.35rem;
+    border: 0.32rem solid #40271a;
+    border-radius: 0.7rem;
+    background:
+        url('../mesas/cuero-arriba-izquierda.svg') top 0.2rem left 0.2rem / min(19%, 8.5rem) auto no-repeat,
+        url('../mesas/cuero-arriba-derecha.svg') top 0.2rem right 0.2rem / min(19%, 8.5rem) auto no-repeat,
+        url('../mesas/cuero-abajo-derecha.svg') bottom 0.2rem right 0.2rem / min(19%, 8.5rem) auto no-repeat,
+        url('../mesas/cuero-abajo-izquierda.svg') bottom 0.2rem left 0.2rem / min(19%, 8.5rem) auto no-repeat,
+        url('../mesas/cuero-marca.svg') center / min(24%, 10rem) auto no-repeat,
+        url('../mesas/cuero-pespunte.svg') top 0.3rem left / 0.75rem 0.62rem repeat-x,
+        url('../mesas/cuero-pespunte.svg') bottom 0.3rem left / 0.75rem 0.62rem repeat-x,
+        url('../mesas/cuero-pespunte-v.svg') left 0.3rem top / 0.62rem 0.75rem repeat-y,
+        url('../mesas/cuero-pespunte-v.svg') right 0.3rem top / 0.62rem 0.75rem repeat-y,
+        url('../mesas/cuero-grano.svg') center / 4rem 4rem repeat;
+}
+
+/* La pulpería: tablones de mostrador, el borde gastado de tu lado y, del lado del rival, la reja del pulpero. */
+.mesa-de-pulperia .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #271c13;
+    border-radius: 0.35rem;
+    background:
+        url('../mesas/pulperia-reja.svg') top left / 2.76rem 4.6rem repeat-x,
+        url('../mesas/pulperia-mostrador.svg') bottom left / 3.75rem 1.62rem repeat-x,
+        url('../mesas/pulperia-tablones.svg') center / 22.5rem 7.5rem repeat;
+}
+
+/* El cobre: martillado parejo, chapas remachadas en las esquinas y una costura de remaches con su cardenillo. */
+.mesa-de-cobre .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #4f2a19;
+    border-radius: 0.5rem;
+    background:
+        url('../mesas/cobre-arriba-izquierda.svg') top left / min(12%, 4.8rem) auto no-repeat,
+        url('../mesas/cobre-arriba-derecha.svg') top right / min(12%, 4.8rem) auto no-repeat,
+        url('../mesas/cobre-abajo-derecha.svg') bottom right / min(12%, 4.8rem) auto no-repeat,
+        url('../mesas/cobre-abajo-izquierda.svg') bottom left / min(12%, 4.8rem) auto no-repeat,
+        url('../mesas/cobre-remaches.svg') top 0.5rem left / 2.5rem 0.75rem repeat-x,
+        url('../mesas/cobre-remaches.svg') bottom 0.5rem left / 2.5rem 0.75rem repeat-x,
+        url('../mesas/cobre-remaches-v.svg') left 0.5rem top / 0.75rem 2.5rem repeat-y,
+        url('../mesas/cobre-remaches-v.svg') right 0.5rem top / 0.75rem 2.5rem repeat-y,
+        url('../mesas/cobre-martillado.svg') center / 2.3rem 2rem repeat;
+}
+
+/* El Art Déco: un abanico de marquetería que nace del lugar de cada jugador, esquinas escalonadas y filete de latón. */
+.mesa-de-art-deco .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #a8905a;
+    border-radius: 0.3rem;
+    background:
+        url('../mesas/deco-arriba-izquierda.svg') top 0.3rem left 0.3rem / 2.6rem no-repeat,
+        url('../mesas/deco-arriba-derecha.svg') top 0.3rem right 0.3rem / 2.6rem no-repeat,
+        url('../mesas/deco-abajo-derecha.svg') bottom 0.3rem right 0.3rem / 2.6rem no-repeat,
+        url('../mesas/deco-abajo-izquierda.svg') bottom 0.3rem left 0.3rem / 2.6rem no-repeat,
+        url('../mesas/deco-abanico-arriba.svg') top center / min(50%, 26rem) auto no-repeat,
+        url('../mesas/deco-abanico-abajo.svg') bottom center / min(50%, 26rem) auto no-repeat;
+}
+
+.mesa-de-art-deco .mesa-campo::after {
+    content: '';
+    position: absolute;
+    inset: 0.72rem;
+    border: 1px solid color-mix(in srgb, #c9a97a 45%, transparent);
+    border-radius: 0.2rem;
+    pointer-events: none;
+}
+
+/*
+ | El grafito: liso y mate, con dos filetes de latón incrustados, esquineras de latón atornilladas como las de los
+ | muebles de viaje y un rombo de latón en el medio de cada costado. La placa con tu apodo es <x-mesa.placa>.
+ */
+.mesa-de-grafito .mesa-campo::before {
+    inset: 0.5rem;
+    border: 1.5px solid #a8905a;
+    border-radius: 0.15rem;
+    background:
+        url('../mesas/grafito-arriba-izquierda.svg') top -0.1rem left -0.1rem / 3.9rem no-repeat,
+        url('../mesas/grafito-arriba-derecha.svg') top -0.1rem right -0.1rem / 3.9rem no-repeat,
+        url('../mesas/grafito-abajo-derecha.svg') bottom -0.1rem right -0.1rem / 3.9rem no-repeat,
+        url('../mesas/grafito-abajo-izquierda.svg') bottom -0.1rem left -0.1rem / 3.9rem no-repeat,
+        url('../mesas/grafito-rombo.svg') left 0.45rem center / 1.1rem no-repeat,
+        url('../mesas/grafito-rombo.svg') right 0.45rem center / 1.1rem no-repeat;
+}
+
+.mesa-de-grafito .mesa-campo::after {
+    content: '';
+    position: absolute;
+    inset: 1.05rem;
+    border: 1px solid color-mix(in srgb, #a8905a 80%, transparent);
+    border-radius: 0.1rem;
+    pointer-events: none;
+}
+
+/* La placa de latón grabada: chaflanes en las puntas, dos tornillos y tu apodo. Va en el borde de tu lado. */
+.placa-de-laton {
+    position: absolute;
+    z-index: -1;
+    bottom: 1.6rem;
+    left: 3.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.32rem 0.7rem;
+    clip-path: polygon(0.35rem 0, calc(100% - 0.35rem) 0, 100% 0.35rem, 100% calc(100% - 0.35rem), calc(100% - 0.35rem) 100%, 0.35rem 100%, 0 calc(100% - 0.35rem), 0 0.35rem);
+    background-color: #a8905a;
+    color: #2e2615;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.placa-de-laton::before,
+.placa-de-laton::after {
+    content: '';
+    width: 0.32rem;
+    height: 0.32rem;
+    border: 1px solid #6f5d36;
+    border-radius: 50%;
+    background-color: #8f7a4b;
+}
+
+.placa-de-laton span {
+    font-style: italic;
+    font-weight: 400;
+}
+
+:root[data-modo='noche'] .placa-de-laton {
+    filter: brightness(0.62);
+}
+
+/*
+ | El fileteado: el borde en oro y, por dentro del talón, la banda roja que en cada esquina se enrosca en una
+ | voluta junto a la hoja de acanto, la flor y las bolitas. Las esquinas miden --esquina; la banda recta va entre
+ | ellas, a la misma altura que la de las esquinas (28 de 220 en su dibujo).
+ */
+.mesa-de-fileteado .mesa-campo::before {
+    --esquina: clamp(5.5rem, 21vw, 11rem);
+    inset: 0.35rem;
+    border: 1.5px solid #f0b429;
+    border-radius: 0.4rem;
+    background:
+        url('../mesas/filete-arriba-izquierda.svg') top left / var(--esquina) no-repeat,
+        url('../mesas/filete-arriba-derecha.svg') top right / var(--esquina) no-repeat,
+        url('../mesas/filete-abajo-derecha.svg') bottom right / var(--esquina) no-repeat,
+        url('../mesas/filete-abajo-izquierda.svg') bottom left / var(--esquina) no-repeat,
+        url('../mesas/filete-banda.svg') top calc(var(--esquina) * 0.0955) center / calc(100% - 2 * var(--esquina) + 0.3rem) calc(var(--esquina) * 0.0818) no-repeat,
+        url('../mesas/filete-banda-abajo.svg') bottom calc(var(--esquina) * 0.0955) center / calc(100% - 2 * var(--esquina) + 0.3rem) calc(var(--esquina) * 0.0818) no-repeat,
+        url('../mesas/filete-banda-v.svg') left calc(var(--esquina) * 0.0955) center / calc(var(--esquina) * 0.0818) calc(100% - 2 * var(--esquina) + 0.3rem) no-repeat,
+        url('../mesas/filete-banda-derecha.svg') right calc(var(--esquina) * 0.0955) center / calc(var(--esquina) * 0.0818) calc(100% - 2 * var(--esquina) + 0.3rem) no-repeat;
+}
+
+/* De noche el filete baja menos que las otras: con la luz muy baja sus tintas se embarran. */
+:root[data-modo='noche'] .mesa-de-fileteado .mesa-campo::before {
+    filter: brightness(0.8);
+}
+
+/*
+ | La leyenda del filete: un dicho del truco en la letra de los cantos, en Oro con su sombra proyectada en Copa,
+ | como la pinta un fileteador. Va en el lugar libre de abajo a la izquierda; en el celular, arriba de tu mano.
+ */
+.leyenda-filete {
+    position: absolute;
+    z-index: -1;
+    bottom: 3.5rem;
+    left: 4.2rem;
+    color: #f0b429;
+    font-family: var(--font-canto);
+    font-size: 1.35rem;
+    font-style: italic;
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* La sombra proyectada es el mismo texto en Copa honda, corrido abajo a la derecha, detrás. */
+.leyenda-filete-sombra {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    color: #8a1f17;
+    transform: translate(0.09rem, 0.09rem);
+}
+
+@media (width < 40rem) {
+    .leyenda-filete,
+    .placa-de-laton {
+        top: 51%;
+        bottom: auto;
+        left: 1.9rem;
+    }
+
+    .leyenda-filete {
+        font-size: 1rem;
+    }
+}
+
+:root[data-modo='noche'] .leyenda-filete {
+    filter: brightness(0.8);
+}
+
 /* Sus muestras del perfil: el mismo color y su dibujo principal; de noche, las claras con la luz baja. */
 :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='baldosa'] {
     background: url('../mesas/baldosa-esquina.svg') top 6% left 5% / min(30%, 6rem) auto no-repeat, url('../mesas/baldosa-junta.svg') center / 3rem 3rem repeat, #e4dac8;
@@ -489,6 +773,79 @@ body:has(.mesa-de-marmol-negro) {
 
 :is(.pieza-mesa):is([data-mesa='pana'], [data-mesa='marmol-negro']) {
     border-color: #9c8754;
+}
+
+/* Las muestras de la tanda 6 en el perfil: el color y el elemento propio de cada mesa, en chico. */
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='cuero'] {
+    background: url('../mesas/cuero-arriba-izquierda.svg') top 4% left 4% / min(34%, 5rem) auto no-repeat, url('../mesas/cuero-abajo-derecha.svg') bottom 4% right 4% / min(34%, 5rem) auto no-repeat, url('../mesas/cuero-marca.svg') center / min(40%, 6rem) auto no-repeat, #5c3a22;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pulperia'] {
+    background: url('../mesas/pulperia-reja.svg') top left / 1.65rem 2.75rem repeat-x, url('../mesas/pulperia-tablones.svg') center / 13.5rem 4.5rem repeat, #4a3828;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='cobre'] {
+    background: url('../mesas/cobre-arriba-izquierda.svg') top left / min(26%, 3.2rem) auto no-repeat, url('../mesas/cobre-abajo-derecha.svg') bottom right / min(26%, 3.2rem) auto no-repeat, url('../mesas/cobre-martillado.svg') center / 1.6rem 1.4rem repeat, #743c24;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='art-deco'] {
+    background: url('../mesas/deco-abanico-arriba.svg') top center / 92% auto no-repeat, url('../mesas/deco-abanico-abajo.svg') bottom center / 92% auto no-repeat, #3b2418;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='grafito'] {
+    background: url('../mesas/grafito-arriba-izquierda.svg') top left / min(30%, 2.6rem) auto no-repeat, url('../mesas/grafito-abajo-derecha.svg') bottom right / min(30%, 2.6rem) auto no-repeat, #2c2f31;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='fileteado'] {
+    background: url('../mesas/filete-arriba-izquierda.svg') top left / min(46%, 6rem) auto no-repeat, url('../mesas/filete-abajo-derecha.svg') bottom right / min(46%, 6rem) auto no-repeat, #15191a;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='cuero'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/cuero-arriba-izquierda.svg') top 4% left 4% / min(34%, 5rem) auto no-repeat, url('../mesas/cuero-abajo-derecha.svg') bottom 4% right 4% / min(34%, 5rem) auto no-repeat, url('../mesas/cuero-marca.svg') center / min(40%, 6rem) auto no-repeat, #5c3a22;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='pulperia'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/pulperia-reja.svg') top left / 1.65rem 2.75rem repeat-x, url('../mesas/pulperia-tablones.svg') center / 13.5rem 4.5rem repeat, #4a3828;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='cobre'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/cobre-arriba-izquierda.svg') top left / min(26%, 3.2rem) auto no-repeat, url('../mesas/cobre-abajo-derecha.svg') bottom right / min(26%, 3.2rem) auto no-repeat, url('../mesas/cobre-martillado.svg') center / 1.6rem 1.4rem repeat, #743c24;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='art-deco'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/deco-abanico-arriba.svg') top center / 92% auto no-repeat, url('../mesas/deco-abanico-abajo.svg') bottom center / 92% auto no-repeat, #3b2418;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='grafito'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/grafito-arriba-izquierda.svg') top left / min(30%, 2.6rem) auto no-repeat, url('../mesas/grafito-abajo-derecha.svg') bottom right / min(30%, 2.6rem) auto no-repeat, #2c2f31;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='fileteado'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/filete-arriba-izquierda.svg') top left / min(46%, 6rem) auto no-repeat, url('../mesas/filete-abajo-derecha.svg') bottom right / min(46%, 6rem) auto no-repeat, #15191a;
+}
+
+.pieza-mesa[data-mesa='cuero'] {
+    border-color: #d8c29a;
+}
+
+.pieza-mesa[data-mesa='pulperia'] {
+    border-color: #1c1a18;
+}
+
+.pieza-mesa[data-mesa='cobre'] {
+    border-color: #4f2a19;
+}
+
+.pieza-mesa[data-mesa='art-deco'] {
+    border-color: #a8905a;
+}
+
+.pieza-mesa[data-mesa='grafito'] {
+    border-color: #a8905a;
+}
+
+.pieza-mesa[data-mesa='fileteado'] {
+    border-color: #f0b429;
 }
 
 :root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='baldosa'] {

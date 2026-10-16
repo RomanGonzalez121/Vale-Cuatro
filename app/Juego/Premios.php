@@ -75,6 +75,7 @@ final class Premios
         'grabado' => ['nombre' => 'Grabado', 'nivel' => 39],
         'las-que-mandan' => ['nombre' => 'Las que mandan', 'nivel' => 40],
         'guarda-pampa' => ['nombre' => 'Guarda pampa', 'nivel' => 32],
+        'monograma' => ['nombre' => 'Monograma', 'nivel' => 35],
         'fosforos' => ['nombre' => 'Fósforos', 'escalon' => 3],
         'tinta' => ['nombre' => 'Tinta', 'escalon' => 6],
         'ronda' => ['nombre' => 'Ronda', 'escalon' => 8],
@@ -100,6 +101,12 @@ final class Premios
             'marmol-negro' => ['nombre' => 'Mármol negro', 'nivel' => 26],
             'diario' => ['nombre' => 'Diario de café', 'nivel' => 28],
             'pana' => ['nombre' => 'Pana del club inglés', 'nivel' => 30],
+            'cuero' => ['nombre' => 'Cuero de estancia', 'nivel' => 32],
+            'pulperia' => ['nombre' => 'Pulpería', 'nivel' => 34],
+            'cobre' => ['nombre' => 'Cobre de la pava', 'nivel' => 36],
+            'art-deco' => ['nombre' => 'Art Déco', 'nivel' => 38],
+            'grafito' => ['nombre' => 'Grafito y latón', 'nivel' => 39],
+            'fileteado' => ['nombre' => 'Fileteado porteño', 'nivel' => 40],
         ],
         // Los mazos: cómo se ven las cartas en tu mesa (App\Juego\Mazos dice de qué piezas está hecho cada uno).
         'mazo' => [

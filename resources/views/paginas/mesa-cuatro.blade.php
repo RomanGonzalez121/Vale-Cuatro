@@ -63,6 +63,12 @@
 
         {{-- Tocar la mesa apura lo que se esté mostrando. --}}
         <div class="mesa-campo" @click="apurar()" :inert="fin !== null">
+            @if ($mesaPropia === 'grafito')
+                <x-mesa.placa :apodo="auth()->user()->apodo" />
+            @endif
+            @if ($mesaPropia === 'fileteado')
+                <x-mesa.leyenda />
+            @endif
             {{--
                 Tu compañero, enfrente. A su izquierda, lo que te dice con sus señas, dibujado, y el botón
                 para hacerle las tuyas; a su derecha, el mazo, de donde sale el reparto.
