@@ -28,16 +28,28 @@
         // fue un dorso, la carta del probador arranca dada vuelta: es lo que cambió.
         $muestra = session('muestra');
         $muestraElDorso = $muestra === 'dorso';
-        $pestanaInicial = ['dorso' => 'dorsos', 'mesa' => 'mesas', 'anotar' => 'anotar', 'distintivo' => 'distintivos', 'titulo' => 'titulos'][$muestra] ?? 'cartas';
+        $pestanaInicial = ['dorso' => 'dorsos', 'mesa' => 'mesas', 'mazo' => 'mazos', 'anotar' => 'anotar', 'distintivo' => 'distintivos', 'titulo' => 'titulos'][$muestra] ?? 'cartas';
         $pestanas = ['cartas' => 'Cartas', 'dorsos' => 'Dorsos', 'mesas' => 'Mesas', 'mazos' => 'Mazos', 'anotar' => 'Anotar', 'titulos' => 'Títulos', 'distintivos' => 'Distintivos'];
         $rutas = [
             'carta' => route('perfil.carta'),
             'dorso' => route('perfil.dorso'),
             'mesa' => route('perfil.mesa'),
+            'mazo' => route('perfil.mazo'),
             'anotar' => route('perfil.anotar'),
             'distintivo' => route('perfil.distintivo'),
             'titulo' => route('perfil.titulo'),
         ];
+        // Cada mazo se muestra como una mano de tres: un as o una baja a cada lado y una figura al medio. Cada uno con
+        // su trío, así la fila no se repite y se ve qué cambia: la tinta, los palos y la figura.
+        $manoDelMazo = fn (string $mazo) => [
+            'fabrica' => [['espada', 1], ['oro', 7], ['copa', 12]],
+            'noche' => [['basto', 1], ['copa', 3], ['oro', 11]],
+            'una-tinta' => [['espada', 7], ['oro', 4], ['basto', 10]],
+            'palos-de-fosforo' => [['basto', 7], ['copa', 5], ['espada', 11]],
+            'retratos' => [['oro', 1], ['copa', 6], ['espada', 12]],
+            'fosforo-de-noche' => [['oro', 7], ['basto', 4], ['copa', 10]],
+            'imprenta' => [['copa', 1], ['espada', 5], ['basto', 11]],
+        ][$mazo] ?? [['espada', 1], ['oro', 7], ['copa', 12]];
         $deTipo = fn (string $tipo) => array_values(array_filter($proximamente, fn (array $ficha) => $ficha['tipo'] === $tipo));
 
         // Lo que el probador muestra de entrada: tu carta, o tu dorso si recién lo cambiaste.
@@ -336,11 +348,24 @@
                             </template>
 
                             <template x-if="pestana === 'mazos'">
-                                <ol id="piezas-mazos" role="tabpanel" aria-labelledby="pestana-mazos" class="coleccion-piezas">
-                                    <li>
-                                        <div class="naipe-boton" aria-hidden="true"><x-carta palo="espada" :numero="1" /></div>
-                                        <p class="pieza-rotulo">Mazo de fábrica<span class="block font-semibold">En uso</span></p>
-                                    </li>
+                                <ol id="piezas-mazos" role="tabpanel" aria-labelledby="pestana-mazos" class="coleccion-piezas coleccion-mazos">
+                                    @foreach ($mazos as $opcion)
+                                        <li>
+                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'mazo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                                aria-label="Mazo {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'mazo', 'clave' => $opcion['clave'], 'nombre' => 'Mazo '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
+                                                <span @class(['pieza-mazo', 'pieza-cerrada' => ! $opcion['abierto']]) aria-hidden="true">
+                                                    @foreach ($manoDelMazo($opcion['clave']) as [$palo, $numero])
+                                                        <x-carta :palo="$palo" :numero="$numero" :mazo="$opcion['clave']" />
+                                                    @endforeach
+                                                </span>
+                                            </button>
+                                            <p class="pieza-rotulo">
+                                                {{ $opcion['nombre'] }}
+                                                <span class="block font-semibold" x-text="enUso.mazo === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
+                                            </p>
+                                        </li>
+                                    @endforeach
                                     @foreach ($deTipo('mazo') as $ficha)
                                         <li>
                                             <div class="pieza-proxima" role="img" aria-label="{{ $ficha['nombre'] }}, próximamente, llega en el nivel {{ $ficha['nivel'] }}"></div>
@@ -437,6 +462,17 @@
                                     </span>
                                 </div>
 
+                                {{-- Un mazo se prueba con tres cartas suyas abiertas en la mano: un as, un número y una figura. --}}
+                                <div class="probador-mazo" x-show="prueba.tipo === 'mazo'" x-cloak>
+                                    @foreach ($mazos as $opcion)
+                                        <div class="probador-abanico" x-show="prueba.clave === '{{ $opcion['clave'] }}'">
+                                            @foreach ($manoDelMazo($opcion['clave']) as [$palo, $numero])
+                                                <x-carta :palo="$palo" :numero="$numero" :mazo="$opcion['clave']" />
+                                            @endforeach
+                                        </div>
+                                    @endforeach
+                                </div>
+
                                 {{-- Una forma de anotar se prueba en un tanteador de verdad, con un tanteo a la mitad. --}}
                                 <div class="probador-tanteo" x-show="prueba.tipo === 'anotar'" x-cloak>
                                     @foreach ($formas as $opcion)
@@ -469,7 +505,7 @@
                                 </div>
 
                                 <form method="POST" :action="rutas[prueba.tipo]" class="mt-4"
-                                    x-show="prueba.tipo !== 'mazo' && prueba.abierta && ! esLaQueUsa" x-cloak @submit.prevent="usar()">
+                                    x-show="prueba.abierta && ! esLaQueUsa" x-cloak @submit.prevent="usar()">
                                     @csrf
                                     @method('PUT')
                                     <input type="hidden" :name="prueba.tipo" :value="prueba.clave">

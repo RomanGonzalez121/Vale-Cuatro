@@ -2,6 +2,8 @@
 
 namespace App\View\Components;
 
+use App\Juego\Mazos;
+use App\View\MazoEnUso;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 use InvalidArgumentException;
@@ -31,6 +33,29 @@ class Carta extends Component
     ];
 
     /**
+     * Lo mismo para las figuras de medio cuerpo (el mazo Retratos): adentro del marco en arco, arriba de la mano.
+     */
+    private const PALO_EN_MANO_MEDIO = [
+        'sota' => [64, 42, 17, 25.5],
+        'caballo' => [66, 50, 15, 22.5],
+        'rey' => [64, 45, 17, 25.5],
+    ];
+
+    /**
+     * Y para las de cuerpo entero (los mazos de fósforo): de pie, con el palo en alto.
+     */
+    private const PALO_EN_MANO_ENTERO = [
+        'sota' => [60.9, 45.8, 19.5, 29.3],
+        'caballo' => [54.9, 49.3, 16.8, 25.2],
+        'rey' => [62.6, 52.7, 18.4, 27.6],
+    ];
+
+    /**
+     * El marco en arco de los mazos que lo llevan: la misma ventana que enmarca a sus figuras.
+     */
+    public const ARCO = 'M16 128V58A34 34 0 0 1 84 58V128Z';
+
+    /**
      * La pinta: los cortes en el marco que identifican al palo en la baraja
      * española. Oro sin cortes, copa uno, espada dos, basto tres.
      */
@@ -54,8 +79,28 @@ class Carta extends Component
         7 => ['ancho' => 21, 'centros' => [[33, 40], [67, 40], [50, 59], [33, 78], [67, 78], [33, 116], [67, 116]]],
     ];
 
-    public function __construct(public string $palo, public int $numero)
+    /**
+     * La misma disposición acomodada adentro del arco: un poco más chica y más abajo, para no tocar la curva.
+     */
+    private const DISPOSICION_EN_ARCO = [
+        1 => ['ancho' => 44, 'centros' => [[50, 80]]],
+        2 => ['ancho' => 26, 'centros' => [[50, 53], [50, 104]]],
+        3 => ['ancho' => 21, 'centros' => [[50, 44], [50, 77], [50, 110]]],
+        4 => ['ancho' => 24, 'centros' => [[35, 60], [65, 60], [35, 106], [65, 106]]],
+        5 => ['ancho' => 22, 'centros' => [[34, 56], [66, 56], [50, 82], [34, 108], [66, 108]]],
+        6 => ['ancho' => 20, 'centros' => [[36, 50], [64, 50], [36, 81], [64, 81], [36, 112], [64, 112]]],
+        7 => ['ancho' => 19, 'centros' => [[36, 50], [64, 50], [50, 65.5], [36, 81], [64, 81], [36, 112], [64, 112]]],
+    ];
+
+    /**
+     * El mazo con que se dibuja: el que se pida, o el de la página (el de quien mira en la mesa de juego, el de
+     * fábrica en todas las demás).
+     */
+    public string $mazo;
+
+    public function __construct(public string $palo, public int $numero, ?string $mazo = null)
     {
+
         if (! in_array($palo, self::PALOS, true)) {
             throw new InvalidArgumentException("El palo [{$palo}] no existe en la baraja española.");
         }
@@ -63,6 +108,9 @@ class Carta extends Component
         if (! in_array($numero, self::NUMEROS, true)) {
             throw new InvalidArgumentException("El número [{$numero}] no existe en un mazo de 40 cartas.");
         }
+
+        $this->mazo = $mazo ?? MazoEnUso::actual();
+        MazoEnUso::anotar($this->mazo);
     }
 
     /**
@@ -93,6 +141,37 @@ class Carta extends Component
         return "{$this->numero} de {$this->palo}";
     }
 
+    /**
+     * El símbolo del palo y el de la figura en el sprite, según el juego de piezas del mazo.
+     */
+    public function simboloDelPalo(): string
+    {
+        return Mazos::simbolo("palo-{$this->palo}", Mazos::de($this->mazo)['palos']);
+    }
+
+    public function simboloDeLaFigura(): string
+    {
+        return Mazos::simbolo('figura-'.$this->figura(), Mazos::de($this->mazo)['figuras']);
+    }
+
+    /**
+     * La tinta del mazo: la de fábrica no lleva nada; las otras cambian los colores de la carta (app.css).
+     */
+    public function tinta(): ?string
+    {
+        $tinta = Mazos::de($this->mazo)['tinta'];
+
+        return $tinta === 'fabrica' ? null : "mazo-tinta-{$tinta}";
+    }
+
+    /**
+     * Si la carta de número dibuja el arco (las figuras traen el suyo, que además las recorta).
+     */
+    public function arco(): bool
+    {
+        return $this->figura() === null && Mazos::de($this->mazo)['marco'] === 'arco';
+    }
+
     public function figura(): ?string
     {
         return self::FIGURAS[$this->numero] ?? null;
@@ -106,15 +185,22 @@ class Carta extends Component
     public function pintas(): array
     {
         if ($this->figura() !== null) {
-            return [self::PALO_EN_MANO[$this->figura()]];
+            $enMano = match (Mazos::de($this->mazo)['figuras']) {
+                'medio' => self::PALO_EN_MANO_MEDIO,
+                'entero' => self::PALO_EN_MANO_ENTERO,
+                default => self::PALO_EN_MANO,
+            };
+
+            return [$enMano[$this->figura()]];
         }
 
-        $ancho = self::DISPOSICION[$this->numero]['ancho'];
+        $disposicion = (Mazos::de($this->mazo)['marco'] === 'arco' ? self::DISPOSICION_EN_ARCO : self::DISPOSICION)[$this->numero];
+        $ancho = $disposicion['ancho'];
         $alto = $ancho * 1.5;
 
         return array_map(
             fn (array $centro) => [$centro[0] - $ancho / 2, $centro[1] - $alto / 2, $ancho, $alto],
-            self::DISPOSICION[$this->numero]['centros'],
+            $disposicion['centros'],
         );
     }
 

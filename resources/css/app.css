@@ -4158,6 +4158,59 @@ html:has(body.superficie-pano) {
         width: 5.25rem;
     }
 
+    /*
+     * Un mazo es una mano de tres cartas abiertas en abanico, como se tienen en la mesa: las dos de los costados
+     * giran desde un punto debajo de la mano y la figura queda al medio, arriba de las otras. Lo usan la pieza de la
+     * Colección y el probador, que es la misma mano más grande.
+     */
+    .coleccion-piezas.coleccion-mazos {
+        grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    }
+
+    .coleccion-mazos .pieza-proxima {
+        aspect-ratio: 1;
+    }
+
+    /* Un mazo cerrado se vela entero, de una vez: si cada carta fuera transparente, se verían unas a través de otras. */
+    .pieza-mazo.pieza-cerrada {
+        opacity: 0.5;
+    }
+
+    .pieza-mazo.pieza-cerrada::after {
+        content: none;
+    }
+
+    .pieza-mazo,
+    .probador-abanico {
+        position: relative;
+        display: block;
+        aspect-ratio: 1;
+    }
+
+    .probador-abanico {
+        width: 10rem;
+    }
+
+    :is(.pieza-mazo, .probador-abanico) > .carta {
+        position: absolute;
+        bottom: 4%;
+        left: 30%;
+        width: 40%;
+        transform-origin: 50% 160%;
+    }
+
+    :is(.pieza-mazo, .probador-abanico) > .carta:nth-child(1) {
+        transform: rotate(-21deg);
+    }
+
+    :is(.pieza-mazo, .probador-abanico) > .carta:nth-child(2) {
+        transform: rotate(21deg);
+    }
+
+    :is(.pieza-mazo, .probador-abanico) > .carta:nth-child(3) {
+        transform: translateY(-5%);
+    }
+
     /* El camino cerca del nivel: en el celular un renglón por nivel; en escritorio, ocho columnas. */
     .camino-cerca {
         margin-top: 1.9rem;
@@ -5315,4 +5368,28 @@ html:has(body.superficie-pano) {
         transition: none;
     }
 
+}
+
+/*
+ | Las tintas de los mazos (tanda 5): la carta cambia de colores y nada más. Van fuera de las capas y al final, con
+ | la clase repetida, para ganarles a las mesas claras, que devuelven sus colores de fábrica a las cartas.
+ | - De noche: la carta en negro, con el texto y las líneas en Naipe y los palos en sus tonos de noche.
+ | - A una tinta: todo en Tinta sobre el papel; los palos y las figuras quedan dibujados solo con su línea.
+ */
+.carta.carta.mazo-tinta-noche {
+    --color-naipe: #161a18;
+    --color-tinta: #fbfaf5;
+    --color-oro: #f0b429;
+    --color-copa: #f0685c;
+    --color-espada: #6fa0e8;
+    --color-basto: #57b983;
+}
+
+.carta.carta.mazo-tinta-una {
+    --color-naipe: #fbfaf5;
+    --color-tinta: #161a18;
+    --color-oro: #fbfaf5;
+    --color-copa: #fbfaf5;
+    --color-espada: #fbfaf5;
+    --color-basto: #fbfaf5;
 }

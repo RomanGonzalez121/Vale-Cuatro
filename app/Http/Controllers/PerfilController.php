@@ -50,6 +50,7 @@ class PerfilController extends Controller
             'camino' => $this->premios->camino($jugador),
             'dorsos' => $this->premios->dorsos($jugador),
             'mesas' => $this->premios->piezas('mesa', $jugador),
+            'mazos' => $this->premios->piezas('mazo', $jugador),
             'formas' => $this->premios->piezas('anotar', $jugador),
             'distintivos' => $this->premios->piezas('distintivo', $jugador),
             'titulos' => $this->premios->titulos($jugador),
@@ -58,6 +59,7 @@ class PerfilController extends Controller
                 'carta' => $this->premios->cartaDe($jugador),
                 'dorso' => $this->premios->dorsoDe($jugador),
                 'mesa' => $this->premios->elegidaDe('mesa', $jugador),
+                'mazo' => $this->premios->elegidaDe('mazo', $jugador),
                 'anotar' => $this->premios->elegidaDe('anotar', $jugador),
                 'distintivo' => $this->premios->elegidaDe('distintivo', $jugador) ?? 'ninguno',
                 'titulo' => $this->premios->tituloElegido($jugador),
@@ -210,6 +212,11 @@ class PerfilController extends Controller
         return $this->elegirPieza($request, 'mesa');
     }
 
+    public function elegirMazo(Request $request): RedirectResponse|JsonResponse
+    {
+        return $this->elegirPieza($request, 'mazo');
+    }
+
     public function elegirAnotar(Request $request): RedirectResponse|JsonResponse
     {
         return $this->elegirPieza($request, 'anotar');
@@ -235,6 +242,7 @@ class PerfilController extends Controller
         if (! $ninguno && ! $this->premios->tiene($tipo, $jugador, $clave)) {
             throw ValidationException::withMessages([$tipo => match ($tipo) {
                 'mesa' => 'Esa mesa todavía no la ganaste.',
+                'mazo' => 'Ese mazo todavía no lo ganaste.',
                 'anotar' => 'Esa forma de anotar todavía no la ganaste.',
                 default => 'Ese distintivo todavía no lo ganaste.',
             }]);
@@ -244,6 +252,7 @@ class PerfilController extends Controller
 
         $mensaje = match ($tipo) {
             'mesa' => 'Mesa elegida.',
+            'mazo' => 'Mazo elegido.',
             'anotar' => 'Forma de anotar elegida.',
             default => $ninguno ? 'Sin distintivo.' : 'Distintivo elegido.',
         };

@@ -101,6 +101,16 @@ final class Premios
             'diario' => ['nombre' => 'Diario de café', 'nivel' => 28],
             'pana' => ['nombre' => 'Pana del club inglés', 'nivel' => 30],
         ],
+        // Los mazos: cómo se ven las cartas en tu mesa (App\Juego\Mazos dice de qué piezas está hecho cada uno).
+        'mazo' => [
+            'fabrica' => ['nombre' => 'De fábrica', 'nivel' => 1],
+            'noche' => ['nombre' => 'De noche', 'nivel' => 9],
+            'una-tinta' => ['nombre' => 'A una tinta', 'nivel' => 15],
+            'palos-de-fosforo' => ['nombre' => 'Palos de fósforo', 'nivel' => 19],
+            'retratos' => ['nombre' => 'Retratos', 'nivel' => 22],
+            'fosforo-de-noche' => ['nombre' => 'Fósforo de noche', 'nivel' => 26],
+            'imprenta' => ['nombre' => 'Imprenta', 'nivel' => 29],
+        ],
         'anotar' => [
             'fabrica' => ['nombre' => 'Fósforos', 'nivel' => 1],
             'palotes' => ['nombre' => 'Palotes con lápiz', 'nivel' => 7],

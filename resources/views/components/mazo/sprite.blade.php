@@ -407,4 +407,145 @@
         <rect x="8" y="8" width="84" height="140" rx="3" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
     </symbol>
     @endif
+
+
+
+    {{-- Tanda 5, los palos de trazo de fósforo: la línea con cabeza de los íconos, en el color de cada palo. --}}
+    @if (App\View\MazoEnUso::hace('palos', 'fosforo'))
+    <symbol id="palo-oro-fosforo" viewBox="0 0 20 30">
+        <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M7 7.5H13L17.5 12V18L13 22.5H7L2.5 18V12Z" stroke="var(--color-tinta)" stroke-width="3.8" />
+            <path d="M7 7.5H13L17.5 12V18L13 22.5H7L2.5 18V12Z" stroke="var(--color-oro)" stroke-width="2" />
+            <circle cx="10" cy="15" r="2.6" fill="var(--color-oro)" stroke="var(--color-tinta)" stroke-width="1.1" />
+        </g>
+    </symbol>
+    <symbol id="palo-copa-fosforo" viewBox="0 0 20 30">
+        <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M3.5 4H16.5M5 4 7.8 13H12.2L15 4M10 13V19M5.5 26.5H14.5" stroke="var(--color-tinta)" stroke-width="3.8" />
+            <path d="M3.5 4H16.5M5 4 7.8 13H12.2L15 4M10 13V19M5.5 26.5H14.5" stroke="var(--color-copa)" stroke-width="2" />
+            <circle cx="10" cy="22.6" r="2.4" fill="var(--color-copa)" stroke="var(--color-tinta)" stroke-width="1.1" />
+        </g>
+    </symbol>
+    <symbol id="palo-espada-fosforo" viewBox="0 0 20 30">
+        <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M10 2.5V19.5M4.5 19.5H15.5M10 19.5V23.5" stroke="var(--color-tinta)" stroke-width="3.8" />
+            <path d="M10 2.5V19.5M4.5 19.5H15.5M10 19.5V23.5" stroke="var(--color-espada)" stroke-width="2" />
+            <circle cx="10" cy="26.6" r="2.5" fill="var(--color-espada)" stroke="var(--color-tinta)" stroke-width="1.1" />
+        </g>
+    </symbol>
+    <symbol id="palo-basto-fosforo" viewBox="0 0 20 30">
+        <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M6.5 27.5 13.5 6M8.8 17.5 13 20.5" stroke="var(--color-tinta)" stroke-width="3.8" />
+            <path d="M6.5 27.5 13.5 6M8.8 17.5 13 20.5" stroke="var(--color-basto)" stroke-width="2" />
+            <circle cx="14.6" cy="3.6" r="2.9" fill="var(--color-basto)" stroke="var(--color-tinta)" stroke-width="1.1" />
+        </g>
+    </symbol>
+    @endif
+
+
+
+
+    {{-- Tanda 5, las figuras de medio cuerpo (Retratos): cada una en su marco en arco; el gorro, el caballo o la corona las distinguen. --}}
+    @if (App\View\MazoEnUso::hace('figuras', 'medio'))
+    <symbol id="figura-sota-medio" viewBox="0 0 100 156">
+        <clipPath id="retrato-sota"><path d="M16 128V58A34 34 0 0 1 84 58V128Z" /></clipPath>
+        <g clip-path="url(#retrato-sota)"><g transform="translate(44 128) scale(1.16) translate(-44 -128)" stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M18 128 24 104Q44 94 64 104L70 128Z" fill="currentColor" />
+            <path d="M44 106V128" fill="none" />
+            <path d="M39 89H49V100H39Z" fill="var(--color-naipe)" />
+            <path d="M32 100Q44 110 56 100 50 96 44 100 38 96 32 100Z" fill="var(--color-naipe)" />
+            <path d="M60 106 70 86 76 89 67 110Z" fill="currentColor" />
+            <circle cx="73" cy="84" r="3.5" fill="var(--color-naipe)" />
+            <circle cx="44" cy="78" r="13" fill="var(--color-naipe)" />
+            <path d="M29 75Q30 58 44 57Q58 58 60 72Q46 66 29 75Z" fill="currentColor" />
+            <circle cx="44" cy="55.5" r="3.2" fill="currentColor" />
+        </g></g>
+        <g transform="translate(44 128) scale(1.16) translate(-44 -128)" fill="var(--color-tinta)"><circle cx="39.5" cy="80" r="1.5" /><circle cx="48.5" cy="80" r="1.5" /></g>
+        <path d="M16 128V58A34 34 0 0 1 84 58V128Z" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
+    </symbol>
+    <symbol id="figura-caballo-medio" viewBox="0 0 100 156">
+        <clipPath id="retrato-caballo"><path d="M16 128V58A34 34 0 0 1 84 58V128Z" /></clipPath>
+        <g clip-path="url(#retrato-caballo)"><g transform="translate(48 128) scale(1.1) translate(-48 -128)" stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M18 128 22 108Q24 100 30 98L20 96Q15 94 17 88L30 72 33 62 39 70Q48 76 48 92L46 128Z" fill="var(--color-naipe)" />
+            <path d="M39 70Q48 76 48 92L46 128H42L44 94Q44 80 37 74Z" fill="currentColor" />
+            <path d="M18 92 32 86" fill="none" />
+            <path d="M48 128 52 108Q62 102 72 108L76 128Z" fill="currentColor" />
+            <path d="M70 110 76 92 81 94 76 112Z" fill="currentColor" />
+            <circle cx="79" cy="89" r="3.2" fill="var(--color-naipe)" />
+            <circle cx="62" cy="93" r="10" fill="var(--color-naipe)" />
+            <path d="M51 91Q52 78 62 77Q72 78 73 89Q62 85 51 91Z" fill="currentColor" />
+        </g></g>
+        <g transform="translate(48 128) scale(1.1) translate(-48 -128)" fill="var(--color-tinta)"><circle cx="29" cy="80" r="1.6" /><circle cx="58.5" cy="94" r="1.3" /><circle cx="65.5" cy="94" r="1.3" /></g>
+        <path d="M16 128V58A34 34 0 0 1 84 58V128Z" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
+    </symbol>
+    <symbol id="figura-rey-medio" viewBox="0 0 100 156">
+        <clipPath id="retrato-rey"><path d="M16 128V58A34 34 0 0 1 84 58V128Z" /></clipPath>
+        <g clip-path="url(#retrato-rey)"><g transform="translate(44 128) scale(1.16) translate(-44 -128)" stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M16 128 22 104Q44 92 66 104L72 128Z" fill="currentColor" />
+            <path d="M44 108V128" fill="none" />
+            <path d="M62 106 72 88 78 91 69 110Z" fill="currentColor" />
+            <circle cx="75" cy="85" r="3.5" fill="var(--color-naipe)" />
+            <path d="M26 102Q44 114 62 102 56 96 44 101 32 96 26 102Z" fill="var(--color-naipe)" />
+            <circle cx="44" cy="80" r="13" fill="var(--color-naipe)" />
+            <path d="M35 87Q36 99 44 101 52 99 53 87 44 92 35 87Z" fill="var(--color-tinta)" />
+            <path d="M30 70V52L36 60 44 48 52 60 58 52V70Z" fill="currentColor" />
+        </g></g>
+        <g transform="translate(44 128) scale(1.16) translate(-44 -128)" fill="var(--color-tinta)"><circle cx="39.5" cy="79" r="1.5" /><circle cx="48.5" cy="79" r="1.5" /></g>
+        <path d="M16 128V58A34 34 0 0 1 84 58V128Z" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
+    </symbol>
+    @endif
+
+
+
+
+    {{-- Tanda 5, las figuras de cuerpo entero (los mazos de fósforo): de pie, sueltas como las de fábrica; el gorro, el caballo o la corona las distinguen. --}}
+    @if (App\View\MazoEnUso::hace('figuras', 'entero'))
+    <symbol id="figura-sota-entero" viewBox="0 0 100 156">
+        <g transform="translate(50 147) scale(1.15) translate(-50 -128)" stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M33 102H39V122H33ZM45 102H51V122H45Z" fill="var(--color-naipe)" />
+            <path d="M30 122H40V128H30ZM44 122H54V128H44Z" fill="var(--color-tinta)" />
+            <path d="M31 60Q42 54 53 60L57 102H27Z" fill="currentColor" />
+            <path d="M28.5 82H55.5" fill="none" />
+            <path d="M33 61Q42 68 51 61 46 58 42 61 38 58 33 61Z" fill="var(--color-naipe)" />
+            <path d="M52 62 65 66 64 73 52 70Z" fill="currentColor" />
+            <circle cx="67.5" cy="69.5" r="3.4" fill="var(--color-naipe)" />
+            <circle cx="42" cy="48" r="9.5" fill="var(--color-naipe)" />
+            <path d="M32 46Q33 32 42 32Q52 33 52 44Q42 40 32 46Z" fill="currentColor" />
+            <circle cx="42" cy="30.5" r="2.8" fill="currentColor" />
+        </g>
+        <g transform="translate(50 147) scale(1.15) translate(-50 -128)" fill="var(--color-tinta)"><circle cx="38.5" cy="49.5" r="1.3" /><circle cx="45.5" cy="49.5" r="1.3" /></g>
+    </symbol>
+    <symbol id="figura-caballo-entero" viewBox="0 0 100 156">
+        <g transform="translate(46 147) scale(1.05) translate(-50 -128)" stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M63 92Q72 97 68 112 65 102 63 100Z" fill="var(--color-naipe)" />
+            <path d="M26 106H32V124H26ZM34 106H40V124H34ZM48 106H54V124H48ZM56 106H62V124H56Z" fill="var(--color-naipe)" />
+            <path d="M26 124H32V128H26ZM34 124H40V128H34ZM48 124H54V128H48ZM56 124H62V128H56Z" fill="var(--color-tinta)" />
+            <path d="M24 96Q24 86 34 86H54Q64 86 64 96V107H24Z" fill="var(--color-naipe)" />
+            <path d="M39 90 36 74Q34 64 26 64 23 64 19 71L17 75Q16 79 20 80L28 80 29 92Z" fill="var(--color-naipe)" />
+            <path d="M31 65 33 58 37 67" fill="var(--color-naipe)" />
+            <path d="M45 82H58L59 101H53V90H45Z" fill="currentColor" />
+            <path d="M52 101H60V104H52Z" fill="var(--color-tinta)" />
+            <path d="M44 87 46 66Q51 62 56 66L58 87Z" fill="currentColor" />
+            <path d="M55 67 64 60 67 64 57 73Z" fill="currentColor" />
+            <circle cx="66.5" cy="61.5" r="3.2" fill="var(--color-naipe)" />
+            <circle cx="51" cy="55" r="8" fill="var(--color-naipe)" />
+            <path d="M42.5 53.5Q43.5 42 51 42Q59 43 59 52Q51 49 42.5 53.5Z" fill="currentColor" />
+            <circle cx="51" cy="40.5" r="2.4" fill="currentColor" />
+        </g>
+        <g transform="translate(46 147) scale(1.05) translate(-50 -128)" fill="var(--color-tinta)"><circle cx="48.5" cy="56" r="1.2" /><circle cx="53.5" cy="56" r="1.2" /><circle cx="25" cy="70" r="1.3" /></g>
+    </symbol>
+    <symbol id="figura-rey-entero" viewBox="0 0 100 156">
+        <g transform="translate(50 147) scale(1.15) translate(-50 -128)" stroke="var(--color-tinta)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M28 66Q42 58 56 66L64 128H20Z" fill="currentColor" />
+            <path d="M42 76V128M21 120H63" fill="none" />
+            <path d="M54 68 67 70 66 77 55 76Z" fill="currentColor" />
+            <circle cx="69" cy="73.5" r="3.4" fill="var(--color-naipe)" />
+            <path d="M29 68Q42 78 55 68 49 63 42 67 35 63 29 68Z" fill="var(--color-naipe)" />
+            <circle cx="42" cy="52" r="10" fill="var(--color-naipe)" />
+            <path d="M33.5 56Q34.5 67 42 69 49.5 67 50.5 56 42 60 33.5 56Z" fill="var(--color-tinta)" />
+            <path d="M31.5 45V31L36.5 38 42 28 47.5 38 52.5 31V45Z" fill="currentColor" />
+        </g>
+        <g transform="translate(50 147) scale(1.15) translate(-50 -128)" fill="var(--color-tinta)"><circle cx="38.5" cy="51" r="1.3" /><circle cx="45.5" cy="51" r="1.3" /></g>
+    </symbol>
+    @endif
 </svg>

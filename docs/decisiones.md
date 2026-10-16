@@ -1759,3 +1759,33 @@ La primera versión llamó `sellar()` a la función que hace caer los sellos, y 
 - **Con tests:** que cada logro esté bien escrito (su cuenta existe y alguien la suma, su ícono existe, los escalones suben) y que cada título pida lo mismo que su escalón; que un escalón dé un solo sello y un solo fósforo; que al cerrar la partida se ganen los sellos y el final los muestre; que recalcular saque los que ya no alcanzan; que la libreta no diga qué pide un secreto y marque lo nuevo; cada cuenta nueva con su mano armada; y el contraste de los sellos de día y de noche.
 - **En un navegador real:** el final de la partida con dos sellos en 1355 x 638 y 360 x 740, la libreta en el perfil de día y de noche, en el celular, y la caída de los sellos nuevos.
 - **No se probó:** los logros más raros ganados en partidas jugadas a mano (sus cuentas salen de las mismas manos que en los tests), y cómo suena el golpe: lo juzga Román.
+
+
+## Tanda 5: los mazos (primera parte)
+
+### Qué problema había
+
+Los mazos del camino de niveles (niveles 9, 15, 19, 22, 26 y 29) figuraban como "Próximamente". La sección 5 pide que cada mazo tenga sus figuras distinguibles a 60 px sin leer el número, que los palos no dependan solo del color y que el contraste esté medido; la regla de rendimiento pide que cada página traiga solo las piezas del mazo que dibuja.
+
+### Qué se eligió
+
+- **Un mazo es una combinación de piezas, no cuarenta dibujos** (`App\Juego\Mazos`). La carta ya se armaba con piezas (`App\View\Components\Carta`), así que cada mazo elige cuatro: la tinta (fábrica, de noche o a una tinta), los palos (fábrica o trazo de fósforo), las figuras (fábrica, medio cuerpo o cuerpo entero) y el marco (fábrica o arco). Las tintas son solo variables de color sobre la carta (`.mazo-tinta-noche` y `.mazo-tinta-una` en `app.css`, medidas en `Paleta::MAZOS`).
+- **Los seis mazos, aprobados por Román en una lámina:** De noche (9), A una tinta (15), Palos de fósforo (19), Retratos (22), Fósforo de noche (26) e Imprenta (29).
+- **Las figuras de medio cuerpo ("Retratos").** La primera idea, figuras tipográficas con S, C y R grandes, la descartó Román ("no se entiende"). Pidió un dibujo nuevo y buscar referencias para que las cartas se distingan y queden lindas: se miraron el pedido de rediseño de baraja española de Workana, las New Spanish Playing Cards de David Genco y los patrones de la World of Playing Cards y Wikipedia (castellano, catalán, Cádiz). De ahí salió lo que se aplicó: cada figura se reconoce por un atributo (el gorro con pompón de la sota, el caballo como la pieza de ajedrez, la corona y la barba del rey), sin bocas ni caricatura, dentro de un **marco en arco**, una ventana que nunca pisa los números de las esquinas.
+- **El arco también en las cartas de número de Retratos e Imprenta** (pedido de Román al ver las figuras): los palos se acomodan adentro con su propia disposición (`DISPOSICION_EN_ARCO`), un poco más chicos y más abajo; un test comprueba que todos quedan dentro del arco.
+- **Las figuras de cuerpo entero para los dos mazos de fósforo** (pedido de Román: "usá eso que descubriste para mejorar estos tres"). Son las mismas ideas sin el arco: de pie, sueltas y del tamaño de las de fábrica. La primera versión las metía en el arco y Román aclaró que el arco era solo para Retratos. El caballo es más corto de lomo para no pisar el 11 de abajo, y el jinete tiene una sola pierna sobre el lomo (en la primera versión la manta de la montura se leía como una tercera pierna).
+- **Cada uno ve su mazo en su mesa**, también en las cartas del rival (`MazoEnUso::usar(Premios::propia('mazo'))` arriba de las dos mesas). El rival no recibe el mazo; las demás páginas siguen con el de fábrica.
+- **Cada página trae solo las piezas que dibuja** (`App\View\MazoEnUso`, como `DorsosEnUso`): cada carta anota su juego de palos y de figuras y el sprite, que se dibuja después del contenido, solo trae esos símbolos.
+- **En la Colección, cada mazo es una mano abierta de tres cartas** (un as o una baja a cada lado y una figura al medio), y cada mazo con su propio trío. Román rechazó la primera versión, el 12 de copas en todos ("pensá mejor cómo ponerlo"). El probador muestra la misma mano en grande. Un mazo cerrado se vela entero con una sola opacidad, porque con cada carta transparente se veían unas a través de otras.
+
+### Qué se descartó
+
+- Las figuras tipográficas (S, C, R).
+- El arco en los mazos de fósforo.
+- El mismo 12 de copas para mostrar cada mazo en la Colección.
+
+### Qué se probó y qué no
+
+- **Con tests (`MazosTest`, `PaletaTest`):** cada mazo armado con piezas que existen y sin repetir otro; el candado (no se usa sin ganarlo, tampoco mandando el pedido a mano); bajar de nivel vuelve al de fábrica; la administración los tiene todos; elegir sin recargar; la mesa con el mazo propio y las demás páginas con el de fábrica, sin piezas de más; el rival no recibe el mazo; cada carta con los símbolos de su mazo; los palos dentro del arco; y el contraste de las dos tintas.
+- **En un navegador real:** la lámina de los siete mazos (también a 60 px), la Colección y el probador en 1355 x 638 y 360 x 740, y la mesa con Fósforo de noche y con Retratos, sin scroll.
+- **No se probó:** las pruebas de navegador (Dusk) de esta subida; Román pidió subirlo directo.

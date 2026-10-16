@@ -110,6 +110,28 @@ class PaletaTest extends TestCase
         }
     }
 
+    public function test_las_tintas_de_los_mazos_se_leen_y_son_las_del_sitio(): void
+    {
+        $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/app.css');
+        $delSitio = array_map('strtolower', array_merge(array_column(Paleta::COLORES, 'hex'), array_column(Paleta::DE_NOCHE, 'hex')));
+
+        foreach (Paleta::MAZOS as $tinta => $colores) {
+            // El número de las esquinas es texto; los palos se leen como dibujo, o van huecos con el contorno en Tinta.
+            $this->assertGreaterThanOrEqual(Paleta::TEXTO_NORMAL, Paleta::contrasteEntre($colores['tinta'], $colores['naipe']), "Número del mazo {$tinta}");
+
+            foreach ($colores['palos'] as $palo => $color) {
+                if ($color !== $colores['naipe']) {
+                    $this->assertGreaterThanOrEqual(Paleta::TEXTO_GRANDE, Paleta::contrasteEntre($color, $colores['naipe']), "{$palo} del mazo {$tinta}");
+                }
+
+                $this->assertContains($color, $delSitio, "{$palo} del mazo {$tinta} no suma colores");
+            }
+
+            // Y lo que dice la hoja de estilos es lo mismo que se midió.
+            $this->assertMatchesRegularExpression('/\.mazo-tinta-'.$tinta.' \{[^}]*--color-naipe: '.$colores['naipe'].';[^}]*--color-tinta: '.$colores['tinta'].';/', $css);
+        }
+    }
+
     public function test_los_colores_de_palo_sin_aclarar_no_alcanzan_como_texto_sobre_tinta(): void
     {
         // Por esto existen los tonos de noche: sin aclararlos, no se leen.

@@ -29,6 +29,8 @@
     $mesaPropia = \App\Juego\Premios::propia('mesa');
     // Y cómo anota: los dos tanteadores de su pantalla salen con su forma.
     $anotarPropio = \App\Juego\Premios::propia('anotar');
+    // Y con su mazo: toda carta de la página, también las del rival, sale de sus piezas (App\View\MazoEnUso).
+    \App\View\MazoEnUso::usar(\App\Juego\Premios::propia('mazo'));
 @endphp
 
 <x-layouts.base titulo="Mesa de a cuatro" superficie="pano" :encabezado="false" :pie="false">

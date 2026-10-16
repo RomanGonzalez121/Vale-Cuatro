@@ -122,6 +122,18 @@ class Paleta
     }
 
     /**
+     * Las tintas de los mazos que se ganan (App\Juego\Mazos y resources/css/app.css, "mazo-tinta-*"). No suman
+     * colores: la de noche es la carta en Tinta con los tonos de noche del sitio, y la de una tinta, todo en Tinta
+     * sobre Naipe. El número de las esquinas es texto; los palos y las figuras, dibujo.
+     *
+     * @var array<string, array{naipe: string, tinta: string, palos: array<string, string>}>
+     */
+    public const MAZOS = [
+        'noche' => ['naipe' => '#161a18', 'tinta' => '#fbfaf5', 'palos' => ['oro' => '#f0b429', 'copa' => '#f0685c', 'espada' => '#6fa0e8', 'basto' => '#57b983']],
+        'una' => ['naipe' => '#fbfaf5', 'tinta' => '#161a18', 'palos' => ['oro' => '#fbfaf5', 'copa' => '#fbfaf5', 'espada' => '#fbfaf5', 'basto' => '#fbfaf5']],
+    ];
+
+    /**
      * Las mesas que se ganan (resources/css/app.css, "Las mesas que se ganan subiendo de nivel"). Los colores
      * de premio pueden ser nuevos si son de la familia (esDeLaFamilia): tintas de imprenta y materiales de
      * club. "mesa" es el campo, "barras" el tanteador y la barra de cantos, "texto" lo que se escribe sobre
