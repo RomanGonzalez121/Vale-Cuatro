@@ -2156,6 +2156,31 @@ html:has(body.superficie-pano) {
         letter-spacing: -0.08em;
     }
 
+    /* El Retratos: el cartón del retrato en el color hondo de su palo, y el número en crema. */
+    .retrato-carton-oro {
+        fill: #7a5a22;
+    }
+
+    .retrato-carton-copa {
+        fill: #5c2626;
+    }
+
+    .retrato-carton-espada {
+        fill: #2c3c58;
+    }
+
+    .retrato-carton-basto {
+        fill: #2d4a34;
+    }
+
+    .retrato-numero {
+        font-family: var(--font-sans);
+        font-size: 9.5px;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        fill: #f3e6c8;
+    }
+
     .estampilla-numero {
         font-family: var(--font-sans);
         font-size: 11px;
@@ -4474,6 +4499,26 @@ html:has(body.superficie-pano) {
         width: 1.35rem;
         height: 1.35rem;
         transition: transform 160ms var(--ease-llegada);
+    }
+
+    /* En el celular, las secciones en columnas iguales y la letra un paso más chica: entran todas sin deslizar. */
+    @media (width < 40rem) {
+        .perfil-indice > ul {
+            display: grid;
+            grid-auto-columns: minmax(0, 1fr);
+            grid-auto-flow: column;
+            gap: 0;
+        }
+
+        .indice-enlace {
+            padding-inline: 0;
+            font-size: 0.72rem;
+        }
+
+        .indice-enlace .icono {
+            width: 1.2rem;
+            height: 1.2rem;
+        }
     }
 
     /* Cada sección arranca con su título y el filete doble de los impresos, como el encabezado de las páginas. */

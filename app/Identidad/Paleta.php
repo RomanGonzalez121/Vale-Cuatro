@@ -234,6 +234,13 @@ class Paleta
             ['texto' => '#2a2622', 'fondo' => '#f7f0e3', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Contornos sobre el papel'],
             ['texto' => '#c27a3a', 'fondo' => '#f7f0e3', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Gato atigrado'],
         ],
+        'retratos' => [
+            ['texto' => '#f3e6c8', 'fondo' => '#7a5a22', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y pie sobre el cartón del oro'],
+            ['texto' => '#f3e6c8', 'fondo' => '#5c2626', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y pie sobre el cartón del copa'],
+            ['texto' => '#f3e6c8', 'fondo' => '#2c3c58', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y pie sobre el cartón del espada'],
+            ['texto' => '#f3e6c8', 'fondo' => '#2d4a34', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y pie sobre el cartón del basto'],
+            ['texto' => '#4d3423', 'fondo' => '#e3cfa6', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Sepia oscuro sobre el óvalo claro de la foto'],
+        ],
         'criollo' => [
             ['texto' => '#2a1f17', 'fondo' => '#f0e6d0', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y línea de campo'],
             ['texto' => '#b8483a', 'fondo' => '#2a1f17', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Guarda pampa'],

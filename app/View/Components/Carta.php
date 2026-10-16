@@ -33,15 +33,6 @@ class Carta extends Component
     ];
 
     /**
-     * Lo mismo para las figuras de medio cuerpo (el mazo Retratos): adentro del marco en arco, arriba de la mano.
-     */
-    private const PALO_EN_MANO_MEDIO = [
-        'sota' => [64, 42, 17, 25.5],
-        'caballo' => [66, 50, 15, 22.5],
-        'rey' => [64, 45, 17, 25.5],
-    ];
-
-    /**
      * En el Catalán: el rey y la sota lo alzan a la derecha; el caballero, a pie, a la izquierda.
      */
     private const PALO_EN_MANO_CATALAN = [
@@ -195,6 +186,15 @@ class Carta extends Component
     ];
 
     /**
+     * En el Retratos: el muchacho tiene el palo sobre la mesita, y el jinete y el señor del sillón lo alzan.
+     */
+    private const PALO_EN_MANO_RETRATO = [
+        'sota' => [66, 62, 13, 19.5],
+        'caballo' => [68, 42, 12, 18],
+        'rey' => [63, 48, 12, 18],
+    ];
+
+    /**
      * Dónde van los palos de las cartas de número en las cartas de otro mundo, como [x desde, x hasta, y desde,
      * y hasta]: la disposición del arco se lleva a esa zona (en el Afiche, el papel a la derecha de la franja).
      */
@@ -215,12 +215,8 @@ class Carta extends Component
         'clasico' => [12, 88, 22, 134],
         'tarot' => [16, 84, 30, 126],
         'gatos' => [18, 82, 40, 128],
+        'retratos' => [16, 84, 25, 112],
     ];
-
-    /**
-     * El marco en arco de los mazos que lo llevan: la misma ventana que enmarca a sus figuras.
-     */
-    public const ARCO = 'M16 128V58A34 34 0 0 1 84 58V128Z';
 
     /**
      * La pinta: los cortes en el marco que identifican al palo en la baraja
@@ -332,14 +328,6 @@ class Carta extends Component
     }
 
     /**
-     * Si la carta de número dibuja el arco (las figuras traen el suyo, que además las recorta).
-     */
-    public function arco(): bool
-    {
-        return $this->figura() === null && Mazos::de($this->mazo)['marco'] === 'arco';
-    }
-
-    /**
      * Con qué carta se arma: la de fábrica o la del mundo de su mazo (resources/views/components/cartas).
      */
     public function estilo(): string
@@ -361,7 +349,7 @@ class Carta extends Component
     {
         if ($this->figura() !== null) {
             $enMano = match (Mazos::de($this->mazo)['figuras']) {
-                'medio' => self::PALO_EN_MANO_MEDIO,
+                'retrato' => self::PALO_EN_MANO_RETRATO,
                 'catalan-antigua' => self::PALO_EN_MANO_CATALAN,
                 'billete' => self::PALO_EN_MANO_BILLETE,
                 'afiche' => self::PALO_EN_MANO_AFICHE,
@@ -385,8 +373,8 @@ class Carta extends Component
             return [$enMano[$this->figura()]];
         }
 
-        // Con el arco, o en una carta de otro mundo (con medallones en las esquinas), los palos van más adentro.
-        $adentro = Mazos::de($this->mazo)['marco'] === 'arco' || $this->estilo() !== 'fabrica';
+        // En una carta de otro mundo (con medallones en las esquinas), los palos van más adentro.
+        $adentro = $this->estilo() !== 'fabrica';
         $disposicion = ($adentro ? self::DISPOSICION_EN_ARCO : self::DISPOSICION)[$this->numero];
         $centros = $disposicion['centros'];
         $ancho = $disposicion['ancho'];

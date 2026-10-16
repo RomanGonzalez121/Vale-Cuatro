@@ -2014,3 +2014,37 @@ Probado en un navegador real en 1355 x 638 y 360 x 740, de día y de noche, sin 
 Ajustes pedidos por Román al verlo:
 - **El índice ya no usa el fósforo que se dibuja ("está demasiado usado").** Las secciones van repartidas a lo largo de la barra. La que está a la vista queda en color pleno, con una raya fija apoyada en el borde de la barra, y las demás a media tinta. Sin animación: la raya cambia de lugar al bajar. Con el mouse, el ícono se levanta apenas.
 - **El carnet tiene modo noche, como la libreta:** papel en Tinta, la tapa un paso más abajo y los colores de adentro dados vuelta. La regla de noche va junto al estilo base del carnet, porque ese estilo quedó fuera de las capas y una regla de la capa no le gana.
+
+## Retratos, rehecho como baraja propia
+
+### Qué problema había
+
+Retratos era el último mazo armado cambiando una pieza del de fábrica: el marco en arco y las figuras de medio cuerpo. Román pidió rehacerlo con el mismo criterio que los demás y con referencias.
+
+### Qué se eligió
+
+- **El retrato de estudio de 1900 pegado en el álbum.** Se toma del cabinet card, que reemplazó a la carte de visite hacia 1870: la foto pegada sobre un cartón, con el nombre del estudio impreso en la franja de abajo. También del estudio Witcomb de la calle Florida, el más tradicional de Buenos Aires.
+- **Cómo es la carta:**
+  - el cartón va en el color hondo de cada palo;
+  - el número va en crema sobre el cartón;
+  - la foto es sepia, con el óvalo claro de los retratos de época, en tonos planos y sin degradado;
+  - lleva esquineros de álbum en las cuatro puntas;
+  - abajo, el pie de un estudio inventado: "Fotografía del Club, Buenos Aires".
+- **Los palos y las figuras están "fotografiados":** en sepia, con la luz de un lado y su sombra en el piso. Las figuras posan como en un estudio:
+  - el muchacho de bombín y moño, con el palo sobre una mesita;
+  - el jinete de galera, junto a la cabeza de su caballo;
+  - el señor sentado en su sillón, con corona, barba y cuello de piel.
+- **La clave sigue siendo `retratos`:** quien lo tenía elegido pasa al nuevo sin migración.
+- **Se borró lo que solo usaba el Retratos viejo:** el marco en arco (`Carta::ARCO`, `arco()`), las figuras de medio cuerpo (`figura-*-medio`) y sus palos en la mano. La disposición de los palos que se llevaba al arco (`DISPOSICION_EN_ARCO`) se queda, porque la usan todas las barajas propias.
+
+### Qué se probó y qué no
+
+- **Con tests:** los de mazos, paleta y carta, más Pint.
+- **En un navegador real:** la lámina, también a 60 px.
+- **Sin correr, a pedido de Román:** la suite completa.
+- **Fuentes:** la carte de visite (Universidad de Navarra, Cultura Madeira), los cabinet cards (Fort Hays State University, LACMA) y el estudio Witcomb (Wikipedia, Fundación Lariviere).
+
+### De paso, en el perfil
+
+- **El índice en el celular:** las seis secciones van en columnas iguales, con la letra un paso más chica, y entran todas sin deslizar.
+- **Las pestañas de la Colección:** muestran su borde de arriba. Con el mouse se aclaran sin moverse, para no despegarse de la raya; solo se levanta el ícono.

@@ -25,10 +25,10 @@ class MazosTest extends TestCase
 
         foreach (Mazos::TODOS as $clave => $piezas) {
             $this->assertContains($piezas['tinta'], ['fabrica', 'noche', 'una'], $clave);
-            $this->assertContains($piezas['palos'], ['fabrica', 'tango', 'diario', 'etiqueta', 'tiza', 'taco', 'grabado', 'macizo', 'antiguo', 'filete', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos'], $clave);
-            $this->assertContains($piezas['figuras'], ['fabrica', 'medio', 'tango', 'diario', 'etiqueta', 'tiza', 'clise', 'billete', 'afiche', 'catalan-antigua', 'filete', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos'], $clave);
-            $this->assertContains($piezas['marco'], ['fabrica', 'arco'], $clave);
-            $this->assertContains($piezas['carta'], ['fabrica', 'tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos'], $clave);
+            $this->assertContains($piezas['palos'], ['fabrica', 'tango', 'diario', 'etiqueta', 'tiza', 'taco', 'grabado', 'macizo', 'antiguo', 'filete', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos', 'retrato'], $clave);
+            $this->assertContains($piezas['figuras'], ['fabrica', 'retrato', 'tango', 'diario', 'etiqueta', 'tiza', 'clise', 'billete', 'afiche', 'catalan-antigua', 'filete', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos'], $clave);
+            $this->assertSame('fabrica', $piezas['marco'], $clave);
+            $this->assertContains($piezas['carta'], ['fabrica', 'tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos', 'retratos'], $clave);
 
             // Cada baraja propia tiene su plantilla.
             if ($piezas['carta'] !== 'fabrica') {
@@ -99,7 +99,7 @@ class MazosTest extends TestCase
         $mesa = $this->actingAs($jugador)->get('/mesa')->assertOk();
         $mesa->assertSee('href="#palo-oro-tiza"', false)->assertSee('id="palo-oro-tiza"', false)->assertSee('id="figura-rey-tiza-oro"', false)
             // Lo que no usa su mazo no viaja: ni las figuras de los retratos.
-            ->assertDontSee('id="figura-rey-medio"', false);
+            ->assertDontSee('id="figura-rey-retrato"', false);
 
         // Las demás páginas siguen con el mazo de fábrica y no traen piezas de otro.
         $this->actingAs($jugador)->get('/como-se-juega')->assertOk()
@@ -118,10 +118,10 @@ class MazosTest extends TestCase
 
         $respuesta = $this->actingAs($uno)->get('/mesa')->assertOk();
         $this->assertArrayNotHasKey('mazo', $respuesta->viewData('socio'));
-        $respuesta->assertDontSee('id="figura-rey-medio"', false)->assertDontSee('retratos');
+        $respuesta->assertDontSee('id="figura-rey-retrato"', false)->assertDontSee('retratos');
 
         // Y ella ve sus cartas, también las del Tano, con su mazo.
-        $this->actingAs($dos)->get('/mesa')->assertOk()->assertSee('id="figura-rey-medio"', false);
+        $this->actingAs($dos)->get('/mesa')->assertOk()->assertSee('id="figura-rey-retrato"', false);
     }
 
     public function test_cada_carta_dibuja_las_piezas_de_su_mazo(): void
@@ -139,16 +139,11 @@ class MazosTest extends TestCase
         $tango = Blade::render('<x-carta palo="basto" :numero="11" mazo="tango" />');
         $this->assertStringContainsString('href="#figura-caballo-tango"', $tango);
         $this->assertStringContainsString('href="#palo-basto-tango"', $tango);
-
-        // El arco va solo en las cartas de número de los mazos que lo llevan (las figuras traen el suyo).
-        $this->assertStringContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="4" mazo="retratos" />'));
-        $this->assertStringNotContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="4" mazo="noche" />'));
-        $this->assertStringNotContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="12" mazo="retratos" />'));
     }
 
     public function test_cada_baraja_propia_se_arma_con_su_carta_y_no_con_la_de_fabrica(): void
     {
-        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos'] as $mazo) {
+        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos', 'retratos'] as $mazo) {
             foreach ([[1, 'espada'], [7, 'oro'], [12, 'copa']] as [$numero, $palo]) {
                 $carta = Blade::render('<x-carta :palo="$palo" :numero="$numero" :mazo="$mazo" />', compact('palo', 'numero', 'mazo'));
 
@@ -165,7 +160,7 @@ class MazosTest extends TestCase
 
     public function test_cada_carta_de_numero_de_una_baraja_propia_queda_adentro_de_la_carta(): void
     {
-        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos'] as $mazo) {
+        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga', 'clasico', 'tarot', 'gatos', 'retratos'] as $mazo) {
             foreach (Carta::PALOS as $palo) {
                 foreach ([1, 2, 3, 4, 5, 6, 7] as $numero) {
                     $pintas = (new Carta($palo, $numero, $mazo))->pintas();
@@ -182,21 +177,4 @@ class MazosTest extends TestCase
         }
     }
 
-    public function test_en_el_arco_cada_carta_de_numero_lleva_tantos_palos_como_vale_y_adentro_del_arco(): void
-    {
-        foreach (Carta::PALOS as $palo) {
-            foreach ([1, 2, 3, 4, 5, 6, 7] as $numero) {
-                $pintas = (new Carta($palo, $numero, 'retratos'))->pintas();
-                $this->assertCount($numero, $pintas);
-
-                foreach ($pintas as [$x, $y, $ancho, $alto]) {
-                    // Entre los costados del arco (16 y 84) y su pie (128), y debajo de la curva arriba (24).
-                    $this->assertGreaterThanOrEqual(16, $x, "{$numero} de {$palo}");
-                    $this->assertLessThanOrEqual(84, $x + $ancho, "{$numero} de {$palo}");
-                    $this->assertGreaterThanOrEqual(24, $y, "{$numero} de {$palo}");
-                    $this->assertLessThanOrEqual(128, $y + $alto, "{$numero} de {$palo}");
-                }
-            }
-        }
-    }
 }

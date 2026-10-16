@@ -10,10 +10,8 @@ namespace App\Juego;
  * - La tinta: la de fábrica, la de noche (la carta en negro, con los tonos de noche) o una sola tinta. Es solo
  *   color: se cambia con las variables de la carta.
  * - Los palos: los de fábrica o los de cada baraja propia (grabados, de afiche, de tiza, de taco...).
- * - Las figuras: las de fábrica, las de medio cuerpo (los retratos: cabeza y torso grandes, en un marco en arco) o
- *   las de cuerpo entero (las de los mazos de fósforo) o las catalanas (anchas, de túnica corta y calzas a rayas).
- * - El marco: el de fábrica o el arco de los retratos, una ventana que no pisa los números de las esquinas. Con el
- *   arco, también las cartas de número acomodan sus palos adentro.
+ * - Las figuras: las de fábrica o las de cada baraja propia.
+ * - El marco: el de fábrica (las barajas propias traen el suyo en su carta).
  *
  * - La carta: la de fábrica o la de su mundo. Los mazos de nivel alto no son el de fábrica con una pieza cambiada:
  *   cada uno se arma con su propia carta (resources/views/components/cartas), con su marco, sus números y sus
@@ -40,7 +38,7 @@ final class Mazos
         'diario' => ['tinta' => 'fabrica', 'palos' => 'diario', 'figuras' => 'diario', 'marco' => 'fabrica', 'carta' => 'diario'],
         'bordado' => ['tinta' => 'fabrica', 'palos' => 'bordado', 'figuras' => 'bordado', 'marco' => 'fabrica', 'carta' => 'bordado'],
         'caja-de-fosforos' => ['tinta' => 'fabrica', 'palos' => 'etiqueta', 'figuras' => 'etiqueta', 'marco' => 'fabrica', 'carta' => 'caja-de-fosforos'],
-        'retratos' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'medio', 'marco' => 'arco', 'carta' => 'fabrica'],
+        'retratos' => ['tinta' => 'fabrica', 'palos' => 'retrato', 'figuras' => 'retrato', 'marco' => 'fabrica', 'carta' => 'retratos'],
         'pizarron' => ['tinta' => 'fabrica', 'palos' => 'tiza', 'figuras' => 'tiza', 'marco' => 'fabrica', 'carta' => 'pizarron'],
         'tipografico' => ['tinta' => 'fabrica', 'palos' => 'taco', 'figuras' => 'clise', 'marco' => 'fabrica', 'carta' => 'tipografico'],
         'billete' => ['tinta' => 'fabrica', 'palos' => 'grabado', 'figuras' => 'billete', 'marco' => 'fabrica', 'carta' => 'billete'],

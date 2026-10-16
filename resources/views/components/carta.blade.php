@@ -6,9 +6,6 @@
     <path d="{{ $marco() }}" fill="none" stroke="var(--color-tinta)" stroke-width="1" />
     <text x="13" y="25" class="carta-indice">{{ $numero }}</text>
     <text x="13" y="25" class="carta-indice" transform="rotate(180 50 78)">{{ $numero }}</text>
-    @if ($arco())
-        <path d="{{ App\View\Components\Carta::ARCO }}" fill="none" stroke="var(--color-tinta)" stroke-width="1.5" />
-    @endif
     @if ($figura())
         <use href="#{{ $simboloDeLaFigura() }}" width="100" height="156" class="tinta-{{ $palo }}" />
     @endif
