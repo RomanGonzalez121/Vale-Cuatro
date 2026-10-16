@@ -229,7 +229,7 @@
                     <ul class="mt-2 flex flex-wrap justify-center gap-x-6 gap-y-1">
                         <template x-for="(linea, numero) in cierre?.lineas ?? []" :key="numero">
                             <li class="flex items-baseline gap-2 text-sm font-semibold sm:text-base">
-                                <span class="text-[1.75rem] font-black leading-none tabular-nums text-oro" x-text="linea.puntos"></span>
+                                <span class="puntos-del-cierre text-[1.75rem] font-black leading-none tabular-nums text-oro" x-text="linea.puntos"></span>
                                 <span x-text="linea.texto"></span>
                             </li>
                         </template>

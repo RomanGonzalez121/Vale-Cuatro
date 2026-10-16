@@ -337,6 +337,15 @@ body:has(.mesa-de-marmol-negro) {
     color: #161a18;
 }
 
+/* Lo mismo con los puntos del cierre de la mano: una fichita de oro con el número en tinta. */
+:is(.mesa-de-marmol, .mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo .puntos-del-cierre {
+    display: inline-block;
+    padding: 0.08em 0.24em 0.04em;
+    border-radius: 0.16em;
+    background-color: #f0b429;
+    color: #161a18;
+}
+
 /* Las claras, como el mármol: texto en tinta y el oro en un ocre que se lee sobre lo claro. */
 :is(.mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo,
 :is(.perfil-mesa, .probador-mesa, .pieza-mesa):is([data-mesa='baldosa'], [data-mesa='mantel'], [data-mesa='diario']) {

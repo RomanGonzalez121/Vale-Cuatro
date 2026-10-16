@@ -2066,3 +2066,5 @@ Eligió la recomendada:
 - en las mesas oscuras sigue igual.
 
 Se descartó un ocre más claro (`#9c6e1a`), porque seguía viéndose marrón.
+
+Después Román marcó lo mismo en el cierre de la mano: el número de puntos ("1 Envido no querido") salía en ocre. En las mesas claras ese número va en tinta sobre una fichita del oro de verdad (`.puntos-del-cierre`), en las dos mesas. El marcador de la serie y el nivel del final quedan en oro, porque van sobre fondo oscuro.
