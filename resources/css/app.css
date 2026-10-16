@@ -1831,6 +1831,162 @@ html:has(body.superficie-pano) {
         fill: #2a1f17;
     }
 
+    /* El Tango: el número como una nota sobre el pentagrama, y el detalle de los palos en su color (el oro, más hondo, para leerse sobre el crema). */
+    .tango-numero {
+        font-family: var(--font-sans);
+        font-size: 14px;
+        font-style: italic;
+        font-weight: 900;
+        fill: #141414;
+    }
+
+    .tango-oro {
+        color: #a37a22;
+    }
+
+    .tango-copa {
+        color: var(--color-copa);
+    }
+
+    .tango-espada {
+        color: var(--color-espada);
+    }
+
+    .tango-basto {
+        color: var(--color-basto);
+    }
+
+    /* El Diario: el número y el palo como titulares de la cabecera, y el epígrafe de la foto. */
+    .diario-numero {
+        font-family: var(--font-sans);
+        font-size: 20px;
+        font-weight: 900;
+        letter-spacing: -0.06em;
+        fill: #1c1b19;
+    }
+
+    .diario-titular {
+        font-family: var(--font-sans);
+        font-size: 10.5px;
+        font-style: italic;
+        font-weight: 900;
+        fill: #1c1b19;
+    }
+
+    .diario-epigrafe {
+        font-family: var(--font-sans);
+        font-size: 4.6px;
+        font-style: italic;
+        fill: #1c1b19;
+    }
+
+    /* La Caja de fósforos: la etiqueta en el color del palo; sus letras en naipe, y en tinta sobre el oro. */
+    .fosforos-etiqueta-oro {
+        fill: var(--color-oro);
+    }
+
+    .fosforos-etiqueta-copa {
+        fill: var(--color-copa);
+    }
+
+    .fosforos-etiqueta-espada {
+        fill: var(--color-espada);
+    }
+
+    .fosforos-etiqueta-basto {
+        fill: var(--color-basto);
+    }
+
+    .fosforos-numero {
+        font-family: var(--font-sans);
+        font-size: 8.4px;
+        font-weight: 900;
+        fill: #1c1612;
+    }
+
+    .fosforos-leyenda {
+        font-family: var(--font-sans);
+        font-size: 5px;
+        font-style: italic;
+        font-weight: 700;
+        fill: var(--color-naipe);
+    }
+
+    .fosforos-marca {
+        font-family: var(--font-sans);
+        font-size: 8px;
+        font-style: italic;
+        font-weight: 900;
+        fill: var(--color-naipe);
+    }
+
+    .fosforos-leyenda-oro,
+    .fosforos-marca-oro {
+        fill: #1c1612;
+    }
+
+    /* El Pizarrón: el número escrito a tiza. */
+    .pizarron-numero {
+        font-family: var(--font-sans);
+        font-size: 15px;
+        font-style: italic;
+        font-weight: 700;
+        fill: #ece9df;
+    }
+
+    /* El Tipográfico: el número en letra de madera, su segunda tinta corrida en el color del palo, y el palo entre filetes. */
+    .tipografico-numero {
+        font-family: var(--font-sans);
+        font-size: 30px;
+        font-weight: 900;
+        letter-spacing: -0.07em;
+        fill: #191714;
+    }
+
+    .tipografico-numero-doble {
+        font-size: 23px;
+    }
+
+    .tipografico-palo {
+        font-family: var(--font-sans);
+        font-size: 9.5px;
+        font-style: italic;
+        font-weight: 900;
+        fill: #191714;
+    }
+
+    .tipografico-segunda-oro {
+        fill: #9a6a12;
+    }
+
+    .tipografico-segunda-copa {
+        fill: var(--color-copa);
+    }
+
+    .tipografico-segunda-espada {
+        fill: var(--color-espada);
+    }
+
+    .tipografico-segunda-basto {
+        fill: var(--color-basto);
+    }
+
+    .tipografico-segunda-color-oro {
+        color: #9a6a12;
+    }
+
+    .tipografico-segunda-color-copa {
+        color: var(--color-copa);
+    }
+
+    .tipografico-segunda-color-espada {
+        color: var(--color-espada);
+    }
+
+    .tipografico-segunda-color-basto {
+        color: var(--color-basto);
+    }
+
     /* El número del Catalán, en su recuadro. */
     .carta-indice-catalan {
         font-size: 12px;

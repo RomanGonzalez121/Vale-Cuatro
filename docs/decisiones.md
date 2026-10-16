@@ -1853,3 +1853,31 @@ Quedaban cinco mazos (niveles 31 a 39). La primera propuesta los armaba como los
 
 - **Rehacer como mundos nuevos** los mazos de la tanda 5 que son el de fábrica con algo cambiado (De noche, A una tinta, Palos de fósforo, Fósforo de noche e Imprenta); Retratos queda. Propuesta: Tango, Diario, Caja de fósforos, Pizarrón y Tipográfico.
 - **Cuatro mazos más**, en niveles que hoy tienen un solo premio (quedan 16).
+
+
+## Cinco mazos rehechos como barajas propias
+
+### Qué problema había
+
+Después de los cinco mazos con baraja propia, Román pidió rehacer con el mismo criterio los de la tanda 5 que eran el de fábrica con algo cambiado. Para cada uno pidió buscar referencias antes de dibujar ("así hacés el mejor trabajo posible").
+
+### Qué se eligió
+
+- **Tango (9, en lugar de De noche):** la tapa de una partitura de tango de los años 20 y 30. Marco bordó, el número sobre un pentagrama, los palos en silueta negra con el detalle del color del palo y las figuras en silueta contra un círculo claro con rayos Art Déco, como las tapas de la época: el bandoneonista sentado (el fuelle en el color del palo y los botones de nácar en las tapas), la pareja bailando con la pierna en gancho y el cantor de galera.
+- **Diario (15, en lugar de A una tinta):** el diario de la tarde, como Crítica (titulares grandes, la imagen tan importante como la nota). Papel de diario, una sola tinta, el número y el palo como titular sobre el doble filete, filetes de columna, los palos impresos en trama de puntos (se distinguen por la forma) y las figuras como fotos en trama gruesa con su epígrafe ("El rey, en su mesa").
+- **Caja de fósforos (19, en lugar de Palos de fósforo):** la tapa de una caja de fósforos de almacén, como las Fragata o Tres Patitos de la Compañía General de Fósforos: el raspador de lija en los dos costados, la etiqueta litografiada en el color del palo, el número en un sello, "contenido aprox. 40" y las figuras como la marca de la caja, en una viñeta con su cinta ("El Caballo").
+- **Pizarrón (26, en lugar de Fósforo de noche):** la pizarra de un bodegón. Marco de madera, pizarra verde oscura con borrones, el número escrito a tiza y todo dibujado a tiza: el contorno blanco pasado dos veces (la tiza nunca sale pareja) y el relleno en tiza de color, rayado. Las figuras son los dibujitos de la pizarra: el mozo con la bandeja (el palo va en la bandeja), un caballito y el rey de corona y bigote.
+- **Tipográfico (29, en lugar de Imprenta):** un afiche de imprenta de tipos de madera, como los de los bailes del club de barrio. Dos tintas: el número enorme en negro con su segunda tinta (el color del palo) corrida, "de copa" entre filetes, los palos como tacos con la veta de la madera y las figuras como clisés: la sota con antifaz de carnaval, el caballo con su brida y el rey con su corona.
+- **De noche y A una tinta no se tiran (idea de Román):** quedan como variantes del mazo de fábrica, de todos desde el principio y fuera del camino. En la Colección aparecen como "De fábrica, de noche" y "De fábrica, a una tinta".
+- **Quien tenía elegido un mazo reemplazado pasa al nuevo** (migración `2026_10_20_000000_pasar_a_los_mazos_rehechos`): Palos de fósforo pasa a Caja de fósforos, Fósforo de noche a Pizarrón e Imprenta a Tipográfico. Se borraron las piezas que ya no usa nadie (palos de trazo de fósforo y figuras de cuerpo entero).
+
+### Qué se probó y qué no
+
+- **Con tests:** las diez barajas propias se arman con su plantilla y sus cartas de número quedan adentro de la carta; el candado, la administración y elegir sin recargar con los mazos nuevos; la mesa con el Pizarrón trae solo sus piezas; el contraste y la familia de color de cada baraja (`Paleta::BARAJAS`).
+- **En un navegador real:** la lámina de los cinco al lado del mazo que reemplazan (también a 60 px) y la Colección de mazos. 909 tests (uno de la mesa entre personas, "recargar devuelve el mismo estado", falló una vez en la corrida completa y pasa solo y en la siguiente corrida: es el plazo que cambia de segundo entre dos pedidos), Pint y las siete pruebas de navegador (una cortó por el controlador del navegador y pasó sola).
+- **Fuentes:** Todotango (las casas editoras de partituras), el archivo de partituras de tango (Javier Barreiro, People's Graphic Design Archive), EcuRed y Bandoneon Wuppertal (el bandoneón), La Nación y la UNLP sobre el diario Crítica, los blogs de coleccionistas de cajas de fósforos argentinas (Mis Cajas de Fósforos, El Koleccionista de Fósforos), Matchpro y Design and Paper (diseño de etiquetas), notas sobre pizarras de café escritas a mano (Hello Zurich, Seattle Met, HGTV), Hatch Show Print, Resistencias Tipográficas y Jorge Warley (el afiche tipográfico popular).
+
+### Lo que sigue (decidido por Román)
+
+- Los cuatro mazos nuevos: Estampilla, Bordado, Azulejo de subte y Murga, con sus referencias.
+- Después, rehacer también Retratos como baraja propia.

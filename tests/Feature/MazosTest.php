@@ -25,10 +25,10 @@ class MazosTest extends TestCase
 
         foreach (Mazos::TODOS as $clave => $piezas) {
             $this->assertContains($piezas['tinta'], ['fabrica', 'noche', 'una'], $clave);
-            $this->assertContains($piezas['palos'], ['fabrica', 'fosforo', 'grabado', 'macizo', 'antiguo', 'filete', 'criollo'], $clave);
-            $this->assertContains($piezas['figuras'], ['fabrica', 'medio', 'entero', 'billete', 'afiche', 'catalan-antigua', 'filete', 'criollo'], $clave);
+            $this->assertContains($piezas['palos'], ['fabrica', 'tango', 'diario', 'etiqueta', 'tiza', 'taco', 'grabado', 'macizo', 'antiguo', 'filete', 'criollo'], $clave);
+            $this->assertContains($piezas['figuras'], ['fabrica', 'medio', 'tango', 'diario', 'etiqueta', 'tiza', 'clise', 'billete', 'afiche', 'catalan-antigua', 'filete', 'criollo'], $clave);
             $this->assertContains($piezas['marco'], ['fabrica', 'arco'], $clave);
-            $this->assertContains($piezas['carta'], ['fabrica', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'], $clave);
+            $this->assertContains($piezas['carta'], ['fabrica', 'tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'], $clave);
 
             // Cada baraja propia tiene su plantilla.
             if ($piezas['carta'] !== 'fabrica') {
@@ -45,12 +45,12 @@ class MazosTest extends TestCase
         $jugador = Jugador::factory()->create();
         $jugador->forceFill(['fosforos' => 8 * 10])->save();
 
-        // En el nivel 9 llega el de noche; Retratos (nivel 22) todavía no, tampoco mandando el pedido a mano.
+        // En el nivel 9 llega el Tango; Retratos (nivel 22) todavía no, tampoco mandando el pedido a mano.
         $this->actingAs($jugador)->put('/perfil/mazo', ['mazo' => 'retratos'])->assertSessionHasErrors('mazo');
         $this->assertNull($jugador->fresh()->mazo);
 
-        $this->actingAs($jugador)->put('/perfil/mazo', ['mazo' => 'noche'])->assertRedirect('/perfil#coleccion')->assertSessionHasNoErrors();
-        $this->assertSame('noche', (new Premios)->elegidaDe('mazo', $jugador->fresh()));
+        $this->actingAs($jugador)->put('/perfil/mazo', ['mazo' => 'tango'])->assertRedirect('/perfil#coleccion')->assertSessionHasNoErrors();
+        $this->assertSame('tango', (new Premios)->elegidaDe('mazo', $jugador->fresh()));
 
         // Uno que no existe tampoco, y el de fábrica es de todos.
         $this->actingAs($jugador)->put('/perfil/mazo', ['mazo' => 'brillante'])->assertSessionHasErrors('mazo');
@@ -61,8 +61,8 @@ class MazosTest extends TestCase
     public function test_si_baja_de_nivel_vuelve_al_mazo_de_fabrica(): void
     {
         $jugador = Jugador::factory()->create();
-        $jugador->forceFill(['fosforos' => 30 * 10, 'mazo' => 'imprenta'])->save();
-        $this->assertSame('imprenta', (new Premios)->elegidaDe('mazo', $jugador));
+        $jugador->forceFill(['fosforos' => 30 * 10, 'mazo' => 'tipografico'])->save();
+        $this->assertSame('tipografico', (new Premios)->elegidaDe('mazo', $jugador));
 
         // Si un recálculo lo deja por debajo del nivel 29, lo elegido ya no vale.
         $jugador->forceFill(['fosforos' => 10 * 10])->save();
@@ -84,27 +84,26 @@ class MazosTest extends TestCase
         $jugador = Jugador::factory()->create();
         $jugador->forceFill(['fosforos' => 20 * 10])->save();
 
-        $this->actingAs($jugador)->putJson('/perfil/mazo', ['mazo' => 'palos-de-fosforo'])->assertOk()->assertJson(['mensaje' => 'Mazo elegido.']);
+        $this->actingAs($jugador)->putJson('/perfil/mazo', ['mazo' => 'caja-de-fosforos'])->assertOk()->assertJson(['mensaje' => 'Mazo elegido.']);
         $this->actingAs($jugador)->putJson('/perfil/mazo', ['mazo' => 'retratos'])->assertStatus(422);
-        $this->assertSame('palos-de-fosforo', $jugador->fresh()->mazo);
+        $this->assertSame('caja-de-fosforos', $jugador->fresh()->mazo);
     }
 
     public function test_la_mesa_sale_con_el_mazo_propio_y_las_demas_paginas_con_el_de_fabrica(): void
     {
         $jugador = Jugador::factory()->create();
-        $jugador->forceFill(['fosforos' => 30 * 10, 'mazo' => 'fosforo-de-noche'])->save();
+        $jugador->forceFill(['fosforos' => 30 * 10, 'mazo' => 'pizarron'])->save();
 
         $this->actingAs($jugador)->post('/jugar')->assertRedirect('/mesa');
 
         $mesa = $this->actingAs($jugador)->get('/mesa')->assertOk();
-        $mesa->assertSee('mazo-tinta-noche')->assertSee('href="#palo-oro-fosforo"', false)
-            ->assertSee('id="palo-oro-fosforo"', false)->assertSee('id="figura-rey-entero"', false)
+        $mesa->assertSee('href="#palo-oro-tiza"', false)->assertSee('id="palo-oro-tiza"', false)->assertSee('id="figura-rey-tiza-oro"', false)
             // Lo que no usa su mazo no viaja: ni las figuras de los retratos.
             ->assertDontSee('id="figura-rey-medio"', false);
 
         // Las demás páginas siguen con el mazo de fábrica y no traen piezas de otro.
         $this->actingAs($jugador)->get('/como-se-juega')->assertOk()
-            ->assertDontSee('mazo-tinta-noche')->assertDontSee('id="palo-oro-fosforo"', false)->assertDontSee('id="figura-rey-entero"', false);
+            ->assertDontSee('id="palo-oro-tiza"', false)->assertDontSee('id="figura-rey-tiza-oro"', false);
     }
 
     public function test_el_rival_no_recibe_el_mazo(): void
@@ -132,23 +131,24 @@ class MazosTest extends TestCase
         $this->assertStringContainsString('href="#palo-oro"', $fabrica);
         $this->assertStringNotContainsString('mazo-tinta', $fabrica);
 
-        $imprenta = Blade::render('<x-carta palo="oro" :numero="12" mazo="imprenta" />');
-        $this->assertStringContainsString('href="#figura-rey-medio"', $imprenta);
-        $this->assertStringContainsString('mazo-tinta-una', $imprenta);
+        // Las variantes del de fábrica cambian solo la tinta.
+        $deNoche = Blade::render('<x-carta palo="oro" :numero="12" mazo="noche" />');
+        $this->assertStringContainsString('href="#figura-rey"', $deNoche);
+        $this->assertStringContainsString('mazo-tinta-noche', $deNoche);
 
-        $fosforo = Blade::render('<x-carta palo="basto" :numero="11" mazo="palos-de-fosforo" />');
-        $this->assertStringContainsString('href="#figura-caballo-entero"', $fosforo);
-        $this->assertStringContainsString('href="#palo-basto-fosforo"', $fosforo);
+        $tango = Blade::render('<x-carta palo="basto" :numero="11" mazo="tango" />');
+        $this->assertStringContainsString('href="#figura-caballo-tango"', $tango);
+        $this->assertStringContainsString('href="#palo-basto-tango"', $tango);
 
         // El arco va solo en las cartas de número de los mazos que lo llevan (las figuras traen el suyo).
         $this->assertStringContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="4" mazo="retratos" />'));
-        $this->assertStringNotContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="4" mazo="palos-de-fosforo" />'));
+        $this->assertStringNotContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="4" mazo="noche" />'));
         $this->assertStringNotContainsString(Carta::ARCO, Blade::render('<x-carta palo="copa" :numero="12" mazo="retratos" />'));
     }
 
     public function test_cada_baraja_propia_se_arma_con_su_carta_y_no_con_la_de_fabrica(): void
     {
-        foreach (['billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
+        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
             foreach ([[1, 'espada'], [7, 'oro'], [12, 'copa']] as [$numero, $palo]) {
                 $carta = Blade::render('<x-carta :palo="$palo" :numero="$numero" :mazo="$mazo" />', compact('palo', 'numero', 'mazo'));
 
@@ -165,7 +165,7 @@ class MazosTest extends TestCase
 
     public function test_cada_carta_de_numero_de_una_baraja_propia_queda_adentro_de_la_carta(): void
     {
-        foreach (['billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
+        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
             foreach (Carta::PALOS as $palo) {
                 foreach ([1, 2, 3, 4, 5, 6, 7] as $numero) {
                     $pintas = (new Carta($palo, $numero, $mazo))->pintas();

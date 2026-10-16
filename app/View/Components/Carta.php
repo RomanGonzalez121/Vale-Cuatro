@@ -42,15 +42,6 @@ class Carta extends Component
     ];
 
     /**
-     * Y para las de cuerpo entero (los mazos de fósforo): de pie, con el palo en alto.
-     */
-    private const PALO_EN_MANO_ENTERO = [
-        'sota' => [60.9, 45.8, 19.5, 29.3],
-        'caballo' => [54.9, 49.3, 16.8, 25.2],
-        'rey' => [62.6, 52.7, 18.4, 27.6],
-    ];
-
-    /**
      * En el Catalán: el rey y la sota lo alzan a la derecha; el caballero, a pie, a la izquierda.
      */
     private const PALO_EN_MANO_CATALAN = [
@@ -96,6 +87,51 @@ class Carta extends Component
     ];
 
     /**
+     * En el Tango el palo va arriba, a la derecha, junto al círculo del escenario.
+     */
+    private const PALO_EN_MANO_TANGO = [
+        'sota' => [72, 28, 14, 21],
+        'caballo' => [72, 28, 14, 21],
+        'rey' => [74, 30, 13, 19.5],
+    ];
+
+    /**
+     * En el Diario el palo va al final del epígrafe de la foto.
+     */
+    private const PALO_EN_MANO_DIARIO = [
+        'sota' => [77, 113.5, 9, 13.5],
+        'caballo' => [77, 113.5, 9, 13.5],
+        'rey' => [77, 113.5, 9, 13.5],
+    ];
+
+    /**
+     * En la Caja de fósforos el palo va arriba a la derecha del panel, fuera de la viñeta.
+     */
+    private const PALO_EN_MANO_ETIQUETA = [
+        'sota' => [71, 25, 11, 16.5],
+        'caballo' => [71, 25, 11, 16.5],
+        'rey' => [71, 25, 11, 16.5],
+    ];
+
+    /**
+     * En el Pizarrón: el mozo lo lleva en la bandeja, el caballito lo tiene arriba y el rey lo alza.
+     */
+    private const PALO_EN_MANO_TIZA = [
+        'sota' => [74.5, 40, 14, 21],
+        'caballo' => [17, 31, 14, 21],
+        'rey' => [72, 40, 14, 21],
+    ];
+
+    /**
+     * En el Tipográfico el palo va como un taco suelto a la derecha del clisé.
+     */
+    private const PALO_EN_MANO_CLISE = [
+        'sota' => [72, 76, 13, 19.5],
+        'caballo' => [70, 76, 13, 19.5],
+        'rey' => [73, 76, 13, 19.5],
+    ];
+
+    /**
      * Dónde van los palos de las cartas de número en las cartas de otro mundo, como [x desde, x hasta, y desde,
      * y hasta]: la disposición del arco se lleva a esa zona (en el Afiche, el papel a la derecha de la franja).
      */
@@ -104,6 +140,11 @@ class Carta extends Component
         'catalan' => [12, 88, 24, 134],
         'fileteado' => [14, 86, 30, 128],
         'criollo' => [14, 86, 30, 126],
+        'tango' => [14, 86, 30, 128],
+        'diario' => [14, 86, 33, 123],
+        'caja-de-fosforos' => [17, 83, 29, 127],
+        'pizarron' => [14, 86, 31, 127],
+        'tipografico' => [16, 84, 44, 112],
     ];
 
     /**
@@ -251,12 +292,16 @@ class Carta extends Component
         if ($this->figura() !== null) {
             $enMano = match (Mazos::de($this->mazo)['figuras']) {
                 'medio' => self::PALO_EN_MANO_MEDIO,
-                'entero' => self::PALO_EN_MANO_ENTERO,
                 'catalan-antigua' => self::PALO_EN_MANO_CATALAN,
                 'billete' => self::PALO_EN_MANO_BILLETE,
                 'afiche' => self::PALO_EN_MANO_AFICHE,
                 'filete' => self::PALO_EN_MANO_FILETE,
                 'criollo' => self::PALO_EN_MANO_CRIOLLO,
+                'tango' => self::PALO_EN_MANO_TANGO,
+                'diario' => self::PALO_EN_MANO_DIARIO,
+                'etiqueta' => self::PALO_EN_MANO_ETIQUETA,
+                'tiza' => self::PALO_EN_MANO_TIZA,
+                'clise' => self::PALO_EN_MANO_CLISE,
                 default => self::PALO_EN_MANO,
             };
 

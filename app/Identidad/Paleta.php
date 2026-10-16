@@ -141,6 +141,31 @@ class Paleta
      * @var array<string, list<array{texto: string, fondo: string, minimo: float, donde: string}>>
      */
     public const BARAJAS = [
+        'tango' => [
+            ['texto' => '#141414', 'fondo' => '#f2e9db', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número sobre el pentagrama y siluetas'],
+            ['texto' => '#a37a22', 'fondo' => '#141414', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Detalle del oro sobre la silueta'],
+            ['texto' => '#6b1f24', 'fondo' => '#f2e9db', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Marco bordó y rayos del escenario'],
+        ],
+        'diario' => [
+            ['texto' => '#1c1b19', 'fondo' => '#ebe6d8', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Titular, epígrafe y trama'],
+        ],
+        'caja-de-fosforos' => [
+            ['texto' => '#1c1612', 'fondo' => '#f5ecd6', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número en su sello'],
+            ['texto' => '#1c1612', 'fondo' => '#f0b429', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Leyenda sobre la etiqueta del oro'],
+            ['texto' => '#fbfaf5', 'fondo' => '#c93327', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Leyenda sobre la etiqueta de la copa'],
+            ['texto' => '#6b4a2e', 'fondo' => '#d8c3a0', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Raspador sobre el cartón'],
+        ],
+        'pizarron' => [
+            ['texto' => '#ece9df', 'fondo' => '#2b3330', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número y trazo de tiza'],
+            ['texto' => '#e9cf7a', 'fondo' => '#2b3330', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tiza del oro'],
+            ['texto' => '#d8796a', 'fondo' => '#2b3330', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tiza de la copa'],
+            ['texto' => '#7d9fc4', 'fondo' => '#2b3330', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tiza de la espada'],
+            ['texto' => '#8fbf8a', 'fondo' => '#2b3330', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tiza del basto'],
+        ],
+        'tipografico' => [
+            ['texto' => '#191714', 'fondo' => '#efe6cc', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número de madera y palo entre filetes'],
+            ['texto' => '#9a6a12', 'fondo' => '#efe6cc', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Segunda tinta del oro'],
+        ],
         'billete' => [
             ['texto' => '#161a18', 'fondo' => '#f3ebd6', 'minimo' => self::TEXTO_NORMAL, 'donde' => 'Número en su medallón'],
             ['texto' => '#8a5f12', 'fondo' => '#f3ebd6', 'minimo' => self::TEXTO_GRANDE, 'donde' => 'Tinta de grabado del oro'],

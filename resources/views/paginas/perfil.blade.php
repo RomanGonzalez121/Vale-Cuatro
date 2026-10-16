@@ -45,10 +45,12 @@
             'fabrica' => [['espada', 1], ['oro', 7], ['copa', 12]],
             'noche' => [['basto', 1], ['copa', 3], ['oro', 11]],
             'una-tinta' => [['espada', 7], ['oro', 4], ['basto', 10]],
-            'palos-de-fosforo' => [['basto', 7], ['copa', 5], ['espada', 11]],
+            'tango' => [['basto', 7], ['copa', 5], ['espada', 11]],
+            'diario' => [['oro', 1], ['espada', 4], ['copa', 10]],
+            'caja-de-fosforos' => [['copa', 1], ['basto', 3], ['oro', 11]],
+            'pizarron' => [['espada', 7], ['oro', 2], ['basto', 10]],
+            'tipografico' => [['basto', 1], ['copa', 6], ['espada', 12]],
             'retratos' => [['oro', 1], ['copa', 6], ['espada', 12]],
-            'fosforo-de-noche' => [['oro', 7], ['basto', 4], ['copa', 10]],
-            'imprenta' => [['copa', 1], ['espada', 5], ['basto', 11]],
             'billete' => [['espada', 1], ['copa', 4], ['oro', 12]],
             'afiche' => [['copa', 7], ['oro', 3], ['espada', 12]],
             'catalan' => [['oro', 1], ['basto', 6], ['copa', 10]],
@@ -260,7 +262,7 @@
             <section id="coleccion" aria-labelledby="titulo-coleccion" class="perfil-coleccion superficie-pano">
                 <div class="pagina">
                     <h2 id="titulo-coleccion" class="seccion-titulo perfil-titulo">Colección</h2>
-                    <p class="mt-4 text-lg">Tocá una pieza para probarla en la mesa. Lo punteado todavía no está dibujado.</p>
+                    <p class="mt-4 text-lg">Tocá una pieza para probarla en la mesa.</p>
 
                     @if ($loTieneTodo)
                         <p class="mt-2 font-bold">Sos la administración: tenés todo abierto para probarlo. Tu nivel sale de tus partidas, como el de todos.</p>

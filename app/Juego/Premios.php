@@ -111,12 +111,15 @@ final class Premios
         // Los mazos: cómo se ven las cartas en tu mesa (App\Juego\Mazos dice de qué piezas está hecho cada uno).
         'mazo' => [
             'fabrica' => ['nombre' => 'De fábrica', 'nivel' => 1],
-            'noche' => ['nombre' => 'De noche', 'nivel' => 9],
-            'una-tinta' => ['nombre' => 'A una tinta', 'nivel' => 15],
-            'palos-de-fosforo' => ['nombre' => 'Palos de fósforo', 'nivel' => 19],
+            // Las dos variantes del de fábrica: de todos desde el principio y fuera del camino (Román, 16 de octubre de 2026).
+            'noche' => ['nombre' => 'De fábrica, de noche', 'nivel' => 1],
+            'una-tinta' => ['nombre' => 'De fábrica, a una tinta', 'nivel' => 1],
+            'tango' => ['nombre' => 'Tango', 'nivel' => 9],
+            'diario' => ['nombre' => 'Diario', 'nivel' => 15],
+            'caja-de-fosforos' => ['nombre' => 'Caja de fósforos', 'nivel' => 19],
             'retratos' => ['nombre' => 'Retratos', 'nivel' => 22],
-            'fosforo-de-noche' => ['nombre' => 'Fósforo de noche', 'nivel' => 26],
-            'imprenta' => ['nombre' => 'Imprenta', 'nivel' => 29],
+            'pizarron' => ['nombre' => 'Pizarrón', 'nivel' => 26],
+            'tipografico' => ['nombre' => 'Tipográfico', 'nivel' => 29],
             'billete' => ['nombre' => 'Billete', 'nivel' => 31],
             'afiche' => ['nombre' => 'Afiche', 'nivel' => 33],
             'catalan' => ['nombre' => 'Catalán', 'nivel' => 35],

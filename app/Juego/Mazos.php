@@ -9,8 +9,7 @@ namespace App\Juego;
  *
  * - La tinta: la de fábrica, la de noche (la carta en negro, con los tonos de noche) o una sola tinta. Es solo
  *   color: se cambia con las variables de la carta.
- * - Los palos: los de fábrica, los de trazo de fósforo (la línea con cabeza de los íconos), los grabados (rayado
- *   de billete) o los de afiche (macizos y geométricos, con su fantasma en tinta).
+ * - Los palos: los de fábrica o los de cada baraja propia (grabados, de afiche, de tiza, de taco...).
  * - Las figuras: las de fábrica, las de medio cuerpo (los retratos: cabeza y torso grandes, en un marco en arco) o
  *   las de cuerpo entero (las de los mazos de fósforo) o las catalanas (anchas, de túnica corta y calzas a rayas).
  * - El marco: el de fábrica o el arco de los retratos, una ventana que no pisa los números de las esquinas. Con el
@@ -33,10 +32,12 @@ final class Mazos
         'fabrica' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
         'noche' => ['tinta' => 'noche', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
         'una-tinta' => ['tinta' => 'una', 'palos' => 'fabrica', 'figuras' => 'fabrica', 'marco' => 'fabrica', 'carta' => 'fabrica'],
-        'palos-de-fosforo' => ['tinta' => 'fabrica', 'palos' => 'fosforo', 'figuras' => 'entero', 'marco' => 'fabrica', 'carta' => 'fabrica'],
+        'tango' => ['tinta' => 'fabrica', 'palos' => 'tango', 'figuras' => 'tango', 'marco' => 'fabrica', 'carta' => 'tango'],
+        'diario' => ['tinta' => 'fabrica', 'palos' => 'diario', 'figuras' => 'diario', 'marco' => 'fabrica', 'carta' => 'diario'],
+        'caja-de-fosforos' => ['tinta' => 'fabrica', 'palos' => 'etiqueta', 'figuras' => 'etiqueta', 'marco' => 'fabrica', 'carta' => 'caja-de-fosforos'],
         'retratos' => ['tinta' => 'fabrica', 'palos' => 'fabrica', 'figuras' => 'medio', 'marco' => 'arco', 'carta' => 'fabrica'],
-        'fosforo-de-noche' => ['tinta' => 'noche', 'palos' => 'fosforo', 'figuras' => 'entero', 'marco' => 'fabrica', 'carta' => 'fabrica'],
-        'imprenta' => ['tinta' => 'una', 'palos' => 'fabrica', 'figuras' => 'medio', 'marco' => 'arco', 'carta' => 'fabrica'],
+        'pizarron' => ['tinta' => 'fabrica', 'palos' => 'tiza', 'figuras' => 'tiza', 'marco' => 'fabrica', 'carta' => 'pizarron'],
+        'tipografico' => ['tinta' => 'fabrica', 'palos' => 'taco', 'figuras' => 'clise', 'marco' => 'fabrica', 'carta' => 'tipografico'],
         'billete' => ['tinta' => 'fabrica', 'palos' => 'grabado', 'figuras' => 'billete', 'marco' => 'fabrica', 'carta' => 'billete'],
         'afiche' => ['tinta' => 'fabrica', 'palos' => 'macizo', 'figuras' => 'afiche', 'marco' => 'fabrica', 'carta' => 'afiche'],
         'catalan' => ['tinta' => 'fabrica', 'palos' => 'antiguo', 'figuras' => 'catalan-antigua', 'marco' => 'fabrica', 'carta' => 'catalan'],
