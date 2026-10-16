@@ -2048,3 +2048,10 @@ Retratos era el último mazo armado cambiando una pieza del de fábrica: el marc
 
 - **El índice en el celular:** las seis secciones van en columnas iguales, con la letra un paso más chica, y entran todas sin deslizar.
 - **Las pestañas de la Colección:** muestran su borde de arriba. Con el mouse se aclaran sin moverse, para no despegarse de la raya; solo se levanta el ícono.
+
+## El Clásico: el palo debajo del número
+
+Román jugando vio "dos 11" en la mano. Eran dos 11 de palos distintos: en el Clásico las figuras se visten igual en los cuatro palos, y lo único que las distinguía era el palo chico de la mano y los cortes del marco. Una carta repetida de verdad no puede salir, porque el motor reparte de un mazo de 40 sin repetir, con su test. Se arregló de dos maneras:
+
+- el palo, chico, va debajo del número en las dos esquinas, como en el Criollo y en los Gatos;
+- el palo que tiene cada figura en la mano es más grande.

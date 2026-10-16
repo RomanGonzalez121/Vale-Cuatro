@@ -162,9 +162,9 @@ class Carta extends Component
      * En el Clásico cada figura alza el palo con la mano derecha, como en la baraja castellana.
      */
     private const PALO_EN_MANO_CLASICO = [
-        'sota' => [62, 28, 13.4, 20.1],
-        'caballo' => [57.2, 15.6, 13.4, 20.1],
-        'rey' => [63.4, 34.6, 13.4, 20.1],
+        'sota' => [60.5, 24, 16, 24],
+        'caballo' => [55.6, 11, 16, 24],
+        'rey' => [61.8, 30.5, 16, 24],
     ];
 
     /**
