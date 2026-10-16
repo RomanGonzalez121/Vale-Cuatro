@@ -52,6 +52,17 @@ final class Iconos
         'torneo' => ['M3.5 5H10.5V19H3.5M10.5 12H16.2', [[18.6, 12, 2.4]]],
         'desafio' => ['M6.5 21V5.8M6.5 7.5H18.5L15.5 11L18.5 14.5H6.5', [[6.5, 3.6, 2.2]]],
         'escalera' => ['M3.5 19.5H8.5V14.5H13.5V9.5H18.5V7', [[18.5, 4.7, 2.2]]],
+        // Las secciones del perfil: la libreta con su sello, dos cartas abiertas y el camino que sube hasta la cabeza.
+        'libreta' => ['M6.5 3.5H17.5V20.5H6.5ZM9.5 3.5V20.5', [[13.6, 12, 2.4]]],
+        'coleccion' => ['M4.5 6.5H11.5V18.5H4.5ZM14.5 8 19.5 10 15.8 19.4', [[17.9, 6.4, 2.2]]],
+        'camino' => ['M3.5 18.5H9.5L12.5 10.5H17.5', [[20, 10.5, 2.2]]],
+        // Las pestañas de la Colección: una carta, un dorso rayado, una mesa, la cuenta de cinco, un título y un sello.
+        'carta' => ['M6.5 3.5H17.5V20.5H6.5Z', [[12, 12, 2.4]]],
+        'dorso' => ['M6.5 3.5H17.5V20.5H6.5ZM6.5 8.5H17.5M6.5 15.5H17.5', [[12, 12, 1.8]]],
+        'mesa' => ['M3.5 10.5H20.5M6.5 10.5V19.5M17.5 10.5V19.5', [[12, 6.4, 2.2]]],
+        'anotar' => ['M6 19.5V9.5M10 19.5V9.5M14 19.5V9.5M18 19.5V9.5M4 16.5 20 11.5', [[6, 7.2, 1.6], [10, 7.2, 1.6], [14, 7.2, 1.6], [18, 7.2, 1.6]]],
+        'titulo' => ['M5.5 7.5H18.5M12 7.5V20.5', [[12, 4.4, 2]]],
+        'distintivo' => ['M12 3.5V8.5M12 15.5V20.5M3.5 12H8.5M15.5 12H20.5', [[12, 12, 2.4]]],
     ];
 
     /**

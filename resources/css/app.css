@@ -1250,12 +1250,14 @@ html:has(body.superficie-pano) {
 
     /* El fósforo queda puesto en la página actual y, cuando el link es una opción, en la elegida. */
     .enlace-nav[aria-current='page']::before,
+    .enlace-nav[aria-current='location']::before,
     .enlace-nav[aria-pressed='true']::before,
     .enlace-nav:focus-visible::before {
         transform: scaleX(1);
     }
 
     .enlace-nav[aria-current='page']::after,
+    .enlace-nav[aria-current='location']::after,
     .enlace-nav[aria-pressed='true']::after,
     .enlace-nav:focus-visible::after,
     .enlace-nav.con-marca::after {
@@ -4427,6 +4429,20 @@ html:has(body.superficie-pano) {
         font-weight: 700;
     }
 
+    /* Cada sección con su ícono arriba del nombre; el fósforo del link queda puesto en la que está a la vista. */
+    .indice-enlace {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+        padding-bottom: 0.7rem;
+    }
+
+    .indice-enlace .icono {
+        width: 1.35rem;
+        height: 1.35rem;
+    }
+
     /* Cada sección arranca con su título y el filete doble de los impresos, como el encabezado de las páginas. */
     .perfil-seccion.pagina {
         padding-top: 3.5rem;
@@ -4476,9 +4492,50 @@ html:has(body.superficie-pano) {
     }
 
     /* Las cuatro pestañas entran en un renglón también a 360 px. */
-    .coleccion-pestanas .pestana {
-        padding-inline: 0.6rem;
-        font-size: 0.88rem;
+    /*
+     | Las pestañas de la Colección, como los separadores de un fichero: cada una con su ícono, de borde redondeado
+     | arriba y apoyada en la raya del panel; la abierta en naipe, pegada a la raya.
+     */
+    .coleccion-pestanas {
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        overflow-x: auto;
+        border-bottom: 2px solid var(--color-naipe);
+        scrollbar-width: none;
+    }
+
+    .separador {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: 0.4rem;
+        min-height: 2.75rem;
+        margin-bottom: -2px;
+        padding: 0.45rem 0.8rem 0.4rem;
+        border: 1.5px solid color-mix(in srgb, var(--color-naipe) 40%, transparent);
+        border-bottom: 0;
+        border-radius: 0.6rem 0.6rem 0 0;
+        background-color: var(--color-pano-hondo);
+        color: var(--color-naipe);
+        font-size: 0.9rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    .separador .icono {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    .separador[aria-selected='true'] {
+        border-color: var(--color-naipe);
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+    }
+
+    .separador:active {
+        transform: translateY(1px);
     }
 
     .coleccion-piezas {
@@ -5333,18 +5390,108 @@ html:has(body.superficie-pano) {
     }
 
     /* Cuánto truco sabés: tres renglones que se tocan, cada uno con los fósforos del nivel de la máquina que le toca. */
-    .experiencia {
-        display: flex;
-        align-items: flex-start;
-        gap: 1rem;
-        padding: 1rem 0;
-        border-top: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
-        cursor: pointer;
-        text-align: left;
+    /* Tu cuenta: el carnet de socio y, al lado, cuánto truco sabés. */
+    .cuenta-grilla {
+        display: grid;
+        align-items: start;
+        gap: 3rem 4rem;
+        margin-top: 2rem;
     }
 
-    .experiencia:last-child {
-        border-bottom: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
+    /* El carnet, en papel como la libreta: no cambia con el modo, así que pisa los colores del texto adentro. */
+    .carnet {
+        --color-texto: #161a18;
+        --color-fondo: #fbfaf5;
+        max-width: 30rem;
+        padding: 0 1.5rem 1.4rem;
+        border: 1px solid rgb(22 26 24 / 0.14);
+        border-radius: 0.6rem;
+        background-color: #fbfaf5;
+        color: #161a18;
+        box-shadow: 0.2rem 0.25rem 0 rgb(0 0 0 / 0.16);
+    }
+
+    .carnet-tapa {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 0 -1.5rem;
+        padding: 1.1rem 1.5rem;
+        border-radius: 0.6rem 0.6rem 0 0;
+        background-color: #153f32;
+        color: #fbfaf5;
+    }
+
+    .carnet-titulo {
+        font-size: 1.3rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .carnet-desde {
+        font-size: 0.95rem;
+    }
+
+    .carnet-cuerpo {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        padding-top: 1.4rem;
+    }
+
+    .carnet-pie {
+        margin-top: 1.4rem;
+        padding-top: 1rem;
+        border-top: 3px double rgb(22 26 24 / 0.45);
+    }
+
+    .carnet-pie dt {
+        font-weight: 800;
+    }
+
+    .carnet-pie dd {
+        overflow-wrap: anywhere;
+    }
+
+    /* Cuánto truco sabés: tres opciones en fila, con sus fósforos grandes, como los niveles de la máquina en Jugar. */
+    .experiencias {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-top: 1.4rem;
+    }
+
+    .experiencia {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem 0.85rem 1.1rem;
+        border: 1.5px solid color-mix(in srgb, var(--color-texto) 22%, transparent);
+        border-radius: 0.6rem;
+        cursor: pointer;
+        text-align: left;
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    .experiencia[aria-pressed='true'] {
+        border-color: var(--color-texto);
+        transform: translateY(-0.2rem);
+    }
+
+    .experiencia:active {
+        transform: translateY(1px);
+    }
+
+    @media (width < 40rem) {
+        .experiencias {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    @media (min-width: 64rem) {
+        .cuenta-grilla {
+            grid-template-columns: 30rem minmax(0, 1fr);
+        }
     }
 
     /* Con uno elegido, los otros dos bajan un paso. Sin ninguno, los tres valen lo mismo. */
@@ -5988,6 +6135,10 @@ html:has(body.superficie-pano) {
 }
 
 @media (hover: hover) and (pointer: fine) {
+    .separador:not([aria-selected='true']):hover {
+        transform: translateY(-2px);
+    }
+
     /* Una seña: su naipe se levanta e inclina, como una carta que se agarra. */
     button.sena:not([disabled]):hover .mini-naipe {
         transform: translateY(-0.14em) rotate(-5deg);
@@ -6123,6 +6274,12 @@ html:has(body.superficie-pano) {
     .boton,
     .boton:not([disabled]):hover,
     .boton:not([disabled]):hover .icono,
+    .separador,
+    .separador:hover,
+    .separador:active,
+    .experiencia,
+    .experiencia:active,
+    .experiencia[aria-pressed='true'],
     .naipe-jugable,
     .naipe-jugable:not([disabled]):hover,
     .naipe-jugable.del-tanto {

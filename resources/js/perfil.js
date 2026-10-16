@@ -42,6 +42,8 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titu
     // Lo que usás ahora: elegir algo lo cambia acá, sin recargar la página.
     enUso: enUso ?? {},
     guardando: false,
+    // La sección que está a la vista: el índice la marca con el fósforo puesto.
+    aqui: 'resumen',
 
     get esLaQueUsa() {
         if (this.prueba?.clave === undefined || this.enUso[this.prueba.tipo] !== this.prueba.clave) {
@@ -80,6 +82,33 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titu
             this.contarLoNuevo();
             this.sellarLoNuevo();
         }
+
+        this.seguirLasSecciones();
+    },
+
+    /**
+     * Marca en el índice la sección que está a la vista: la que cruza la franja de arriba de la pantalla.
+     */
+    seguirLasSecciones() {
+        if (! ('IntersectionObserver' in window)) {
+            return;
+        }
+
+        const observador = new IntersectionObserver((entradas) => {
+            for (const entrada of entradas) {
+                if (entrada.isIntersecting) {
+                    this.aqui = entrada.target.id;
+                }
+            }
+        }, { rootMargin: '-25% 0px -70% 0px' });
+
+        document.querySelectorAll('.perfil-indice a[href^="#"]').forEach((enlace) => {
+            const seccion = document.getElementById(enlace.getAttribute('href').slice(1));
+
+            if (seccion) {
+                observador.observe(seccion);
+            }
+        });
     },
 
     /**

@@ -158,10 +158,16 @@
         </section>
 
         {{-- El índice: links quietos a cada sección. En el celular se desliza de costado. --}}
+        {{-- El índice: cada sección con su ícono; la que está a la vista queda con el fósforo puesto. --}}
         <nav aria-label="En este perfil" class="perfil-indice">
             <ul class="pagina">
                 @foreach ($secciones as $ancla => $nombre)
-                    <li><a href="#{{ $ancla }}" class="enlace-nav">{{ $nombre }}</a></li>
+                    <li>
+                        <a href="#{{ $ancla }}" class="enlace-nav indice-enlace" :aria-current="aqui === '{{ $ancla }}' ? 'location' : null">
+                            <x-icono :nombre="['resumen' => 'ranking', 'libreta' => 'libreta', 'coleccion' => 'coleccion', 'camino' => 'camino', 'partidas' => 'repetir', 'cuenta' => 'jugador'][$ancla]" />
+                            {{ $nombre }}
+                        </a>
+                    </li>
                 @endforeach
             </ul>
         </nav>
@@ -326,9 +332,12 @@
                         <div class="min-w-0">
                             <div role="tablist" aria-label="Qué mirar" class="coleccion-pestanas">
                                 @foreach ($pestanas as $clave => $nombre)
-                                    <button type="button" role="tab" id="pestana-{{ $clave }}" class="pestana" aria-controls="piezas-{{ $clave }}"
+                                    <button type="button" role="tab" id="pestana-{{ $clave }}" class="separador" aria-controls="piezas-{{ $clave }}"
                                         :aria-selected="(pestana === '{{ $clave }}').toString()" aria-selected="{{ $clave === $pestanaInicial ? 'true' : 'false' }}"
-                                        @click="pestana = '{{ $clave }}'">{{ $nombre }}</button>
+                                        @click="pestana = '{{ $clave }}'">
+                                        <x-icono :nombre="['cartas' => 'carta', 'dorsos' => 'dorso', 'mesas' => 'mesa', 'mazos' => 'mazo', 'anotar' => 'anotar', 'titulos' => 'titulo', 'distintivos' => 'distintivo'][$clave]" />
+                                        {{ $nombre }}
+                                    </button>
                                 @endforeach
                             </div>
 
@@ -655,32 +664,18 @@
             <section id="cuenta" aria-labelledby="titulo-cuenta-entera" class="pagina perfil-seccion">
                 <h2 id="titulo-cuenta-entera" class="seccion-titulo perfil-titulo">Tu cuenta</h2>
 
-                <div class="mt-8 grid gap-x-16 gap-y-12 lg:grid-cols-2">
-                    <section aria-labelledby="titulo-experiencia">
-                        <h3 id="titulo-experiencia" class="text-xl font-extrabold">¿Cuánto truco sabés?</h3>
-                        <p class="mt-2 max-w-[46ch] leading-relaxed">Cambia contra qué nivel de la máquina entrás si no elegís y qué ayudas ves. Nada más.</p>
+                <div class="cuenta-grilla">
+                    {{-- El carnet de socio: en papel, como la libreta (no cambia con el modo). El apodo se cambia acá mismo. --}}
+                    <section aria-labelledby="titulo-cuenta" class="carnet" x-data="{ apodo: {{ Js::from(old('apodo', $jugador->apodo)) }} }">
+                        <div class="carnet-tapa">
+                            <x-isotipo class="size-9 shrink-0" />
+                            <div>
+                                <h3 id="titulo-cuenta" class="carnet-titulo">Carnet de socio <span class="whitespace-nowrap tabular-nums">Nº {{ str_pad((string) $jugador->id, 4, '0', STR_PAD_LEFT) }}</span></h3>
+                                <p class="carnet-desde">Socio desde {{ $jugador->created_at?->locale('es')->translatedFormat('F \d\e Y') }}</p>
+                            </div>
+                        </div>
 
-                        <form method="POST" action="{{ route('perfil.experiencia') }}" class="mt-5 flex flex-col">
-                            @csrf
-                            @method('PUT')
-
-                            @foreach (Experiencia::cases() as $opcion)
-                                <button type="submit" name="experiencia" value="{{ $opcion->value }}" class="experiencia nivel-opcion"
-                                    aria-pressed="{{ $jugador->experiencia === $opcion ? 'true' : 'false' }}">
-                                    <x-nivel-fosforos :nivel="$opcion->nivel()" :puesto="$jugador->experiencia === $opcion" class="mt-0.5 text-[1.25rem]" />
-                                    <span class="min-w-0">
-                                        <span class="block text-lg font-extrabold leading-tight">{{ $opcion->nombre() }}</span>
-                                        <span class="mt-1 block leading-snug">{{ $opcion->detalle() }}</span>
-                                    </span>
-                                </button>
-                            @endforeach
-                        </form>
-                    </section>
-
-                    <section aria-labelledby="titulo-cuenta" x-data="{ apodo: {{ Js::from(old('apodo', $jugador->apodo)) }} }">
-                        <h3 id="titulo-cuenta" class="text-xl font-extrabold">Apodo y sesión</h3>
-
-                        <form method="POST" action="{{ route('perfil') }}" class="mt-5 flex max-w-[29rem] flex-col gap-6">
+                        <form method="POST" action="{{ route('perfil') }}" class="carnet-cuerpo">
                             @csrf
                             @method('PUT')
 
@@ -692,12 +687,31 @@
                             </div>
                         </form>
 
-                        <dl class="mt-8 max-w-[29rem] border-t border-current/15 pt-5">
-                            <dt class="font-bold">Email</dt>
-                            <dd class="mt-0.5 break-words">{{ $jugador->email }}</dd>
+                        <dl class="carnet-pie">
+                            <dt>Email</dt>
+                            <dd>{{ $jugador->email }}</dd>
                         </dl>
+                    </section>
 
-                        <form method="POST" action="{{ route('salir') }}" class="mt-6">
+                    <section aria-labelledby="titulo-experiencia">
+                        <h3 id="titulo-experiencia" class="text-xl font-extrabold">¿Cuánto truco sabés?</h3>
+                        <p class="mt-2 max-w-[46ch] leading-relaxed">Cambia contra qué nivel de la máquina entrás si no elegís y qué ayudas ves. Nada más.</p>
+
+                        <form method="POST" action="{{ route('perfil.experiencia') }}" class="experiencias">
+                            @csrf
+                            @method('PUT')
+
+                            @foreach (Experiencia::cases() as $opcion)
+                                <button type="submit" name="experiencia" value="{{ $opcion->value }}" class="experiencia nivel-opcion"
+                                    aria-pressed="{{ $jugador->experiencia === $opcion ? 'true' : 'false' }}">
+                                    <x-nivel-fosforos :nivel="$opcion->nivel()" :puesto="$jugador->experiencia === $opcion" class="text-[2.2rem]" />
+                                    <span class="block text-lg font-extrabold leading-tight">{{ $opcion->nombre() }}</span>
+                                    <span class="block text-sm leading-snug">{{ $opcion->detalle() }}</span>
+                                </button>
+                            @endforeach
+                        </form>
+
+                        <form method="POST" action="{{ route('salir') }}" class="mt-10">
                             @csrf
                             <button type="submit" class="boton boton-linea">
                                 <x-icono nombre="salir" /> Cerrar sesión

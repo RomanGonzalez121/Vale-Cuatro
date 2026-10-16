@@ -1999,3 +1999,14 @@ Román dijo que el Resumen y el Camino del perfil "pueden verse mucho mejor": er
 - **Con tests:** los del perfil, premios, movimiento, mazos, títulos, camino y libreta, y Pint.
 - **Sin correr, a pedido de Román:** la suite completa y las pruebas de navegador.
 - **Fuentes:** chess.com, el camino de trofeos de Clash Royale (Supercell) y el camino de Duolingo.
+
+## El índice, las pestañas de la Colección y Tu cuenta
+
+Román pidió mejorar las tres. Eligió las recomendadas:
+
+- **El índice del perfil:** cada sección lleva su ícono propio arriba del nombre. La sección que está a la vista queda con el fósforo del link puesto (`aria-current="location"`), seguida con un `IntersectionObserver` en `perfil.js` (`seguirLasSecciones`). Sigue quieto en su lugar: nada pegado al scroll.
+- **Las pestañas de la Colección:** son separadores de fichero (`.separador`), cada uno con su ícono, de borde redondeado arriba y apoyados en la raya del panel. La abierta va en naipe; las demás, en paño hondo.
+- **Tu cuenta:** el carnet de socio, en papel como la libreta, con la tapa de paño hondo, el isotipo, el número de socio y la fecha de alta. El apodo se cambia ahí mismo y abajo va el email. Al lado, "¿Cuánto truco sabés?" en tres opciones en fila, con sus fósforos grandes como los niveles de la máquina; en el celular van una debajo de otra. "Cerrar sesión" va al final.
+- **Íconos nuevos, con el trazo de siempre:** `libreta`, `coleccion`, `camino`, `carta`, `dorso`, `mesa`, `anotar`, `titulo` y `distintivo`.
+
+Probado en un navegador real en 1355 x 638 y 360 x 740, de día y de noche, sin errores. Pasaron los tests del perfil, del movimiento y de los íconos, y Pint. La suite completa no se corrió.
