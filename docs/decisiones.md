@@ -1966,3 +1966,36 @@ Román decidió sumar cuatro mazos más, en niveles que tenían un solo premio, 
   - Hachette (Royal Cats Playing Cards);
   - Fotoeins (los gatos del Jardín Botánico);
   - Chess.com, Chess Club, WFP e Indie Klem (cómo se elige y se prueba una pieza).
+
+## El Resumen y el Camino del perfil, dibujados
+
+### Qué problema había
+
+Román dijo que el Resumen y el Camino del perfil "pueden verse mucho mejor": eran números en una grilla y columnas de texto. Pidió buscar referencias.
+
+### Qué se eligió (las direcciones A de una lámina con dos opciones por sección)
+
+- **Resumen, "la planilla con dibujos":** arriba las últimas doce partidas como cartitas, de la más vieja a la más nueva. La ganada va boca arriba con tu carta y la perdida boca abajo con tu dorso, un poco más baja, cada una con su tanteo. Debajo, cada número con su dibujo:
+  - las ganadas en una fila de palitos (los encendidos son las ganadas; con más de 30 partidas se muestra la proporción);
+  - la racha en palitos hasta la mejor;
+  - el envido en cuatro grupos de cinco fósforos (de cada 20);
+  - los torneos en copas;
+  - la escalera en escalones;
+  - los desafíos en cartas boca arriba y boca abajo.
+
+  Referencia: el perfil de chess.com, con las partidas y los números a la vista. Se descartó el Resumen sobre el paño, porque iba a quedar verde junto a la Colección.
+- **Camino, "el sendero de fósforos", en celular y en escritorio:** un fósforo largo con un nudo por nivel (del 1 al 40) y lo que destraba cada uno dibujado arriba, con la pieza de `<x-perfil.premio>`.
+  - Lo recorrido está encendido; el tramo de tu nivel, según los fósforos que llevás en la tira.
+  - Tu nivel va en Copa con "Vos estás acá" y lo que viene, apagado.
+  - Se desliza de costado y arranca centrado en tu nivel.
+  - Reemplaza la fila de ocho niveles y la tabla de "Ver el camino entero".
+
+  Referencia: el camino de trofeos de Clash Royale. Se descartó el sendero vertical, porque ocupa mucho alto.
+- **No suma peso:** la Colección ya trae al perfil las piezas de todos los mazos, así que dibujar los 40 niveles no carga nada nuevo.
+
+### Qué se probó y qué no
+
+- **En un navegador real:** en 1355 x 638 y 360 x 740, de día y de noche, con la cuenta de prueba en nivel 4 y en nivel 13. El sendero se centra en el nivel y no hay errores.
+- **Con tests:** los del perfil, premios, movimiento, mazos, títulos, camino y libreta, y Pint.
+- **Sin correr, a pedido de Román:** la suite completa y las pruebas de navegador.
+- **Fuentes:** chess.com, el camino de trofeos de Clash Royale (Supercell) y el camino de Duolingo.

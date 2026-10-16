@@ -4453,72 +4453,6 @@ html:has(body.superficie-pano) {
         border-bottom: 1px solid currentColor;
     }
 
-    /* Los números, como la planilla del club: el número grande, su nombre abajo y las rayas del anotador. */
-    .planilla-numeros {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        margin-top: 1.9rem;
-    }
-
-    .planilla-numeros > div {
-        display: flex;
-        flex-direction: column-reverse;
-        justify-content: flex-end;
-        gap: 0.4rem;
-        padding: 1rem 0.9rem 1.1rem;
-        border-bottom: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
-    }
-
-    .planilla-numeros > div:nth-child(odd) {
-        padding-left: 0;
-    }
-
-    .planilla-numeros > div:nth-child(even) {
-        border-left: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
-    }
-
-    .planilla-numeros dt {
-        font-size: 0.9rem;
-        font-weight: 700;
-    }
-
-    .planilla-numeros dd {
-        font-size: clamp(2.25rem, 4.6vw, 3.25rem);
-        font-weight: 900;
-        font-variant-numeric: tabular-nums;
-        line-height: 0.95;
-        letter-spacing: -0.02em;
-    }
-
-    .planilla-numeros small {
-        margin-left: 0.45rem;
-        font-size: 0.95rem;
-        font-weight: 600;
-        letter-spacing: 0;
-    }
-
-    @media (min-width: 48rem) {
-        .planilla-numeros {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .planilla-numeros > div:nth-child(odd) {
-            padding-left: 0.9rem;
-        }
-
-        .planilla-numeros > div:nth-child(even) {
-            border-left: 0;
-        }
-
-        .planilla-numeros > div:not(:nth-child(4n + 1)) {
-            border-left: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
-        }
-
-        .planilla-numeros > div:nth-child(4n + 1) {
-            padding-left: 0;
-        }
-    }
-
     /* La Colección, sobre el paño: las piezas a un lado y el probador al otro. */
     .perfil-coleccion {
         margin-top: 4rem;
@@ -5062,44 +4996,288 @@ html:has(body.superficie-pano) {
         transform: translateY(-5%);
     }
 
-    /* El camino cerca del nivel: en el celular un renglón por nivel; en escritorio, ocho columnas. */
-    .camino-cerca {
+    /*
+     | El Resumen, dibujado: arriba las últimas partidas como cartitas (ganada boca arriba con tu carta,
+     | perdida boca abajo y un poco más baja); abajo cada número con su dibujo, como se anota en el club.
+     */
+    .resumen-ultimas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
         margin-top: 1.9rem;
     }
 
-    .camino-paso {
-        display: grid;
-        grid-template-columns: 3.5rem minmax(0, 1fr);
-        column-gap: 1rem;
-        padding: 0.9rem 0;
-        border-bottom: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
+    .resumen-ultimas > li {
+        width: 2.75rem;
+        text-align: center;
     }
 
-    .camino-numero {
-        grid-row: span 2;
-        font-size: 2rem;
-        font-weight: 900;
+    .resumen-ultimas :is(.carta, .dorso) {
+        display: block;
+        width: 100%;
+        filter: drop-shadow(1.5px 2px 0 rgb(0 0 0 / 0.22));
+    }
+
+    .resumen-ultimas > .es-perdida {
+        transform: translateY(0.4rem);
+    }
+
+    .resumen-tanteo {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: 0.72rem;
+        font-weight: 800;
         font-variant-numeric: tabular-nums;
-        line-height: 1;
     }
 
-    .camino-estado {
-        min-height: 1lh;
-        font-size: 0.85rem;
-        font-weight: 700;
+    .resumen-numeros {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+        gap: 0 3rem;
+        margin-top: 1.4rem;
     }
 
-    .camino-premios > li + li {
-        margin-top: 0.45rem;
+    .resumen-dato {
+        display: flex;
+        flex-direction: column-reverse;
+        justify-content: flex-end;
+        gap: 0.45rem;
+        padding-block: 1.1rem 1.2rem;
+        border-top: 1px solid color-mix(in srgb, var(--color-texto) 18%, transparent);
     }
 
-    /* El nivel que sigue va sobre el paño hondo: es al que vas. */
-    .camino-paso.es-proximo {
-        margin-inline: -1rem;
-        padding-inline: 1rem;
-        border-radius: 0.75rem;
+    .resumen-dato dt {
+        font-weight: 800;
+    }
+
+    .resumen-dato dt small {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .resumen-dato dd {
+        display: flex;
+        align-items: flex-end;
+        gap: 1rem;
+    }
+
+    .resumen-cifra {
+        font-size: 3.25rem;
+        font-weight: 900;
+        line-height: 0.85;
+        letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .resumen-cifra small {
+        font-size: 1.5rem;
+    }
+
+    /* Un palito por partida (o por partida de racha): los encendidos con la cabeza en Copa. */
+    .resumen-palitos {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 3px;
+        padding-bottom: 0.15rem;
+    }
+
+    .resumen-palitos > i {
+        position: relative;
+        width: 4px;
+        height: 1.6rem;
+        border-radius: 2px;
+        background-color: var(--color-fosforo);
+    }
+
+    .resumen-palitos > i::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -1.5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: var(--color-copa);
+    }
+
+    .resumen-palitos > i.apagado,
+    .resumen-palitos > i.apagado::before {
+        background-color: color-mix(in srgb, var(--color-texto) 18%, transparent);
+    }
+
+    .resumen-grupos {
+        display: flex;
+        gap: 0.4rem;
+    }
+
+    .resumen-grupos svg {
+        width: 2.2rem;
+        height: 2.2rem;
+    }
+
+    .resumen-naipes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .resumen-naipes > * {
+        width: 1.45rem;
+    }
+
+    .resumen-escalones {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+    }
+
+    .resumen-escalones > i {
+        width: 0.9rem;
+        border-radius: 2px;
+        background-color: color-mix(in srgb, var(--color-texto) 16%, transparent);
+    }
+
+    .resumen-escalones > i.subido {
+        background-color: var(--color-basto);
+    }
+
+    /*
+     | El camino, como un sendero de fósforos: un nudo por nivel, lo que destraba dibujado arriba, lo recorrido
+     | encendido (--encendido, del tramo de cada nivel) y tu nivel en Copa. Se desliza de costado.
+     */
+    .sendero {
+        position: relative;
+        margin-top: 1.4rem;
+        padding: 0.5rem 0 1.25rem;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+    }
+
+    .sendero > ol {
+        display: flex;
+        width: max-content;
+    }
+
+    .sendero li {
+        display: grid;
+        grid-template-rows: 8.5rem auto auto;
+        justify-items: center;
+        min-width: 8.5rem;
+    }
+
+    .sendero-premios {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 0.3rem;
+        padding: 0 0.5rem 0.6rem;
+    }
+
+    .sendero .premio-carta,
+    .sendero .premio-dorso {
+        display: block;
+        width: 3.2rem;
+    }
+
+    .sendero .premio-mazo {
+        display: block;
+        width: 5.4rem;
+    }
+
+    .sendero .premio-mesa .pieza-mesa {
+        display: block;
+        width: 4.4rem;
+        height: 3.3rem;
+        border-radius: 0.5rem;
+    }
+
+    .sendero :is(.premio-anotar, .premio-distintivo) {
+        display: grid;
+        place-items: center;
+        width: 3.3rem;
+        height: 3.3rem;
+        border-radius: 0.6rem;
         background-color: var(--color-pano-hondo);
         color: var(--color-naipe);
+    }
+
+    .sendero .premio-anotar svg {
+        width: 2.3rem;
+    }
+
+    .sendero .es-futuro .sendero-premios {
+        opacity: 0.45;
+    }
+
+    .sendero-tramo {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 100%;
+        height: 2.9rem;
+    }
+
+    .sendero-tramo::before,
+    .sendero-tramo::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        height: 6px;
+        margin-top: -3px;
+    }
+
+    .sendero-tramo::before {
+        right: 0;
+        background-color: color-mix(in srgb, var(--color-texto) 14%, transparent);
+    }
+
+    .sendero-tramo::after {
+        width: var(--encendido, 0%);
+        background-color: var(--color-fosforo);
+    }
+
+    .sendero-nudo {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        width: 2.4rem;
+        height: 2.4rem;
+        border: 2.5px solid var(--color-texto);
+        border-radius: 50%;
+        background-color: var(--color-fondo);
+        font-weight: 900;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .es-pasado .sendero-nudo {
+        background-color: var(--color-texto);
+        color: var(--color-fondo);
+    }
+
+    .es-tuyo .sendero-nudo {
+        width: 2.9rem;
+        height: 2.9rem;
+        border-color: var(--color-copa);
+        background-color: var(--color-copa);
+        color: var(--color-naipe);
+    }
+
+    .sendero-nombre {
+        max-width: 7.6rem;
+        margin-top: 0.45rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        line-height: 1.15;
+        text-align: center;
+    }
+
+    .sendero-vos {
+        display: block;
+        color: var(--color-pierde);
+        font-weight: 900;
     }
 
     .perfil-partidas {
@@ -5152,38 +5330,6 @@ html:has(body.superficie-pano) {
             width: 9rem;
         }
 
-        .camino-cerca {
-            display: grid;
-            grid-template-columns: repeat(8, minmax(0, 1fr));
-        }
-
-        .camino-paso {
-            display: block;
-            padding: 1rem 0.85rem 1.1rem;
-            border-bottom: 0;
-            border-left: 1px solid color-mix(in srgb, var(--color-texto) 16%, transparent);
-        }
-
-        .camino-paso:first-child {
-            border-left: 0;
-        }
-
-        .camino-paso.es-proximo {
-            margin-inline: 0;
-            border-left-color: transparent;
-        }
-
-        .camino-paso.es-proximo + .camino-paso {
-            border-left-color: transparent;
-        }
-
-        .camino-estado {
-            margin-top: 0.3rem;
-        }
-
-        .camino-premios {
-            margin-top: 0.6rem;
-        }
     }
 
     /* Cuánto truco sabés: tres renglones que se tocan, cada uno con los fósforos del nivel de la máquina que le toca. */

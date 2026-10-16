@@ -173,34 +173,74 @@
             @if ($numeros['partidas'] === 0 && $numeros['torneos'] === 0 && $numeros['escalones'] === 0 && $numeros['desafios'] === 0)
                 <p class="mt-6 text-lg font-semibold">{{ $propio ? 'Todavía no jugaste partidas que cuenten.' : 'Todavía no jugó partidas que cuenten.' }}</p>
             @else
-                <dl class="planilla-numeros">
-                    <div>
-                        <dt>Partidas</dt>
-                        <dd>{{ $numeros['partidas'] }}</dd>
+                @php
+                    // Las cartitas van de la más vieja a la más nueva; los dibujos se topean para que entren en una línea.
+                    $deLaVieja = array_reverse($ultimas);
+                    $cuantasGanadas = $numeros['partidas'] <= 30 ? $numeros['ganadas'] : (int) round($numeros['ganadas'] / $numeros['partidas'] * 30);
+                    $palitosDePartidas = min($numeros['partidas'], 30);
+                    $palitosDeRacha = min(max($numeros['mejorRacha'], $numeros['racha']), 20);
+                @endphp
+
+                @if ($deLaVieja !== [])
+                    <ol class="resumen-ultimas" aria-label="Las últimas {{ count($deLaVieja) }} partidas, de la más vieja a la más nueva">
+                        @foreach ($deLaVieja as $partida)
+                            <li @class(['es-perdida' => ! $partida['gano']])>
+                                <span class="sr-only">{{ $partida['gano'] ? 'Ganada' : 'Perdida' }}</span>
+                                @if ($partida['gano'])
+                                    <x-carta :palo="$suya['palo']" :numero="$suya['numero']" aria-hidden="true" />
+                                @else
+                                    <x-dorso aria-hidden="true" />
+                                @endif
+                                <span class="resumen-tanteo">{{ $partida['vos'] }}<span class="sr-only"> a </span><span aria-hidden="true">–</span>{{ $partida['ellos'] }}</span>
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+
+                <dl class="resumen-numeros">
+                    <div class="resumen-dato">
+                        <dt>Ganadas <small>de {{ $numeros['partidas'] }}@if ($numeros['porcentaje'] !== null), el {{ $numeros['porcentaje'] }} %@endif</small></dt>
+                        <dd>
+                            <span class="resumen-cifra">{{ $numeros['ganadas'] }}</span>
+                            <span class="resumen-palitos" aria-hidden="true">@for ($i = 0; $i < $palitosDePartidas; $i++)<i @class(['apagado' => $i >= $cuantasGanadas])></i>@endfor</span>
+                        </dd>
                     </div>
-                    <div>
-                        <dt>Ganadas</dt>
-                        <dd>{{ $numeros['ganadas'] }}@if ($numeros['porcentaje'] !== null)<small>{{ $numeros['porcentaje'] }} %</small>@endif</dd>
+                    <div class="resumen-dato">
+                        <dt>Racha <small>la mejor, {{ $numeros['mejorRacha'] }}</small></dt>
+                        <dd>
+                            <span class="resumen-cifra">{{ $numeros['racha'] }}</span>
+                            <span class="resumen-palitos" aria-hidden="true">@for ($i = 0; $i < $palitosDeRacha; $i++)<i @class(['apagado' => $i >= $numeros['racha']])></i>@endfor</span>
+                        </dd>
                     </div>
-                    <div>
-                        <dt>Racha</dt>
-                        <dd>{{ $numeros['racha'] }}<small>la mejor, {{ $numeros['mejorRacha'] }}</small></dd>
+                    <div class="resumen-dato">
+                        <dt>Envidos ganados @if ($numeros['envidos'] !== null)<small>{{ (int) round($numeros['envidos'] / 5) }} de cada 20</small>@endif</dt>
+                        <dd>
+                            <span class="resumen-cifra">{{ $numeros['envidos'] === null ? '–' : $numeros['envidos'] }}@if ($numeros['envidos'] !== null)<small>%</small>@endif</span>
+                            @if ($numeros['envidos'] !== null)
+                                <span class="resumen-grupos" aria-hidden="true">@for ($g = 0; $g < 4; $g++)<x-fosforos :grupo="$g" :puntos="(int) round($numeros['envidos'] / 5)" />@endfor</span>
+                            @endif
+                        </dd>
                     </div>
-                    <div>
-                        <dt>Envidos ganados</dt>
-                        <dd>{{ $numeros['envidos'] === null ? '–' : $numeros['envidos'].' %' }}</dd>
-                    </div>
-                    <div>
+                    <div class="resumen-dato">
                         <dt>Torneos ganados</dt>
-                        <dd>{{ $numeros['torneos'] }}</dd>
+                        <dd>
+                            <span class="resumen-cifra">{{ $numeros['torneos'] }}</span>
+                            <span class="resumen-naipes" aria-hidden="true">@for ($i = 0; $i < min($numeros['torneos'], 8); $i++)<x-carta palo="copa" :numero="1" mazo="fabrica" />@endfor</span>
+                        </dd>
                     </div>
-                    <div>
-                        <dt>Escalera</dt>
-                        <dd>{{ $numeros['escalones'] }}<small>de {{ $numeros['escalera'] }}</small></dd>
+                    <div class="resumen-dato">
+                        <dt>Escalera <small>de {{ $numeros['escalera'] }}</small></dt>
+                        <dd>
+                            <span class="resumen-cifra">{{ $numeros['escalones'] }}</span>
+                            <span class="resumen-escalones" aria-hidden="true">@for ($i = 1; $i <= $numeros['escalera']; $i++)<i @class(['subido' => $i <= $numeros['escalones']]) style="height: {{ 0.4 + $i * 0.2 }}rem"></i>@endfor</span>
+                        </dd>
                     </div>
-                    <div>
-                        <dt>Desafíos</dt>
-                        <dd>{{ $numeros['desafios'] }}<small>de {{ $numeros['desafiosEnTotal'] }}</small></dd>
+                    <div class="resumen-dato">
+                        <dt>Desafíos <small>de {{ $numeros['desafiosEnTotal'] }}</small></dt>
+                        <dd>
+                            <span class="resumen-cifra">{{ $numeros['desafios'] }}</span>
+                            <span class="resumen-naipes" aria-hidden="true">@for ($i = 0; $i < $numeros['desafiosEnTotal']; $i++)@if ($i < $numeros['desafios'])<x-carta palo="espada" :numero="7" mazo="fabrica" />@else<x-dorso />@endif @endfor</span>
+                        </dd>
                     </div>
                 </dl>
                 <p class="mt-3 text-sm">Partidas y ganadas son las que cuentan para el ranking.</p>
@@ -542,54 +582,43 @@
             {{-- El camino: unos niveles antes y después del tuyo, y el camino entero a un toque. --}}
             <section id="camino" aria-labelledby="titulo-camino" class="pagina perfil-seccion">
                 <h2 id="titulo-camino" class="seccion-titulo perfil-titulo">El camino</h2>
-                <p class="mt-4 text-lg">Diez fósforos por nivel. Ganar anota tres; perder, uno.</p>
+                <p class="mt-4 text-lg">
+                    @if ($nivel < App\Juego\Camino::NIVELES)
+                        Nivel {{ $nivel }}: {{ $enLaTira }} de 10 fósforos para el {{ $nivel + 1 }}. Ganar anota tres; perder, uno.
+                    @else
+                        Llegaste al final del camino: tenés todo.
+                    @endif
+                </p>
 
-                <ol class="camino-cerca">
-                    @foreach ($cerca as $numero => $premios)
-                        <li @class(['camino-paso', 'es-pasado' => $numero <= $nivel, 'es-proximo' => $numero === $nivel + 1])>
-                            <p class="camino-numero"><span class="sr-only">Nivel</span> {{ $numero }}</p>
-                            <p class="camino-estado">{{ $numero <= $nivel ? 'Tuyo' : ($numero === $nivel + 1 ? 'El que sigue' : '') }}</p>
-                            <ul class="camino-premios">
-                                @foreach ($premios as $premio)
-                                    <li>
-                                        <span class="block text-sm">{{ $tipos[$premio['tipo']] }}</span>
-                                        <span class="block font-bold leading-tight">{{ $premio['nombre'] }}</span>
-                                        @unless ($premio['listo'])
-                                            <span class="block text-sm">Próximamente</span>
-                                        @endunless
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </li>
-                    @endforeach
-                </ol>
-
-                <x-pagina.desplegable titulo="Ver el camino entero">
-                    <table class="tabla">
-                        <caption class="sr-only">Los cuarenta niveles y lo que destraba cada uno</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col" class="w-16">Nivel</th>
-                                <th scope="col">Premios</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($niveles as $numero => $premios)
-                                <tr @class(['font-bold' => $numero === $nivel])>
-                                    <td class="text-xl font-black tabular-nums">{{ $numero }}</td>
-                                    <td>
-                                        @foreach ($premios as $i => $premio)
-                                            {{ $tipos[$premio['tipo']] }} {{ $premio['nombre'] }}{{ $premio['listo'] ? '' : ' (próximamente)' }}{{ $i < count($premios) - 1 ? ',' : '' }}
-                                        @endforeach
-                                        @if ($numero <= $nivel)
-                                            <span class="text-sm font-semibold">, tuyo</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </x-pagina.desplegable>
+                {{--
+                    El sendero: un fósforo largo con un nudo por nivel y lo que destraba cada uno dibujado arriba. Lo
+                    recorrido está encendido (el tramo de tu nivel, según los fósforos que llevás), tu nivel en Copa y lo
+                    que viene, apagado. Se desliza de costado y arranca centrado en tu nivel.
+                --}}
+                <div class="sendero" tabindex="0" role="group" aria-label="El camino, del nivel 1 al {{ App\Juego\Camino::NIVELES }}"
+                    x-init="$nextTick(() => { const tuyo = $el.querySelector('.es-tuyo'); if (tuyo) $el.scrollLeft = tuyo.offsetLeft - ($el.clientWidth - tuyo.clientWidth) / 2 })">
+                    <ol>
+                        @foreach ($niveles as $numero => $premios)
+                            <li @class(['es-pasado' => $numero < $nivel, 'es-tuyo' => $numero === $nivel, 'es-futuro' => $numero > $nivel])>
+                                <div class="sendero-premios">
+                                    @foreach ($premios as $premio)
+                                        <x-perfil.premio :ficha="$premio" />
+                                    @endforeach
+                                </div>
+                                <div class="sendero-tramo" style="--encendido: {{ $numero < $nivel ? 100 : ($numero === $nivel ? ($nivel < App\Juego\Camino::NIVELES ? 50 + $enLaTira * 5 : 100) : 0) }}%">
+                                    <span class="sendero-nudo"><span class="sr-only">Nivel</span> {{ $numero }}</span>
+                                </div>
+                                <p class="sendero-nombre">
+                                    @if ($numero === $nivel)
+                                        <span class="sendero-vos">Vos estás acá</span>
+                                    @endif
+                                    {{ collect($premios)->pluck('nombre')->join(' y ') ?: 'De entrada' }}
+                                    <span class="sr-only">{{ $numero <= $nivel ? ', tuyo' : ($numero === $nivel + 1 ? ', el que sigue' : '') }}</span>
+                                </p>
+                            </li>
+                        @endforeach
+                    </ol>
+                </div>
             </section>
         @endif
 
@@ -601,7 +630,7 @@
                 <p class="mt-6 text-lg font-semibold">{{ $propio ? 'Todavía no terminaste ninguna partida.' : 'Todavía no terminó ninguna partida.' }}</p>
             @else
                 <ol class="perfil-partidas">
-                    @foreach ($ultimas as $partida)
+                    @foreach (array_slice($ultimas, 0, 5) as $partida)
                         <li>
                             <p @class(['font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>
                                 {{ $partida['esDesafio'] ? ($partida['gano'] ? 'Superado' : 'No salió') : ($propio ? ($partida['gano'] ? 'Ganaste' : 'Perdiste') : ($partida['gano'] ? 'Ganó' : 'Perdió')) }}

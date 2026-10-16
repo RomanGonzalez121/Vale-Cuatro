@@ -67,9 +67,8 @@ class PerfilController extends Controller
             ],
             // Lo que todavía no se dibujó (mesas, mazos) también está en la Colección, con su nivel.
             'proximamente' => array_values(array_filter(Camino::fichas(), fn (array $ficha) => ! $ficha['listo'])),
-            // El camino entero, nivel por nivel, para "Ver el camino entero".
+            // El camino entero, nivel por nivel: el sendero de fósforos.
             'niveles' => $this->niveles(),
-            'cerca' => $this->cerca($nivel),
             // La administración tiene todo abierto para probar: la pantalla lo dice en vez de contar lo que falta.
             'loTieneTodo' => Premios::loTieneTodo($jugador),
             // Por qué escalón va: los dorsos de la escalera se ganan ahí.
@@ -118,22 +117,11 @@ class PerfilController extends Controller
             'numeros' => (new Numeros)->de($jugador),
             // La libreta del club: los sellos que ganó, por tema (M23).
             'libreta' => (new Logros)->libreta($jugador),
-            'ultimas' => $this->historial->cerradasDe($jugador)->limit(5)->get()
+            // Las últimas doce: la fila de cartitas del Resumen; las cinco primeras van en "Últimas partidas".
+            'ultimas' => $this->historial->cerradasDe($jugador)->limit(12)->get()
                 ->map(fn (Partida $partida) => $this->historial->resumen($partida, (int) $partida->asientoDe($jugador)))
                 ->all(),
         ];
-    }
-
-    /**
-     * Unos niveles antes y después del actual: los que se ven de entrada en el camino.
-     *
-     * @return array<int, list<array<string, mixed>>>
-     */
-    private function cerca(int $nivel): array
-    {
-        $desde = max(2, min($nivel - 2, Camino::NIVELES - 7));
-
-        return array_slice($this->niveles(), $desde - 1, 8, true);
     }
 
     /**
