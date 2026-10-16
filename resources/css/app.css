@@ -4532,6 +4532,7 @@ html:has(body.superficie-pano) {
     .coleccion-pestanas {
         flex-wrap: nowrap;
         gap: 0.25rem;
+        padding-top: 0.3rem;
         overflow-x: auto;
         border-bottom: 2px solid var(--color-naipe);
         scrollbar-width: none;
@@ -4559,6 +4560,7 @@ html:has(body.superficie-pano) {
     .separador .icono {
         width: 1.1rem;
         height: 1.1rem;
+        transition: transform 160ms var(--ease-llegada);
     }
 
     .separador[aria-selected='true'] {
@@ -6194,7 +6196,12 @@ html:has(body.superficie-pano) {
         transform: translateY(-2px);
     }
 
+    /* La pestaña no se despega de la raya: se aclara apenas y el ícono se levanta. */
     .separador:not([aria-selected='true']):hover {
+        background-color: color-mix(in srgb, var(--color-naipe) 12%, var(--color-pano-hondo));
+    }
+
+    .separador:not([aria-selected='true']):hover .icono {
         transform: translateY(-2px);
     }
 
@@ -6338,6 +6345,8 @@ html:has(body.superficie-pano) {
     .separador,
     .separador:hover,
     .separador:active,
+    .separador .icono,
+    .separador:hover .icono,
     .experiencia,
     .experiencia:active,
     .experiencia[aria-pressed='true'],
