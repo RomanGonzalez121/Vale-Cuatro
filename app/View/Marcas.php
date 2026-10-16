@@ -2,13 +2,14 @@
 
 namespace App\View;
 
+use App\Juego\Logros;
 use App\Juego\Mesa;
 use App\Juego\Premios;
 
 /**
  * Las dos marcas del menú (elegidas por Román el 14 de octubre de 2026), con el puntito que ya tiene el
  * subrayado de los links: en "Jugar" cuando hay una partida sin terminar, y en el apodo cuando subió de
- * nivel y destrabó algo que todavía no vio en su perfil.
+ * nivel y destrabó algo, o ganó un sello de la libreta, que todavía no vio en su perfil.
  *
  * El menú de arriba y la barra de abajo las preguntan en la misma página: se averiguan una vez por pedido.
  */
@@ -27,7 +28,7 @@ final class Marcas
      */
     public static function premioNuevo(): bool
     {
-        return self::una('premio', fn ($jugador) => (new Premios)->hayNovedad($jugador));
+        return self::una('premio', fn ($jugador) => (new Premios)->hayNovedad($jugador) || (new Logros)->hayNuevos($jugador));
     }
 
     private static function una(string $cual, callable $averiguar): bool

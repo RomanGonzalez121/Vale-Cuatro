@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Juego\Camino;
+use App\Juego\Logros;
 use App\Juego\Mesa;
 use App\Juego\Titulos;
 use Illuminate\Console\Attributes\Description;
@@ -22,8 +23,10 @@ class RecalcularFosforos extends Command
     {
         $anotaron = $camino->recalcular($mesa);
         $titulos->recalcular($mesa);
+        // Los sellos de la libreta salen de las cuentas recién rehechas y suman su fósforo sobre los de las partidas.
+        $sellos = (new Logros)->recalcular();
 
-        $this->info("Partidas que anotaron fósforos: {$anotaron}.");
+        $this->info("Partidas que anotaron fósforos: {$anotaron}. Sellos nuevos en las libretas: {$sellos}.");
 
         return self::SUCCESS;
     }

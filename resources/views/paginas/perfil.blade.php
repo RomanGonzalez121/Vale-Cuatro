@@ -47,8 +47,13 @@
     }
 
     $secciones = $propio
-        ? ['resumen' => 'Resumen', 'coleccion' => 'Colección', 'camino' => 'Camino', 'partidas' => 'Partidas', 'cuenta' => 'Cuenta']
-        : ['resumen' => 'Resumen', 'partidas' => 'Partidas'];
+        ? ['resumen' => 'Resumen', 'libreta' => 'Libreta', 'coleccion' => 'Colección', 'camino' => 'Camino', 'partidas' => 'Partidas', 'cuenta' => 'Cuenta']
+        : ['resumen' => 'Resumen', 'libreta' => 'Libreta', 'partidas' => 'Partidas'];
+
+    // La libreta del club: cuántos sellos tiene de cuántos, y el tema que se ve primero (el primero con algo nuevo).
+    $sellosTiene = array_sum(array_column($libreta, 'tiene'));
+    $sellosTotal = array_sum(array_column($libreta, 'total'));
+    $temaInicial = collect($libreta)->search(fn ($tema) => collect($tema['logros'])->contains('nuevo', true)) ?: 'envido';
 @endphp
 
 <x-layouts.base :titulo="$propio ? 'Tu perfil' : $jugador->apodo" :descripcion="$propio ? 'Tu mesa, tu nivel, tus números y tu colección en Vale Cuatro.' : 'El perfil de '.$jugador->apodo.' en Vale Cuatro: su carta, su nivel y sus números.'">
@@ -174,6 +179,63 @@
                 </dl>
                 <p class="mt-3 text-sm">Partidas y ganadas son las que cuentan para el ranking.</p>
             @endif
+        </section>
+
+        {{--
+            La libreta del club (M23): una libreta de socio en papel, con un sello de goma por cada escalón ganado,
+            entintado del color de su tema. Una hoja por tema. Lo que falta es el círculo punteado donde va a ir el
+            sello; un secreto que no se ganó no dice qué es. Es papel: no cambia con el modo de día y de noche.
+        --}}
+        <section id="libreta" aria-labelledby="titulo-libreta" class="pagina perfil-seccion" x-data="{ tema: {{ Js::from($temaInicial) }} }">
+            <h2 id="titulo-libreta" class="seccion-titulo perfil-titulo">Libreta</h2>
+
+            <div class="libreta mt-6">
+                <div class="libreta-tapa">
+                    <p class="libreta-socio">Libreta de socio <span class="tabular-nums">Nº {{ str_pad((string) $jugador->id, 4, '0', STR_PAD_LEFT) }}</span></p>
+                    <p class="libreta-desde">{{ $jugador->apodo }}, socio desde {{ $jugador->created_at?->locale('es')->translatedFormat('F \d\e Y') }}</p>
+                    <p class="libreta-cuenta"><span class="tabular-nums">{{ $sellosTiene }}</span> de {{ $sellosTotal }} sellos</p>
+                </div>
+
+                <div class="libreta-temas" role="tablist" aria-label="Temas de la libreta">
+                    @foreach ($libreta as $clave => $tema)
+                        <button type="button" role="tab" id="tema-{{ $clave }}" aria-controls="hoja-{{ $clave }}" class="enlace-nav libreta-tema"
+                            :aria-selected="(tema === '{{ $clave }}').toString()" :tabindex="tema === '{{ $clave }}' ? 0 : -1" @click="tema = '{{ $clave }}'"
+                            style="--tinta: {{ $tema['tinta'] }}; --tinta-noche: {{ $tema['noche'] }}">
+                            {{ $tema['nombre'] }} <span class="libreta-tema-cuenta tabular-nums">{{ $tema['tiene'] }}/{{ $tema['total'] }}</span>
+                        </button>
+                    @endforeach
+                </div>
+
+                @foreach ($libreta as $clave => $tema)
+                    <ol id="hoja-{{ $clave }}" role="tabpanel" aria-labelledby="tema-{{ $clave }}" class="libreta-hoja" x-show="tema === '{{ $clave }}'" @if ($clave !== $temaInicial) x-cloak @endif>
+                        @foreach ($tema['logros'] as $logro)
+                            <li @class(['libreta-logro', 'es-nuevo' => $logro['nuevo'] && $propio])>
+                                <x-sello :logro="$logro['clave']" :escalon="$logro['escalon']" :fecha="$logro['fecha']" :secreto="$logro['secreto']" class="libreta-sello" />
+                                <div>
+                                    <p class="font-black leading-tight">{{ $logro['nombre'] }}@if ($logro['nuevo'] && $propio) <span class="libreta-nuevo">Nuevo</span>@endif</p>
+                                    <p class="mt-0.5 text-sm leading-snug">{{ $logro['pide'] }}</p>
+                                    @unless ($logro['secreto'])
+                                        <p class="mt-1.5 flex items-center gap-2 text-sm">
+                                            @if ($logro['escalones'] > 1)
+                                                <span class="libreta-escalones" aria-hidden="true">
+                                                    @for ($k = 1; $k <= $logro['escalones']; $k++)
+                                                        <span @class(['es-ganado' => $k <= $logro['escalon']])></span>
+                                                    @endfor
+                                                </span>
+                                            @endif
+                                            <span class="font-semibold tabular-nums">{{ $logro['completo'] ? 'Completo' : min($logro['lleva'], $logro['meta']).' de '.$logro['meta'] }}</span>
+                                        </p>
+                                        @if ($logro['titulo'])
+                                            <p class="mt-0.5 text-sm">Da el título {{ $logro['titulo'] }}{{ $logro['escalones'] > 1 ? ' en el escalón '.$logro['tituloEn'] : '' }}.</p>
+                                        @endif
+                                        <p class="mt-0.5 text-xs">{{ $logro['rareza'] > 0 ? 'Lo tiene el '.$logro['rareza'].' % de los socios.' : 'Todavía no lo tiene ningún socio.' }}</p>
+                                    @endunless
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                @endforeach
+            </div>
         </section>
 
         @if ($propio)

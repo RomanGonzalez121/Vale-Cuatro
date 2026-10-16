@@ -3896,6 +3896,225 @@ html:has(body.superficie-pano) {
         color: var(--color-oro);
     }
 
+    /*
+     | La libreta del club (M23): un sello de goma por escalón ganado, entintado del color de su tema y apenas
+     | torcido. Lo que falta es el círculo punteado donde va a ir. La libreta es papel: no cambia con el modo.
+     */
+    .sello {
+        display: block;
+        color: var(--tinta);
+        transform: rotate(var(--giro));
+    }
+
+    .sello-vacio {
+        color: color-mix(in srgb, var(--color-tinta) 32%, transparent);
+        transform: none;
+    }
+
+    .sello-letra {
+        font-family: var(--font-sans);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+    }
+
+    /*
+     | La libreta del perfil: papel con su sombra de objeto apoyado, y arriba la tapa de paño hondo, como el carnet
+     | de socio de un club. De noche pasa a Tinta, como las páginas de lectura, y los sellos se aclaran (abajo).
+     */
+    .libreta {
+        padding: 0 1.5rem 1.75rem;
+        border: 1px solid rgb(22 26 24 / 0.14);
+        border-radius: 0.3rem;
+        background-color: #fbfaf5;
+        color: #161a18;
+        box-shadow: 0.2rem 0.25rem 0 rgb(0 0 0 / 0.16);
+    }
+
+    .libreta-tapa {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 0.15rem 1.5rem;
+        margin: 0 -1.5rem;
+        padding: 1.1rem 1.5rem 1.15rem;
+        border-radius: 0.3rem 0.3rem 0 0;
+        background-color: #153f32;
+        color: #fbfaf5;
+    }
+
+    .libreta-socio {
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .libreta-desde {
+        font-size: 0.95rem;
+    }
+
+    .libreta-cuenta {
+        grid-row: 1 / span 2;
+        grid-column: 2;
+        font-weight: 800;
+        color: #f0b429;
+        text-align: right;
+    }
+
+    .libreta-temas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem 1.4rem;
+        padding: 1.15rem 0 0.65rem;
+        border-bottom: 3px double rgb(22 26 24 / 0.45);
+    }
+
+    .libreta-tema {
+        font-weight: 700;
+        color: #161a18;
+    }
+
+    /* El tema que se ve se escribe en la tinta de sus sellos. */
+    .libreta-tema[aria-selected='true'] {
+        font-weight: 900;
+        color: var(--tinta);
+    }
+
+    .libreta-tema-cuenta {
+        margin-left: 0.2rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: rgb(22 26 24 / 0.7);
+    }
+
+    .libreta-hoja {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+        gap: 1.75rem 2rem;
+        padding-top: 1.6rem;
+    }
+
+    .libreta-logro {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .libreta-sello {
+        flex: none;
+        width: 5.75rem;
+        height: 5.75rem;
+    }
+
+    .libreta-nuevo {
+        display: inline-block;
+        margin-left: 0.35rem;
+        padding: 0.05rem 0.45rem 0.1rem;
+        border-radius: 999px;
+        background-color: #c93327;
+        color: #fbfaf5;
+        font-size: 0.72rem;
+        font-weight: 800;
+        vertical-align: 0.12em;
+    }
+
+    /* Los escalones, un punto por cada uno: lleno el que ya tiene. */
+    .libreta-escalones {
+        display: inline-flex;
+        gap: 0.2rem;
+    }
+
+    .libreta-escalones > span {
+        width: 0.55rem;
+        height: 0.55rem;
+        border: 1.5px solid currentColor;
+        border-radius: 999px;
+        opacity: 0.5;
+    }
+
+    .libreta-escalones > .es-ganado {
+        background-color: currentColor;
+        opacity: 1;
+    }
+
+    @media (width < 40rem) {
+        .libreta {
+            padding: 0 1rem 1.4rem;
+        }
+
+        .libreta-tapa {
+            grid-template-columns: 1fr;
+            margin: 0 -1rem;
+            padding: 0.95rem 1rem;
+        }
+
+        .libreta-cuenta {
+            grid-row: auto;
+            grid-column: 1;
+            text-align: left;
+        }
+
+        /* Los temas, en una fila que se desliza de costado, como el índice del perfil. */
+        .libreta-temas {
+            flex-wrap: nowrap;
+            margin: 0 -1rem;
+            padding-inline: 1rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .libreta-tema {
+            flex: none;
+        }
+
+        .libreta-sello {
+            width: 4.75rem;
+            height: 4.75rem;
+        }
+    }
+
+    /* De noche: la libreta en Tinta con la tapa un paso más abajo, y cada sello en la tinta clara de su tema. */
+    :root[data-modo='noche'] .libreta {
+        border-color: rgb(251 250 245 / 0.16);
+        background-color: #161a18;
+        color: #fbfaf5;
+        box-shadow: 0.2rem 0.25rem 0 rgb(0 0 0 / 0.4);
+    }
+
+    :root[data-modo='noche'] .libreta-tapa {
+        background-color: #0e2b21;
+    }
+
+    :root[data-modo='noche'] .libreta-temas {
+        border-bottom-color: rgb(251 250 245 / 0.4);
+    }
+
+    :root[data-modo='noche'] .libreta-tema {
+        color: #fbfaf5;
+    }
+
+    :root[data-modo='noche'] .libreta-tema-cuenta {
+        color: rgb(251 250 245 / 0.7);
+    }
+
+    :root[data-modo='noche'] :is(.libreta .sello, .libreta-tema[aria-selected='true']) {
+        color: var(--tinta-noche);
+    }
+
+    :root[data-modo='noche'] .libreta .sello-vacio {
+        color: rgb(251 250 245 / 0.32);
+    }
+
+    /* En el final de la partida el sello se apoya en un disco de papel: sobre el paño su tinta no se leería. */
+    .final-sello {
+        display: block;
+        width: 3rem;
+        height: 3rem;
+        padding: 0.12rem;
+        border-radius: 999px;
+        background-color: #fbfaf5;
+        box-shadow: 0.12rem 0.15rem 0 rgb(0 0 0 / 0.25);
+    }
+
     /* El título, debajo del apodo: en cursiva, como se dice un apodo de club. */
     .perfil-lema {
         font-size: 1.15rem;

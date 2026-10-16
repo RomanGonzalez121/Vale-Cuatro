@@ -32,6 +32,10 @@ import { LLEGADA, asentarEnLaBaza, cantoEnRenglones, cartasDelTanto, llegarDelMa
 // La carta cae en la baza con un resorte de poco rebote: se pasa apenas y se apoya. Y la mano se junta igual.
 const CAE = resorte(0.4, 0.15);
 const SE_JUNTA = resorte(0.38, 0.12);
+// El sello de la libreta golpea el papel: un resorte corto, con el rebote justo para sentir el golpe.
+const SELLA = resorte(0.36, 0.22);
+// Entre un sello y el siguiente, cuando la partida dio varios.
+const ENTRE_SELLOS = 170;
 import { hacerArrastrable } from './arrastre';
 import { escucharPartida } from './echo';
 import { apagarSonido, audioAbierto, guardarSonido, prenderSonido, sonar, sonidoGuardado } from './sonido';
@@ -171,6 +175,8 @@ export default (inicial, pedidos) => ({
     demoraDelReparto: 0,
     // Lo que la partida le anotó al nivel (llega en el paso que la termina) y la tira que se cuenta en el final.
     experiencia: null,
+    // Si ya se muestran los sellos nuevos de la libreta, después de contar la tira.
+    sellando: false,
     tira: { nivel: 1, lleva: 0, subio: false, contada: false },
     tipoDePremio: TIPO_DE_PREMIO,
     voz: { texto: '', tono: 'copa', quien: 'vos', visible: false },
@@ -1858,6 +1864,7 @@ export default (inicial, pedidos) => ({
 
         if (this.reducido || experiencia.ganados === 0) {
             this.tira = { nivel: experiencia.nivelAhora, lleva: enLaTira(experiencia.ahora, experiencia.nivelAhora), subio, contada: true };
+            this.sellarLaLibreta();
 
             return;
         }
@@ -1879,6 +1886,7 @@ export default (inicial, pedidos) => ({
             if (anotados === experiencia.ganados) {
                 this.tira.subio = subio;
                 this.tira.contada = true;
+                this.sellarLaLibreta();
 
                 return;
             }
@@ -1890,6 +1898,40 @@ export default (inicial, pedidos) => ({
         };
 
         setTimeout(caer, ENTRE_FOSFOROS_DEL_NIVEL);
+    },
+
+    /**
+     * Después de la tira, los sellos de la libreta que dio la partida golpean el papel de a uno, como un sello de
+     * goma: entran grandes y levantados, golpean con un rebote chico y quedan en su lugar, cada uno con su golpe
+     * seco. No traban nada: los botones del final siguen andando. Con movimiento reducido aparecen con un fundido.
+     */
+    sellarLaLibreta() {
+        if (! this.experiencia?.sellos?.length) {
+            return;
+        }
+
+        this.sellando = true;
+
+        this.$nextTick(() => {
+            this.$root.querySelectorAll('[data-sello-nuevo]').forEach((sello, numero) => {
+                const demora = numero * ENTRE_SELLOS;
+
+                if (this.reducido) {
+                    sello.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: demora, easing: 'ease', fill: 'backwards' });
+
+                    return;
+                }
+
+                sello.querySelector('.final-sello').animate([
+                    { opacity: 0, transform: 'translateY(-14%) scale(1.5) rotate(-7deg)' },
+                    { opacity: 1, offset: 0.3 },
+                    { opacity: 1, transform: 'none' },
+                ], { ...SELLA, delay: demora, fill: 'backwards' });
+                // El nombre se lee después del golpe.
+                sello.lastElementChild.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: demora + 140, easing: 'ease', fill: 'backwards' });
+                this.sonar('sello', demora + 110);
+            });
+        });
     },
 
     /**

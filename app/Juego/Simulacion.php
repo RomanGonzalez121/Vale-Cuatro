@@ -84,6 +84,11 @@ final class Simulacion
             (new Camino)->anotar($partida, $mesa);
             (new Titulos)->anotar($partida, $mesa);
 
+            // Los jugadores de ejemplo también llenan su libreta, como cualquiera que juega.
+            foreach (Camino::personas($partida) as $jugador) {
+                (new Logros)->revisar(Jugador::find($jugador), $partida);
+            }
+
             return $partida;
         });
     }

@@ -5,6 +5,7 @@ namespace App\Juego;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -192,7 +193,7 @@ final class Camino
      *
      * Vale justo al cerrar: el total del jugador ya incluye esta partida y nada más.
      *
-     * @return array{ganados: int, antes: int, ahora: int, nivelAntes: int, nivelAhora: int, premios: list<array{tipo: string, nombre: string, listo: bool}>}|null
+     * @return array{ganados: int, sellos: list<array{logro: string, escalon: int, nombre: string, dibujo: string}>, antes: int, ahora: int, nivelAntes: int, nivelAhora: int, premios: list<array{tipo: string, nombre: string, listo: bool}>}|null
      */
     public function resumen(Partida $partida, int $asiento, Mesa $mesa): ?array
     {
@@ -202,12 +203,23 @@ final class Camino
             return null;
         }
 
-        $ganados = $this->fosforosEn($partida, $asiento, $mesa);
+        // Los sellos de la libreta que dio esta partida también anotan: un fósforo cada uno.
+        $sellos = (new Logros)->deLaPartida($partida, $jugador);
+        $ganados = $this->fosforosEn($partida, $asiento, $mesa) + count($sellos) * Logros::FOSFOROS_POR_SELLO;
         $ahora = (int) Jugador::query()->whereKey($jugador)->value('fosforos');
         $antes = max(0, $ahora - $ganados);
 
         return [
             'ganados' => $ganados,
+            // Si la partida dio dos escalones del mismo logro, se ve el más alto: un sello por logro.
+            'sellos' => array_map(fn (array $sello) => [
+                ...$sello,
+                'nombre' => Logros::ficha($sello['logro'])['nombre'].(count(Logros::ficha($sello['logro'])['escalones']) > 1 ? ", escalón {$sello['escalon']}" : ''),
+                // El sello ya dibujado: el final de la partida lo deja caer tal cual se ve en la libreta.
+                'dibujo' => Blade::render('<x-sello :logro="$logro" :escalon="$escalon" :fecha="$fecha" class="size-full" />', [
+                    'logro' => $sello['logro'], 'escalon' => $sello['escalon'], 'fecha' => now(),
+                ]),
+            ], array_values(array_column($sellos, null, 'logro'))),
             'antes' => $antes,
             'ahora' => $ahora,
             'nivelAntes' => self::nivelCon($antes),

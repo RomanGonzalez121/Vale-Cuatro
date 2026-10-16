@@ -79,6 +79,12 @@ export const SONIDOS = {
     // "Quiero" suena más claro; "no quiero", más grave y apagado.
     quiero: golpe({ grave: 1.28, brillo: 1.5 }),
     noQuiero: golpe({ grave: 0.74, brillo: 0.3 }),
+    // Un sello de la libreta: la goma que golpea el papel, seco y grave, con el chasquido corto del mango.
+    sello: [
+        { tono: 'sine', desde: 120, hasta: 58, dura: 0.12, volumen: 0.34 },
+        { ruido: 'lowpass', frecuencia: 900, q: 0.6, dura: 0.06, volumen: 0.22 },
+        { ruido: 'bandpass', frecuencia: 2600, q: 1.4, dura: 0.014, volumen: 0.07, en: 0.006 },
+    ],
     // El final de la partida: tres golpes, el último más grave y más largo. Sobrio, como el cierre.
     final: [
         ...golpe({ volumen: 0.8 }),

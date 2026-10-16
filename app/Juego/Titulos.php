@@ -37,12 +37,26 @@ final class Titulos
     public const CUENTAS = [
         'envidos_cantados', 'envidos_ganados', 'trucos_ganados', 'flores_cantadas',
         'retrucos_ganados', 'chamuyos', 'manos_con_parda', 'faltas_ganadas', 'vale_cuatros_ganados',
+        // Las de los logros de la libreta (M23).
+        'treinta_y_tres', 'envido_primero', 'quieros_ganados', 'contraflores_ganadas', 'partidas_jugadas',
+        'partidas_ganadas', 'remontadas', 'sin_salir_de_malas', 'dificil_ganadas', 'ultra_ganadas',
+        'de_a_cuatro_ganadas', 'senas_hechas', 'revanchas_ganadas', 'tres_pardas', 'treinta_a_cero',
+        'ancho_contra_ancho', 'contraflor_al_resto',
     ];
+
+    private const ENVIDOS = ['envido', 'real_envido', 'falta_envido'];
+
+    private const TRUCOS = ['truco', 'retruco', 'vale_cuatro'];
+
+    /**
+     * Cuántos puntos abajo hay que haber estado para que ganar sea ganar de atrás.
+     */
+    private const REMONTADA = 10;
 
     /**
      * Las cuentas que salen de los otros juegos.
      */
-    public const DE_LOS_JUEGOS = ['torneos_ganados', 'escalones_pasados', 'desafios_pasados'];
+    public const DE_LOS_JUEGOS = ['torneos_ganados', 'escalones_pasados', 'desafios_pasados', 'mejor_racha'];
 
     /**
      * Las cartas bravas: los anchos, los sietes de espada y de oro y los tres. Chamuyar es ganar sin ninguna.
@@ -109,15 +123,24 @@ final class Titulos
         $equipoDe = fn (int $asiento) => $deACuatro ? $asiento % 2 : $asiento;
         $anterior = null;
 
-        // Lo que hace falta recordar de la mano en juego: las cartas de cada uno, quién cantó el último
-        // truco, si la primera baza fue parda y si lo que se quiso fue un falta envido.
-        $manos = [];
-        $cantoElTruco = null;
-        $primeraParda = false;
-        $ultimoEnvido = null;
-        $faltaQuerida = false;
+        // Lo que hace falta recordar de la mano en juego: las cartas de cada uno, quién cantó el último truco y
+        // si quedó sin contestar, quién lo quiso, cómo salieron las bazas, cuál fue el último envido y la última
+        // contraflor cantados y si lo que se quiso fue un falta envido.
+        $mano = fn () => [
+            'manos' => [], 'cantoElTruco' => null, 'trucoSinContestar' => null, 'quisieron' => [], 'pardas' => [],
+            'baza' => [], 'ultimoEnvido' => null, 'faltaQuerida' => false, 'envidoPrimero' => [], 'alResto' => false,
+        ];
+        $m = $mano();
+        // Y de la partida: el tanteo y lo más abajo que estuvo cada equipo.
+        $tanteo = [0, 0];
+        $abajo = [0, 0];
 
         foreach ($mesa->pasoAPaso($partida) as [$evento, $motor]) {
+            // Una seña no pasa por el motor: se cuenta del evento.
+            if ($evento->tipo === EventoDePartida::SENA && isset($cuentas[$evento->asiento])) {
+                $cuentas[$evento->asiento]['senas_hechas']++;
+            }
+
             // Si el motor es el mismo de antes, el evento no pasó por el motor y sus hechos ya se contaron.
             if ($motor === $anterior) {
                 continue;
@@ -126,70 +149,202 @@ final class Titulos
             $anterior = $motor;
 
             if ($evento->tipo === EventoDePartida::REPARTO) {
-                $manos = $evento->datos['manos'];
-                $cantoElTruco = null;
-                $primeraParda = false;
-                $ultimoEnvido = null;
-                $faltaQuerida = false;
+                $m = $mano();
+                $m['manos'] = $evento->datos['manos'];
             }
 
             foreach ($motor->hechos() as $hecho) {
                 foreach (array_keys($personas) as $asiento) {
-                    $equipo = $equipoDe($asiento);
-
-                    match (true) {
-                        $hecho['tipo'] === 'canto' && $hecho['asiento'] === $asiento && in_array($hecho['canto'], ['envido', 'real_envido', 'falta_envido'], true) => $cuentas[$asiento]['envidos_cantados']++,
-                        $hecho['tipo'] === 'canto' && $hecho['asiento'] === $asiento && $hecho['canto'] === 'flor' => $cuentas[$asiento]['flores_cantadas']++,
-                        $hecho['tipo'] === 'tantos' && $hecho['canto'] === 'envido' && $equipoDe($hecho['ganador']) === $equipo => $this->ganoElEnvido($cuentas[$asiento], $faltaQuerida),
-                        // La mano se cerró con un truco querido a favor de su equipo: vale 2 o más, 3 o más con
-                        // el retruco querido y 4 con el vale cuatro.
-                        $hecho['tipo'] === 'puntos' && $hecho['concepto'] === 'truco' && $hecho['puntos'] >= 2 && $hecho['equipo'] === $equipo => $this->ganoElTruco($cuentas[$asiento], $hecho['puntos']),
-                        // Cantó truco, no se lo quisieron y no tenía ninguna carta brava.
-                        $hecho['tipo'] === 'mano_cerrada' && $hecho['motivo'] === 'no_quiero' && $cantoElTruco === $asiento && $hecho['ganador'] === $equipo && ! $this->teniaBravas($manos[$asiento] ?? []) => $cuentas[$asiento]['chamuyos']++,
-                        $hecho['tipo'] === 'mano_cerrada' && $primeraParda && $hecho['ganador'] === $equipo => $cuentas[$asiento]['manos_con_parda']++,
-                        default => null,
-                    };
+                    $this->contar($cuentas[$asiento], $hecho, $asiento, $equipoDe, $m);
                 }
 
-                // Lo que se recuerda de la mano se anota después de contar, para que valga desde el hecho siguiente.
-                match (true) {
-                    $hecho['tipo'] === 'canto' && in_array($hecho['canto'], ['truco', 'retruco', 'vale_cuatro'], true) => $cantoElTruco = $hecho['asiento'],
-                    $hecho['tipo'] === 'canto' && in_array($hecho['canto'], ['envido', 'real_envido', 'falta_envido'], true) => $ultimoEnvido = $hecho['canto'],
-                    $hecho['tipo'] === 'respuesta' && $hecho['canto'] === 'envido' => $faltaQuerida = $hecho['quiere'] && $ultimoEnvido === 'falta_envido',
-                    $hecho['tipo'] === 'baza' && $hecho['numero'] === 1 => $primeraParda = $hecho['ganador'] === null,
-                    default => null,
-                };
+                $this->recordar($m, $hecho, $equipoDe);
+
+                if ($hecho['tipo'] === 'puntos') {
+                    $tanteo = $hecho['tanteo'];
+                    $abajo[0] = max($abajo[0], $tanteo[1] - $tanteo[0]);
+                    $abajo[1] = max($abajo[1], $tanteo[0] - $tanteo[1]);
+                }
             }
+        }
+
+        // Lo de la partida entera, para quien la ganó.
+        $camino = new Camino;
+
+        foreach (array_keys($personas) as $asiento) {
+            $equipo = $equipoDe($asiento);
+            $fosforos = $camino->fosforosEn($partida, $asiento, $mesa);
+            $gano = $fosforos === Camino::POR_GANAR;
+            $terminada = $partida->estado === Partida::TERMINADA;
+            $suyo = $tanteo[$equipo];
+            $delRival = $tanteo[1 - $equipo];
+
+            $cuentas[$asiento]['partidas_jugadas'] += (int) ($fosforos > 0);
+
+            if (! $gano) {
+                continue;
+            }
+
+            $cuentas[$asiento]['partidas_ganadas']++;
+            $cuentas[$asiento]['remontadas'] += (int) ($abajo[$equipo] >= self::REMONTADA);
+            $cuentas[$asiento]['sin_salir_de_malas'] += (int) ($terminada && $suyo >= $partida->puntos && $delRival < intdiv($partida->puntos, 2));
+            $cuentas[$asiento]['treinta_a_cero'] += (int) ($terminada && $partida->puntos === 30 && $suyo >= 30 && $delRival === 0);
+            $cuentas[$asiento]['dificil_ganadas'] += (int) ($partida->nivel_bot === Nivel::Dificil->value);
+            $cuentas[$asiento]['ultra_ganadas'] += (int) ($partida->nivel_bot === Nivel::UltraDificil->value);
+            $cuentas[$asiento]['de_a_cuatro_ganadas'] += (int) $deACuatro;
+            $cuentas[$asiento]['revanchas_ganadas'] += (int) ($partida->anterior_id !== null);
         }
 
         return $cuentas;
     }
 
     /**
+     * Suma en las cuentas de un asiento lo que dice un hecho del motor.
+     *
      * @param  array<string, int>  $cuentas
+     * @param  array<string, mixed>  $hecho
+     * @param  array<string, mixed>  $m  Lo que se recuerda de la mano.
      */
-    private function ganoElEnvido(array &$cuentas, bool $eraLaFalta): void
+    private function contar(array &$cuentas, array $hecho, int $asiento, \Closure $equipoDe, array $m): void
     {
-        $cuentas['envidos_ganados']++;
+        $equipo = $equipoDe($asiento);
+        $suyo = fn (?int $otro) => $otro !== null && $equipoDe($otro) === $equipo;
 
-        if ($eraLaFalta) {
-            $cuentas['faltas_ganadas']++;
+        switch ($hecho['tipo']) {
+            case 'canto':
+                if ($hecho['asiento'] === $asiento && in_array($hecho['canto'], self::ENVIDOS, true)) {
+                    $cuentas['envidos_cantados']++;
+                }
+
+                if ($hecho['asiento'] === $asiento && $hecho['canto'] === 'flor') {
+                    $cuentas['flores_cantadas']++;
+                }
+
+                break;
+
+            case 'tantos':
+                if (! $suyo($hecho['ganador'])) {
+                    break;
+                }
+
+                if ($hecho['canto'] === 'contraflor') {
+                    $cuentas['contraflores_ganadas']++;
+                    $cuentas['contraflor_al_resto'] += (int) $m['alResto'];
+
+                    break;
+                }
+
+                $cuentas['envidos_ganados']++;
+                $cuentas['faltas_ganadas'] += (int) $m['faltaQuerida'];
+                $cuentas['envido_primero'] += (int) in_array($asiento, $m['envidoPrimero'], true);
+
+                // Su propio tanto, si fue el que ganó: el que dijo en voz alta.
+                foreach ($hecho['tantos'] as $dicho) {
+                    if ($dicho['asiento'] === $asiento && $hecho['ganador'] === $asiento && $dicho['tanto'] === 33) {
+                        $cuentas['treinta_y_tres']++;
+                    }
+                }
+
+                break;
+
+            case 'puntos':
+                // La mano se cerró con un truco querido a favor de su equipo: vale 2 o más, 3 o más con el retruco
+                // querido y 4 con el vale cuatro.
+                if ($hecho['concepto'] === 'truco' && $hecho['puntos'] >= 2 && $hecho['equipo'] === $equipo) {
+                    $cuentas['trucos_ganados']++;
+                    $cuentas['retrucos_ganados'] += (int) ($hecho['puntos'] >= 3);
+                    $cuentas['vale_cuatros_ganados'] += (int) ($hecho['puntos'] >= 4);
+                    $cuentas['quieros_ganados'] += (int) in_array($asiento, $m['quisieron'], true);
+                }
+
+                break;
+
+            case 'baza':
+                // El ancho de espada le ganó al de basto: los dos están en la baza y la ganó él.
+                if ($hecho['ganador'] === $asiento && ($m['baza'][$asiento] ?? null) === '1-espada'
+                    && in_array('1-basto', array_diff_key($m['baza'], [$asiento => true]), true)) {
+                    $cuentas['ancho_contra_ancho']++;
+                }
+
+                break;
+
+            case 'mano_cerrada':
+                if ($hecho['ganador'] !== $equipo) {
+                    break;
+                }
+
+                // Cantó truco, no se lo quisieron y no tenía ninguna carta brava.
+                if ($hecho['motivo'] === 'no_quiero' && $m['cantoElTruco'] === $asiento && ! $this->teniaBravas($m['manos'][$asiento] ?? [])) {
+                    $cuentas['chamuyos']++;
+                }
+
+                if (($m['pardas'][1] ?? false) === true) {
+                    $cuentas['manos_con_parda']++;
+                }
+
+                if ($hecho['motivo'] === 'bazas' && count(array_filter($m['pardas'])) === 3) {
+                    $cuentas['tres_pardas']++;
+                }
+
+                break;
         }
     }
 
     /**
-     * @param  array<string, int>  $cuentas
+     * Anota lo que hay que recordar de la mano, después de contar, para que valga desde el hecho siguiente.
+     *
+     * @param  array<string, mixed>  $m
+     * @param  array<string, mixed>  $hecho
      */
-    private function ganoElTruco(array &$cuentas, int $puntos): void
+    private function recordar(array &$m, array $hecho, \Closure $equipoDe): void
     {
-        $cuentas['trucos_ganados']++;
+        switch ($hecho['tipo']) {
+            case 'canto':
+                if (in_array($hecho['canto'], self::TRUCOS, true)) {
+                    $m['cantoElTruco'] = $hecho['asiento'];
+                    $m['trucoSinContestar'] = $hecho['asiento'];
+                }
 
-        if ($puntos >= 3) {
-            $cuentas['retrucos_ganados']++;
-        }
+                if (in_array($hecho['canto'], self::ENVIDOS, true)) {
+                    $m['ultimoEnvido'] = $hecho['canto'];
 
-        if ($puntos >= 4) {
-            $cuentas['vale_cuatros_ganados']++;
+                    // El envido está primero: le habían cantado truco y contestó con envido.
+                    if ($m['trucoSinContestar'] !== null && $equipoDe($m['trucoSinContestar']) !== $equipoDe($hecho['asiento'])) {
+                        $m['envidoPrimero'][] = $hecho['asiento'];
+                    }
+                }
+
+                if (in_array($hecho['canto'], ['contraflor', 'contraflor_al_resto'], true)) {
+                    $m['alResto'] = $hecho['canto'] === 'contraflor_al_resto';
+                }
+
+                break;
+
+            case 'respuesta':
+                if ($hecho['canto'] === 'envido') {
+                    $m['faltaQuerida'] = $hecho['quiere'] && $m['ultimoEnvido'] === 'falta_envido';
+                }
+
+                if ($hecho['canto'] === 'truco') {
+                    $m['trucoSinContestar'] = null;
+
+                    if ($hecho['quiere']) {
+                        $m['quisieron'][] = $hecho['asiento'];
+                    }
+                }
+
+                break;
+
+            case 'carta':
+                $m['baza'][$hecho['asiento']] = $hecho['carta'];
+
+                break;
+
+            case 'baza':
+                $m['pardas'][$hecho['numero']] = $hecho['ganador'] === null;
+                $m['baza'] = [];
+
+                break;
         }
     }
 
@@ -208,8 +363,9 @@ final class Titulos
     }
 
     /**
-     * Pone al día lo que ese jugador hizo en los otros juegos: torneos ganados, escalones y desafíos pasados.
-     * Lo llaman la mesa al cerrar una partida de la escalera o de un desafío y el torneo al tener campeón.
+     * Pone al día lo que no se suma partida por partida: torneos ganados, escalones y desafíos pasados, y la
+     * mejor racha de ganadas que cuentan para el ranking. Lo llaman la mesa al cerrar cada partida y el torneo
+     * al tener campeón.
      */
     public function ponerAlDia(?Jugador $jugador): void
     {
@@ -229,6 +385,7 @@ final class Titulos
                 ->count(),
             'escalones_pasados' => count(array_filter($superados, fn (string $clave) => str_starts_with($clave, 'escalon:'))),
             'desafios_pasados' => count(array_intersect($superados, $sueltos)),
+            'mejor_racha' => (new Numeros)->de($jugador)['mejorRacha'],
         ]);
     }
 

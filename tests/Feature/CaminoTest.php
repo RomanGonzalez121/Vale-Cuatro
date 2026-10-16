@@ -7,6 +7,7 @@ use App\Juego\Mesa;
 use App\Juego\Premios;
 use App\Models\Jugador;
 use App\Models\Partida;
+use App\Models\Sello;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -42,12 +43,14 @@ class CaminoTest extends TestCase
 
         $this->artisan('fosforos:recalcular')->assertSuccessful();
 
-        $this->assertSame(3 * $ganoUno + (4 - $ganoUno), $uno->fresh()->fosforos);
-        $this->assertSame(3 * (4 - $ganoUno) + $ganoUno, $dos->fresh()->fosforos);
+        // Y un fósforo por cada sello de la libreta que hayan ganado esas partidas.
+        $sellos = fn (Jugador $jugador) => Sello::query()->where('jugador_id', $jugador->id)->count();
+        $this->assertSame(3 * $ganoUno + (4 - $ganoUno) + $sellos($uno), $uno->fresh()->fosforos);
+        $this->assertSame(3 * (4 - $ganoUno) + $ganoUno + $sellos($dos), $dos->fresh()->fosforos);
 
         // Recalcular dos veces da lo mismo: no se suma encima.
         $this->artisan('fosforos:recalcular')->assertSuccessful();
-        $this->assertSame(3 * $ganoUno + (4 - $ganoUno), $uno->fresh()->fosforos);
+        $this->assertSame(3 * $ganoUno + (4 - $ganoUno) + $sellos($uno), $uno->fresh()->fosforos);
     }
 
     public function test_al_cerrar_la_partida_se_suman_y_el_paso_final_cuenta_cuanto_anoto(): void

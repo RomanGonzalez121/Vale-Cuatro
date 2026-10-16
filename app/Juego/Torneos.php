@@ -215,7 +215,9 @@ final class Torneos
                     $torneo->save();
 
                     // Ganarlo cuenta para el título de campeón.
-                    (new Titulos)->ponerAlDia(Jugador::find($torneo->jugador_id));
+                    $persona = Jugador::find($torneo->jugador_id);
+                    (new Titulos)->ponerAlDia($persona);
+                    (new Logros)->revisar($persona);
 
                     return;
                 }

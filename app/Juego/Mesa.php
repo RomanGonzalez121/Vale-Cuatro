@@ -1533,10 +1533,13 @@ final class Mesa
         // Si era un desafío o un escalón de la escalera, queda anotado en lo que el jugador lleva pasado.
         (new Progresos)->anotar($partida);
 
-        // Y lo que lleva pasado cuenta para los títulos de la escalera y de los desafíos.
-        if (Progresos::claveDe($partida) !== null) {
+        // Lo que no se suma partida por partida (la escalera, los desafíos, la mejor racha) se pone al día, y
+        // cada persona recibe los sellos de la libreta que alcanzó, cada uno con su fósforo.
+        foreach (Camino::personas($partida) as $jugador) {
             try {
-                (new Titulos)->ponerAlDia(Jugador::find($partida->jugador_id));
+                $persona = Jugador::find($jugador);
+                (new Titulos)->ponerAlDia($persona);
+                (new Logros)->revisar($persona, $partida);
             } catch (Throwable $falla) {
                 report($falla);
             }

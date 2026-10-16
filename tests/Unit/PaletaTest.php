@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Identidad\Paleta;
+use App\Juego\Logros;
 use App\Juego\Premios;
 use PHPUnit\Framework\TestCase;
 
@@ -145,5 +146,17 @@ class PaletaTest extends TestCase
         $estilos = file_get_contents(__DIR__.'/../../resources/css/app.css');
 
         $this->assertSame(2, substr_count($estilos, '.boton, .canto-copa, .canto-basto, .canto-naipe) {'));
+    }
+
+    public function test_las_tintas_de_los_sellos_se_leen_de_dia_y_de_noche(): void
+    {
+        // La letra del sello es chica: pide el contraste de texto normal sobre el papel de día y sobre Tinta de noche.
+        foreach (Logros::TEMAS as $tema => $datos) {
+            $this->assertGreaterThanOrEqual(4.5, Paleta::contrasteEntre($datos['tinta'], '#fbfaf5'), "La tinta de {$tema} no se lee de día.");
+            $this->assertGreaterThanOrEqual(4.5, Paleta::contrasteEntre($datos['noche'], '#161a18'), "La tinta de {$tema} no se lee de noche.");
+            // Las tintas de noche son las de la paleta del sitio; la que no lo es tiene que ser de la familia.
+            $dePaleta = in_array(strtolower($datos['noche']), ['#f0b429', '#fbfaf5', ...array_map(fn (array $tono) => strtolower($tono['hex']), Paleta::DE_NOCHE)], true);
+            $this->assertTrue($dePaleta || Paleta::esDeLaFamilia($datos['noche']), "La tinta de noche de {$tema} no es de la familia de colores.");
+        }
     }
 }

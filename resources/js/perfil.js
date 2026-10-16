@@ -6,9 +6,14 @@
  | - Los fósforos ganados desde la última visita caen en la tira, de a uno, como en el tanteador. Si no
  |   ganaste nada desde entonces, la tira ya está quieta: no se cuenta lo que ya viste.
  | - En el probador, la carta se da vuelta para mostrar un dorso (es una transición: se corta a mitad).
+ | - Los sellos nuevos de la libreta golpean el papel cuando la libreta entra en la pantalla, una sola vez.
  | Las pestañas de la Colección cambian sin animación: se tocan muchas veces.
  */
-import { llegarDelMazo } from './cartas';
+import { llegarDelMazo, resorte } from './cartas';
+
+// El sello golpea el papel: el mismo resorte que en el final de la partida.
+const SELLA = resorte(0.36, 0.22);
+const ENTRE_SELLOS = 170;
 
 const POR_NIVEL = 10;
 const ENTRE_FOSFOROS = 180;
@@ -73,7 +78,41 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titu
 
         if (propio) {
             this.contarLoNuevo();
+            this.sellarLoNuevo();
         }
+    },
+
+    /**
+     * Los sellos que todavía no habías visto golpean el papel, de a uno, la primera vez que la libreta entra en
+     * la pantalla. Con movimiento reducido ya están puestos: el "Nuevo" alcanza.
+     */
+    sellarLoNuevo() {
+        const libreta = document.getElementById('libreta');
+        const nuevos = () => [...libreta.querySelectorAll('.libreta-logro.es-nuevo .libreta-sello')].filter((sello) => sello.getClientRects().length > 0);
+
+        if (! libreta || movimientoReducido.matches || ! nuevos().length || ! ('IntersectionObserver' in window)) {
+            return;
+        }
+
+        const observador = new IntersectionObserver(([entrada]) => {
+            if (! entrada.isIntersecting) {
+                return;
+            }
+
+            observador.disconnect();
+            nuevos().forEach((sello, numero) => {
+                // Termina en su giro de siempre (el del estilo), así no salta al quedar quieto.
+                const giro = parseFloat(sello.style.getPropertyValue('--giro')) || 0;
+
+                sello.animate([
+                    { opacity: 0, transform: `translateY(-14%) scale(1.5) rotate(${giro - 7}deg)` },
+                    { opacity: 1, offset: 0.3 },
+                    { opacity: 1, transform: `rotate(${giro}deg)` },
+                ], { ...SELLA, delay: 200 + numero * ENTRE_SELLOS, fill: 'backwards' });
+            });
+        }, { threshold: 0.35 });
+
+        observador.observe(libreta);
     },
 
     /**

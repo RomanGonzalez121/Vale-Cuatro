@@ -1718,3 +1718,44 @@ Con veinte dorsos, el mazo que va en cada página pesaba 70 KB. Ahora cada `<x-d
 - **Con tests:** las cuentas de cada título nuevo con manos armadas, los títulos de la escalera y los desafíos, el candado de los premios nuevos y que la administración los tenga todos, el contraste y la familia de color de las mesas y los porotos, y los dorsos por página.
 - **En un navegador real:** las seis mesas de día y de noche, los dorsos grandes y a 60 px, los porotos en el tanteador, los distintivos sobre el paño y sobre papel, y la Colección con todo lo nuevo.
 - **No se probó:** cómo se ve cada mesa nueva en el celular con una partida avanzada, y los títulos ganados en partidas reales (las cuentas salen de las mismas manos que en los tests).
+
+
+## M23. Logros: la libreta del club
+
+Pedido por Román el 15 de octubre de 2026, después de la tanda 4. Antes de diseñar se buscaron referencias:
+
+- **Google Play Games** recomienda logros por escalones (el mismo logro con varias metas) y pocos secretos, usados como sorpresa.
+- **Yu-kai Chou** separa los logros visibles, los "misterio" y las sorpresas, y advierte que si todos ganan uno deja de significar algo.
+- **Chess.com** muestra lo ganado en color y lo que falta como un hueco gris que dice qué pide; el perfil público muestra los logros de cada uno.
+- **Steam** muestra qué porcentaje de jugadores tiene cada logro: es una prueba real de esfuerzo.
+
+Se le mostraron tres direcciones en una lámina (sellos de goma, álbum de figuritas, planilla) y eligió todas las recomendadas.
+
+### Qué se eligió
+
+- **Una libreta de socio con sellos de goma.** Cada escalón ganado es un sello entintado del color de su tema, apenas torcido como puesto a mano, con el nombre arriba, la fecha abajo, el ícono en el medio y un punto por escalón. Lo que falta es un círculo punteado; un secreto sin ganar es un signo de pregunta y no dice qué pide. Es tinta de imprenta, como el mazo y la planilla: nada brilla. Se descartó el álbum de figuritas (cada figurita pedía un dibujo propio para no verse vacía) y la planilla (clara, pero la menos memorable).
+- **Treinta logros, setenta y ocho sellos,** en seis temas: envido, truco, flor, partidas, juegos y cuatro secretos.
+- **Cada título sale de un escalón de su logro,** con el mismo número que tenía (Tantero sigue pidiendo 25 envidos ganados). Así no hay dos listas que cuentan lo mismo, y la libreta muestra el camino hacia cada título. Un test exige que cada título pida lo mismo que su escalón.
+- **Un fósforo por sello:** unos ocho niveles si se gana todo, repartidos en meses. Se descartaron los 1, 2 y 3 fósforos por escalón que se habían hablado: daban la mitad del camino y se subía demasiado rápido.
+- **Los demás ven tu libreta** en el perfil público, sin el "Nuevo" y sin decir qué piden los secretos que no ganaste.
+- **El sello cae en el final de la partida,** debajo de la tira de fósforos, nunca en plena partida, con un golpe seco si el sonido está prendido.
+- **De noche,** la libreta pasa a Tinta como las páginas de lectura y cada sello se aclara (Román lo pidió al verla): Copa, Basto y Espada en sus tonos de noche, el envido en Oro, las partidas en Naipe y los secretos en un bordó claro. El contraste de las dos tintas de cada tema se mide en `PaletaTest`.
+
+### Cómo está hecho
+
+- **Los logros son datos** (`app/Juego/fichas-de-logros.php`), como el camino de premios y los desafíos. Cada uno dice qué cuenta mide (una columna del jugador), sus escalones y el título que da.
+- **Las cuentas se suman al cerrar cada partida** en `Titulos::en()`, que se partió en `contar()` (lo que suma cada hecho del motor) y `recordar()` (lo que hay que recordar de la mano: las cartas, quién cantó el truco y si quedó sin contestar, quién lo quiso, las bazas, el último envido y la última contraflor). Lo de la partida entera (jugadas, ganadas, de atrás, en las malas, treinta a cero, contra la difícil y la ultra, de a cuatro, revancha) usa la misma regla de los fósforos para saber si se ganó. La mejor racha, los torneos, la escalera y los desafíos se ponen al día desde sus tablas.
+- **Los sellos se guardan** (tabla `sellos`, uno por escalón, con su fecha y si ya se vio), así ninguna página cuenta nada al abrirse. `Logros::revisar()` da los que faltan y su fósforo; `fosforos:recalcular` los rehace desde las cuentas sin tocar los que siguen, que conservan su fecha.
+- **El porcentaje de socios** es real: las cuentas que jugaron alguna partida y tienen el primer sello, sin contar a los jugadores de ejemplo.
+- **El golpe del sello** es un resorte corto (`resorte(0.36, 0.22)`) con la Web Animations API: entra grande y levantado, golpea con un rebote chico y queda en su giro. Solo `transform` y `opacity`; con movimiento reducido, un fundido. En la libreta, los sellos que todavía no viste caen cuando la libreta entra en la pantalla, una sola vez.
+- **En el final de la partida** se muestran hasta tres sellos en un renglón, para no empujar los botones: en 1355 x 638 el último botón termina a 630 px y en 360 x 740 a 667.
+
+### Un error que apareció
+
+La primera versión llamó `sellar()` a la función que hace caer los sellos, y en `mesa.js` ya había una `sellar(paso)` que marca cada paso con su partida. La nueva pisó a la vieja y la mesa dejó de mostrar las jugadas. Se vio jugando una partida en el navegador y se le cambió el nombre (`sellarLaLibreta`).
+
+### Qué se probó y qué no
+
+- **Con tests:** que cada logro esté bien escrito (su cuenta existe y alguien la suma, su ícono existe, los escalones suben) y que cada título pida lo mismo que su escalón; que un escalón dé un solo sello y un solo fósforo; que al cerrar la partida se ganen los sellos y el final los muestre; que recalcular saque los que ya no alcanzan; que la libreta no diga qué pide un secreto y marque lo nuevo; cada cuenta nueva con su mano armada; y el contraste de los sellos de día y de noche.
+- **En un navegador real:** el final de la partida con dos sellos en 1355 x 638 y 360 x 740, la libreta en el perfil de día y de noche, en el celular, y la caída de los sellos nuevos.
+- **No se probó:** los logros más raros ganados en partidas jugadas a mano (sus cuentas salen de las mismas manos que en los tests), y cómo suena el golpe: lo juzga Román.

@@ -7,6 +7,7 @@ use App\Juego\Camino;
 use App\Juego\Categoria;
 use App\Juego\Experiencia;
 use App\Juego\Historial;
+use App\Juego\Logros;
 use App\Juego\Numeros;
 use App\Juego\Premios;
 use App\Juego\Progresos;
@@ -35,11 +36,15 @@ class PerfilController extends Controller
         $jugador = $request->user();
         $nivel = $this->premios->nivel($jugador);
 
-        // Mirar el perfil es ver lo destrabado: el puntito del apodo en el menú se apaga desde acá.
+        // Lo de todos los perfiles, armado antes de marcar lo visto: así la libreta sabe qué sellos son nuevos.
+        $comun = $this->comun($jugador);
+
+        // Mirar el perfil es ver lo destrabado y los sellos nuevos: el puntito del apodo en el menú se apaga desde acá.
         $this->premios->marcarVisto($jugador);
+        (new Logros)->marcarVistos($jugador);
 
         return view('paginas.perfil', [
-            ...$this->comun($jugador),
+            ...$comun,
             'propio' => true,
             'dorso' => $this->premios->dorsoDe($jugador),
             'camino' => $this->premios->camino($jugador),
@@ -109,6 +114,8 @@ class PerfilController extends Controller
             'distintivo' => $this->premios->elegidaDe('distintivo', $jugador),
             'proximo' => $nivel < Camino::NIVELES ? Camino::entre($nivel, $nivel + 1) : [],
             'numeros' => (new Numeros)->de($jugador),
+            // La libreta del club: los sellos que ganó, por tema (M23).
+            'libreta' => (new Logros)->libreta($jugador),
             'ultimas' => $this->historial->cerradasDe($jugador)->limit(5)->get()
                 ->map(fn (Partida $partida) => $this->historial->resumen($partida, (int) $partida->asientoDe($jugador)))
                 ->all(),
