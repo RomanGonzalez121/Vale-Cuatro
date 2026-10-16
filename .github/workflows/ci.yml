@@ -51,6 +51,8 @@ jobs:
         if: failure()
         run: |
           grep -E "FAILED|Failed asserting|Exception|tests/.*\.php:[0-9]+" storage/logs/tests.txt | sed 's/\x1b\[[0-9;]*m//g' | head -10 | while IFS= read -r linea; do echo "::error title=Test::$linea"; done || true
+          # Cada test que falló, con las líneas que siguen (el mensaje y dónde pasó), en un solo aviso.
+          sed 's/\x1b\[[0-9;]*m//g' storage/logs/tests.txt | awk '/FAILED/{n=14; t=""} n>0{gsub(/^ +| +$/, ""); if ($0 != "") t=t " | " $0; n--; if (n==0) print t}' | head -6 | cut -c 1-1500 | while IFS= read -r linea; do echo "::error title=Error del test::$linea"; done || true
 
   # Un Chrome de verdad usa el sitio como una persona: entra sin cuenta, se registra, ingresa y juega
   # una mano entera contra el bot. Lo que los otros tests no ven es la pantalla, y esto la prueba.
