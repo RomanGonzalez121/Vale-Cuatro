@@ -176,5 +176,4 @@ class MazosTest extends TestCase
             }
         }
     }
-
 }
