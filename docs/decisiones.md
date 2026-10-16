@@ -2010,3 +2010,7 @@ Román pidió mejorar las tres. Eligió las recomendadas:
 - **Íconos nuevos, con el trazo de siempre:** `libreta`, `coleccion`, `camino`, `carta`, `dorso`, `mesa`, `anotar`, `titulo` y `distintivo`.
 
 Probado en un navegador real en 1355 x 638 y 360 x 740, de día y de noche, sin errores. Pasaron los tests del perfil, del movimiento y de los íconos, y Pint. La suite completa no se corrió.
+
+Ajustes pedidos por Román al verlo:
+- **El índice ya no usa el fósforo que se dibuja ("está demasiado usado").** Las secciones van repartidas a lo largo de la barra. La que está a la vista queda en color pleno, con una raya fija apoyada en el borde de la barra, y las demás a media tinta. Sin animación: la raya cambia de lugar al bajar. Con el mouse, el ícono se levanta apenas.
+- **El carnet tiene modo noche, como la libreta:** papel en Tinta, la tapa un paso más abajo y los colores de adentro dados vuelta. La regla de noche va junto al estilo base del carnet, porque ese estilo quedó fuera de las capas y una regla de la capa no le gana.

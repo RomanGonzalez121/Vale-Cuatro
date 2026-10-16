@@ -4418,9 +4418,11 @@ html:has(body.superficie-pano) {
 
     .perfil-indice > ul {
         display: flex;
-        gap: 1.75rem;
+        justify-content: space-between;
+        gap: 1.5rem;
         overflow-x: auto;
-        padding-block: 0.6rem;
+        padding-top: 0.6rem;
+        padding-bottom: 0;
         scrollbar-width: none;
     }
 
@@ -4429,18 +4431,49 @@ html:has(body.superficie-pano) {
         font-weight: 700;
     }
 
-    /* Cada sección con su ícono arriba del nombre; el fósforo del link queda puesto en la que está a la vista. */
+    /*
+     | Cada sección con su ícono arriba del nombre, repartidas a lo largo de la barra. La que está a la vista va en
+     | color pleno y con una raya apoyada en el borde de la barra; las demás, a media tinta. Sin animación: la raya
+     | cambia de lugar al bajar.
+     */
     .indice-enlace {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 0.3rem;
-        padding-bottom: 0.7rem;
+        padding: 0 0.25rem 0.8rem;
+        opacity: 0.62;
+        text-decoration: none;
+    }
+
+    .indice-enlace[aria-current='location'] {
+        opacity: 1;
+    }
+
+    .indice-enlace::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        left: 0;
+        height: 3px;
+        background-color: currentColor;
+        visibility: hidden;
+    }
+
+    .indice-enlace[aria-current='location']::after {
+        visibility: visible;
+    }
+
+    .indice-enlace:focus-visible {
+        opacity: 1;
     }
 
     .indice-enlace .icono {
         width: 1.35rem;
         height: 1.35rem;
+        transition: transform 160ms var(--ease-llegada);
     }
 
     /* Cada sección arranca con su título y el filete doble de los impresos, como el encabezado de las páginas. */
@@ -5453,6 +5486,24 @@ html:has(body.superficie-pano) {
         overflow-wrap: anywhere;
     }
 
+    /* De noche, el carnet como la libreta: papel en Tinta, la tapa un paso más abajo y los colores de adentro dados vuelta. */
+    :root[data-modo='noche'] .carnet {
+        --color-texto: #fbfaf5;
+        --color-fondo: #161a18;
+        border-color: rgb(251 250 245 / 0.16);
+        background-color: #161a18;
+        color: #fbfaf5;
+        box-shadow: 0.2rem 0.25rem 0 rgb(0 0 0 / 0.4);
+    }
+
+    :root[data-modo='noche'] .carnet-tapa {
+        background-color: #0e2b21;
+    }
+
+    :root[data-modo='noche'] .carnet-pie {
+        border-top-color: rgb(251 250 245 / 0.4);
+    }
+
     /* Cuánto truco sabés: tres opciones en fila, con sus fósforos grandes, como los niveles de la máquina en Jugar. */
     .experiencias {
         display: grid;
@@ -6135,6 +6186,14 @@ html:has(body.superficie-pano) {
 }
 
 @media (hover: hover) and (pointer: fine) {
+    .indice-enlace:hover {
+        opacity: 1;
+    }
+
+    .indice-enlace:hover .icono {
+        transform: translateY(-2px);
+    }
+
     .separador:not([aria-selected='true']):hover {
         transform: translateY(-2px);
     }
@@ -6274,6 +6333,8 @@ html:has(body.superficie-pano) {
     .boton,
     .boton:not([disabled]):hover,
     .boton:not([disabled]):hover .icono,
+    .indice-enlace .icono,
+    .indice-enlace:hover .icono,
     .separador,
     .separador:hover,
     .separador:active,

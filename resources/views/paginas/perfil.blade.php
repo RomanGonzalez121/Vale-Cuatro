@@ -158,12 +158,12 @@
         </section>
 
         {{-- El índice: links quietos a cada sección. En el celular se desliza de costado. --}}
-        {{-- El índice: cada sección con su ícono; la que está a la vista queda con el fósforo puesto. --}}
+        {{-- El índice: cada sección con su ícono, a lo largo de la barra; la que está a la vista, en color pleno y con su raya. --}}
         <nav aria-label="En este perfil" class="perfil-indice">
             <ul class="pagina">
                 @foreach ($secciones as $ancla => $nombre)
                     <li>
-                        <a href="#{{ $ancla }}" class="enlace-nav indice-enlace" :aria-current="aqui === '{{ $ancla }}' ? 'location' : null">
+                        <a href="#{{ $ancla }}" class="indice-enlace" :aria-current="aqui === '{{ $ancla }}' ? 'location' : null">
                             <x-icono :nombre="['resumen' => 'ranking', 'libreta' => 'libreta', 'coleccion' => 'coleccion', 'camino' => 'camino', 'partidas' => 'repetir', 'cuenta' => 'jugador'][$ancla]" />
                             {{ $nombre }}
                         </a>
