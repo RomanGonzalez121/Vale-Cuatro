@@ -1881,3 +1881,38 @@ Después de los cinco mazos con baraja propia, Román pidió rehacer con el mism
 
 - Los cuatro mazos nuevos: Estampilla, Bordado, Azulejo de subte y Murga, con sus referencias.
 - Después, rehacer también Retratos como baraja propia.
+
+
+## Cuatro mazos nuevos: Estampilla, Bordado, Azulejo de subte y Murga
+
+### Qué problema había
+
+Román decidió sumar cuatro mazos más, en niveles que tenían un solo premio, con el mismo criterio que los anteriores: cada uno es una baraja propia, con su papel, su marco, su número, sus palos y sus figuras, y se reconoce de lejos. Pidió buscar referencias antes de dibujar cada uno.
+
+### Qué se eligió
+
+- **Azulejo de subte (nivel 8):** la pared de una estación del subte porteño. Azulejos blancos de ladrillito con su juntura y un cartel con el número y el nombre del palo, como el nombre de la estación. Debajo va la franja de color con la que se reconocía cada estación: cada palo es su línea. Las figuras son murales cerámicos pintados sobre azulejos cuadrados, con la juntura cruzando el dibujo: el canillita con los diarios (sota), el caballo de la calesita con el palo como sortija (caballo) y el rey. Es plano, sin brillo ni bisel.
+- **Murga (nivel 12):** el estandarte de una murga porteña. Raso en el color hondo del palo, cordón con mostacillas, un festón y el nombre arqueado ("Los de Copa"), con el número en un medallón. Los palos y las figuras son apliques de lentejuelas: cada una es un circulito plano con su agujero, sin brillo, y el contorno va de mostacillas. Las figuras son el murguero bailando con galera y levita (sota), el caballo de aplique con su manta y su penacho (caballo) y el Rey Momo (rey), entre serpentinas.
+- **Bordado (nivel 17):** un dechado de punto cruz, el muestrario que se bordaba para aprender. La tela de trama abierta lleva el dobladillo con vainilla, una guarda de rombos y el pespunte que encierra el campo. El número, los palos y las figuras son todos crucecitas sobre la grilla de la tela, en el hilo del palo. Las figuras llevan un ramito de flores al pie.
+- **Estampilla (nivel 36):** un sello de correo pegado en el sobre, con su dentado. El sello entero va en una sola tinta, la de su palo, como las series clásicas, donde cada valor tenía su color. Arriba y abajo va la franja con "Vale Cuatro" y el valor en un círculo; en el medio, la viñeta de líneas finas. El matasellos pisa el borde. Las figuras son el cartero con la cartera (el palo va en la cartera), el correo de posta a caballo y el rey de perfil en un camafeo con laureles.
+- **Los cuatro entran en el camino**, cada uno en un nivel que tenía un solo premio.
+
+### Qué se probó y qué no
+
+- **Con tests:**
+  - las catorce barajas propias se arman con su plantilla, y sus cartas de número quedan adentro de la carta;
+  - el contraste y la familia de color de cada una (`Paleta::BARAJAS`);
+  - el camino coincide con el catálogo.
+
+  El oro del azulejo se bajó a `#a87a24` porque el primero no llegaba a 3:1 sobre el blanco.
+- **En un navegador real:** la lámina de los cuatro, también a 60 px, y la Colección de mazos.
+- **Corridas completas:** 909 tests, Pint y las siete pruebas de navegador contra lo compilado.
+- **Fuentes:**
+  - sobre los sellos argentinos, Wikipedia (*Postage stamps and postal history of Argentina*) y Billiken (el dentado);
+  - sobre el subte, Canal 26 (el código de colores de las estaciones), Welcome Argentina (los azulejos de Cattaneo) y el repositorio de la UNA (los murales cerámicos);
+  - sobre la murga, el Gobierno de la Ciudad (historia del carnaval: levita de raso, estandarte, bombo con platillo) y Matador (los apliques cosidos a mano);
+  - sobre el punto cruz no se encontró una fuente argentina específica: el dechado sale de la tradición general del bordado.
+
+### Lo que sigue (decidido por Román)
+
+- Rehacer Retratos como baraja propia.

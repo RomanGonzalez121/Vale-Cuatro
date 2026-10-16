@@ -1987,6 +1987,150 @@ html:has(body.superficie-pano) {
         color: var(--color-basto);
     }
 
+    /* La Estampilla: cada palo en la tinta de su sello, como los valores de una serie, y el texto de la franja en papel. */
+    .estampilla-oro {
+        color: #955a17;
+    }
+
+    .estampilla-copa {
+        color: #b23a2a;
+    }
+
+    .estampilla-espada {
+        color: #2d4f96;
+    }
+
+    .estampilla-basto {
+        color: #2f6e45;
+    }
+
+    /* El Bordado: cada palo en su hilo, un poco más hondo que el color del palo para leerse sobre la tela. */
+    .bordado-oro {
+        color: #a5741c;
+    }
+
+    .bordado-copa {
+        color: #b03a2c;
+    }
+
+    .bordado-espada {
+        color: #2d5596;
+    }
+
+    .bordado-basto {
+        color: #2f6e45;
+    }
+
+    /* El Azulejo de subte: cada palo es el color de una línea, en esmalte, y el cartel en tinta sobre el azulejo blanco. */
+    .azulejo-oro {
+        color: #a87a24;
+    }
+
+    .azulejo-copa {
+        color: #b8432f;
+    }
+
+    .azulejo-espada {
+        color: #2f56a0;
+    }
+
+    .azulejo-basto {
+        color: #2f7a4c;
+    }
+
+    .azulejo-numero {
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        fill: #161a18;
+    }
+
+    .azulejo-numero-doble {
+        font-size: 8.6px;
+        letter-spacing: -0.08em;
+    }
+
+    .azulejo-estacion {
+        font-family: var(--font-sans);
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        fill: #1f2d4f;
+    }
+
+    /* La Murga: el raso en el color hondo del palo y las lentejuelas en su color vivo. */
+    .murga-raso-oro {
+        fill: #4f3a14;
+    }
+
+    .murga-oro {
+        color: #d4aa50;
+    }
+
+    .murga-raso-copa {
+        fill: #5b1e22;
+    }
+
+    .murga-copa {
+        color: #d4594c;
+    }
+
+    .murga-raso-espada {
+        fill: #1e3157;
+    }
+
+    .murga-espada {
+        color: #5d8fd6;
+    }
+
+    .murga-raso-basto {
+        fill: #1d4730;
+    }
+
+    .murga-basto {
+        color: #55a86f;
+    }
+
+    .murga-numero {
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        fill: #f3e7cf;
+    }
+
+    .murga-numero-doble {
+        font-size: 9px;
+        letter-spacing: -0.08em;
+    }
+
+    .murga-nombre {
+        font-family: var(--font-sans);
+        font-size: 7.4px;
+        font-style: italic;
+        font-weight: 900;
+        letter-spacing: 0.03em;
+        fill: #f3e7cf;
+    }
+
+    .estampilla-numero {
+        font-family: var(--font-sans);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        fill: #f4eedc;
+    }
+
+    .estampilla-pais {
+        font-family: var(--font-sans);
+        font-size: 6.6px;
+        font-style: italic;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        fill: #f4eedc;
+    }
+
     /* El número del Catalán, en su recuadro. */
     .carta-indice-catalan {
         font-size: 12px;

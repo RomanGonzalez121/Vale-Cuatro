@@ -25,10 +25,10 @@ class MazosTest extends TestCase
 
         foreach (Mazos::TODOS as $clave => $piezas) {
             $this->assertContains($piezas['tinta'], ['fabrica', 'noche', 'una'], $clave);
-            $this->assertContains($piezas['palos'], ['fabrica', 'tango', 'diario', 'etiqueta', 'tiza', 'taco', 'grabado', 'macizo', 'antiguo', 'filete', 'criollo'], $clave);
-            $this->assertContains($piezas['figuras'], ['fabrica', 'medio', 'tango', 'diario', 'etiqueta', 'tiza', 'clise', 'billete', 'afiche', 'catalan-antigua', 'filete', 'criollo'], $clave);
+            $this->assertContains($piezas['palos'], ['fabrica', 'tango', 'diario', 'etiqueta', 'tiza', 'taco', 'grabado', 'macizo', 'antiguo', 'filete', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga'], $clave);
+            $this->assertContains($piezas['figuras'], ['fabrica', 'medio', 'tango', 'diario', 'etiqueta', 'tiza', 'clise', 'billete', 'afiche', 'catalan-antigua', 'filete', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga'], $clave);
             $this->assertContains($piezas['marco'], ['fabrica', 'arco'], $clave);
-            $this->assertContains($piezas['carta'], ['fabrica', 'tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'], $clave);
+            $this->assertContains($piezas['carta'], ['fabrica', 'tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga'], $clave);
 
             // Cada baraja propia tiene su plantilla.
             if ($piezas['carta'] !== 'fabrica') {
@@ -148,13 +148,13 @@ class MazosTest extends TestCase
 
     public function test_cada_baraja_propia_se_arma_con_su_carta_y_no_con_la_de_fabrica(): void
     {
-        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
+        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga'] as $mazo) {
             foreach ([[1, 'espada'], [7, 'oro'], [12, 'copa']] as [$numero, $palo]) {
                 $carta = Blade::render('<x-carta :palo="$palo" :numero="$numero" :mazo="$mazo" />', compact('palo', 'numero', 'mazo'));
 
                 // Ni el marco con los cortes del palo ni el número de fábrica: su propio marco y su propio número.
                 $this->assertStringNotContainsString((new Carta($palo, $numero, 'fabrica'))->marco(), $carta, "{$mazo} {$numero}");
-                $this->assertStringContainsString('<text', $carta, "{$mazo} {$numero}");
+                $this->assertMatchesRegularExpression('/<text|-numero-\d/', $carta, "{$mazo} {$numero}");
                 $this->assertSame($numero === 12 ? 1 : $numero, substr_count($carta, "palo-{$palo}-"), "{$mazo} {$numero} de {$palo}");
             }
         }
@@ -165,7 +165,7 @@ class MazosTest extends TestCase
 
     public function test_cada_carta_de_numero_de_una_baraja_propia_queda_adentro_de_la_carta(): void
     {
-        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo'] as $mazo) {
+        foreach (['tango', 'diario', 'caja-de-fosforos', 'pizarron', 'tipografico', 'billete', 'afiche', 'catalan', 'fileteado', 'criollo', 'estampilla', 'bordado', 'azulejo', 'murga'] as $mazo) {
             foreach (Carta::PALOS as $palo) {
                 foreach ([1, 2, 3, 4, 5, 6, 7] as $numero) {
                     $pintas = (new Carta($palo, $numero, $mazo))->pintas();

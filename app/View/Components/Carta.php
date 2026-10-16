@@ -132,6 +132,42 @@ class Carta extends Component
     ];
 
     /**
+     * En la Estampilla: el cartero lo lleva en la cartera, el correo de posta lo alza y el rey lo tiene debajo del camafeo.
+     */
+    private const PALO_EN_MANO_ESTAMPILLA = [
+        'sota' => [59.7, 87.5, 11, 16.5],
+        'caballo' => [54.5, 30.5, 13, 19.5],
+        'rey' => [43.5, 101, 13, 19.5],
+    ];
+
+    /**
+     * En el Bordado el palo va bordado a un costado de la figura, como en un muestrario.
+     */
+    private const PALO_EN_MANO_BORDADO = [
+        'sota' => [72, 56, 12, 18],
+        'caballo' => [18, 32, 12, 18],
+        'rey' => [72, 54, 12, 18],
+    ];
+
+    /**
+     * En el Azulejo de subte: el canillita lo alza, en la calesita es la sortija arriba del caño y el rey lo tiene al lado.
+     */
+    private const PALO_EN_MANO_AZULEJO = [
+        'sota' => [62, 43, 12, 18],
+        'caballo' => [44, 39.5, 12, 18],
+        'rey' => [64.5, 62, 11, 16.5],
+    ];
+
+    /**
+     * En la Murga: el murguero lo alza con el bastón, junto al caballo va como un aplique suelto y el Rey Momo lo levanta.
+     */
+    private const PALO_EN_MANO_MURGA = [
+        'sota' => [58, 39.5, 11, 16.5],
+        'caballo' => [21, 46.5, 11, 16.5],
+        'rey' => [64, 56.5, 11, 16.5],
+    ];
+
+    /**
      * Dónde van los palos de las cartas de número en las cartas de otro mundo, como [x desde, x hasta, y desde,
      * y hasta]: la disposición del arco se lleva a esa zona (en el Afiche, el papel a la derecha de la franja).
      */
@@ -145,6 +181,10 @@ class Carta extends Component
         'caja-de-fosforos' => [17, 83, 29, 127],
         'pizarron' => [14, 86, 31, 127],
         'tipografico' => [16, 84, 44, 112],
+        'estampilla' => [17, 83, 30, 126],
+        'bordado' => [17, 83, 27, 129],
+        'azulejo' => [16, 84, 35, 121],
+        'murga' => [17, 83, 39, 119],
     ];
 
     /**
@@ -302,6 +342,10 @@ class Carta extends Component
                 'etiqueta' => self::PALO_EN_MANO_ETIQUETA,
                 'tiza' => self::PALO_EN_MANO_TIZA,
                 'clise' => self::PALO_EN_MANO_CLISE,
+                'estampilla' => self::PALO_EN_MANO_ESTAMPILLA,
+                'bordado' => self::PALO_EN_MANO_BORDADO,
+                'azulejo' => self::PALO_EN_MANO_AZULEJO,
+                'murga' => self::PALO_EN_MANO_MURGA,
                 default => self::PALO_EN_MANO,
             };
 
