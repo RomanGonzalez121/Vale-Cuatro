@@ -254,7 +254,7 @@ final class Logros
     /**
      * Los sellos que dio una partida a ese jugador, para el final de la partida.
      *
-     * @return list<array{logro: string, escalon: int}>
+     * @return list<array{logro: string, escalon: int, ganado_en: string}>
      */
     public function deLaPartida(Partida $partida, int $jugador): array
     {
@@ -263,9 +263,9 @@ final class Logros
         return Sello::query()
             ->where('partida_id', $partida->getKey())
             ->where('jugador_id', $jugador)
-            ->get(['logro', 'escalon'])
+            ->get(['logro', 'escalon', 'ganado_en'])
             ->sortBy(fn (Sello $sello) => [$orden[$sello->logro] ?? 999, $sello->escalon])
-            ->map(fn (Sello $sello) => ['logro' => $sello->logro, 'escalon' => $sello->escalon])
+            ->map(fn (Sello $sello) => ['logro' => $sello->logro, 'escalon' => $sello->escalon, 'ganado_en' => $sello->ganado_en->toDateString()])
             ->values()
             ->all();
     }

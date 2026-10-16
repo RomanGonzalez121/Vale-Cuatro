@@ -217,7 +217,7 @@ final class Camino
                 'nombre' => Logros::ficha($sello['logro'])['nombre'].(count(Logros::ficha($sello['logro'])['escalones']) > 1 ? ", escalón {$sello['escalon']}" : ''),
                 // El sello ya dibujado: el final de la partida lo deja caer tal cual se ve en la libreta.
                 'dibujo' => Blade::render('<x-sello :logro="$logro" :escalon="$escalon" :fecha="$fecha" class="size-full" />', [
-                    'logro' => $sello['logro'], 'escalon' => $sello['escalon'], 'fecha' => now(),
+                    'logro' => $sello['logro'], 'escalon' => $sello['escalon'], 'fecha' => $sello['ganado_en'],
                 ]),
             ], array_values(array_column($sellos, null, 'logro'))),
             'antes' => $antes,

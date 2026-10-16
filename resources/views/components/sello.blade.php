@@ -14,7 +14,8 @@
     $nombre = mb_strtoupper($ficha['nombre']);
     $letra = min(9.5, round(118 / max(1, mb_strlen($nombre)), 1));
     $total = count($ficha['escalones']);
-    $id = 'sello-'.$logro.'-'.Illuminate\Support\Str::random(4);
+    // Fijo para el mismo sello: el final de la partida se vuelve a armar desde los eventos y tiene que dar idéntico.
+    $id = 'sello-'.$logro.'-'.$escalon;
     $dia = $fecha ? mb_strtoupper(\Carbon\Carbon::parse($fecha)->locale('es')->translatedFormat('j M Y')) : null;
     $etiqueta = $escalon > 0
         ? 'Sello '.$ficha['nombre'].($total > 1 ? ', escalón '.$escalon.' de '.$total : '').($fecha ? ', del '.\Carbon\Carbon::parse($fecha)->locale('es')->translatedFormat('j \d\e F \d\e Y') : '')
