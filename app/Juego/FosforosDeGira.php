@@ -44,6 +44,40 @@ final class FosforosDeGira
         return 1 + (int) $cumple($nivel['segundo']) + (int) $cumple($nivel['tercero']);
     }
 
+    /**
+     * Cómo se dice una condición, para la ficha del nivel: "Por 8 o más", "Sin irte al mazo".
+     *
+     * @param  array<int, mixed>  $condicion
+     */
+    public static function dice(array $condicion): string
+    {
+        $n = $condicion[1] ?? null;
+        $cantos = ['truco' => 'truco', 'envido' => 'envido', 'falta_envido' => 'falta envido', 'retruco' => 'retruco'];
+
+        return match ($condicion[0]) {
+            'por' => "Ganando por {$n} o más",
+            'sin_mazo' => 'Sin irte al mazo',
+            'envidos' => $n === 1 ? 'Ganando un envido' : "Ganando {$n} envidos",
+            'trucos' => $n === 1 ? 'Ganando un truco querido' : "Ganando {$n} trucos queridos",
+            'retrucos' => $n === 1 ? 'Ganando un retruco querido' : "Ganando {$n} retrucos queridos",
+            'vale_cuatros' => 'Ganando un vale cuatro querido',
+            'faltas' => 'Ganando un falta envido querido',
+            'sin_envido_perdido' => 'Sin que te ganen un envido',
+            'sin_truco_perdido' => 'Sin que te ganen un truco querido',
+            'envido_y_truco' => 'Ganando un envido y un truco querido',
+            'sumar' => "Sumando {$n} o más",
+            'que_no_sume' => 'Sin que la máquina sume',
+            'sin_cantar' => 'Sin cantar '.($cantos[$n] ?? $n),
+            'en_dos_bazas' => 'Ganando la mano en dos bazas',
+            'gana_el_truco' => 'Ganando también el truco',
+            'contraflor_al_resto' => 'Con la contraflor al resto',
+            'serie_sin_perder' => 'Sin perder ninguna partida',
+            'final_por' => "Ganando la final por {$n} o más",
+            'final_sin_envido_perdido' => 'Sin perder un envido en la final',
+            default => $condicion[0],
+        };
+    }
+
     public static function estaBienEscrita(array $condicion): bool
     {
         $que = $condicion[0] ?? null;

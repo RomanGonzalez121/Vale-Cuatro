@@ -4,6 +4,7 @@ use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\AvisosController;
 use App\Http\Controllers\DesafiosController;
 use App\Http\Controllers\EscaleraController;
+use App\Http\Controllers\GiraController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\InvitacionController;
 use App\Http\Controllers\JugarController;
@@ -89,6 +90,12 @@ Route::get('/desafios', [DesafiosController::class, 'lista'])->name('desafios');
 Route::post('/desafios/{clave}', [DesafiosController::class, 'jugar'])->where('clave', '[a-z0-9-]{1,40}')->middleware('throttle:30,1,practica')->name('desafios.jugar');
 Route::get('/escalera', [EscaleraController::class, 'ver'])->name('escalera');
 Route::post('/escalera/{escalon}', [EscaleraController::class, 'jugar'])->whereNumber('escalon')->middleware('throttle:30,1,practica')->name('escalera.jugar');
+
+// La gira de los clubes (M26): el plano de cada barrio y la entrada a cada nivel. Como la escalera, mirar no pide
+// sesión y jugar es una puerta de entrada más.
+Route::get('/gira', [GiraController::class, 'ver'])->name('gira');
+Route::get('/gira/{barrio}', [GiraController::class, 'barrio'])->where('barrio', '[a-z-]{1,20}')->name('gira.barrio');
+Route::post('/gira/{barrio}/{nivel}', [GiraController::class, 'jugar'])->where('barrio', '[a-z-]{1,20}')->whereNumber('nivel')->middleware('throttle:30,1,practica')->name('gira.jugar');
 
 // La revancha, desde el final de una partida. Cada pedido dice de qué partida habla, y tiene que ser de quien lo hace.
 Route::middleware(['auth', 'throttle:240,1,revancha'])->group(function () {

@@ -2106,3 +2106,12 @@ La gira son seis barrios en orden (Boedo, San Telmo, La Boca, Pompeya, Mataderos
 - **No cuenta para el ranking**, como la escalera (decidido por Román).
 - **Lo que falta, en las partes siguientes:** la página con el plano, los niveles de a cuatro, al mejor de tres y la copa del barrio, las manías de los jefes, el ambiente de cada barrio en la mesa y los premios.
 
+## M26, segunda parte: la página de la gira
+
+Es la lámina que aprobó Román, con los datos reales. En escritorio, una guía de calles abierta: a la izquierda el índice (los barrios con su línea de puntos y cuántos fósforos llevás en cada uno, y la ficha de la parada elegida con "Jugar"), la raya doble del lomo, y a la derecha el plano, medido contra el alto de la ventana para que todo entre sin deslizar. En el celular, una isla por pantalla: los barrios en una fila, el plano parado de borde a borde y la parada en una hoja que asoma abajo. Las referencias fueron la guía de calles tipo Filcar, los planos ilustrados que dibujan los edificios sobre la grilla, los mapas de niveles de Candy Crush y la hoja que asoma de Google Maps.
+
+- **El plano es un componente** (`App\View\Components\Gira\Plano`): arma la guía de cualquier barrio, acostada o parada, reparte las paradas parejas sobre el recorrido y dibuja lo hecho como un fósforo hasta la parada que sigue. Cada parada es un botón que muestra su ficha; el bar del jefe es la última. Lo propio de San Telmo (los adoquines de Defensa, la iglesia y el mercado) ya está dibujado.
+- **Cada barrio va a tener su propia forma** (decidido por Román el 17 de octubre de 2026): su traza, su recorrido y sus edificios, no la misma grilla con otros nombres. Va en la última parte.
+- **La mesa de una parada** dice qué parada es, contra quién se juega y adónde se vuelve; los textos que antes decían "escalón" fijo ahora los manda el servidor, así sirven para la escalera y para la gira.
+- **La escalera sigue andando como antes** hasta que se puedan jugar todos los tipos de nivel; recién ahí la carta de la escalera en los modos pasa a ser la de la gira. Los niveles de a cuatro, al mejor de tres y la copa dicen "Muy pronto".
+

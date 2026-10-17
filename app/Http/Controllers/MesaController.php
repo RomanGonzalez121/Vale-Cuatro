@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Avisos\Avisos;
 use App\Juego\Desafios;
 use App\Juego\Escalera;
+use App\Juego\Gira;
 use App\Juego\Mesa;
 use App\Juego\Premios;
 use App\Juego\Senas;
@@ -59,9 +60,15 @@ class MesaController extends Controller
                 return redirect()->route('torneo', $ultima->torneo_id);
             }
 
-            // Y si fue un desafío o un escalón, se vuelve a su lista, que muestra cómo quedó.
+            // Y si fue un desafío, un escalón o una parada de la gira, se vuelve a su lista o a su plano, que muestra cómo quedó.
             if ($ultima?->esDePractica()) {
-                return redirect()->route($ultima->escalon !== null ? 'escalera' : 'desafios')->with('aviso', $this->comoTerminoLaPractica($ultima));
+                $donde = match (true) {
+                    $ultima->gira !== null => redirect()->route('gira.barrio', Gira::deLaPartida($ultima)[0]),
+                    $ultima->escalon !== null => redirect()->route('escalera'),
+                    default => redirect()->route('desafios'),
+                };
+
+                return $donde->with('aviso', $this->comoTerminoLaPractica($ultima));
             }
 
             return redirect()->route('modos')->with('aviso', $this->comoTermino($request));
@@ -112,8 +119,13 @@ class MesaController extends Controller
             return null;
         }
 
+        if ($partida->gira !== null) {
+            return $this->paradaDe($partida);
+        }
+
         $desafio = $partida->esDesafio() ? Desafios::de($partida->desafio) : null;
         $escalon = $partida->escalon === null ? null : Escalera::escalon($partida->escalon);
+        $n = $partida->escalon;
 
         return [
             // Una mano con objetivo se cierra sola al terminar la mano; una partida de la escalera va a los puntos.
@@ -127,6 +139,58 @@ class MesaController extends Controller
             'volver' => route($partida->escalon !== null ? 'escalera' : 'desafios'),
             'reintentar' => $partida->escalon !== null ? route('escalera.jugar', $partida->escalon) : route('desafios.jugar', $partida->desafio),
             'siguiente' => $partida->escalon !== null && $partida->escalon < Escalera::cuantos() ? route('escalera.jugar', $partida->escalon + 1) : null,
+            // Cómo se dice cada cosa: en la escalera se habla de escalones; en un desafío suelto, de desafíos.
+            'lugar' => $n === null ? null : "Escalón {$n}",
+            'deDonde' => $n === null ? '' : ", el escalón {$n} de la escalera",
+            'subir' => $n === null ? null : 'Subir al escalón '.($n + 1),
+            'volverDice' => $n === null ? 'Otros desafíos' : 'Ver la escalera',
+            'abandonarDice' => $n === null ? 'Abandonar el desafío' : 'Abandonar el escalón',
+            'quedaGuardado' => ($n === null ? 'El desafío' : 'El escalón').' queda guardado: cuando vuelvas a jugar, sigue donde lo dejaste. Si lo abandonás, cuenta como un intento.',
+            'frases' => $n === null ? null : [
+                'paso' => "Pasaste el escalón {$n}.",
+                'noSalio' => "El escalón {$n} no salió esta vez.",
+                'final' => 'Llegaste arriba: completaste la escalera del club.',
+            ],
+        ];
+    }
+
+    /**
+     * Lo mismo para una parada de la gira de los clubes: qué es, adónde se vuelve (al plano del barrio) y
+     * cuál es la parada siguiente.
+     *
+     * @return array<string, mixed>
+     */
+    private function paradaDe(Partida $partida): array
+    {
+        [$clave, $n] = Gira::deLaPartida($partida);
+        $barrio = Gira::barrio($clave);
+        $nivel = Gira::nivel($clave, $n);
+        $que = Gira::queEs($barrio, $nivel);
+        $siguiente = Gira::nivel($clave, $n + 1);
+        $esMano = $partida->esDesafio();
+
+        return [
+            'esMano' => $esMano,
+            'titulo' => $que['titulo'],
+            'consigna' => $esMano ? $que['dice'] : null,
+            'escalon' => null,
+            'esElUltimo' => $siguiente === null,
+            // El rival tiene nombre: alguien del barrio, o el jefe en su bar.
+            'rival' => $nivel['tipo'] === 'jefe' ? $barrio['jefe']['nombre'] : ($nivel['rival'] ?? null),
+            'volver' => route('gira.barrio', $clave),
+            'reintentar' => route('gira.jugar', [$clave, $n]),
+            'siguiente' => $siguiente !== null && in_array($siguiente['tipo'], Gira::SE_JUEGAN, true) ? route('gira.jugar', [$clave, $n + 1]) : null,
+            'lugar' => $nivel['tipo'] === 'jefe' ? $barrio['jefe']['bar'] : "Parada {$n}",
+            'deDonde' => ", la parada {$n} de {$barrio['nombre']}",
+            'subir' => 'Seguir a la parada '.($n + 1),
+            'volverDice' => 'Ver el plano',
+            'abandonarDice' => 'Abandonar la parada',
+            'quedaGuardado' => 'La parada queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, cuenta como un intento.',
+            'frases' => [
+                'paso' => "Pasaste la parada {$n} de {$barrio['nombre']}.",
+                'noSalio' => "La parada {$n} no salió esta vez.",
+                'final' => "Le ganaste a {$barrio['jefe']['nombre']}: completaste {$barrio['nombre']}.",
+            ],
         ];
     }
 
@@ -140,6 +204,15 @@ class MesaController extends Controller
         }
 
         $paso = $partida->ganador === Mesa::JUGADOR;
+
+        if ($partida->gira !== null) {
+            [$clave, $n] = Gira::deLaPartida($partida);
+            $fosforos = Gira::fosforos($partida->jugador)[Gira::clave($clave, $n)] ?? 0;
+
+            return $paso
+                ? "Pasaste la parada {$n} con {$fosforos} de 3 fósforos."
+                : "La parada {$n} no salió esta vez.";
+        }
 
         return $partida->escalon !== null
             ? ($paso ? "Pasaste el escalón {$partida->escalon}." : "El escalón {$partida->escalon} no salió esta vez.")

@@ -21,6 +21,21 @@ final class Gira
     /** A cuántos puntos van las partidas de la gira, salvo que el nivel diga otra cosa: cortas, como en la escalera. */
     public const PUNTOS = 15;
 
+    /**
+     * Cómo se dice la manía de cada jefe, en el cartel de su bar.
+     */
+    public const MANIAS = [
+        '' => 'Sin manía: es el que mejor juega del club.',
+        'nunca_se_va' => 'Nunca se va al mazo: juega todas las manos hasta el final, aunque no tenga nada.',
+        'canta_todo' => 'Canta todo: envido y truco en cada mano que puede. Hay que saber cuándo no querer.',
+        'miente_siempre' => 'Miente siempre: lee las cartas y canta truco con cualquier cosa. Hay que animarse a querer.',
+        'quiere_todo' => 'Quiere todo: nunca dice que no. Cada canto se juega hasta el final.',
+        'arranca_con_ventaja' => 'Arranca con ventaja: la partida va a 30 y él empieza con 8.',
+    ];
+
+    /** Los tipos de nivel que ya se juegan; los demás llegan con la tercera parte de la gira. */
+    public const SE_JUEGAN = ['partida', 'abajo', 'jefe', 'mano'];
+
     /** @var list<array<string, mixed>>|null */
     private static ?array $barrios = null;
 
@@ -129,6 +144,67 @@ final class Gira
         $anterior = self::anterior($barrio);
 
         return $anterior === null || self::pasado($jugador, $anterior['clave'], count($anterior['niveles']), $fosforos);
+    }
+
+    /**
+     * Qué es un nivel, dicho para su ficha: un título, una línea de qué se juega y la carta que lo representa
+     * (la del rival, la del jefe, o null si los rivales son una sorpresa).
+     *
+     * @param  array<string, mixed>  $barrio
+     * @param  array<string, mixed>  $nivel
+     * @return array{titulo: string, dice: string, carta: string|null}
+     */
+    public static function queEs(array $barrio, array $nivel): array
+    {
+        $maquina = Nivel::from($nivel['nivel'])->deLaMaquina();
+        $rival = $nivel['rival'] ?? null;
+        $carta = $rival === null ? null : (JugadoresDeEjemplo::cartas()[$rival] ?? null);
+
+        return match ($nivel['tipo']) {
+            'mano' => ['titulo' => Desafios::de($nivel['desafio'])['titulo'], 'dice' => Desafios::de($nivel['desafio'])['consigna'], 'carta' => null],
+            'cuatro' => ['titulo' => 'De a cuatro', 'dice' => "Con un compañero máquina contra dos rivales, a {$nivel['puntos']}. Máquina {$maquina}.", 'carta' => null],
+            'serie' => ['titulo' => $rival, 'dice' => "Al mejor de tres, partidas a {$nivel['puntos']}. Máquina {$maquina}.", 'carta' => $carta],
+            'copa' => ['titulo' => "Copa de {$barrio['nombre']}", 'dice' => "Un torneo de cuatro a {$nivel['puntos']}: hay que salir campeón. Máquina {$maquina}.", 'carta' => null],
+            'abajo' => ['titulo' => $rival, 'dice' => "Partida a {$nivel['puntos']} que arranca {$nivel['tanteo'][0]} a {$nivel['tanteo'][1]}. Máquina {$maquina}.", 'carta' => $carta],
+            'jefe' => ['titulo' => $barrio['jefe']['nombre'], 'dice' => self::MANIAS[$barrio['jefe']['mania'] ?? ''], 'carta' => $barrio['jefe']['carta']],
+            default => ['titulo' => $rival, 'dice' => "Partida a {$nivel['puntos']}. Máquina {$maquina}.", 'carta' => $carta],
+        };
+    }
+
+    /**
+     * La gira como la ve un jugador: cada barrio con sus niveles, cuántos fósforos lleva en cada uno y qué
+     * está abierto. Sin jugador, todo en cero y solo el primer nivel abierto.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function de(?Jugador $jugador): array
+    {
+        $fosforos = self::fosforos($jugador);
+        $barrios = [];
+        $abiertoElBarrio = true;
+
+        foreach (self::barrios() as $barrio) {
+            $niveles = [];
+            $anteriorPasado = $abiertoElBarrio;
+
+            foreach ($barrio['niveles'] as $nivel) {
+                $suyos = $fosforos[self::clave($barrio['clave'], $nivel['numero'])] ?? 0;
+                $niveles[] = [...$nivel, 'fosforos' => $suyos, 'pasado' => $suyos > 0, 'abierto' => $anteriorPasado, ...self::queEs($barrio, $nivel)];
+                $anteriorPasado = $suyos > 0;
+            }
+
+            $barrios[] = [
+                ...$barrio,
+                'niveles' => $niveles,
+                'abierto' => $abiertoElBarrio,
+                'fosforos' => array_sum(array_column($niveles, 'fosforos')),
+                'deTodos' => count($niveles) * FosforosDeGira::MAXIMO,
+                'completo' => end($niveles)['pasado'],
+            ];
+            $abiertoElBarrio = end($niveles)['pasado'];
+        }
+
+        return $barrios;
     }
 
     /**

@@ -64,12 +64,12 @@
             @if ($practica['siguiente'])
                 <form method="POST" action="{{ $practica['siguiente'] }}" class="contents" x-show="cerroElDesafio && superado" x-cloak>
                     @csrf
-                    <button type="submit" class="boton boton-naipe" data-boton="subir">Subir al escalón {{ $practica['escalon'] + 1 }}</button>
+                    <button type="submit" class="boton boton-naipe" data-boton="subir">{{ $practica['subir'] }}</button>
                 </form>
             @endif
             <a href="{{ $practica['volver'] }}" class="boton" :class="superado && ! {{ $practica['siguiente'] ? 'true' : 'false' }} ? 'boton-naipe order-first' : 'boton-linea order-last'"
                 x-show="cerroElDesafio" x-cloak data-boton="volver-a-la-lista">
-                {{ $practica['escalon'] ? 'Ver la escalera' : 'Otros desafíos' }}
+                {{ $practica['volverDice'] }}
             </a>
             <form method="POST" action="{{ $practica['reintentar'] }}" class="contents" x-show="cerroElDesafio && ! (superado && {{ $practica['siguiente'] ? 'true' : 'false' }})" x-cloak>
                 @csrf

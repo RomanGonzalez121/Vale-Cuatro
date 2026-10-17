@@ -38,6 +38,7 @@
 return [
     [
         'clave' => 'boedo',
+        'calles' => ['verticales' => ['Castro Barros', 'Av. Boedo', 'Maza'], 'horizontales' => ['Independencia', 'Carlos Calvo'], 'avenida' => 'Av. San Juan', 'costado' => 'Av. La Plata'], 'plaza' => [1, 2],
         'nombre' => 'Boedo',
         'dice' => 'El club del barrio. Es la escalera de siempre, con tu progreso.',
         'mesa' => 'madera',
@@ -59,6 +60,7 @@ return [
     ],
     [
         'clave' => 'san-telmo',
+        'calles' => ['verticales' => ['Bolívar', 'Defensa', 'Balcarce'], 'horizontales' => ['Humberto 1º', 'Carlos Calvo'], 'avenida' => 'Av. San Juan', 'costado' => 'Paseo Colón'], 'plaza' => [1, 1], 'adoquines' => 1,
         'nombre' => 'San Telmo',
         'dice' => 'Adoquines, anticuarios y la feria de los domingos.',
         'mesa' => 'adoquines',
@@ -78,6 +80,7 @@ return [
     ],
     [
         'clave' => 'la-boca',
+        'calles' => ['verticales' => ['Necochea', 'Caminito', 'Magallanes'], 'horizontales' => ['Lamadrid', 'Olavarría'], 'avenida' => 'Pedro de Mendoza', 'costado' => 'Almirante Brown'], 'plaza' => [0, 2],
         'nombre' => 'La Boca',
         'dice' => 'Conventillos de chapa, el puerto y el Riachuelo.',
         'mesa' => 'chapa',
@@ -97,6 +100,7 @@ return [
     ],
     [
         'clave' => 'pompeya',
+        'calles' => ['verticales' => ['Centenera', 'Av. Sáenz', 'Esquiú'], 'horizontales' => ['Traful', 'Tabaré'], 'avenida' => 'Av. Amancio Alcorta', 'costado' => 'Av. Perito Moreno'], 'plaza' => [2, 2],
         'nombre' => 'Pompeya',
         'dice' => 'Niebla, paredón y la vuelta del tango.',
         'mesa' => 'tarot',
@@ -116,6 +120,7 @@ return [
     ],
     [
         'clave' => 'mataderos',
+        'calles' => ['verticales' => ['Murguiondo', 'Lisandro de la Torre', 'Tellier'], 'horizontales' => ['Directorio', 'Alberdi'], 'avenida' => 'Av. de los Corrales', 'costado' => 'Av. Eva Perón'], 'plaza' => [1, 0],
         'nombre' => 'Mataderos',
         'dice' => 'La feria, los corrales y los reseros de a caballo.',
         'mesa' => 'pulperia',
@@ -134,6 +139,7 @@ return [
     ],
     [
         'clave' => 'abasto',
+        'calles' => ['verticales' => ['Lavalle', 'Av. Corrientes', 'Sarmiento'], 'horizontales' => ['Anchorena', 'Agüero'], 'avenida' => 'Av. Pueyrredón', 'costado' => 'Gallo'], 'plaza' => [2, 1],
         'nombre' => 'Abasto',
         'dice' => 'El mercado, los cajones de fruta y las noches largas.',
         'mesa' => 'cajon',

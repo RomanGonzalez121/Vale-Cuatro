@@ -6713,6 +6713,15 @@ html:has(body.superficie-pano) {
 }
 
 @media (hover: hover) and (pointer: fine) {
+    /* La gira: la parada bajo el mouse asoma su anillo, y el barrio del índice se marca. */
+    .plano .parada:hover .parada-anillo {
+        opacity: 0.5;
+    }
+
+    .gira .indice-barrio:not(.es-actual):hover {
+        background-color: color-mix(in srgb, var(--color-texto) 8%, transparent);
+    }
+
     .indice-enlace:hover {
         opacity: 1;
     }
@@ -7143,4 +7152,311 @@ html:has(body.superficie-pano) {
     --color-copa: #fbfaf5;
     --color-espada: #fbfaf5;
     --color-basto: #fbfaf5;
+}
+
+/*
+ | La gira de los clubes (M26). En escritorio, una guía de calles abierta: el índice a la izquierda, la raya
+ | doble del lomo y el plano a la derecha, medido contra el alto para que todo entre sin deslizar. En el celular,
+ | los barrios en una fila, el plano parado de borde a borde y la parada en una hoja que asoma abajo.
+ | El plano es papel impreso: no cambia con el modo de día y de noche.
+ */
+.gira .solo-celular {
+    display: block;
+}
+
+.gira .solo-escritorio {
+    display: none;
+}
+
+.gira .guia-abierta {
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+}
+
+.gira .guia-indice {
+    display: contents;
+}
+
+.gira .gira-titulo,
+.gira .gira-cuenta {
+    display: none;
+}
+
+.gira .gira-barrios {
+    order: -2;
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    margin-inline: -1rem;
+    padding: 0.1rem 1rem 0.2rem;
+    scrollbar-width: none;
+}
+
+.gira .indice-barrio {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+    border: 1.5px solid currentColor;
+    border-radius: 999px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.gira .indice-barrio .indice-puntos,
+.gira .indice-barrio .indice-cuenta {
+    display: none;
+}
+
+.gira .indice-barrio.es-actual {
+    border-color: var(--color-texto);
+    background-color: var(--color-texto);
+    color: var(--color-fondo);
+}
+
+.gira .indice-barrio.esta-cerrado {
+    opacity: 0.45;
+}
+
+.gira .barrio-numero {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.gira .isla {
+    order: -1;
+    position: relative;
+    margin-inline: -1rem;
+}
+
+.gira .guia {
+    border: 1.5px solid #161a18;
+    border-inline: 0;
+    background-color: #f2e8cf;
+    color: #161a18;
+}
+
+/* El plano parado se mide contra el alto que queda entre las barras, la fila de barrios y la hoja. */
+.gira .gira-plano-parado {
+    width: min(100%, calc((var(--alto, 100dvh) - 13rem) / 1.45));
+    margin-inline: auto;
+}
+
+/* La hoja que asoma sobre el borde de abajo del plano: la manija dice que se toca para ver la parada entera. */
+.gira .parada-hoja {
+    position: absolute;
+    inset-inline: 0.5rem;
+    bottom: 0;
+    padding: 0.35rem 0.85rem 0.75rem;
+    border: 1.5px solid #161a18;
+    border-bottom: 0;
+    border-radius: 1rem 1rem 0 0;
+    background-color: #fbfaf5;
+    color: #161a18;
+}
+
+.gira .parada-tira {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.gira .hoja-manija {
+    display: block;
+    width: 2.5rem;
+    height: 0.3rem;
+    margin: 0 auto 0.35rem;
+    border-radius: 999px;
+    background-color: #161a18;
+    opacity: 0.3;
+}
+
+.gira .ficha-nivel {
+    padding: 1rem 1.1rem;
+    border: 1.5px solid #161a18;
+    border-radius: 0.6rem;
+    background-color: #fbfaf5;
+    color: #161a18;
+}
+
+.gira .cartel-jefe {
+    padding: 1rem 1.1rem;
+    border-radius: 0.6rem;
+    outline: 3px double #e8c98a;
+    outline-offset: -7px;
+    background-color: #153f32;
+    color: #fbfaf5;
+}
+
+.gira .cartel-bar {
+    color: #e8c98a;
+    font-weight: 800;
+}
+
+.gira .ficha-fosforo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* Un fósforo chico de los tres de cada parada: palito y cabeza; los que faltan, apagados. */
+.gira .fosforito {
+    position: relative;
+    display: inline-block;
+    width: 3px;
+    height: 0.95rem;
+    margin-top: 4px;
+    outline: 1px solid #161a18;
+    background-color: #e8c98a;
+}
+
+.gira .fosforito::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -2.5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #c93327;
+}
+
+.gira .fosforito.apagado {
+    opacity: 0.28;
+}
+
+/* El plano: las letras de la guía y las paradas, que son botones. La elegida lleva un anillo de puntos. */
+.plano-calle {
+    fill: #6b5a33;
+    font: italic 600 9.5px var(--font-sans);
+    letter-spacing: 0.02em;
+}
+
+.plano-numero {
+    font: 900 13px var(--font-sans);
+}
+
+.plano-cartel {
+    fill: #7a2e26;
+    font: italic 900 9.5px var(--font-sans);
+}
+
+.plano-carta {
+    fill: #161a18;
+    font: 900 6px var(--font-sans);
+}
+
+.plano-margen {
+    fill: #6b5a33;
+    font: 700 9px var(--font-sans);
+}
+
+.plano .parada {
+    cursor: pointer;
+    outline: none;
+}
+
+.plano .parada-anillo {
+    opacity: 0;
+}
+
+.plano .parada[aria-pressed='true'] .parada-anillo,
+.plano .parada:focus-visible .parada-anillo {
+    opacity: 1;
+}
+
+.gira .indice-barrio:not(.es-actual):active {
+    background-color: color-mix(in srgb, var(--color-texto) 8%, transparent);
+}
+
+@media (min-width: 64rem) {
+    .gira .solo-celular {
+        display: none;
+    }
+
+    .gira .solo-escritorio {
+        display: block;
+    }
+
+    .gira .guia-abierta {
+        grid-template-columns: 23rem auto;
+        justify-content: center;
+        align-items: start;
+        gap: 0;
+        padding-top: 1.25rem;
+    }
+
+    .gira .guia-indice {
+        display: block;
+        align-self: stretch;
+        margin-right: 1.75rem;
+        padding-right: 1.75rem;
+        border-right: 3px double currentColor;
+    }
+
+    .gira .gira-titulo {
+        display: block;
+        font-size: 1.85rem;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+    }
+
+    .gira .gira-cuenta {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.95rem;
+    }
+
+    .gira .gira-barrios {
+        display: grid;
+        margin: 0.75rem 0 0;
+        padding: 0;
+        overflow: visible;
+    }
+
+    .gira .indice-barrio {
+        padding: 0.12rem 0.5rem;
+        border: 0;
+        border-radius: 0.4rem;
+        line-height: 1.2;
+    }
+
+    .gira .indice-barrio .indice-puntos {
+        display: block;
+        flex: 1;
+        min-width: 1rem;
+        border-bottom: 2px dotted currentColor;
+        opacity: 0.5;
+    }
+
+    .gira .indice-barrio .indice-cuenta {
+        display: block;
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .gira .gira-fichas {
+        margin-top: 1rem;
+    }
+
+    .gira .isla {
+        display: contents;
+    }
+
+    /* El plano entra entero en la ventana: su ancho sale del alto que queda debajo del encabezado. */
+    .gira .guia {
+        width: min(calc(100vw - 30rem), calc((var(--alto, 100dvh) - 7.75rem) * 1.4286));
+        border-inline: 1.5px solid #161a18;
+    }
 }

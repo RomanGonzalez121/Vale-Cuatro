@@ -305,20 +305,21 @@ export default (inicial, pedidos) => ({
     },
 
     /**
-     * En una partida de la escalera, lo que deja dicho al terminar: se pasó el escalón o no.
+     * En una partida de la escalera o de la gira, lo que deja dicho al terminar: se pasó o no. Las frases las
+     * manda el servidor, que sabe si es un escalón o una parada.
      */
     get fraseDeLaEscalera() {
-        const practica = this.pedidos.practica;
+        const frases = this.pedidos.practica?.frases;
 
-        if (! practica || practica.esMano || ! this.fin) {
+        if (! frases || this.pedidos.practica.esMano || ! this.fin) {
             return '';
         }
 
         if (this.fin !== 'vos') {
-            return `El escalón ${practica.escalon} no salió esta vez.`;
+            return frases.noSalio;
         }
 
-        return practica.esElUltimo ? 'Llegaste arriba: completaste la escalera del club.' : `Pasaste el escalón ${practica.escalon}.`;
+        return this.pedidos.practica.esElUltimo ? frases.final : frases.paso;
     },
 
     abrirObjetivo(conFoco = true) {

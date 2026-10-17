@@ -32,7 +32,7 @@
         // Si la partida es de un torneo: si es la final y adónde pasa quien gana.
         'torneo' => $torneo === null ? null : ['esFinal' => $torneo['esFinal'], 'sigue' => $torneo['sigue']],
         // Si es un desafío o un escalón: si es una sola mano con objetivo, y qué escalón.
-        'practica' => $practica === null ? null : ['esMano' => $practica['esMano'], 'escalon' => $practica['escalon'], 'esElUltimo' => $practica['esElUltimo']],
+        'practica' => $practica === null ? null : ['esMano' => $practica['esMano'], 'escalon' => $practica['escalon'], 'esElUltimo' => $practica['esElUltimo'], 'frases' => $practica['frases']],
         'turno' => \App\Juego\Mesa::SEGUNDOS_DE_TURNO,
         'reparto' => \App\Juego\Mesa::SEGUNDOS_PARA_REPARTIR,
         // Si la partida es de una serie al mejor de tres: cómo iba al empezar esta y cuántas hacen falta.
@@ -109,12 +109,12 @@
                         <h2 id="titulo-objetivo" class="text-xl font-black leading-[1.05] tracking-tight">{{ $practica['titulo'] }}</h2>
                         <p class="mt-2 text-[1.05rem] leading-snug">{{ $practica['consigna'] }}</p>
                         <p class="mt-2.5 text-sm leading-snug">
-                            Es una sola mano{{ $practica['escalon'] ? ", el escalón {$practica['escalon']} de la escalera" : '' }}. La máquina contesta siempre igual: si no sale, probá otro camino.
+                            Es una sola mano{{ $practica['deDonde'] }}. La máquina contesta siempre igual: si no sale, probá otro camino.
                         </p>
                     </div>
                 @elseif ($practica)
-                    {{-- En una partida de la escalera, qué escalón es. --}}
-                    <p class="whitespace-nowrap text-sm font-semibold leading-none">Escalón {{ $practica['escalon'] }}</p>
+                    {{-- En una partida de la escalera o de la gira, qué escalón o qué parada es. --}}
+                    <p class="whitespace-nowrap text-sm font-semibold leading-none">{{ $practica['lugar'] }}</p>
                 @endif
             </div>
 
@@ -389,14 +389,14 @@
                         @if ($practica['siguiente'])
                             <form method="POST" action="{{ $practica['siguiente'] }}" class="flex flex-col" x-show="fin === 'vos'" x-cloak>
                                 @csrf
-                                <button type="submit" class="boton boton-naipe"><x-icono nombre="escalera" /> Subir al escalón {{ $practica['escalon'] + 1 }}</button>
+                                <button type="submit" class="boton boton-naipe"><x-icono nombre="escalera" /> {{ $practica['subir'] }}</button>
                             </form>
                         @endif
                         <form method="POST" action="{{ $practica['reintentar'] }}" class="flex flex-col" x-show="fin !== 'vos'" x-cloak>
                             @csrf
                             <button type="submit" class="boton boton-naipe"><x-icono nombre="repetir" /> Probar de nuevo</button>
                         </form>
-                        <a href="{{ $practica['volver'] }}" class="boton boton-linea">Ver la escalera</a>
+                        <a href="{{ $practica['volver'] }}" class="boton boton-linea">{{ $practica['volverDice'] }}</a>
                     </div>
                 @endif
 
@@ -473,7 +473,7 @@
                 class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
                 <h2 id="titulo-salir" class="text-3xl font-black tracking-tight">¿Salir de la mesa?</h2>
                 @if ($practica)
-                    <p class="mt-2 leading-relaxed">{{ $esDesafio ? 'El desafío' : 'El escalón' }} queda guardado: cuando vuelvas a jugar, sigue donde lo dejaste. Si lo abandonás, cuenta como un intento.</p>
+                    <p class="mt-2 leading-relaxed">{{ $practica['quedaGuardado'] }}</p>
                 @elseif ($rival === null)
                     <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la perdés{{ $serie ? ', y con ella la serie' : '' }}{{ $torneo ? ' y quedás afuera del torneo' : '' }}.</p>
                 @else
@@ -489,7 +489,7 @@
                         @csrf
                         {{-- Se abandona la partida que esta mesa muestra, y ninguna otra. --}}
                         <input type="hidden" name="partida" value="{{ $vista['partida'] }}">
-                        <button type="submit" class="boton boton-linea">{{ $practica ? ($esDesafio ? 'Abandonar el desafío' : 'Abandonar el escalón') : 'Abandonar la partida' }}</button>
+                        <button type="submit" class="boton boton-linea">{{ $practica ? $practica['abandonarDice'] : 'Abandonar la partida' }}</button>
                     </form>
                 </div>
             </div>
