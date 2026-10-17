@@ -103,7 +103,7 @@ class VistaTest extends TestCase
     {
         $revisadas = 0;
 
-        foreach ([2, 4] as $asientos) {
+        foreach ([2, 3, 4] as $asientos) {
             foreach (range(1, 15) as $semilla) {
                 $this->simular($semilla, $asientos, enCadaPaso: function (Partida $partida) use ($asientos, $semilla, &$revisadas): void {
                     foreach ([...range(0, $asientos - 1), null] as $asiento) {

@@ -133,11 +133,11 @@ class RepartoTest extends TestCase
         $porPasos->conTanteo([0, 0]);
     }
 
-    public function test_la_mesa_es_de_dos_o_de_cuatro(): void
+    public function test_la_mesa_es_de_dos_de_tres_o_de_cuatro(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        Partida::nueva(asientos: 3);
+        Partida::nueva(asientos: 5);
     }
 
     public function test_no_se_reparte_con_una_mano_en_juego(): void

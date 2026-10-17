@@ -16,9 +16,9 @@ trait Jugando
 {
     /**
      * @param  list<list<string>>  $manos  Las cartas de cada asiento, por identificador.
-     * @param  array{0: int, 1: int}  $tanteo
+     * @param  list<int>|null  $tanteo
      */
-    private function armada(array $manos, int $mano = 0, array $tanteo = [0, 0], int $puntos = 30): Partida
+    private function armada(array $manos, int $mano = 0, ?array $tanteo = null, int $puntos = 30): Partida
     {
         return Partida::armada(array_map($this->cartas(...), $manos), $mano, $tanteo, $puntos);
     }

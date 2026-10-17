@@ -42,7 +42,7 @@ final class Envido
      * Lo que suma quien gana el envido querido.
      *
      * @param  list<string>  $cadena
-     * @param  array{0: int, 1: int}  $tanteo
+     * @param  list<int>  $tanteo
      */
     public static function querido(array $cadena, array $tanteo, int $puntosParaGanar): int
     {
@@ -65,13 +65,15 @@ final class Envido
     }
 
     /**
-     * La falta: lo que le falta al puntero (el que va ganando) para cerrar la partida.
+     * La falta: lo que le falta al puntero (el que va ganando) para cerrar la partida. En el gallito
+     * el puntero es el de los tres, y dos que pasaron juntos los puntos pueden seguir jugando: ahí
+     * no les falta nada, y la falta vale 1.
      *
-     * @param  array{0: int, 1: int}  $tanteo
+     * @param  list<int>  $tanteo
      */
     public static function falta(array $tanteo, int $puntosParaGanar): int
     {
-        return $puntosParaGanar - max($tanteo);
+        return max(1, $puntosParaGanar - max($tanteo));
     }
 
     /**

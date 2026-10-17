@@ -32,12 +32,16 @@ final class Partida
 
     public const CONTRAFLOR_AL_RESTO_NO_QUERIDA = 6;
 
-    /** @var array{0: int, 1: int} Los puntos de cada equipo. */
+    /**
+     * Los puntos de cada equipo. En el gallito, los de cada asiento: cada uno suma aparte.
+     *
+     * @var list<int>
+     */
     private array $tanteo = [0, 0];
 
     private Fase $fase = Fase::PorRepartir;
 
-    /** El equipo que ganó la partida. */
+    /** El equipo que ganó la partida. En el gallito, el asiento. */
     private ?int $ganador = null;
 
     private int $numeroDeMano = 0;
@@ -102,10 +106,14 @@ final class Partida
     /** @var list<array<string, mixed>> Lo que pasó con la última acción. Nunca incluye cartas ocultas. */
     private array $hechos = [];
 
-    private function __construct(private Mesa $mesa, private int $mano, private int $puntosParaGanar) {}
+    private function __construct(private Mesa $mesa, private int $mano, private int $puntosParaGanar)
+    {
+        $this->tanteo = array_fill(0, $mesa->esGallito() ? $mesa->asientos : 2, 0);
+    }
 
     /**
      * Una partida sin cartas repartidas. Quién es mano llega como dato: el motor no sortea.
+     * De a tres es el gallito, y el gallo es siempre el mano.
      */
     public static function nueva(int $asientos = 2, int $mano = 0, int $puntos = 30): self
     {
@@ -119,25 +127,27 @@ final class Partida
             throw new InvalidArgumentException('La partida se juega al menos a un punto.');
         }
 
-        return new self($mesa, $mano, $puntos);
+        return new self($mesa->conGallo($mano), $mano, $puntos);
     }
 
     /**
      * Una situación armada: arranca desde un tanteo, un mano y unas cartas dadas.
      *
      * @param  list<list<Carta>>  $manos  Las tres cartas de cada asiento.
-     * @param  array{0: int, 1: int}  $tanteo
+     * @param  list<int>|null  $tanteo  Sin tanteo, desde cero.
      */
-    public static function armada(array $manos, int $mano = 0, array $tanteo = [0, 0], int $puntos = 30): self
+    public static function armada(array $manos, int $mano = 0, ?array $tanteo = null, int $puntos = 30): self
     {
-        return self::nueva(count($manos), $mano, $puntos)->conTanteo($tanteo)->conManos($manos);
+        $partida = self::nueva(count($manos), $mano, $puntos);
+
+        return ($tanteo === null ? $partida : $partida->conTanteo($tanteo))->conManos($manos);
     }
 
     /**
      * La misma partida arrancando desde otro tanteo. Solo vale antes de repartir la primera mano: es
      * para armar una situación, no para corregir los puntos de una partida que ya se está jugando.
      *
-     * @param  array{0: int, 1: int}  $tanteo
+     * @param  list<int>  $tanteo  Uno por equipo; en el gallito, uno por asiento.
      */
     public function conTanteo(array $tanteo): self
     {
@@ -145,8 +155,12 @@ final class Partida
             throw new AccionInvalida('El tanteo de arranque se fija antes de repartir la primera mano.');
         }
 
-        if (count($tanteo) !== 2 || array_filter($tanteo, is_int(...)) !== $tanteo || min($tanteo) < 0 || max($tanteo) >= $this->puntosParaGanar) {
-            throw new InvalidArgumentException('El tanteo son dos números, de 0 a menos de los puntos de la partida.');
+        $cuantos = count($this->tanteo);
+
+        if (count($tanteo) !== $cuantos || array_filter($tanteo, is_int(...)) !== $tanteo || min($tanteo) < 0 || max($tanteo) >= $this->puntosParaGanar) {
+            throw new InvalidArgumentException($cuantos === 2
+                ? 'El tanteo son dos números, de 0 a menos de los puntos de la partida.'
+                : "El tanteo son {$cuantos} números, de 0 a menos de los puntos de la partida.");
         }
 
         $nueva = clone $this;
@@ -453,7 +467,7 @@ final class Partida
 
         // Si la partida se terminó en la mitad de una mano, la mano queda cerrada ahí.
         if ($nueva->fase === Fase::Terminada && $nueva->cierre === null) {
-            $nueva->terminarMano($nueva->ganador, 'partida');
+            $nueva->terminarMano($nueva->equipoGanador(), 'partida');
         }
 
         return $nueva;
@@ -465,7 +479,7 @@ final class Partida
     }
 
     /**
-     * @return array{0: int, 1: int}
+     * @return list<int>
      */
     public function tanteo(): array
     {
@@ -900,7 +914,7 @@ final class Partida
 
         // Si el envido o la flor cerraron la partida, la mano no llega a valer nada: el cierre es el de la partida.
         if ($this->fase === Fase::Terminada) {
-            $this->terminarMano($this->ganador, 'partida');
+            $this->terminarMano($this->equipoGanador(), 'partida');
 
             return;
         }
@@ -932,12 +946,24 @@ final class Partida
         if ($this->fase !== Fase::Terminada) {
             $this->fase = Fase::PorRepartir;
             $this->mano = $this->mesa->rondaDesde($this->mano)[1];
+            $this->mesa = $this->mesa->conGallo($this->mano);
         }
+    }
+
+    /**
+     * El equipo del ganador de la partida, para el cierre de la mano en la que terminó.
+     */
+    private function equipoGanador(): int
+    {
+        return $this->mesa->esGallito() ? $this->mesa->equipoDe($this->ganador) : $this->ganador;
     }
 
     /**
      * Suma puntos. La partida termina en cuanto alguien llega: lo que venga después ya no se anota.
      * En lo anotado queda lo que vale la jugada; el tanteo no pasa de los puntos de la partida.
+     *
+     * En el gallito cada uno suma aparte y, cuando gana la pareja, los dos suman todo. Ahí el tanteo
+     * no tiene tope: si los dos de la pareja pasan juntos, gana el que quedó más arriba.
      */
     private function anotar(int $equipo, int $puntos, string $concepto): void
     {
@@ -945,15 +971,40 @@ final class Partida
             return;
         }
 
-        $this->tanteo[$equipo] = min($this->puntosParaGanar, $this->tanteo[$equipo] + $puntos);
-        $this->anotado[] = ['equipo' => $equipo, 'puntos' => $puntos, 'concepto' => $concepto];
-        $this->hechos[] = ['tipo' => 'puntos', 'equipo' => $equipo, 'puntos' => $puntos, 'concepto' => $concepto, 'tanteo' => $this->tanteo];
+        $hecho = ['tipo' => 'puntos', 'equipo' => $equipo, 'puntos' => $puntos, 'concepto' => $concepto];
 
-        if ($this->tanteo[$equipo] >= $this->puntosParaGanar) {
-            $this->fase = Fase::Terminada;
-            $this->ganador = $equipo;
-            $this->hechos[] = ['tipo' => 'partida_terminada', 'ganador' => $equipo];
+        if ($this->mesa->esGallito()) {
+            $hecho['asientos'] = $this->mesa->asientosDe($equipo);
+
+            foreach ($hecho['asientos'] as $asiento) {
+                $this->tanteo[$asiento] += $puntos;
+            }
+        } else {
+            $this->tanteo[$equipo] = min($this->puntosParaGanar, $this->tanteo[$equipo] + $puntos);
         }
+
+        $this->anotado[] = ['equipo' => $equipo, 'puntos' => $puntos, 'concepto' => $concepto];
+        $this->hechos[] = [...$hecho, 'tanteo' => $this->tanteo];
+
+        $ganador = $this->ganadorDelTanteo();
+
+        if ($ganador !== null) {
+            $this->fase = Fase::Terminada;
+            $this->ganador = $ganador;
+            $this->hechos[] = ['tipo' => 'partida_terminada', 'ganador' => $ganador];
+        }
+    }
+
+    /**
+     * Quién ganó con este tanteo, si alguien ganó: el único que está más arriba, con los puntos de la
+     * partida o más. En el gallito, dos que pasan iguales siguen jugando hasta que uno quede arriba.
+     */
+    private function ganadorDelTanteo(): ?int
+    {
+        $arriba = max($this->tanteo);
+        $punteros = array_keys($this->tanteo, $arriba, true);
+
+        return $arriba >= $this->puntosParaGanar && count($punteros) === 1 ? $punteros[0] : null;
     }
 
     /**

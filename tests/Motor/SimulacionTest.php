@@ -28,9 +28,19 @@ class SimulacionTest extends TestCase
             $tanteo = $partida->tanteo();
             $ganador = $partida->ganador();
 
+            $otros = $tanteo;
+            unset($otros[$ganador]);
+
             $this->assertSame(Fase::Terminada, $partida->fase());
-            $this->assertSame($puntos, $tanteo[$ganador], "Semilla {$semilla}.");
-            $this->assertLessThan($puntos, $tanteo[1 - $ganador], "Semilla {$semilla}.");
+            $this->assertLessThan($tanteo[$ganador], max($otros), "Semilla {$semilla}: gana uno solo, el que quedó más arriba.");
+
+            // En el gallito no hay tope: los dos de la pareja pueden pasar juntos y se comparan.
+            if ($asientos === 3) {
+                $this->assertGreaterThanOrEqual($puntos, $tanteo[$ganador], "Semilla {$semilla}.");
+            } else {
+                $this->assertSame($puntos, $tanteo[$ganador], "Semilla {$semilla}.");
+                $this->assertLessThan($puntos, max($otros), "Semilla {$semilla}.");
+            }
         }
     }
 
@@ -39,8 +49,9 @@ class SimulacionTest extends TestCase
     {
         foreach (range(1, 25) as $semilla) {
             $this->simular($semilla, $asientos, $puntos, function (Partida $partida, Partida $anterior) use ($asientos, $semilla): void {
-                $this->assertGreaterThanOrEqual($anterior->tanteo()[0], $partida->tanteo()[0], "Semilla {$semilla}.");
-                $this->assertGreaterThanOrEqual($anterior->tanteo()[1], $partida->tanteo()[1], "Semilla {$semilla}.");
+                foreach ($partida->tanteo() as $quien => $puntos) {
+                    $this->assertGreaterThanOrEqual($anterior->tanteo()[$quien], $puntos, "Semilla {$semilla}.");
+                }
 
                 $pueden = array_values(array_filter(range(0, $asientos - 1), fn (int $asiento) => $partida->accionesPara($asiento) !== []));
                 $equipos = array_unique(array_map($partida->mesa()->equipoDe(...), $pueden));
@@ -163,7 +174,7 @@ class SimulacionTest extends TestCase
     {
         $vistos = [];
 
-        foreach ([2, 4] as $asientos) {
+        foreach ([2, 3, 4] as $asientos) {
             foreach (range(1, 150) as $semilla) {
                 $this->simular($semilla, $asientos, enCadaPaso: function (Partida $partida) use (&$vistos): void {
                     foreach ($partida->hechos() as $hecho) {
@@ -237,6 +248,7 @@ class SimulacionTest extends TestCase
             'mano a mano a 30' => [2, 30],
             'mano a mano a 15' => [2, 15],
             'de a cuatro a 30' => [4, 30],
+            'gallito a 30' => [3, 30],
         ];
     }
 
