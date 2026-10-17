@@ -52,10 +52,10 @@ final class Premios
     ];
 
     /**
-     * Los dorsos ya dibujados: su nombre y cómo se ganan, por nivel o por un escalón de la escalera. El de
-     * fábrica es de todos. Los que faltan dibujar están en el camino como "Próximamente".
+     * Los dorsos ya dibujados: su nombre y cómo se ganan, por nivel, por un escalón de la escalera o en la gira
+     * de los clubes (venciendo a un jefe). El de fábrica es de todos.
      *
-     * @var array<string, array{nombre: string, nivel?: int, escalon?: int}>
+     * @var array<string, array{nombre: string, nivel?: int, escalon?: int, gira?: string}>
      */
     public const DORSOS = [
         'fabrica' => ['nombre' => 'Isotipos', 'nivel' => 1],
@@ -79,6 +79,10 @@ final class Premios
         'fosforos' => ['nombre' => 'Fósforos', 'escalon' => 3],
         'tinta' => ['nombre' => 'Tinta', 'escalon' => 6],
         'ronda' => ['nombre' => 'Ronda', 'escalon' => 8],
+        // Los que dejan los jefes de la gira de los clubes (M26).
+        'marmolado' => ['nombre' => 'Marmolado', 'gira' => 'venciendo a Don Ceferino'],
+        'senales' => ['nombre' => 'Señales', 'gira' => 'venciendo al Grúa Bianchi'],
+        'tarot' => ['nombre' => 'Tarot', 'gira' => 'venciendo a Madama Ferrante'],
     ];
 
     /**
@@ -86,7 +90,9 @@ final class Premios
      * la forma de anotar de fábrica son de todos; el distintivo no tiene uno de fábrica: sin elegir, no hay.
      * Cada uno ve su mesa y su forma de anotar; el distintivo, como el título, lo ven todos.
      *
-     * @var array<string, array<string, array{nombre: string, nivel: int, ficha?: string}>>
+     * Lo que se gana en la gira de los clubes lleva "gira" en lugar de nivel: dice qué hay que hacer.
+     *
+     * @var array<string, array<string, array{nombre: string, nivel?: int, gira?: string, ficha?: string}>>
      */
     public const POR_NIVEL = [
         'mesa' => [
@@ -112,6 +118,7 @@ final class Premios
             'tarot' => ['nombre' => 'Tarot', 'nivel' => 38],
             'grafito' => ['nombre' => 'Grafito y latón', 'nivel' => 39],
             'fileteado' => ['nombre' => 'Fileteado porteño', 'nivel' => 40],
+            'guia' => ['nombre' => 'La guía', 'gira' => 'terminando la gira entera'],
         ],
         // Los mazos: cómo se ven las cartas en tu mesa (App\Juego\Mazos dice de qué piezas está hecho cada uno).
         'mazo' => [
@@ -144,6 +151,7 @@ final class Premios
             'punto-cruz' => ['nombre' => 'Punto cruz', 'nivel' => 9],
             'tiza' => ['nombre' => 'Tiza', 'nivel' => 13],
             'porotos' => ['nombre' => 'Porotos y garbanzos', 'nivel' => 27],
+            'constelacion' => ['nombre' => 'Constelación', 'gira' => 'venciendo a Madama Ferrante'],
         ],
         'distintivo' => [
             'un-fosforo' => ['nombre' => 'Un fósforo', 'nivel' => 2],
@@ -241,6 +249,8 @@ final class Premios
             ...$dorso,
             'abierto' => $todo || self::dorsoAbierto($dorso, $nivel, $pasados),
             'elegido' => $clave === $elegido,
+            'pide' => self::pide($dorso),
+            'rotulo' => self::rotulo($dorso),
         ], array_keys(self::DORSOS), self::DORSOS);
     }
 
@@ -258,8 +268,10 @@ final class Premios
         return array_map(fn (string $clave, array $pieza) => [
             'clave' => $clave,
             ...$pieza,
-            'abierto' => $todo || $nivel >= $pieza['nivel'],
+            'abierto' => $todo || self::porNivel($pieza, $nivel),
             'elegido' => $clave === $elegida,
+            'pide' => self::pide($pieza),
+            'rotulo' => self::rotulo($pieza),
         ], array_keys(self::POR_NIVEL[$tipo]), self::POR_NIVEL[$tipo]);
     }
 
@@ -267,7 +279,46 @@ final class Premios
     {
         $pieza = self::POR_NIVEL[$tipo][$clave] ?? null;
 
-        return $pieza !== null && (self::loTieneTodo($jugador) || $this->nivel($jugador) >= $pieza['nivel']);
+        return $pieza !== null && (self::loTieneTodo($jugador) || self::porNivel($pieza, $this->nivel($jugador)));
+    }
+
+    /**
+     * Qué pide un premio para ganarse, dicho en una frase para la Colección.
+     *
+     * @param  array{nivel?: int, escalon?: int, gira?: string}  $premio
+     */
+    public static function pide(array $premio): string
+    {
+        return match (true) {
+            isset($premio['gira']) => 'Se gana en la gira de los clubes, '.$premio['gira'].'.',
+            isset($premio['escalon']) => 'Se gana en el escalón '.$premio['escalon'].' de la escalera.',
+            default => 'Llega en el nivel '.$premio['nivel'].'.',
+        };
+    }
+
+    /**
+     * Lo mismo, en dos palabras, para debajo de la pieza cerrada.
+     *
+     * @param  array{nivel?: int, escalon?: int, gira?: string}  $premio
+     */
+    public static function rotulo(array $premio): string
+    {
+        return match (true) {
+            isset($premio['gira']) => 'En la gira',
+            isset($premio['escalon']) => 'Escalón '.$premio['escalon'],
+            default => 'Nivel '.$premio['nivel'],
+        };
+    }
+
+    /**
+     * Si un premio está abierto en ese nivel. Los de la gira no se abren por nivel: los deja un jefe.
+     *
+     * @param  array{nivel?: int, gira?: string}  $pieza
+     */
+    private static function porNivel(array $pieza, int $nivel): bool
+    {
+        // La gira (M26) todavía no da premios: hasta entonces, solo la administración los tiene abiertos.
+        return ! isset($pieza['gira']) && $nivel >= $pieza['nivel'];
     }
 
     /**
@@ -471,12 +522,12 @@ final class Premios
     }
 
     /**
-     * @param  array{nombre: string, nivel?: int, escalon?: int}  $dorso
+     * @param  array{nombre: string, nivel?: int, escalon?: int, gira?: string}  $dorso
      * @param  list<int>  $pasados
      */
     private static function dorsoAbierto(array $dorso, int $nivel, array $pasados): bool
     {
-        return isset($dorso['escalon']) ? in_array($dorso['escalon'], $pasados, true) : $nivel >= $dorso['nivel'];
+        return isset($dorso['escalon']) ? in_array($dorso['escalon'], $pasados, true) : self::porNivel($dorso, $nivel);
     }
 
     /**

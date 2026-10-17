@@ -362,17 +362,16 @@
                             <template x-if="pestana === 'dorsos'">
                                 <ol id="piezas-dorsos" role="tabpanel" aria-labelledby="pestana-dorsos" class="coleccion-piezas">
                                     @foreach ($dorsos as $opcion)
-                                        @php($pide = isset($opcion['escalon']) ? 'Se gana en el escalón '.$opcion['escalon'].' de la escalera.' : 'Llega en el nivel '.$opcion['nivel'].'.')
                                         <li>
                                             <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'dorso' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
                                                 aria-label="Dorso {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : '') }}"
                                                 :aria-label="'Dorso {{ $opcion['nombre'] }}' + (enUso.dorso === '{{ $opcion['clave'] }}' ? ', en uso' : '{{ $opcion['abierto'] ? ', probar' : '' }}')"
-                                                @click="probar($el, {{ Js::from(['tipo' => 'dorso', 'clave' => $opcion['clave'], 'nombre' => 'Dorso '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'elegida' => $opcion['elegido'], 'pide' => $pide]) }})">
+                                                @click="probar($el, {{ Js::from(['tipo' => 'dorso', 'clave' => $opcion['clave'], 'nombre' => 'Dorso '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'elegida' => $opcion['elegido'], 'pide' => $opcion['pide']]) }})">
                                                 <span @class(['block', 'pieza-cerrada' => ! $opcion['abierto']])><x-dorso :de="$opcion['clave']" /></span>
                                             </button>
                                             <p class="pieza-rotulo">
                                                 {{ $opcion['nombre'] }}
-                                                <span class="block font-semibold" x-text="enUso.dorso === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : (isset($opcion['escalon']) ? 'Escalón '.$opcion['escalon'] : 'Nivel '.$opcion['nivel']) }}'"></span>
+                                                <span class="block font-semibold" x-text="enUso.dorso === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : $opcion['rotulo'] }}'"></span>
                                             </p>
                                         </li>
                                     @endforeach
@@ -391,13 +390,13 @@
                                     @foreach ($mesas as $opcion)
                                         <li>
                                             <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'mesa' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
-                                                aria-label="Mesa {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
-                                                @click="probar($el, {{ Js::from(['tipo' => 'mesa', 'clave' => $opcion['clave'], 'nombre' => 'Mesa '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
+                                                aria-label="Mesa {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', '.mb_strtolower(rtrim($opcion['pide'], '.'))) }}"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'mesa', 'clave' => $opcion['clave'], 'nombre' => 'Mesa '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => $opcion['pide']]) }})">
                                                 <span @class(['block', 'pieza-cerrada' => ! $opcion['abierto']])><span class="pieza-mesa" data-mesa="{{ $opcion['clave'] }}" aria-hidden="true"></span></span>
                                             </button>
                                             <p class="pieza-rotulo">
                                                 {{ $opcion['nombre'] }}
-                                                <span class="block font-semibold" x-text="enUso.mesa === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
+                                                <span class="block font-semibold" x-text="enUso.mesa === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : $opcion['rotulo'] }}'"></span>
                                             </p>
                                         </li>
                                     @endforeach
@@ -444,13 +443,13 @@
                                     @foreach ($formas as $opcion)
                                         <li>
                                             <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'anotar' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
-                                                aria-label="Anotar con {{ mb_strtolower($opcion['nombre']) }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
-                                                @click="probar($el, {{ Js::from(['tipo' => 'anotar', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
+                                                aria-label="Anotar con {{ mb_strtolower($opcion['nombre']) }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', '.mb_strtolower(rtrim($opcion['pide'], '.'))) }}"
+                                                @click="probar($el, {{ Js::from(['tipo' => 'anotar', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => $opcion['pide']]) }})">
                                                 <span @class(['pieza-anotar', 'pieza-cerrada' => ! $opcion['abierto']]) data-anotar="{{ $opcion['clave'] }}"><x-fosforos :grupo="0" :puntos="5" :forma="$opcion['clave']" /></span>
                                             </button>
                                             <p class="pieza-rotulo">
                                                 {{ $opcion['nombre'] }}
-                                                <span class="block font-semibold" x-text="enUso.anotar === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
+                                                <span class="block font-semibold" x-text="enUso.anotar === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : $opcion['rotulo'] }}'"></span>
                                             </p>
                                         </li>
                                     @endforeach

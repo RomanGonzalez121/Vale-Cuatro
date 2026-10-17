@@ -114,8 +114,14 @@ class CaminoTest extends TestCase
         $cartas = array_column(array_filter(Camino::fichas(), fn (array $ficha) => $ficha['tipo'] === 'carta'), 'nivel', 'clave');
         $this->assertSame(Premios::CAMINO, $cartas);
 
-        // Cada dorso dibujado está en el camino, en el mismo lugar.
+        // Cada dorso dibujado está en el camino, en el mismo lugar. Los de la gira no: los deja un jefe.
         foreach (Premios::DORSOS as $clave => $dorso) {
+            if (isset($dorso['gira'])) {
+                $this->assertNull(collect(Camino::fichas())->first(fn (array $ficha) => $ficha['tipo'] === 'dorso' && $ficha['clave'] === $clave), "El dorso {$clave} es de la gira.");
+
+                continue;
+            }
+
             $ficha = collect(Camino::fichas())->first(fn (array $ficha) => $ficha['tipo'] === 'dorso' && $ficha['clave'] === $clave);
 
             $this->assertNotNull($ficha, "Al dorso {$clave} le falta su ficha.");

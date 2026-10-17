@@ -145,8 +145,9 @@ class TitulosTest extends TestCase
             $niveles = [];
 
             foreach ($piezas as $clave => $pieza) {
-                // Lo de fábrica y lo que es de todos desde el principio (las variantes del mazo de fábrica) no va en el camino.
-                if ($clave !== 'fabrica' && $pieza['nivel'] > 1) {
+                // Lo de fábrica, lo que es de todos desde el principio (las variantes del mazo de fábrica) y lo que se
+                // gana en la gira de los clubes no va en el camino.
+                if ($clave !== 'fabrica' && ! isset($pieza['gira']) && $pieza['nivel'] > 1) {
                     $niveles[$pieza['ficha'] ?? $clave] = $pieza['nivel'];
                 }
             }
