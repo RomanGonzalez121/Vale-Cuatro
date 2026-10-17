@@ -5,6 +5,7 @@ namespace App\Juego;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
+use App\Models\Progreso;
 use App\Models\Torneo;
 use App\Motor\Carta;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +57,10 @@ final class Titulos
     /**
      * Las cuentas que salen de los otros juegos.
      */
-    public const DE_LOS_JUEGOS = ['torneos_ganados', 'escalones_pasados', 'desafios_pasados', 'mejor_racha'];
+    public const DE_LOS_JUEGOS = [
+        'torneos_ganados', 'escalones_pasados', 'desafios_pasados', 'mejor_racha',
+        'barrios_completos', 'paradas_pasadas', 'paradas_perfectas', 'jefes_a_la_primera',
+    ];
 
     /**
      * Las cartas bravas: los anchos, los sietes de espada y de oro y los tres. Chamuyar es ganar sin ninguna.
@@ -81,7 +85,15 @@ final class Titulos
         'falta-envido' => ['nombre' => 'Falta envido', 'femenino' => 'Falta envido', 'cuenta' => 'faltas_ganadas', 'pide' => 1, 'dice' => 'Ganar un falta envido querido'],
         'vale-cuatro' => ['nombre' => 'Vale cuatro', 'femenino' => 'Vale cuatro', 'cuenta' => 'vale_cuatros_ganados', 'pide' => 1, 'dice' => 'Ganar un vale cuatro querido'],
         'campeon' => ['nombre' => 'Campeón', 'femenino' => 'Campeona', 'cuenta' => 'torneos_ganados', 'pide' => 1, 'dice' => 'Ganar un torneo'],
-        'del-club' => ['nombre' => 'Del club', 'femenino' => 'Del club', 'cuenta' => 'escalones_pasados', 'pide' => 8, 'dice' => 'Pasar la escalera entera'],
+        // Los de la gira: cada jefe deja el suyo. Los barrios se completan en orden, así que vencer al jefe de San
+        // Telmo es tener dos barrios completos.
+        'del-club' => ['nombre' => 'Del club', 'femenino' => 'Del club', 'cuenta' => 'barrios_completos', 'pide' => 1, 'dice' => 'Vencer a Don Anselmo en Boedo'],
+        'anticuario' => ['nombre' => 'Anticuario', 'femenino' => 'Anticuaria', 'cuenta' => 'barrios_completos', 'pide' => 2, 'dice' => 'Vencer a Don Ceferino en San Telmo'],
+        'estibador' => ['nombre' => 'Estibador', 'femenino' => 'Estibadora', 'cuenta' => 'barrios_completos', 'pide' => 3, 'dice' => 'Vencer al Grúa Bianchi en La Boca'],
+        'adivino' => ['nombre' => 'Adivino', 'femenino' => 'Adivina', 'cuenta' => 'barrios_completos', 'pide' => 4, 'dice' => 'Vencer a Madama Ferrante en Pompeya'],
+        'resero' => ['nombre' => 'Resero', 'femenino' => 'Resera', 'cuenta' => 'barrios_completos', 'pide' => 5, 'dice' => 'Vencer al Resero en Mataderos'],
+        'patron' => ['nombre' => 'Patrón del Mercado', 'femenino' => 'Patrona del Mercado', 'cuenta' => 'barrios_completos', 'pide' => 6, 'dice' => 'Vencer al Patrón del Mercado en el Abasto'],
+        'porteno' => ['nombre' => 'Porteño', 'femenino' => 'Porteña', 'cuenta' => 'paradas_pasadas', 'pide' => 38, 'dice' => 'Pasar las 38 paradas de la gira'],
         'desafiante' => ['nombre' => 'Desafiante', 'femenino' => 'Desafiante', 'cuenta' => 'desafios_pasados', 'pide' => 8, 'dice' => 'Pasar los ocho desafíos'],
     ];
 
@@ -100,6 +112,10 @@ final class Titulos
         'vale_cuatros_ganados' => 'vale cuatros queridos ganados',
         'torneos_ganados' => 'torneos ganados',
         'escalones_pasados' => 'escalones de la escalera',
+        'barrios_completos' => 'barrios de la gira completos',
+        'paradas_pasadas' => 'paradas de la gira pasadas',
+        'paradas_perfectas' => 'paradas pasadas con los tres fósforos',
+        'jefes_a_la_primera' => 'jefes vencidos al primer intento',
         'desafios_pasados' => 'desafíos superados',
     ];
 
@@ -386,7 +402,28 @@ final class Titulos
             'escalones_pasados' => count(array_filter($superados, fn (string $clave) => str_starts_with($clave, 'escalon:'))),
             'desafios_pasados' => count(array_intersect($superados, $sueltos)),
             'mejor_racha' => (new Numeros)->de($jugador)['mejorRacha'],
+            ...self::deLaGira($jugador),
         ]);
+    }
+
+    /**
+     * Lo que lleva de la gira: barrios completos (vencido su jefe), paradas pasadas, paradas con los tres fósforos y
+     * jefes vencidos en el primer intento. Sale de lo anotado en progresos, que es el mejor intento de cada parada.
+     *
+     * @return array{barrios_completos: int, paradas_pasadas: int, paradas_perfectas: int, jefes_a_la_primera: int}
+     */
+    public static function deLaGira(Jugador $jugador): array
+    {
+        $fosforos = Gira::fosforos($jugador);
+        $jefes = array_map(fn (array $barrio) => Gira::clave($barrio['clave'], count($barrio['niveles'])), Gira::barrios());
+        $intentos = Progreso::query()->where('jugador_id', $jugador->getKey())->whereIn('clave', $jefes)->whereNotNull('superado_en')->pluck('intentos', 'clave');
+
+        return [
+            'barrios_completos' => count(array_filter($jefes, fn (string $clave) => isset($fosforos[$clave]))),
+            'paradas_pasadas' => count($fosforos),
+            'paradas_perfectas' => count(array_filter($fosforos, fn (int $cuantos) => $cuantos >= FosforosDeGira::MAXIMO)),
+            'jefes_a_la_primera' => $intentos->filter(fn ($veces) => (int) $veces === 1)->count(),
+        ];
     }
 
     /**

@@ -82,6 +82,14 @@ class GiraController extends Controller
     }
 
     /**
+     * Un escalón de la escalera de antes: es la misma parada de Boedo. Las direcciones viejas siguen andando.
+     */
+    public function escalon(Request $request, int $escalon, Mesa $mesa): RedirectResponse
+    {
+        return $this->jugar($request, 'boedo', $escalon, $mesa);
+    }
+
+    /**
      * @param  array<string, mixed>  $nivel
      */
     private function abrirLaCopa(Jugador $jugador, string $clave, array $nivel, Mesa $mesa): RedirectResponse

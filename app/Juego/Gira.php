@@ -114,8 +114,11 @@ final class Gira
             return [];
         }
 
-        return Progreso::query()->where('jugador_id', $jugador->getKey())->where('fosforos', '>', 0)->pluck('fosforos', 'clave')
-            ->map(fn ($fosforos) => (int) $fosforos)->all();
+        // Lo que se pasó cuenta por lo menos un fósforo: un escalón de antes de la gira puede no tener ninguno anotado.
+        return Progreso::query()->where('jugador_id', $jugador->getKey())
+            ->where(fn ($consulta) => $consulta->where('fosforos', '>', 0)->orWhereNotNull('superado_en'))
+            ->get(['clave', 'fosforos'])
+            ->mapWithKeys(fn (Progreso $progreso) => [$progreso->clave => max(1, (int) $progreso->fosforos)])->all();
     }
 
     public static function pasado(?Jugador $jugador, string $barrio, int $numero, ?array $fosforos = null): bool

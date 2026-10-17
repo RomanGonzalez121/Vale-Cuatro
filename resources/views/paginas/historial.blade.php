@@ -92,7 +92,7 @@
                             </p>
                             <p class="min-w-0 leading-snug max-sm:order-3 max-sm:col-span-2">
                                 <span class="block text-lg font-bold [overflow-wrap:anywhere] max-sm:text-base">Contra {{ $partida['rival'] }}</span>
-                                {{-- De qué juego fue: mano a mano, de un torneo, de a cuatro, un desafío o un escalón de la escalera. --}}
+                                {{-- De qué juego fue: mano a mano, de un torneo, de a cuatro, un desafío o una parada de la gira. --}}
                                 <span class="block text-[0.95rem]">
                                     @if ($serie)
                                         {{ $partida['serie']['numero'] }}ª de la serie{{ $partida['revancha'] ? ', revancha' : '' }}.

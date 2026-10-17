@@ -69,13 +69,13 @@ final class Modos
                 ],
             ],
             [
-                'clave' => 'escalera',
-                'nombre' => 'Escalera del club',
-                'renglones' => ['Escalera'],
-                'icono' => 'escalera',
-                'resumen' => 'Ocho escalones en orden. Pasás uno y se abre el siguiente.',
+                'clave' => 'gira',
+                'nombre' => 'La gira de los clubes',
+                'renglones' => ['Gira'],
+                'icono' => 'gira',
+                'resumen' => 'Seis barrios en orden, cada uno con sus paradas y un jefe en su bar.',
                 'rivales' => [
-                    ['clave' => 'bots', 'nombre' => 'Contra la máquina', 'detalle' => 'Cada escalón es un rival más difícil o una mano con objetivo.', 'boton' => 'Ver la escalera', 'ruta' => 'escalera', 'icono' => 'escalera', 'enlace' => true],
+                    ['clave' => 'bots', 'nombre' => 'Contra la máquina', 'detalle' => 'Partidas, manos con objetivo y un jefe con su manía en cada barrio.', 'boton' => 'Ver la gira', 'ruta' => 'gira', 'icono' => 'gira', 'enlace' => true],
                 ],
             ],
         ];

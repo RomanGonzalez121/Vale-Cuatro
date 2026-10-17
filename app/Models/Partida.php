@@ -41,6 +41,7 @@ use Illuminate\Support\Str;
  * @property int|null $serie_id
  * @property int|null $anterior_id
  * @property int|null $torneo_id
+ * @property int $fosforos_de_gira
  * @property string|null $desafio
  * @property int|null $escalon
  * @property string|null $gira
@@ -212,6 +213,7 @@ class Partida extends Model
             'serie_id' => 'integer',
             'anterior_id' => 'integer',
             'torneo_id' => 'integer',
+            'fosforos_de_gira' => 'integer',
             'escalon' => 'integer',
             'primer_mano' => 'integer',
             'puntos' => 'integer',

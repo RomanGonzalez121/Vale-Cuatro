@@ -9,7 +9,7 @@
         'envido' => 'Envido', 'flor' => 'Flor', 'truco' => 'Truco', 'mazo' => 'Irse al mazo', 'mano' => 'Quién es mano',
         'repartir' => 'Repartir', 'quiero' => 'Quiero', 'no-quiero' => 'No quiero', 'tiempo' => 'Tiempo',
         'bot' => 'Máquina', 'invitar' => 'Invitar', 'ranking' => 'Ranking', 'repetir' => 'Repetir partida', 'sonido' => 'Sonido', 'ritmo' => 'Ritmo', 'ajustes' => 'Ajustes', 'salir' => 'Salir', 'jugador' => 'Jugador',
-        'mano-a-mano' => 'Mano a mano', 'de-a-cuatro' => 'De a cuatro', 'torneo' => 'Torneo', 'desafio' => 'Desafío', 'escalera' => 'Escalera',
+        'mano-a-mano' => 'Mano a mano', 'de-a-cuatro' => 'De a cuatro', 'torneo' => 'Torneo', 'desafio' => 'Desafío', 'escalera' => 'Escalera', 'gira' => 'Gira',
     ];
 
     $pesos = [300 => 'Liviana', 400 => 'Normal', 600 => 'Seminegra', 800 => 'Extranegra', 900 => 'Negra'];

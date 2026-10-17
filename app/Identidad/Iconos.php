@@ -52,6 +52,7 @@ final class Iconos
         'torneo' => ['M3.5 5H10.5V19H3.5M10.5 12H16.2', [[18.6, 12, 2.4]]],
         'desafio' => ['M6.5 21V5.8M6.5 7.5H18.5L15.5 11L18.5 14.5H6.5', [[6.5, 3.6, 2.2]]],
         'escalera' => ['M3.5 19.5H8.5V14.5H13.5V9.5H18.5V7', [[18.5, 4.7, 2.2]]],
+        'gira' => ['M4 19.5H14V13.5H8V7.5H16.2', [[18.4, 7.5, 2.2]]],
         // Las secciones del perfil: la libreta con su sello, dos cartas abiertas y el camino que sube hasta la cabeza.
         'libreta' => ['M6.5 3.5H17.5V20.5H6.5ZM9.5 3.5V20.5', [[13.6, 12, 2.4]]],
         'coleccion' => ['M4.5 6.5H11.5V18.5H4.5ZM14.5 8 19.5 10 15.8 19.4', [[17.9, 6.4, 2.2]]],

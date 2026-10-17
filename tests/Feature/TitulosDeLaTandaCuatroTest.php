@@ -70,7 +70,8 @@ class TitulosDeLaTandaCuatroTest extends TestCase
         $jugador = Jugador::factory()->create();
         $titulos = new Titulos;
 
-        $this->assertSame(Escalera::cuantos(), Titulos::TODOS['del-club']['pide']);
+        // Del club es el título de Boedo, el primer barrio de la gira: se gana pasando la escalera entera.
+        $this->assertSame(['barrios_completos', 1], [Titulos::TODOS['del-club']['cuenta'], Titulos::TODOS['del-club']['pide']]);
         $this->assertSame(count(Desafios::sueltos()), Titulos::TODOS['desafiante']['pide']);
 
         foreach (Escalera::escalones() as $escalon) {
@@ -90,7 +91,7 @@ class TitulosDeLaTandaCuatroTest extends TestCase
 
         // Recalcular llega a lo mismo.
         $titulos->recalcular($this->app->make(Mesa::class));
-        $this->assertSame(Escalera::cuantos(), $jugador->fresh()->escalones_pasados);
+        $this->assertSame([Escalera::cuantos(), 1], [$jugador->fresh()->escalones_pasados, $jugador->fresh()->barrios_completos]);
     }
 
     public function test_los_premios_nuevos_tienen_candado_y_la_administracion_los_tiene_todos(): void

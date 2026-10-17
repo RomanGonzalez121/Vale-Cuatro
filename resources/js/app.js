@@ -14,6 +14,7 @@ import repeticion from './repeticion';
 import sala from './sala';
 import sinConexion from './sin-conexion';
 import { prepararLlaves } from './torneo';
+import { prepararGira } from './gira';
 
 /*
  | x-carta="expresión": dibuja en el elemento la carta que diga la expresión
@@ -60,4 +61,5 @@ prepararApertura();
 prepararLogos();
 prepararModo();
 prepararLlaves();
+prepararGira();
 prepararInstalacion();

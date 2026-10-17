@@ -80,9 +80,9 @@ final class Premios
         'tinta' => ['nombre' => 'Tinta', 'escalon' => 6],
         'ronda' => ['nombre' => 'Ronda', 'escalon' => 8],
         // Los que dejan los jefes de la gira de los clubes (M26).
-        'marmolado' => ['nombre' => 'Marmolado', 'gira' => 'venciendo a Don Ceferino'],
-        'senales' => ['nombre' => 'Señales', 'gira' => 'venciendo al Grúa Bianchi'],
-        'tarot' => ['nombre' => 'Tarot', 'gira' => 'venciendo a Madama Ferrante'],
+        'marmolado' => ['nombre' => 'Marmolado', 'gira' => 'venciendo a Don Ceferino', 'barrios' => 2],
+        'senales' => ['nombre' => 'Señales', 'gira' => 'venciendo al Grúa Bianchi', 'barrios' => 3],
+        'tarot' => ['nombre' => 'Tarot', 'gira' => 'venciendo a Madama Ferrante', 'barrios' => 4],
     ];
 
     /**
@@ -118,7 +118,7 @@ final class Premios
             'tarot' => ['nombre' => 'Tarot', 'nivel' => 38],
             'grafito' => ['nombre' => 'Grafito y latón', 'nivel' => 39],
             'fileteado' => ['nombre' => 'Fileteado porteño', 'nivel' => 40],
-            'guia' => ['nombre' => 'La guía', 'gira' => 'terminando la gira entera'],
+            'guia' => ['nombre' => 'La guía', 'gira' => 'terminando la gira entera', 'barrios' => 6],
         ],
         // Los mazos: cómo se ven las cartas en tu mesa (App\Juego\Mazos dice de qué piezas está hecho cada uno).
         'mazo' => [
@@ -151,7 +151,7 @@ final class Premios
             'punto-cruz' => ['nombre' => 'Punto cruz', 'nivel' => 9],
             'tiza' => ['nombre' => 'Tiza', 'nivel' => 13],
             'porotos' => ['nombre' => 'Porotos y garbanzos', 'nivel' => 27],
-            'constelacion' => ['nombre' => 'Constelación', 'gira' => 'venciendo a Madama Ferrante'],
+            'constelacion' => ['nombre' => 'Constelación', 'gira' => 'venciendo a Madama Ferrante', 'barrios' => 4],
         ],
         'distintivo' => [
             'un-fosforo' => ['nombre' => 'Un fósforo', 'nivel' => 2],
@@ -242,12 +242,13 @@ final class Premios
         $nivel = $this->nivel($jugador);
         $pasados = $this->escalonesPasados($jugador);
         $todo = self::loTieneTodo($jugador);
-        $elegido = self::dorsoCon($jugador?->dorso, $nivel, $pasados, $todo);
+        $barrios = self::barrios($jugador);
+        $elegido = self::dorsoCon($jugador?->dorso, $nivel, $pasados, $todo, $barrios);
 
         return array_map(fn (string $clave, array $dorso) => [
             'clave' => $clave,
             ...$dorso,
-            'abierto' => $todo || self::dorsoAbierto($dorso, $nivel, $pasados),
+            'abierto' => $todo || self::dorsoAbierto($dorso, $nivel, $pasados, $barrios),
             'elegido' => $clave === $elegido,
             'pide' => self::pide($dorso),
             'rotulo' => self::rotulo($dorso),
@@ -268,7 +269,7 @@ final class Premios
         return array_map(fn (string $clave, array $pieza) => [
             'clave' => $clave,
             ...$pieza,
-            'abierto' => $todo || self::porNivel($pieza, $nivel),
+            'abierto' => $todo || self::porNivel($pieza, $nivel, self::barrios($jugador)),
             'elegido' => $clave === $elegida,
             'pide' => self::pide($pieza),
             'rotulo' => self::rotulo($pieza),
@@ -279,7 +280,7 @@ final class Premios
     {
         $pieza = self::POR_NIVEL[$tipo][$clave] ?? null;
 
-        return $pieza !== null && (self::loTieneTodo($jugador) || self::porNivel($pieza, $this->nivel($jugador)));
+        return $pieza !== null && (self::loTieneTodo($jugador) || self::porNivel($pieza, $this->nivel($jugador), self::barrios($jugador)));
     }
 
     /**
@@ -311,14 +312,22 @@ final class Premios
     }
 
     /**
-     * Si un premio está abierto en ese nivel. Los de la gira no se abren por nivel: los deja un jefe.
+     * Si un premio está abierto: los del camino, por nivel; los de la gira no se abren por nivel, los deja un jefe
+     * (se abren con los barrios completos, que se completan en orden).
      *
-     * @param  array{nivel?: int, gira?: string}  $pieza
+     * @param  array{nivel?: int, gira?: string, barrios?: int}  $pieza
      */
-    private static function porNivel(array $pieza, int $nivel): bool
+    private static function porNivel(array $pieza, int $nivel, int $barrios = 0): bool
     {
-        // La gira (M26) todavía no da premios: hasta entonces, solo la administración los tiene abiertos.
-        return ! isset($pieza['gira']) && $nivel >= $pieza['nivel'];
+        return isset($pieza['gira']) ? $barrios >= ($pieza['barrios'] ?? PHP_INT_MAX) : $nivel >= $pieza['nivel'];
+    }
+
+    /**
+     * Cuántos barrios de la gira completó ese jugador (venció a su jefe). Se guarda al cerrar cada partida.
+     */
+    private static function barrios(?Jugador $jugador): int
+    {
+        return (int) ($jugador?->barrios_completos ?? 0);
     }
 
     /**
@@ -411,7 +420,7 @@ final class Premios
     public function tieneDorso(Jugador $jugador, string $dorso): bool
     {
         return isset(self::DORSOS[$dorso])
-            && (self::loTieneTodo($jugador) || self::dorsoAbierto(self::DORSOS[$dorso], $this->nivel($jugador), $this->escalonesPasados($jugador)));
+            && (self::loTieneTodo($jugador) || self::dorsoAbierto(self::DORSOS[$dorso], $this->nivel($jugador), $this->escalonesPasados($jugador), self::barrios($jugador)));
     }
 
     /**
@@ -431,7 +440,7 @@ final class Premios
      */
     public function dorsoDe(?Jugador $jugador): string
     {
-        return self::dorsoCon($jugador?->dorso, $this->nivel($jugador), $this->escalonesPasados($jugador), self::loTieneTodo($jugador));
+        return self::dorsoCon($jugador?->dorso, $this->nivel($jugador), $this->escalonesPasados($jugador), self::loTieneTodo($jugador), self::barrios($jugador));
     }
 
     /**
@@ -514,20 +523,20 @@ final class Premios
     /**
      * @param  list<int>  $pasados  Los escalones que ya pasó.
      */
-    private static function dorsoCon(?string $elegido, int $nivel, array $pasados, bool $todo = false): string
+    private static function dorsoCon(?string $elegido, int $nivel, array $pasados, bool $todo = false, int $barrios = 0): string
     {
         $dorso = self::DORSOS[$elegido ?? ''] ?? null;
 
-        return $dorso !== null && ($todo || self::dorsoAbierto($dorso, $nivel, $pasados)) ? (string) $elegido : self::DORSO_DE_FABRICA;
+        return $dorso !== null && ($todo || self::dorsoAbierto($dorso, $nivel, $pasados, $barrios)) ? (string) $elegido : self::DORSO_DE_FABRICA;
     }
 
     /**
      * @param  array{nombre: string, nivel?: int, escalon?: int, gira?: string}  $dorso
      * @param  list<int>  $pasados
      */
-    private static function dorsoAbierto(array $dorso, int $nivel, array $pasados): bool
+    private static function dorsoAbierto(array $dorso, int $nivel, array $pasados, int $barrios = 0): bool
     {
-        return isset($dorso['escalon']) ? in_array($dorso['escalon'], $pasados, true) : self::porNivel($dorso, $nivel);
+        return isset($dorso['escalon']) ? in_array($dorso['escalon'], $pasados, true) : self::porNivel($dorso, $nivel, $barrios);
     }
 
     /**

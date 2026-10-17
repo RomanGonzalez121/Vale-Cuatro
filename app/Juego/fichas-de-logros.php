@@ -43,11 +43,21 @@ return [
 
     // Los otros juegos.
     ['clave' => 'campeon', 'tema' => 'juegos', 'nombre' => 'Campeón', 'pide' => 'Torneos ganados', 'icono' => 'torneo', 'cuenta' => 'torneos_ganados', 'escalones' => [1, 5, 20], 'titulo' => 'campeon', 'titulo_en' => 1],
-    ['clave' => 'del-club', 'tema' => 'juegos', 'nombre' => 'Del club', 'pide' => 'Escalones de la escalera', 'icono' => 'escalera', 'cuenta' => 'escalones_pasados', 'escalones' => [8], 'titulo' => 'del-club', 'titulo_en' => 1],
     ['clave' => 'desafiante', 'tema' => 'juegos', 'nombre' => 'Desafiante', 'pide' => 'Desafíos superados', 'icono' => 'desafio', 'cuenta' => 'desafios_pasados', 'escalones' => [8], 'titulo' => 'desafiante', 'titulo_en' => 1],
     ['clave' => 'de-a-cuatro', 'tema' => 'juegos', 'nombre' => 'Pareja', 'pide' => 'Partidas de a cuatro ganadas', 'icono' => 'de-a-cuatro', 'cuenta' => 'de_a_cuatro_ganadas', 'escalones' => [1, 10, 50]],
     ['clave' => 'senas', 'tema' => 'juegos', 'nombre' => 'Señero', 'pide' => 'Señas hechas al compañero', 'icono' => 'sena', 'cuenta' => 'senas_hechas', 'escalones' => [10, 50, 200]],
     ['clave' => 'revancha', 'tema' => 'juegos', 'nombre' => 'La revancha', 'pide' => 'Revanchas ganadas', 'icono' => 'repetir', 'cuenta' => 'revanchas_ganadas', 'escalones' => [1, 5, 20]],
+
+    // La gira de los clubes: un sello por barrio, con el título que deja su jefe, y tres logros de toda la gira.
+    ['clave' => 'del-club', 'tema' => 'gira', 'nombre' => 'Boedo', 'pide' => 'Vencer a Don Anselmo en el Club Social Boedo', 'icono' => 'gira', 'cuenta' => 'barrios_completos', 'escalones' => [1], 'titulo' => 'del-club', 'titulo_en' => 1],
+    ['clave' => 'anticuario', 'tema' => 'gira', 'nombre' => 'San Telmo', 'pide' => 'Vencer a Don Ceferino en el Bar El Gramófono', 'icono' => 'gira', 'cuenta' => 'barrios_completos', 'escalones' => [2], 'titulo' => 'anticuario', 'titulo_en' => 1],
+    ['clave' => 'estibador', 'tema' => 'gira', 'nombre' => 'La Boca', 'pide' => 'Vencer al Grúa Bianchi en la Cantina La Grúa', 'icono' => 'gira', 'cuenta' => 'barrios_completos', 'escalones' => [3], 'titulo' => 'estibador', 'titulo_en' => 1],
+    ['clave' => 'adivino', 'tema' => 'gira', 'nombre' => 'Pompeya', 'pide' => 'Vencer a Madama Ferrante en el Café del Farol Roto', 'icono' => 'gira', 'cuenta' => 'barrios_completos', 'escalones' => [4], 'titulo' => 'adivino', 'titulo_en' => 1],
+    ['clave' => 'resero', 'tema' => 'gira', 'nombre' => 'Mataderos', 'pide' => 'Vencer al Resero en el Almacén La Tranquera', 'icono' => 'gira', 'cuenta' => 'barrios_completos', 'escalones' => [5], 'titulo' => 'resero', 'titulo_en' => 1],
+    ['clave' => 'patron', 'tema' => 'gira', 'nombre' => 'Abasto', 'pide' => 'Vencer al Patrón del Mercado en el Bar La Balanza', 'icono' => 'gira', 'cuenta' => 'barrios_completos', 'escalones' => [6], 'titulo' => 'patron', 'titulo_en' => 1],
+    ['clave' => 'porteno', 'tema' => 'gira', 'nombre' => 'Porteño', 'pide' => 'Paradas de la gira pasadas', 'icono' => 'gira', 'cuenta' => 'paradas_pasadas', 'escalones' => [12, 24, 38], 'titulo' => 'porteno', 'titulo_en' => 3],
+    ['clave' => 'tres-de-tres', 'tema' => 'gira', 'nombre' => 'Tres de tres', 'pide' => 'Paradas pasadas con los tres fósforos', 'icono' => 'gira', 'cuenta' => 'paradas_perfectas', 'escalones' => [5, 15, 38]],
+    ['clave' => 'a-la-primera', 'tema' => 'gira', 'nombre' => 'A la primera', 'pide' => 'Jefes vencidos en el primer intento', 'icono' => 'gira', 'cuenta' => 'jefes_a_la_primera', 'escalones' => [1, 3, 6]],
 
     // Los secretos.
     ['clave' => 'tres-pardas', 'tema' => 'secretos', 'nombre' => 'Las tres pardas', 'pide' => 'Ganar una mano siendo mano con las tres bazas pardas', 'icono' => 'mano', 'cuenta' => 'tres_pardas', 'escalones' => [1], 'secreto' => true],

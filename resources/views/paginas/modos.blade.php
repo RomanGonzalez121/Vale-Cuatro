@@ -152,7 +152,7 @@
                                                 $sigue = $enCurso !== null;
                                                 // Con un torneo sin terminar (y ninguna partida abierta), el torneo no se arma: se vuelve a sus llaves.
                                                 $sigueElTorneo = $lugares !== [] && $torneo !== null && ! $sigue;
-                                                // Los desafíos y la escalera tienen su propia pantalla: el botón lleva ahí, no a una mesa.
+                                                // Los desafíos y la gira tienen su propia pantalla: el botón lleva ahí, no a una mesa.
                                                 $esEnlace = $rival['enlace'] ?? false;
                                             @endphp
 

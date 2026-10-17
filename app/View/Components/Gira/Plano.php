@@ -8,10 +8,12 @@ use Illuminate\View\View;
 /**
  * El plano de un barrio de la gira: una página de guía de calles doblada en cuatro, con las manzanas, las
  * calles del barrio, el recorrido de los niveles y el bar del jefe al final. Hay dos: acostado (escritorio)
- * y parado (celular), con la misma idea y otra grilla.
+ * y parado (celular), sobre una grilla de base que cada barrio cambia a su manera (app/Juego/planos-de-gira.php):
+ * el río, las avenidas anchas, una diagonal, sus edificios y un recorrido con su propia forma.
  *
  * El recorrido es una línea por las calles; las paradas se reparten parejas sobre ella y el jefe espera al
  * final, en su bar. Lo hecho se dibuja como un fósforo hasta la parada que sigue; lo que falta, con puntos.
+ * El último tramo hecho (de la parada pasada a la que sigue) va aparte: es el que se enciende al volver.
  */
 class Plano extends Component
 {
@@ -21,8 +23,11 @@ class Plano extends Component
     /** @var list<array{numero: int, x: float, y: float, estado: string, fosforos: int, jefe: bool, titulo: string}> */
     public array $paradas = [];
 
-    /** Hasta dónde llega lo hecho, como lista de puntos. */
+    /** Lo hecho hasta la última parada pasada, como lista de puntos. */
     public string $hecho = '';
+
+    /** El último tramo hecho: de la parada anterior a la que sigue. Vacío si no hay ninguna pasada. */
+    public string $tramo = '';
 
     /** Lo que falta, como lista de puntos. */
     public string $falta = '';
@@ -35,7 +40,7 @@ class Plano extends Component
      */
     public function __construct(public array $barrio, public string $orientacion = 'acostado', public ?string $carta = null)
     {
-        $this->g = self::GEOMETRIA[$orientacion];
+        $this->g = [...self::BASE, ...self::GEOMETRIA[$orientacion], ...(self::planos()[$barrio['clave']][$orientacion] ?? [])];
         $niveles = $barrio['niveles'];
         $cuantos = count($niveles);
         $camino = $this->g['camino'];
@@ -63,14 +68,39 @@ class Plano extends Component
             default => $this->sigue === $cuantos ? $largo : $largo * ($this->sigue - 1) / ($cuantos - 1),
         };
         [$hecho, $falta] = self::cortar($camino, $hasta);
-        $this->hecho = self::puntos($hecho);
         $this->falta = self::puntos($falta);
+
+        // Lo hecho, partido en dos: hasta la parada anterior a la que sigue, y el último tramo.
+        $anterior = $this->sigue === null || $this->sigue === 1 ? $hasta : $largo * ($this->sigue - 2) / ($cuantos - 1);
+        [$antes, $tramo] = self::cortar($hecho, $anterior);
+        $this->hecho = $anterior > 0 ? self::puntos($antes) : '';
+        $this->tramo = $anterior < $hasta ? self::puntos($tramo) : '';
+    }
+
+    /**
+     * Los planos de cada barrio, leídos una vez.
+     *
+     * @return array<string, array<string, array<string, mixed>>>
+     */
+    public static function planos(): array
+    {
+        static $planos = null;
+
+        return $planos ??= require app_path('Juego/planos-de-gira.php');
     }
 
     public function render(): View
     {
         return view('components.gira.plano');
     }
+
+    /**
+     * Lo que cada barrio puede cambiar, con lo que vale si no lo cambia (ver planos-de-gira.php).
+     */
+    public const BASE = [
+        'costadoHasta' => null, 'rio' => null, 'anchas' => [], 'diagonal' => null, 'quitar' => [],
+        'plaza' => null, 'adoquines' => null, 'edificios' => [], 'nombres' => [],
+    ];
 
     /**
      * Las dos grillas. Las calles se nombran por su eje; el camino va por el medio de las calles.
@@ -84,7 +114,6 @@ class Plano extends Component
             'avenida' => 379, 'costado' => 571, 'abajo' => [398, 18], 'bordes' => [[24, 12], [590, 26]],
             'camino' => [[60, 379], [161, 379], [161, 253], [293, 253], [293, 141], [425, 141], [492, 141]],
             'bar' => [440, 64, 96, 60], 'norte' => [603, 52], 'letras' => ['A', 'B', 'C', 'D'], 'numeros' => 3,
-            'lugares' => ['mercado' => [58, 70], 'iglesia' => [332, 70]],
         ],
         'parado' => [
             'ancho' => 400, 'alto' => 580, 'marco' => [20, 20, 360, 530],
@@ -94,7 +123,6 @@ class Plano extends Component
             'avenida' => 424, 'costado' => 368, 'abajo' => [448, 84], 'bordes' => [[20, 8]],
             'camino' => [[60, 424], [135, 424], [135, 319], [245, 319], [245, 221], [245, 123], [298, 123]],
             'bar' => [256, 54, 88, 56], 'norte' => [368, 46], 'letras' => ['A', 'B', 'C'], 'numeros' => 5,
-            'lugares' => ['mercado' => [43, 52], 'iglesia' => [162, 54]],
         ],
     ];
 

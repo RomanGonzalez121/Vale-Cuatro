@@ -3,7 +3,6 @@
 use App\Http\Controllers\AdministracionController;
 use App\Http\Controllers\AvisosController;
 use App\Http\Controllers\DesafiosController;
-use App\Http\Controllers\EscaleraController;
 use App\Http\Controllers\GiraController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\InvitacionController;
@@ -61,6 +60,7 @@ Route::middleware(['auth', 'throttle:240,1,mesa'])->group(function () {
     Route::post('/mesa/bot', [MesaController::class, 'despertarAlBot'])->name('mesa.bot');
     Route::post('/mesa/plazo', [MesaController::class, 'resolverPlazo'])->name('mesa.plazo');
     Route::post('/mesa/presente', [MesaController::class, 'presente'])->name('mesa.presente');
+    Route::post('/mesa/mis-cosas', [MesaController::class, 'misCosas'])->name('mesa.mis-cosas');
 });
 
 // Los avisos al celular: anotar este navegador, darlo de baja y decir si la mesa está a la vista.
@@ -88,8 +88,9 @@ Route::middleware(['auth', 'throttle:120,1,torneo'])->whereNumber('torneo')->gro
 // y se reintenta seguido.
 Route::get('/desafios', [DesafiosController::class, 'lista'])->name('desafios');
 Route::post('/desafios/{clave}', [DesafiosController::class, 'jugar'])->where('clave', '[a-z0-9-]{1,40}')->middleware('throttle:30,1,practica')->name('desafios.jugar');
-Route::get('/escalera', [EscaleraController::class, 'ver'])->name('escalera');
-Route::post('/escalera/{escalon}', [EscaleraController::class, 'jugar'])->whereNumber('escalon')->middleware('throttle:30,1,practica')->name('escalera.jugar');
+// La escalera del club pasó a ser Boedo, el primer barrio de la gira: sus direcciones viejas llevan ahí.
+Route::redirect('/escalera', '/gira/boedo')->name('escalera');
+Route::post('/escalera/{escalon}', [GiraController::class, 'escalon'])->whereNumber('escalon')->middleware('throttle:30,1,practica')->name('escalera.jugar');
 
 // La gira de los clubes (M26): el plano de cada barrio y la entrada a cada nivel. Como la escalera, mirar no pide
 // sesión y jugar es una puerta de entrada más.

@@ -55,7 +55,7 @@
     <article @class(['ficha-nivel' => ! $jefe, 'cartel-jefe' => $jefe])>
         <p @class(['text-sm font-semibold', 'cartel-bar' => $jefe])>{{ $jefe ? $barrio['jefe']['bar'] : 'Parada '.$nivel['numero'].' de '.$cuantos }}</p>
         <div class="mt-2 flex items-center gap-4">
-            <span @class(['flex-none', 'w-11' => ! $jefe, 'w-12 -rotate-3' => $jefe])>
+            <span @class(['ficha-carta flex-none', 'w-11' => ! $jefe, 'w-12 -rotate-3' => $jefe])>
                 @if ($partes)
                     <x-carta :palo="$partes['palo']" :numero="$partes['numero']" />
                 @else
@@ -72,22 +72,33 @@
                 @endif
             </div>
         </div>
+        {{-- Lo que trae el rival a la mesa del bar: su mazo y su dorso (se ven en la partida, salvo que juegues con tus cosas). --}}
+        @php($trae = \App\Juego\Ambiente::loQueTrae(\App\Juego\Ambiente::delNivel($barrio, $nivel)))
         @if ($jefe)
-            <p class="mt-3 text-sm"><strong>Su manía:</strong> {{ \Illuminate\Support\Str::after($nivel['dice'], ': ') }}</p>
+            <p class="mt-2.5 text-sm"><strong>Su manía:</strong> {{ \Illuminate\Support\Str::after($nivel['dice'], ': ') }} {{ $trae }}</p>
+        @elseif ($trae)
+            <p class="mt-2 text-sm">{{ $trae }}</p>
         @endif
-        <div class="mt-4 flex items-end justify-between gap-4">
-            <ol class="grid gap-1 text-sm" aria-label="Los tres fósforos de esta parada">
-                @foreach ($pide as $i => $texto)
-                    <li class="ficha-fosforo"><span @class(['fosforito', 'apagado' => $i >= $nivel['fosforos']])></span> {{ $texto }}</li>
-                @endforeach
-            </ol>
+        {{-- Los tres fósforos como renglones de una planilla, a todo el ancho: cada condición entra en un renglón. --}}
+        <ol class="ficha-fosforos mt-2.5 text-sm" aria-label="Los tres fósforos de esta parada">
+            @foreach ($pide as $i => $texto)
+                <li @class(['ficha-fosforo', 'ganado' => $i < $nivel['fosforos']])>
+                    <span @class(['fosforito', 'apagado' => $i >= $nivel['fosforos']])></span>
+                    <span>{{ $texto }}</span>
+                    @if ($i < $nivel['fosforos'])
+                        <span class="sr-only">, ganado</span>
+                    @endif
+                </li>
+            @endforeach
+        </ol>
+        <div class="mt-2.5 flex items-center justify-end gap-4">
             @if ($boton !== null && $sejuega)
                 <form method="POST" action="{{ route('gira.jugar', [$barrio['clave'], $nivel['numero']]) }}" class="flex-none">
                     @csrf
                     <button type="submit" @class(['boton', 'boton-basto' => ! $jefe, 'boton-naipe' => $jefe])>{{ $boton }}</button>
                 </form>
             @else
-                <p class="max-w-[10rem] flex-none text-right text-sm font-semibold">{{ $porque ?? $boton }}</p>
+                <p class="text-right text-sm font-semibold">{{ $porque ?? $boton }}</p>
             @endif
         </div>
     </article>

@@ -29,6 +29,7 @@ use RuntimeException;
  * @property string|null $email
  * @property bool $de_ejemplo
  * @property bool $es_administrador
+ * @property bool $con_mis_cosas
  * @property string|null $carta
  * @property string|null $dorso
  * @property Experiencia|null $experiencia
@@ -145,6 +146,7 @@ class Jugador extends Authenticatable
             'password' => 'hashed',
             'de_ejemplo' => 'boolean',
             'es_administrador' => 'boolean',
+            'con_mis_cosas' => 'boolean',
             'experiencia' => Experiencia::class,
             'fosforos' => 'integer',
             'nivel_visto' => 'integer',

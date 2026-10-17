@@ -5,6 +5,7 @@ namespace App\Juego;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
+use App\Models\Progreso;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 
@@ -175,6 +176,11 @@ final class Camino
                 $anotaron += (int) $anoto;
             }
 
+            // Los fósforos de la gira suman una sola vez cada uno: el mejor intento de cada parada.
+            foreach (Progreso::query()->where('fosforos', '>', 0)->selectRaw('jugador_id, sum(fosforos) as cuantos')->groupBy('jugador_id')->get() as $fila) {
+                $total[$fila->jugador_id] = ($total[$fila->jugador_id] ?? 0) + (int) $fila->cuantos;
+            }
+
             Jugador::query()->update(['fosforos' => 0]);
 
             foreach ($total as $jugador => $fosforos) {
@@ -205,7 +211,8 @@ final class Camino
 
         // Los sellos de la libreta que dio esta partida también anotan: un fósforo cada uno.
         $sellos = (new Logros)->deLaPartida($partida, $jugador);
-        $ganados = $this->fosforosEn($partida, $asiento, $mesa) + count($sellos) * Logros::FOSFOROS_POR_SELLO;
+        $deLaGira = $asiento === Mesa::JUGADOR ? (int) $partida->fosforos_de_gira : 0;
+        $ganados = $this->fosforosEn($partida, $asiento, $mesa) + count($sellos) * Logros::FOSFOROS_POR_SELLO + $deLaGira;
         $ahora = (int) Jugador::query()->whereKey($jugador)->value('fosforos');
         $antes = max(0, $ahora - $ganados);
 

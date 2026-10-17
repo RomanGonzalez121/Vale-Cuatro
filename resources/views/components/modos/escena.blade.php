@@ -3,7 +3,7 @@
 {{--
     Lo tuyo en ese juego, dibujado con las piezas del sitio. Va en el panel de la pantalla de modos, entre
     el nombre del juego y sus opciones: dice dónde estás antes de entrar. En desafíos, la mano del próximo
-    que falta; en la escalera, la escalera en chico; en el torneo, el cruce que toca; en mano a mano y de
+    que falta; en la gira, los seis barrios y la parada que sigue; en el torneo, el cruce que toca; en mano a mano y de
     a cuatro, las partidas ganadas, contadas con fósforos como en el club.
     Las cartas son dibujo: lo que dicen va escrito al lado.
 --}}
@@ -45,36 +45,27 @@
             </p>
         </div>
     </div>
-@elseif ($juego === 'escalera')
-    {{-- En este archivo el PHP va siempre entre paréntesis: un bloque con cierre, más abajo de uno así, se come todo lo del medio. --}}
-    @php($total = count($datos['escalones']))
-    @php($completa = $datos['actual'] > $total)
-    @php($toca = $completa ? null : $datos['escalones'][$datos['actual'] - 1])
-
+@elseif ($juego === 'gira')
     <div>
-        {{-- La misma escalera de su pantalla, en chico y sin botones: los que ya se dieron vuelta y el que toca, levantado. --}}
-        <ol class="escalera escalera-chica" style="--escalones: {{ $total }}" aria-hidden="true">
-            @foreach ($datos['escalones'] as $i => $escalon)
-                @php($carta = $escalon['carta'] ? explode('-', $escalon['carta']) : null)
-                <li style="--i: {{ $i }}" @if ($escalon['numero'] === $datos['actual']) data-toca @endif>
-                    @if ($escalon['numero'] > $datos['actual'])
-                        <x-dorso />
-                    @elseif ($carta)
-                        <x-carta :palo="$carta[1]" :numero="(int) $carta[0]" />
-                    @else
-                        <x-carta-modo icono="desafio" :nombre="$escalon['titulo']" :renglones="[]" />
-                    @endif
-                </li>
+        {{-- Los seis barrios en fila, como en el índice de la guía: los completos llenos, el que se juega con borde, los cerrados apagados. --}}
+        <ol class="flex gap-1.5" aria-label="Barrios de la gira">
+            @foreach ($datos['barrios'] as $i => $uno)
+                <li @class(['grid size-7 place-items-center rounded-full border-[1.5px] border-current text-xs font-extrabold', 'bg-naipe text-tinta' => $uno['completo'], 'opacity-45' => ! $uno['abierto']])
+                    title="{{ $uno['nombre'] }}"><span class="sr-only">{{ $uno['nombre'] }}{{ $uno['completo'] ? ', completo' : ($uno['abierto'] ? '' : ', cerrado') }}</span><span aria-hidden="true">{{ $i + 1 }}</span></li>
             @endforeach
         </ol>
 
         <p class="mt-3 font-semibold leading-snug">
-            @if ($completa)
-                Llegaste arriba: pasaste los {{ $total }}.
+            @if ($datos['completa'])
+                Terminaste la gira: los seis barrios.
             @else
-                <span class="text-sm">{{ $datos['actual'] === 1 ? 'Para empezar' : 'Te toca el escalón '.$datos['actual'] }}</span>
-                <span class="block text-xl font-extrabold leading-tight tracking-tight">{{ $toca['titulo'] }}</span>
+                <span class="text-sm">{{ $datos['fosforos'] === 0 ? 'Para empezar' : 'Vas por '.$datos['barrio'].', parada '.$datos['parada'] }}</span>
+                <span class="block text-xl font-extrabold leading-tight tracking-tight">{{ $datos['titulo'] }}</span>
             @endif
+        </p>
+        <p class="mt-2 flex items-center gap-2 font-semibold leading-none">
+            <span class="text-2xl font-black tabular-nums text-oro">{{ $datos['fosforos'] }}</span>
+            <span>de {{ $datos['deTodos'] }} fósforos</span>
         </p>
     </div>
 @elseif ($juego === 'torneo' && ! isset($datos['rival']))

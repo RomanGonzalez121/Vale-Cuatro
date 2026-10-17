@@ -194,28 +194,26 @@ class DesafiosYEscaleraPorHttpTest extends TestCase
         $this->get('/modos')->assertOk()->assertSee('Tenés una partida sin terminar');
     }
 
-    public function test_la_escalera_se_mira_sin_sesion_con_un_solo_escalon_abierto(): void
+    public function test_la_escalera_es_boedo_el_primer_barrio_de_la_gira(): void
     {
-        $html = $this->get('/escalera')->assertOk()
-            ->assertSee('Escalera del club')
+        // La dirección vieja lleva al plano de Boedo, con un solo escalón abierto: la primera parada.
+        $this->get('/escalera')->assertRedirect('/gira/boedo');
+
+        $html = $this->get('/gira/boedo')->assertOk()
             ->assertSee('Pichón Ibarra')
-            ->assertSee('Jugar el escalón')
-            // Lo que hay en los escalones cerrados no se cuenta: están boca abajo.
-            ->assertDontSee('Don Anselmo')
-            ->assertDontSee('Vale cuatro')
+            ->assertSee('Parada 1 de 8')
             ->getContent();
 
-        $this->assertSame(8, substr_count($html, 'class="escalon"'));
-        $this->assertSame(1, substr_count($html, 'data-estado="toca"'));
-        $this->assertSame(7, substr_count($html, 'data-estado="cerrado"'));
-        $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/escalera\/\d+"/', $html));
+        // Las paradas se dibujan en los dos planos, el acostado y el parado.
+        $this->assertSame(2, substr_count($html, 'data-estado="sigue"'));
+        $this->assertSame(14, substr_count($html, 'data-estado="cerrada"'));
         $this->assertGuest();
     }
 
     public function test_un_escalon_cerrado_no_se_abre_tampoco_pidiendolo_a_mano(): void
     {
         // Sin sesión: no se crea ni el invitado.
-        $this->post('/escalera/2')->assertRedirect(route('escalera'))->assertSessionHas('aviso', 'Ese escalón todavía está cerrado: primero pasá el anterior.');
+        $this->post('/escalera/2')->assertRedirect(route('gira.barrio', 'boedo'))->assertSessionHas('aviso', 'Esa parada todavía está cerrada: primero pasá la anterior.');
         $this->assertGuest();
         $this->assertSame(0, Jugador::query()->count());
 
@@ -223,8 +221,8 @@ class DesafiosYEscaleraPorHttpTest extends TestCase
         $jugador = Jugador::factory()->create();
         Progreso::query()->create(['jugador_id' => $jugador->id, 'clave' => Progresos::claveDeEscalon(1)])->forceFill(['superado_en' => now()])->save();
 
-        $this->actingAs($jugador)->post('/escalera/3')->assertRedirect(route('escalera'));
-        $this->post('/escalera/8')->assertRedirect(route('escalera'));
+        $this->actingAs($jugador)->post('/escalera/3')->assertRedirect(route('gira.barrio', 'boedo'));
+        $this->post('/escalera/8')->assertRedirect(route('gira.barrio', 'boedo'));
         $this->post('/escalera/9')->assertNotFound();
         $this->post('/escalera/0')->assertNotFound();
 
@@ -244,9 +242,9 @@ class DesafiosYEscaleraPorHttpTest extends TestCase
         $this->assertSame([1, null, Escalera::PUNTOS, Nivel::Facil], [$partida->escalon, $partida->desafio, $partida->puntos, $partida->nivel_bot]);
 
         $this->get('/mesa')->assertOk()
-            ->assertSee('Escalón 1')
+            ->assertSee('Parada 1')
             ->assertSee('Pichón Ibarra')
-            ->assertSee('Ver la escalera')
+            ->assertSee('Ver el plano')
             ->assertDontSee('Jugar la revancha')
             // No es una mano con objetivo: no hay ventanita de objetivo.
             ->assertDontSee('objetivo-de-la-mesa');
@@ -263,7 +261,7 @@ class DesafiosYEscaleraPorHttpTest extends TestCase
 
         $this->assertSame(Mesa::BOT, $perdida->ganador);
         $this->assertSame(1, (new Progresos)->escalonActual($jugador));
-        $this->post('/escalera/2')->assertRedirect(route('escalera'));
+        $this->post('/escalera/2')->assertRedirect(route('gira.barrio', 'boedo'));
 
         // Se gana: queda pasado y se abre el segundo.
         $this->contraUnBotDePrueba(seVa: true);
@@ -272,16 +270,18 @@ class DesafiosYEscaleraPorHttpTest extends TestCase
 
         $this->assertSame([Partida::TERMINADA, Mesa::JUGADOR, 15], [$ganada->estado, $ganada->ganador, $this->app->make(Mesa::class)->reconstruir($ganada)->tanteo()[0]]);
         $this->assertSame(2, (new Progresos)->escalonActual($jugador));
-        $this->get('/mesa')->assertRedirect(route('escalera'))->assertSessionHas('aviso', 'Pasaste el escalón 1.');
+        $this->get('/mesa')->assertRedirect(route('gira.barrio', 'boedo'))
+            ->assertSessionHas('aviso', fn (string $aviso) => str_starts_with($aviso, 'Pasaste la parada 1 con '));
 
-        $html = $this->get('/escalera')->assertOk()->assertSee('Con la justa')->getContent();
+        $html = $this->get('/gira/boedo')->assertOk()->assertSee('Con la justa')->getContent();
 
-        $this->assertSame([1, 1, 6], [substr_count($html, 'data-estado="pasado"'), substr_count($html, 'data-estado="toca"'), substr_count($html, 'data-estado="cerrado"')]);
+        // Contadas en los dos planos, el acostado y el parado.
+        $this->assertSame([2, 2, 12], [substr_count($html, 'data-estado="pasada"'), substr_count($html, 'data-estado="sigue"'), substr_count($html, 'data-estado="cerrada"')]);
 
         // El segundo es una mano con objetivo: se juega contra el bot de siempre, y cuenta para su escalón.
         $this->app->forgetInstance(Mesa::class);
         $this->post('/escalera/2')->assertRedirect(route('mesa'));
-        $this->get('/mesa')->assertOk()->assertSee('objetivo-de-la-mesa')->assertSee('Con la justa')->assertSee('Subir al escalón 3');
+        $this->get('/mesa')->assertOk()->assertSee('objetivo-de-la-mesa')->assertSee('Con la justa')->assertSee('Seguir a la parada 3');
 
         // La mano la cierra el bot con su última carta: el resultado se le pregunta a la mesa, como hace la pantalla.
         $this->jugarPorLasRutas($this->resolver(Desafios::de('con-la-justa'))['cumple']);
@@ -294,8 +294,8 @@ class DesafiosYEscaleraPorHttpTest extends TestCase
         // Nada de esto fue al ranking, y el historial dice de qué escalón fue cada cosa.
         $this->assertSame(0, Resultado::query()->count());
         $this->get('/historial')->assertOk()
-            ->assertSee('Escalera, escalón 2: Con la justa.')
-            ->assertSee('Escalera, escalón 1.')
+            ->assertSee('Gira, Boedo, parada 2: Con la justa.')
+            ->assertSee('Gira, Boedo, parada 1.')
             ->assertSee('Contra Pichón Ibarra');
     }
 }

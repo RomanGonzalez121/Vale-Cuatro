@@ -90,7 +90,12 @@ final class Progresos
         }
 
         $esDeLaGira = Gira::deLaPartida($partida) !== null;
-        $this->anotarIntento($partida->jugador_id, $clave, $paso, $esDeLaGira, fn () => $mesa === null ? (int) $paso : self::fosforosDe($partida, $mesa, $paso, $extra));
+        $nuevos = $this->anotarIntento($partida->jugador_id, $clave, $paso, $esDeLaGira, fn () => $mesa === null ? (int) $paso : self::fosforosDe($partida, $mesa, $paso, $extra));
+
+        // La partida guarda cuántos sumó al nivel, para que su final los cuente con los demás.
+        if ($nuevos > 0) {
+            $partida->forceFill(['fosforos_de_gira' => $nuevos])->save();
+        }
     }
 
     /**
@@ -107,7 +112,7 @@ final class Progresos
         $paso = $torneo->campeon === $torneo->lugarDeLaPersona();
         $final = $torneo->cruces()->where('ronda', $torneo->rondas())->first()?->partida;
 
-        $this->anotarIntento($torneo->jugador_id, "gira:{$torneo->gira}", $paso, true, function () use ($final, $mesa, $paso, $barrio, $numero) {
+        $nuevos = $this->anotarIntento($torneo->jugador_id, "gira:{$torneo->gira}", $paso, true, function () use ($final, $mesa, $paso, $barrio, $numero) {
             if (! $paso || $final === null) {
                 return (int) $paso;
             }
@@ -119,27 +124,42 @@ final class Progresos
                 'envidos_perdidos_en_la_final' => FosforosDeGira::contar($hechos)['envidos_perdidos'],
             ]);
         });
+
+        if ($nuevos > 0 && $final !== null) {
+            $final->forceFill(['fosforos_de_gira' => $nuevos])->save();
+        }
     }
 
     /**
-     * Un intento más de algo y, si se pasó, desde cuándo. De la gira, también los fósforos: queda el mejor intento.
+     * Un intento más de algo y, si se pasó, desde cuándo. De la gira, también los fósforos: queda el mejor intento,
+     * y lo que mejora sobre el anterior suma al nivel del jugador (cada fósforo de la gira cuenta una sola vez).
+     * Devuelve cuántos fósforos nuevos sumó.
      *
      * @param  Closure(): int  $fosforos
      */
-    private function anotarIntento(int $jugadorId, string $clave, bool $paso, bool $conFosforos, Closure $fosforos): void
+    private function anotarIntento(int $jugadorId, string $clave, bool $paso, bool $conFosforos, Closure $fosforos): int
     {
         $progreso = Progreso::query()->firstOrCreate(['jugador_id' => $jugadorId, 'clave' => $clave]);
         $progreso->intentos++;
+        $nuevos = 0;
 
         if ($paso) {
             $progreso->superado_en ??= now();
         }
 
         if ($conFosforos) {
-            $progreso->fosforos = max($progreso->fosforos, $fosforos());
+            $antes = (int) $progreso->fosforos;
+            $progreso->fosforos = max($antes, $fosforos());
+            $nuevos = $progreso->fosforos - $antes;
         }
 
         $progreso->save();
+
+        if ($nuevos > 0) {
+            Jugador::query()->whereKey($jugadorId)->increment('fosforos', $nuevos);
+        }
+
+        return $nuevos;
     }
 
     /**

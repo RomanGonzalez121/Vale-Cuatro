@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Avisos\Avisos;
+use App\Juego\Ambiente;
 use App\Juego\Desafios;
 use App\Juego\Escalera;
 use App\Juego\Gira;
@@ -62,11 +63,9 @@ class MesaController extends Controller
 
             // Y si fue un desafío, un escalón o una parada de la gira, se vuelve a su lista o a su plano, que muestra cómo quedó.
             if ($ultima?->esDePractica()) {
-                $donde = match (true) {
-                    $ultima->gira !== null => redirect()->route('gira.barrio', Gira::deLaPartida($ultima)[0]),
-                    $ultima->escalon !== null => redirect()->route('escalera'),
-                    default => redirect()->route('desafios'),
-                };
+                $donde = Gira::deLaPartida($ultima) !== null
+                    ? redirect()->route('gira.barrio', Gira::deLaPartida($ultima)[0])
+                    : redirect()->route('desafios');
 
                 return $donde->with('aviso', $this->comoTerminoLaPractica($ultima));
             }
@@ -75,6 +74,16 @@ class MesaController extends Controller
         }
 
         $asiento = $this->asientoDe($partida, $request);
+
+        // En la gira, la parada impone su ambiente (la mesa del bar, el mazo y el dorso de quien los trae),
+        // salvo que la persona juegue con sus cosas. Se pone antes de dibujar: la página lo lee como lo propio.
+        $ambiente = Ambiente::de($partida);
+
+        if ($ambiente !== null && Ambiente::seImpone($request->user())) {
+            Ambiente::poner($ambiente);
+        }
+
+        $conAmbiente = $ambiente === null ? null : ['conMisCosas' => ! Ambiente::seImpone($request->user())];
 
         // De a cuatro la mesa es otra: en cruz, con el compañero enfrente y un rival a cada lado.
         if ($partida->deACuatro()) {
@@ -85,6 +94,7 @@ class MesaController extends Controller
                 'senas' => Senas::todas(),
                 // Si es una parada de la gira: cuál es y adónde se vuelve.
                 'practica' => $this->practicaDe($partida),
+                'ambiente' => $conAmbiente,
             ]);
         }
 
@@ -105,7 +115,21 @@ class MesaController extends Controller
             'avisos' => $partida->entre_personas ? $this->avisos->paraLaPagina() : null,
             // Si es un desafío o un escalón de la escalera: qué hay que lograr y adónde se vuelve.
             'practica' => $this->practicaDe($partida),
+            // Si la partida es de la gira: la llave de "Jugar con mis cosas" en los ajustes.
+            'ambiente' => $conAmbiente,
         ]);
+    }
+
+    /**
+     * Prende o apaga "Jugar con mis cosas": en la gira, la propia mesa, el mazo y el dorso en vez de los del bar.
+     * Se vuelve a la mesa, que se dibuja de nuevo con lo que corresponda.
+     */
+    public function misCosas(Request $request): RedirectResponse
+    {
+        $jugador = $request->user();
+        $jugador->forceFill(['con_mis_cosas' => ! $jugador->con_mis_cosas])->save();
+
+        return redirect()->route('mesa');
     }
 
     /**
@@ -121,7 +145,8 @@ class MesaController extends Controller
             return null;
         }
 
-        if ($partida->gira !== null) {
+        // Una parada de la gira, o un escalón de la escalera de antes, que es una parada de Boedo.
+        if (Gira::deLaPartida($partida) !== null) {
             return $this->paradaDe($partida);
         }
 
@@ -143,6 +168,7 @@ class MesaController extends Controller
             'siguiente' => $partida->escalon !== null && $partida->escalon < Escalera::cuantos() ? route('escalera.jugar', $partida->escalon + 1) : null,
             // Cómo se dice cada cosa: en la escalera se habla de escalones; en un desafío suelto, de desafíos.
             'lugar' => $n === null ? null : "Escalón {$n}",
+            'lugarCorto' => $n === null ? null : "Escalón {$n}",
             'deDonde' => $n === null ? '' : ", el escalón {$n} de la escalera",
             'subir' => $n === null ? null : 'Subir al escalón '.($n + 1),
             'volverDice' => $n === null ? 'Otros desafíos' : 'Ver la escalera',
@@ -183,6 +209,8 @@ class MesaController extends Controller
             'reintentar' => route('gira.jugar', [$clave, $n]),
             'siguiente' => $siguiente !== null && in_array($siguiente['tipo'], Gira::SE_JUEGAN, true) ? route('gira.jugar', [$clave, $n + 1]) : null,
             'lugar' => $nivel['tipo'] === 'jefe' ? $barrio['jefe']['bar'] : "Parada {$n}",
+            // En el celular la barra no tiene lugar para el nombre del bar.
+            'lugarCorto' => "Parada {$n}",
             'deDonde' => ", la parada {$n} de {$barrio['nombre']}",
             'subir' => 'Seguir a la parada '.($n + 1),
             'volverDice' => 'Ver el plano',
@@ -207,7 +235,7 @@ class MesaController extends Controller
 
         $paso = $partida->ganador === Mesa::JUGADOR;
 
-        if ($partida->gira !== null) {
+        if (Gira::deLaPartida($partida) !== null) {
             [$clave, $n] = Gira::deLaPartida($partida);
             $fosforos = Gira::fosforos($partida->jugador)[Gira::clave($clave, $n)] ?? 0;
 
@@ -421,6 +449,11 @@ class MesaController extends Controller
         // En un torneo, dejar la partida es quedar afuera: se vuelve a las llaves, que muestran cómo siguió.
         if ($partida?->torneo_id !== null) {
             return redirect()->route('torneo', $partida->torneo_id)->with('aviso', 'Abandonaste la partida y quedaste afuera del torneo.');
+        }
+
+        // Una parada de la gira que se deja cuenta como un intento: se vuelve al plano del barrio.
+        if ($partida !== null && Gira::deLaPartida($partida) !== null) {
+            return redirect()->route('gira.barrio', Gira::deLaPartida($partida)[0])->with('aviso', 'Dejaste la parada.');
         }
 
         // Un desafío o un escalón que se deja cuenta como un intento: se vuelve a su lista.

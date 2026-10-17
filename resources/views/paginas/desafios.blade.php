@@ -82,7 +82,7 @@
             @endforeach
 
             <p class="mt-12 max-w-[52ch] leading-relaxed">
-                ¿Querés ir de menor a mayor? La <a href="{{ route('escalera') }}" class="enlace">escalera del club</a>
+                ¿Querés ir de menor a mayor? La <a href="{{ route('gira') }}" class="enlace">gira de los clubes</a>
                 mezcla manos como estas con partidas cortas contra rivales cada vez más difíciles.
             </p>
         </div>

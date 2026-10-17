@@ -103,7 +103,7 @@ final class Historial
             'bot' => ! $partida->entre_personas,
             // Si fue de un torneo, qué partido: "Semifinal". En ese caso el rival es un bot con apodo.
             'torneo' => $this->partidoDeTorneo($partida),
-            // Si fue un desafío o un escalón de la escalera, cuál. En un desafío, "gano" dice si se cumplió
+            // Si fue un desafío o una parada de la gira, cuál. En un desafío, "gano" dice si se cumplió
             // el objetivo, que no es lo mismo que ganar la mano.
             'practica' => $this->practica($partida),
             'esDesafio' => $partida->esDesafio(),
@@ -165,9 +165,16 @@ final class Historial
             return 'la máquina, nivel '.mb_strtolower($partida->nivel_bot->nombre());
         }
 
-        // En una partida de la escalera el bot es alguien del club, con su apodo.
-        if ($partida->escalon !== null && ! $partida->esDesafio()) {
-            return Escalera::escalon($partida->escalon)['rival'] ?? 'Máquina '.$partida->nivel_bot->deLaMaquina();
+        // En una parada de la gira (Boedo es la escalera de antes) la máquina es alguien del barrio, con su apodo.
+        if (($parada = Gira::deLaPartida($partida)) !== null && ! $partida->esDesafio()) {
+            $nivel = Gira::nivel(...$parada);
+
+            return match (true) {
+                $nivel === null => 'Máquina '.$partida->nivel_bot->deLaMaquina(),
+                $nivel['tipo'] === 'jefe' => Gira::barrio($parada[0])['jefe']['nombre'],
+                $nivel['tipo'] === 'cuatro' => 'la máquina, nivel '.mb_strtolower($partida->nivel_bot->nombre()),
+                default => $nivel['rival'] ?? 'Máquina '.$partida->nivel_bot->deLaMaquina(),
+            };
         }
 
         if (! $partida->entre_personas) {
@@ -194,8 +201,8 @@ final class Historial
 
         $titulo = $partida->esDesafio() ? (Desafios::de($partida->desafio)['titulo'] ?? null) : null;
 
-        if ($partida->escalon !== null) {
-            return "Escalera, escalón {$partida->escalon}".($titulo === null ? '' : ": {$titulo}");
+        if (($parada = Gira::deLaPartida($partida)) !== null) {
+            return 'Gira, '.Gira::barrio($parada[0])['nombre'].", parada {$parada[1]}".($titulo === null ? '' : ": {$titulo}");
         }
 
         return 'Desafío'.($titulo === null ? '' : ": {$titulo}");

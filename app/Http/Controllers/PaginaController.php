@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Identidad\Paleta;
 use App\Juego\Desafios;
-use App\Juego\Escalera;
+use App\Juego\Gira;
 use App\Juego\Mesa;
 use App\Juego\Modos;
 use App\Juego\Progresos;
@@ -62,7 +62,7 @@ class PaginaController extends Controller
             'mano-a-mano' => $this->ganadas($jugador, 2),
             'de-a-cuatro' => $this->ganadas($jugador, 4),
             'desafios' => ['superados' => count($sueltos) - count($faltan), 'total' => count($sueltos), 'proximo' => $faltan[0] ?? null],
-            'escalera' => ['actual' => $progresos->escalonActual($jugador), 'escalones' => Escalera::escalones()],
+            'gira' => $this->gira($jugador),
         ];
 
         // En un torneo empezado, el cruce que le toca: su carta contra la del rival. Si todavía no se sabe contra quién, nada.
@@ -138,5 +138,27 @@ class PaginaController extends Controller
             'combinaciones' => Paleta::combinaciones(),
             'mazo' => Carta::mazo(),
         ]);
+    }
+
+    /**
+     * Lo que la persona lleva de la gira, para su panel en los modos: los barrios, por dónde va y sus fósforos.
+     *
+     * @return array<string, mixed>
+     */
+    private function gira(?Jugador $jugador): array
+    {
+        $barrios = Gira::de($jugador);
+        $actual = array_values(array_filter($barrios, fn (array $barrio) => $barrio['abierto'] && ! $barrio['completo']))[0] ?? null;
+        $sigue = $actual === null ? null : array_values(array_filter($actual['niveles'], fn (array $nivel) => $nivel['abierto'] && ! $nivel['pasado']))[0] ?? null;
+
+        return [
+            'barrios' => array_map(fn (array $barrio) => ['nombre' => $barrio['nombre'], 'abierto' => $barrio['abierto'], 'completo' => $barrio['completo']], $barrios),
+            'fosforos' => array_sum(array_column($barrios, 'fosforos')),
+            'deTodos' => array_sum(array_column($barrios, 'deTodos')),
+            'completa' => $actual === null,
+            'barrio' => $actual['nombre'] ?? null,
+            'parada' => $sigue['numero'] ?? null,
+            'titulo' => $sigue['titulo'] ?? null,
+        ];
     }
 }

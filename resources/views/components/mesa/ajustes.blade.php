@@ -4,6 +4,8 @@
     debajo, sin tapar la mesa ni detener nada. Se cierra tocando afuera, con Esc o con el mismo botón.
     El toque de afuera se escucha antes que nadie (capture): una carta, al jugarse, frena su propio toque.
 --}}
+@props(['ambiente' => null])
+
 <div class="relative flex items-center gap-2 justify-self-end [grid-area:acciones]" @click.outside.capture="cerrarAjustes(false)" @keydown.escape.window="cerrarAjustes()">
     <button type="button" x-ref="botonDeAjustes" class="boton min-h-10 gap-1.5 px-3 py-1.5 text-sm" :class="ajustando ? 'boton-naipe' : 'boton-linea'"
         @click="ajustando ? cerrarAjustes() : abrirAjustes()" aria-controls="ajustes-de-la-mesa" :aria-expanded="ajustando.toString()">
@@ -57,6 +59,22 @@
             </span>
             <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
         </button>
+        {{--
+            En la gira, cada barrio se juega con la mesa de su bar y lo que traen sus rivales. Esta llave deja
+            jugar con lo propio. Es un formulario: la mesa se vuelve a dibujar con las otras piezas.
+        --}}
+        @if ($ambiente)
+            <form method="POST" action="{{ route('mesa.mis-cosas') }}" class="contents">
+                @csrf
+                <button type="submit" role="switch" class="ajuste" aria-checked="{{ $ambiente['conMisCosas'] ? 'true' : 'false' }}" aria-label="Jugar con mis cosas" data-boton-mis-cosas>
+                    <span>
+                        <span class="block font-bold">Jugar con mis cosas</span>
+                        <span class="text-sm">{{ $ambiente['conMisCosas'] ? 'Tu mesa, tu mazo y tu dorso' : 'Ahora, con las cosas del bar' }}</span>
+                    </span>
+                    <span class="llave" aria-hidden="true"><span class="llave-fosforo"><span class="llave-cabeza"></span></span></span>
+                </button>
+            </form>
+        @endif
         {{-- Solo cuando el navegador avisa que el sitio se puede instalar (resources/js/instalar.js). --}}
         <button type="button" class="ajuste" data-instalar hidden>
             <span>

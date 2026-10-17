@@ -30,6 +30,7 @@ final class Logros
         'flor' => ['nombre' => 'Flor', 'tinta' => '#2a7d4f', 'noche' => '#57b983'],
         'partidas' => ['nombre' => 'Partidas', 'tinta' => '#161a18', 'noche' => '#fbfaf5'],
         'juegos' => ['nombre' => 'Juegos', 'tinta' => '#2a5caa', 'noche' => '#6fa0e8'],
+        'gira' => ['nombre' => 'Gira', 'tinta' => '#2f6264', 'noche' => '#79b3ad'],
         'secretos' => ['nombre' => 'Secretos', 'tinta' => '#6b2c22', 'noche' => '#e0937c'],
     ];
 

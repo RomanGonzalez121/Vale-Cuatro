@@ -40,8 +40,9 @@ final class Numeros
             'mejorRacha' => $mejor,
             'envidos' => $jugados === 0 ? null : (int) round(100 * $resultados->sum('envidos_ganados') / $jugados),
             'torneos' => $this->torneosGanados($jugador),
-            'escalones' => count(array_filter($superados, fn (string $clave) => str_starts_with($clave, 'escalon:'))),
-            'escalera' => Escalera::cuantos(),
+            'paradas' => count(Gira::fosforos($jugador)),
+            'paradasEnTotal' => Gira::cuantos(),
+            'barrios' => array_map(fn (array $barrio) => $barrio['completo'], Gira::de($jugador)),
             'desafios' => count(array_filter($superados, fn (string $clave) => str_starts_with($clave, 'desafio:'))),
             'desafiosEnTotal' => count(Desafios::sueltos()),
         ];

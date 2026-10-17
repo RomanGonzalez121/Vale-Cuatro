@@ -65,7 +65,7 @@
                 <x-tanteador :forma="$anotarPropio" nombre="Ellos" :puntos="$vista['tanteo'][1]" modelo="puntos.rival" class="min-w-0" :hasta="$vista['puntosParaGanar']" />
             </section>
 
-            <x-mesa.ajustes />
+            <x-mesa.ajustes :ambiente="$ambiente ?? null" />
         </header>
 
         {{-- Tocar la mesa apura lo que se esté mostrando. --}}
@@ -292,7 +292,7 @@
                         @if ($practica['siguiente'])
                             <form method="POST" action="{{ $practica['siguiente'] }}" class="flex flex-col" x-show="fin === 'vos'" x-cloak>
                                 @csrf
-                                <button type="submit" class="boton boton-naipe"><x-icono nombre="escalera" /> {{ $practica['subir'] }}</button>
+                                <button type="submit" class="boton boton-naipe"><x-icono nombre="gira" /> {{ $practica['subir'] }}</button>
                             </form>
                         @endif
                         <form method="POST" action="{{ $practica['reintentar'] }}" class="flex flex-col" x-show="fin !== 'vos'" x-cloak>

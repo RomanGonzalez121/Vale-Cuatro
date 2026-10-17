@@ -13,11 +13,11 @@
         'de-a-cuatro' => 'Dos contra dos, con señas.',
         'torneo' => 'Cuatro u ocho, eliminación directa.',
         'desafios' => 'Manos armadas con un objetivo.',
-        'escalera' => 'Ocho escalones, de a uno.',
+        'gira' => 'Seis barrios, un jefe en cada bar.',
     ];
     $destino = fn (array $juego) => match ($juego['clave']) {
         'desafios' => route('desafios'),
-        'escalera' => route('escalera'),
+        'gira' => route('gira'),
         default => route('modos', ['juego' => $juego['clave']]),
     };
 @endphp

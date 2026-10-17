@@ -176,7 +176,7 @@
         <section id="resumen" aria-labelledby="titulo-resumen" class="pagina perfil-seccion">
             <h2 id="titulo-resumen" class="seccion-titulo perfil-titulo">Resumen</h2>
 
-            @if ($numeros['partidas'] === 0 && $numeros['torneos'] === 0 && $numeros['escalones'] === 0 && $numeros['desafios'] === 0)
+            @if ($numeros['partidas'] === 0 && $numeros['torneos'] === 0 && $numeros['paradas'] === 0 && $numeros['desafios'] === 0)
                 <p class="mt-6 text-lg font-semibold">{{ $propio ? 'Todavía no jugaste partidas que cuenten.' : 'Todavía no jugó partidas que cuenten.' }}</p>
             @else
                 @php
@@ -235,10 +235,10 @@
                         </dd>
                     </div>
                     <div class="resumen-dato">
-                        <dt>Escalera <small>de {{ $numeros['escalera'] }}</small></dt>
+                        <dt>Gira <small>de {{ $numeros['paradasEnTotal'] }} paradas</small></dt>
                         <dd>
-                            <span class="resumen-cifra">{{ $numeros['escalones'] }}</span>
-                            <span class="resumen-escalones" aria-hidden="true">@for ($i = 1; $i <= $numeros['escalera']; $i++)<i @class(['subido' => $i <= $numeros['escalones']]) style="height: {{ 0.4 + $i * 0.2 }}rem"></i>@endfor</span>
+                            <span class="resumen-cifra">{{ $numeros['paradas'] }}</span>
+                            <span class="resumen-escalones" aria-hidden="true">@foreach ($numeros['barrios'] as $i => $completo)<i @class(['subido' => $completo]) style="height: {{ 0.6 + $i * 0.3 }}rem"></i>@endforeach</span>
                         </dd>
                     </div>
                     <div class="resumen-dato">

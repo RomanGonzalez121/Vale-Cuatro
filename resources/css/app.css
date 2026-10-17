@@ -7302,10 +7302,23 @@ html:has(body.superficie-pano) {
     font-weight: 800;
 }
 
+/* Los tres fósforos de la parada: renglones de planilla con una raya fina entre uno y otro. Lo que falta, a media tinta. */
+.gira .ficha-fosforos {
+    border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
 .gira .ficha-fosforo {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.7rem;
+    padding: 0.18rem 0.1rem 0.18rem 0.25rem;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
+.gira .ficha-fosforo.ganado {
+    color: inherit;
+    font-weight: 700;
 }
 
 /* Un fósforo chico de los tres de cada parada: palito y cabeza; los que faltan, apagados. */
@@ -7334,11 +7347,184 @@ html:has(body.superficie-pano) {
     opacity: 0.28;
 }
 
-/* El plano: las letras de la guía y las paradas, que son botones. La elegida lleva un anillo de puntos. */
+/*
+ | El plano de cada barrio: una guía de calles impresa. Sus colores son variables para tener su noche: de día,
+ | papel crema y tinta; de noche, la misma guía impresa en tinta oscura, con las vidrieras encendidas.
+ | Las paradas son botones; la elegida lleva un anillo de puntos.
+ */
+.gira,
+.plano {
+    --pl-papel: #f2e8cf;
+    --pl-calle: #faf4e4;
+    --pl-manzana: #e7d3a1;
+    --pl-borde: #c4a96f;
+    --pl-avenida: #efd593;
+    --pl-raya: #d2b464;
+    --pl-plaza: #c3cd9b;
+    --pl-plaza-borde: #98a46b;
+    --pl-arbol: #8f9f62;
+    --pl-tinta: #161a18;
+    --pl-letra: #6b5a33;
+    --pl-fachada: #f3e9cf;
+    --pl-fachada-2: #d9c597;
+    --pl-techo: #5f7a6a;
+    --pl-ladrillo: #7a2e26;
+    --pl-toldo: #f3e6c8;
+    --pl-vidriera: #e8c98a;
+    --pl-puerta: #3a1714;
+    --pl-adoquin-fondo: #dccb9f;
+    --pl-adoquin: #e9dbb3;
+    --pl-adoquin-borde: #b9a273;
+    --pl-agua: #a9bfb3;
+    --pl-onda: #6f8c7e;
+    --pl-ficha: #fbfaf5;
+    --pl-contorno: #161a18;
+    --pl-doblez-luz: #fffdf6;
+    --pl-casa-0: #6f8fa6;
+    --pl-casa-1: #b85a43;
+    --pl-casa-2: #d4b05a;
+    --pl-casa-3: #6f977a;
+    --pl-hierro: #4f5f5a;
+    --pl-reticula: #a9b4ae;
+    --pl-bronce: #4d5a45;
+    --pl-tierra: #d9c08a;
+    --pl-cerco: #7d5e35;
+    --pl-cesped: #9fb27a;
+    --pl-linea: #f7f0dc;
+    --pl-madera: #c99a5b;
+    --pl-fruta: #d98a3a;
+    --pl-arco: #8f7a52;
+}
+
+:root[data-modo='noche'] .gira,
+:root[data-modo='noche'] .plano {
+    --pl-papel: #171b19;
+    --pl-calle: #222724;
+    --pl-manzana: #343428;
+    --pl-borde: #57523d;
+    --pl-avenida: #3f3a27;
+    --pl-raya: #6e623b;
+    --pl-plaza: #2f3f2c;
+    --pl-plaza-borde: #4d613c;
+    --pl-arbol: #4b6537;
+    --pl-tinta: #e6dfc6;
+    --pl-letra: #c3b07f;
+    --pl-fachada: #4a4536;
+    --pl-fachada-2: #625942;
+    --pl-techo: #3d5649;
+    --pl-ladrillo: #6e2a23;
+    --pl-toldo: #d6c8a4;
+    --pl-vidriera: #d9b36a;
+    --pl-puerta: #1c0c0a;
+    --pl-adoquin-fondo: #3a3628;
+    --pl-adoquin: #4d4835;
+    --pl-adoquin-borde: #6a6247;
+    --pl-agua: #1f3333;
+    --pl-onda: #4f7069;
+    --pl-ficha: #1e2320;
+    --pl-contorno: #0b0d0c;
+    --pl-doblez-luz: #2c312d;
+    --pl-casa-0: #3e5566;
+    --pl-casa-1: #6e3428;
+    --pl-casa-2: #7d6830;
+    --pl-casa-3: #3f5a47;
+    --pl-hierro: #8a9a94;
+    --pl-reticula: #2f3a36;
+    --pl-bronce: #7d8a6f;
+    --pl-tierra: #4a3f28;
+    --pl-cerco: #a6865a;
+    --pl-cesped: #3d4d2d;
+    --pl-linea: #c9c2a8;
+    --pl-madera: #7a5a33;
+    --pl-fruta: #b06a26;
+    --pl-arco: #2a2519;
+}
+
+/* Cada barrio tiñe sus manzanas con el tono de la mesa de su bar; calles, recorrido y paradas quedan iguales. */
+.plano[data-barrio='boedo'] { --pl-manzana: #e3c49a; --pl-borde: #b98d5c; } /* madera del club */
+.plano[data-barrio='san-telmo'] { --pl-manzana: #ddd3bd; --pl-borde: #aea181; } /* piedra de los adoquines */
+.plano[data-barrio='la-boca'] { --pl-manzana: #c9d6cf; --pl-borde: #8fa69c; } /* chapa de conventillo, verde petróleo */
+.plano[data-barrio='pompeya'] { --pl-manzana: #cfd3dc; --pl-borde: #9aa2b4; } /* azul noche del tarot */
+.plano[data-barrio='mataderos'] { --pl-manzana: #e2c3a4; --pl-borde: #b48c68; } /* tierra de pulpería */
+.plano[data-barrio='abasto'] { --pl-manzana: #efdcae; --pl-borde: #c6a86e; } /* pino del cajón del mercado */
+:root[data-modo='noche'] .plano[data-barrio='boedo'] { --pl-manzana: #3d3226; --pl-borde: #6a5640; }
+:root[data-modo='noche'] .plano[data-barrio='san-telmo'] { --pl-manzana: #36342e; --pl-borde: #5e594c; }
+:root[data-modo='noche'] .plano[data-barrio='la-boca'] { --pl-manzana: #2b3834; --pl-borde: #4c605a; }
+:root[data-modo='noche'] .plano[data-barrio='pompeya'] { --pl-manzana: #2e3240; --pl-borde: #50566b; }
+:root[data-modo='noche'] .plano[data-barrio='mataderos'] { --pl-manzana: #3c2f25; --pl-borde: #69513f; }
+:root[data-modo='noche'] .plano[data-barrio='abasto'] { --pl-manzana: #3a3527; --pl-borde: #645a3e; }
+
+.plano .pl-papel { fill: var(--pl-papel); }
+.plano .pl-calle { fill: var(--pl-calle); }
+.plano .pl-calle-trazo { stroke: var(--pl-calle); }
+.plano .pl-manzana { fill: var(--pl-manzana); stroke: var(--pl-borde); }
+.plano .pl-lote { stroke: var(--pl-borde); opacity: 0.8; }
+.plano .pl-borde { stroke: var(--pl-borde); fill: none; }
+.plano .pl-avenida { fill: var(--pl-avenida); }
+.plano .pl-avenida-trazo { stroke: var(--pl-avenida); }
+.plano .pl-raya { stroke: var(--pl-raya); fill: none; }
+.plano .pl-plaza { fill: var(--pl-plaza); stroke: var(--pl-plaza-borde); }
+.plano .pl-sendero { stroke: var(--pl-calle); }
+.plano .pl-arbol { fill: var(--pl-arbol); stroke: var(--pl-tinta); }
+.plano .pl-trazo { stroke: var(--pl-tinta); }
+.plano .pl-sin-relleno { fill: none; stroke: var(--pl-tinta); }
+.plano .pl-luz { fill: #f0b429; }
+.plano .pl-adoquin-fondo { fill: var(--pl-adoquin-fondo); }
+.plano .pl-adoquin { fill: var(--pl-adoquin); stroke: var(--pl-adoquin-borde); }
+.plano .pl-agua { fill: var(--pl-agua); }
+.plano .pl-orilla { stroke: var(--pl-borde); }
+.plano .pl-onda { stroke: var(--pl-onda); }
+.plano .pl-fachada { fill: var(--pl-fachada); }
+.plano .pl-fachada-2 { fill: var(--pl-fachada-2); }
+.plano .pl-techo { fill: var(--pl-techo); }
+.plano .pl-ladrillo { fill: var(--pl-ladrillo); }
+.plano .pl-toldo { fill: var(--pl-toldo); }
+.plano .pl-vidriera { fill: var(--pl-vidriera); }
+.plano .pl-puerta { fill: var(--pl-puerta); }
+.plano .pl-contorno { stroke: var(--pl-contorno); }
+.plano .pl-fosforo { stroke: #e8c98a; }
+.plano .pl-fosforo-palito { fill: #e8c98a; stroke: var(--pl-contorno); }
+.plano .pl-fosforo-cabeza { fill: #c93327; stroke: var(--pl-contorno); }
+.plano .pl-chapa-pasada { fill: var(--pl-tinta); }
+.plano .pl-numero-pasada { fill: var(--pl-ficha); }
+.plano .pl-chapa-sigue { fill: var(--pl-ficha); stroke: #c93327; }
+.plano .pl-chapa-cerrada { fill: var(--pl-ficha); stroke: var(--pl-tinta); }
+.plano .pl-numero { fill: var(--pl-tinta); }
+.plano .pl-carta { fill: #fbfaf5; stroke: #161a18; }
+.plano .pl-doblez { stroke: var(--pl-tinta); stroke-opacity: 0.16; }
+.plano .pl-doblez-luz { stroke: var(--pl-doblez-luz); }
+.plano .pl-casa-0 { fill: var(--pl-casa-0); }
+.plano .pl-casa-1 { fill: var(--pl-casa-1); }
+.plano .pl-casa-2 { fill: var(--pl-casa-2); }
+.plano .pl-casa-3 { fill: var(--pl-casa-3); }
+.plano .pl-hierro { fill: var(--pl-hierro); }
+.plano .pl-reticula { stroke: var(--pl-reticula); fill: none; }
+.plano .pl-casco { fill: var(--pl-ladrillo); }
+.plano .pl-junta { stroke: var(--pl-toldo); opacity: 0.55; }
+.plano .pl-baranda { stroke: var(--pl-tinta); }
+.plano .pl-bronce { fill: var(--pl-bronce); }
+.plano .pl-plazoleta { fill: var(--pl-calle); }
+.plano .pl-tierra { fill: var(--pl-tierra); stroke: var(--pl-borde); }
+.plano .pl-cerco { stroke: var(--pl-cerco); }
+.plano .pl-cerco-poste { fill: var(--pl-cerco); }
+.plano .pl-tribuna { fill: var(--pl-fachada-2); }
+.plano .pl-escalon { stroke: var(--pl-borde); }
+.plano .pl-cesped { fill: var(--pl-cesped); }
+.plano .pl-linea { stroke: var(--pl-linea); }
+.plano .pl-madera { fill: var(--pl-madera); }
+.plano .pl-fruta { fill: var(--pl-fruta); }
+.plano .pl-arco { fill: var(--pl-arco); }
+
 .plano-calle {
-    fill: #6b5a33;
+    fill: var(--pl-letra);
     font: italic 600 9.5px var(--font-sans);
     letter-spacing: 0.02em;
+}
+
+.plano-agua {
+    fill: var(--pl-onda);
+    font-size: 11px;
+    letter-spacing: 0.12em;
 }
 
 .plano-numero {
@@ -7346,7 +7532,7 @@ html:has(body.superficie-pano) {
 }
 
 .plano-cartel {
-    fill: #7a2e26;
+    fill: var(--pl-ladrillo);
     font: italic 900 9.5px var(--font-sans);
 }
 
@@ -7356,8 +7542,31 @@ html:has(body.superficie-pano) {
 }
 
 .plano-margen {
-    fill: #6b5a33;
+    fill: var(--pl-letra);
     font: 700 9px var(--font-sans);
+}
+
+/* La parada que se abre al volver se da vuelta sobre su propio centro. */
+.plano .parada-cara {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+/* De noche, la guía y las fichas pasan a tinta, como las páginas de lectura. El cartel del jefe ya es de paño hondo. */
+:root[data-modo='noche'] .gira .guia {
+    border-color: var(--color-texto);
+    background-color: var(--pl-papel);
+    color: var(--color-texto);
+}
+
+:root[data-modo='noche'] .gira :is(.ficha-nivel, .parada-hoja) {
+    border-color: color-mix(in srgb, var(--color-naipe) 45%, transparent);
+    background-color: #1e2320;
+    color: var(--color-naipe);
+}
+
+:root[data-modo='noche'] .gira .hoja-manija {
+    background-color: var(--color-naipe);
 }
 
 .plano .parada {
@@ -7387,8 +7596,9 @@ html:has(body.superficie-pano) {
         display: block;
     }
 
+    /* El índice se ensancha con el lugar que deja el plano: así la ficha de la parada se parte en menos renglones. */
     .gira .guia-abierta {
-        grid-template-columns: 23rem auto;
+        grid-template-columns: minmax(23rem, 29rem) auto;
         justify-content: center;
         align-items: start;
         gap: 0;
@@ -7452,6 +7662,39 @@ html:has(body.superficie-pano) {
 
     .gira .isla {
         display: contents;
+    }
+
+    /* En una ventana baja (como 1355 x 638) el índice se aprieta para que la ficha de la parada entre entera. */
+    @media (height < 46rem) {
+        .gira .gira-titulo {
+            font-size: 1.6rem;
+        }
+
+        .gira .gira-barrios {
+            margin-top: 0.45rem;
+        }
+
+        .gira .indice-barrio {
+            padding-block: 0.02rem;
+        }
+
+        .gira .barrio-numero {
+            width: 1.15rem;
+            height: 1.15rem;
+            font-size: 0.65rem;
+        }
+
+        .gira .gira-fichas {
+            margin-top: 0.6rem;
+        }
+
+        .gira :is(.ficha-nivel, .cartel-jefe) {
+            padding: 0.75rem 0.95rem;
+        }
+
+        .gira .ficha-carta {
+            width: 2.4rem;
+        }
     }
 
     /* El plano entra entero en la ventana: su ancho sale del alto que queda debajo del encabezado. */

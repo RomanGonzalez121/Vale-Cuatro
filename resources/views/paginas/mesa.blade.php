@@ -114,7 +114,12 @@
                     </div>
                 @elseif ($practica)
                     {{-- En una partida de la escalera o de la gira, qué escalón o qué parada es. --}}
-                    <p class="whitespace-nowrap text-sm font-semibold leading-none">{{ $practica['lugar'] }}</p>
+                    <p class="whitespace-nowrap text-sm font-semibold leading-none">
+                        <span @class(['max-sm:hidden' => $practica['lugar'] !== $practica['lugarCorto']])>{{ $practica['lugar'] }}</span>
+                        @if ($practica['lugar'] !== $practica['lugarCorto'])
+                            <span class="sm:hidden">{{ $practica['lugarCorto'] }}</span>
+                        @endif
+                    </p>
                 @endif
             </div>
 
@@ -126,7 +131,7 @@
                     clase-nombre="min-w-0 truncate text-sm font-semibold" :hasta="$vista['puntosParaGanar']" />
             </section>
 
-            <x-mesa.ajustes />
+            <x-mesa.ajustes :ambiente="$ambiente ?? null" />
         </header>
 
         {{-- Tocar la mesa apura lo que se esté mostrando (los tantos del envido). --}}
@@ -390,7 +395,7 @@
                         @if ($practica['siguiente'])
                             <form method="POST" action="{{ $practica['siguiente'] }}" class="flex flex-col" x-show="fin === 'vos'" x-cloak>
                                 @csrf
-                                <button type="submit" class="boton boton-naipe"><x-icono nombre="escalera" /> {{ $practica['subir'] }}</button>
+                                <button type="submit" class="boton boton-naipe"><x-icono nombre="gira" /> {{ $practica['subir'] }}</button>
                             </form>
                         @endif
                         <form method="POST" action="{{ $practica['reintentar'] }}" class="flex flex-col" x-show="fin !== 'vos'" x-cloak>

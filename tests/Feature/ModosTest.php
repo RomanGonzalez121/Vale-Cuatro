@@ -51,8 +51,8 @@ class ModosTest extends TestCase
         // persona a /invitar y al torneo contra bots a /torneo.
         $this->assertSame(count($rivales) - count($enlaces), preg_match_all('/<form[^>]*action="[^"]*\/(?:jugar|invitar|torneo)"/', $html));
 
-        // Los desafíos y la escalera tienen su propia pantalla: su botón es un link, y no crea nada.
-        $this->assertSame(['desafios', 'escalera'], array_values(array_column($enlaces, 'ruta')));
+        // Los desafíos y la gira tienen su propia pantalla: su botón es un link, y no crea nada.
+        $this->assertSame(['desafios', 'gira'], array_values(array_column($enlaces, 'ruta')));
 
         foreach ($enlaces as $enlace) {
             $this->assertStringContainsString('<a href="'.route($enlace['ruta']).'" class="boton boton-naipe', $html);
@@ -149,7 +149,7 @@ class ModosTest extends TestCase
 
         // Con un juego al que todavía no se le puede jugar contra nadie, vuelve a aparecer con su nombre.
         $juegos = array_map(function (array $juego) {
-            if ($juego['clave'] === 'escalera') {
+            if ($juego['clave'] === 'gira') {
                 $juego['rivales'][0]['boton'] = null;
             }
 
