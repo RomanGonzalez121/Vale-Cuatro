@@ -16,13 +16,14 @@ use Illuminate\Support\Carbon;
  * @property int $jugador_id
  * @property string $clave
  * @property int $intentos
+ * @property int $fosforos Los del mejor intento, en la escalera y la gira (de 0 a 3).
  * @property Carbon|null $superado_en
  */
 #[Table('progresos')]
 #[Fillable(['jugador_id', 'clave'])]
 class Progreso extends Model
 {
-    protected $attributes = ['intentos' => 0];
+    protected $attributes = ['intentos' => 0, 'fosforos' => 0];
 
     /**
      * @return BelongsTo<Jugador, $this>
@@ -45,6 +46,7 @@ class Progreso extends Model
         return [
             'jugador_id' => 'integer',
             'intentos' => 'integer',
+            'fosforos' => 'integer',
             'superado_en' => 'datetime',
         ];
     }

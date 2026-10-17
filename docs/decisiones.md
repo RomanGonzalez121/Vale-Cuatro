@@ -2094,3 +2094,15 @@ Tres son oscuras y tres claras; las claras pasan el texto a tinta y llevan el en
 
 Con ellas van **anotar con punto cruz** (nivel 9, con la mesa Bordado) y tres cosas que se ganan en la gira, ya dibujadas: **anotar con la constelación** y el **dorso Tarot** (venciendo a Madama Ferrante), y los **dorsos Marmolado** (Don Ceferino) y **Señales** (El Grúa Bianchi). Descartados por Román: anotar con muescas y con monedas, y mazos nuevos.
 
+## M26. La gira de los clubes, primera parte: los datos, el candado y los fósforos
+
+La gira son seis barrios en orden (Boedo, San Telmo, La Boca, Pompeya, Mataderos y Abasto), cada uno con sus niveles y un jefe al final. Está escrita como datos en `app/Juego/fichas-de-gira.php`, como los desafíos: agregar o cambiar un nivel es cambiar una ficha.
+
+- **Boedo es la escalera del club de siempre.** Sus ocho niveles son los escalones y se siguen anotando con su clave de antes (`escalon:N`). Así no hizo falta migrar el progreso de nadie, y los tres dorsos de la escalera quedan donde estaban. Los niveles de los otros barrios se anotan como `gira:<barrio>:<nivel>`, y la partida guarda de qué nivel es en `partidas.gira`.
+- **Cada nivel da hasta tres fósforos:** uno por pasarlo y dos por condiciones que nombra su ficha ("por 8 o más", "sin irte al mazo", "ganando un truco querido"). Los cuenta `App\Juego\FosforosDeGira` desde los hechos del motor, como todo lo demás: nadie le dice al servidor cuántos ganó. Es una cuenta pura (recibe los hechos y el tanteo), así se prueba sin jugar partidas. `progresos.fosforos` guarda el mejor intento; los escalones ya pasados arrancan con uno.
+- **En las manos con objetivo el bot contesta siempre igual**, así que se pueden recorrer enteras. Un test recorre cada mano de la gira y exige que alguna forma de jugarla dé los tres fósforos. Encontró cuatro que pedían algo imposible (sumar más de lo que la mano puede dar, o que la máquina no sumara nada en "Irse a tiempo"), y se les cambió la condición.
+- **El candado** (`Gira::abierto`): un nivel se abre con el anterior pasado, y el primero de un barrio con el jefe del barrio anterior vencido. Uno ya pasado se puede volver a jugar para sumar fósforos.
+- **Un nivel puede arrancar con un tanteo dado** (Pompeya, nivel 3, empieza 0 a 8): queda guardado con el primer reparto, igual que el de un desafío, y la partida se reconstruye con él.
+- **No cuenta para el ranking**, como la escalera (decidido por Román).
+- **Lo que falta, en las partes siguientes:** la página con el plano, los niveles de a cuatro, al mejor de tres y la copa del barrio, las manías de los jefes, el ambiente de cada barrio en la mesa y los premios.
+

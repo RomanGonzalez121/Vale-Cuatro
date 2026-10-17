@@ -43,6 +43,7 @@ use Illuminate\Support\Str;
  * @property int|null $torneo_id
  * @property string|null $desafio
  * @property int|null $escalon
+ * @property string|null $gira
  * @property Serie|null $serie
  * @property Nivel|null $nivel_bot
  * @property int|null $ganador
@@ -171,12 +172,12 @@ class Partida extends Model
     }
 
     /**
-     * Si es de un desafío o de la escalera del club. Lo que se juega ahí se puede repetir hasta que salga:
-     * no cuenta para el ranking ni tiene revancha.
+     * Si es de un desafío, de la escalera del club o de la gira de los clubes. Lo que se juega ahí se puede
+     * repetir hasta que salga: no cuenta para el ranking ni tiene revancha.
      */
     public function esDePractica(): bool
     {
-        return $this->desafio !== null || $this->escalon !== null;
+        return $this->desafio !== null || $this->escalon !== null || $this->gira !== null;
     }
 
     /**

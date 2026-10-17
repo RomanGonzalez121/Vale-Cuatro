@@ -2,12 +2,13 @@
 
 namespace App\Juego;
 
+use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
 use App\Models\Progreso;
 
 /**
- * Lo que cada jugador lleva pasado de los desafíos y de la escalera del club.
+ * Lo que cada jugador lleva pasado de los desafíos, de la escalera del club y de la gira de los clubes.
  *
  * Se anota en un solo lugar: cuando se cierra una partida que es de uno de los dos (Mesa::cerrar).
  * Ninguna pantalla ni pedido marca nada como pasado: lo dice el resultado de la partida, y ese lo
@@ -18,7 +19,7 @@ use App\Models\Progreso;
 final class Progresos
 {
     /**
-     * Las claves de lo que ese jugador ya pasó: "desafio:<clave>" y "escalon:<número>".
+     * Las claves de lo que ese jugador ya pasó: "desafio:<clave>", "escalon:<número>" y "gira:<barrio>:<nivel>".
      *
      * @return list<string>
      */
@@ -57,10 +58,11 @@ final class Progresos
     }
 
     /**
-     * Anota cómo terminó una partida de un desafío o de la escalera: un intento más y, si se pasó,
-     * desde cuándo. De cualquier otra partida no anota nada.
+     * Anota cómo terminó una partida de un desafío, de la escalera o de la gira: un intento más y, si se pasó,
+     * desde cuándo. De la escalera y la gira, también los fósforos, si este intento dio más que los anteriores.
+     * De cualquier otra partida no anota nada.
      */
-    public function anotar(Partida $partida): void
+    public function anotar(Partida $partida, ?Mesa $mesa = null): void
     {
         $clave = self::claveDe($partida);
 
@@ -72,11 +74,55 @@ final class Progresos
         $progreso->intentos++;
 
         // Pasarlo es terminarlo habiéndolo ganado: una partida abandonada cuenta como un intento y nada más.
-        if ($partida->estado === Partida::TERMINADA && $partida->ganador === Mesa::JUGADOR) {
+        $paso = $partida->estado === Partida::TERMINADA && $partida->ganador === Mesa::JUGADOR;
+
+        if ($paso) {
             $progreso->superado_en ??= now();
         }
 
+        if (Gira::deLaPartida($partida) !== null) {
+            $fosforos = $mesa === null ? (int) $paso : self::fosforosDe($partida, $mesa);
+            $progreso->fosforos = max($progreso->fosforos, $fosforos);
+        }
+
         $progreso->save();
+    }
+
+    /**
+     * Cuántos fósforos dio una partida de la gira (o de la escalera, que es Boedo), contados desde sus eventos.
+     */
+    public static function fosforosDe(Partida $partida, Mesa $mesa): int
+    {
+        [$barrio, $numero] = Gira::deLaPartida($partida) ?? [null, null];
+
+        if ($barrio === null) {
+            return 0;
+        }
+
+        $hechos = [];
+        $anterior = null;
+        $final = null;
+        $inicio = [0, 0];
+
+        foreach ($mesa->pasoAPaso($partida) as [$evento, $motor]) {
+            // El tanteo de arranque (un nivel que empieza abajo, o una mano armada) queda con el primer reparto.
+            if ($anterior === null && $evento->tipo === EventoDePartida::REPARTO && isset($evento->datos['tanteo'])) {
+                $inicio = $evento->datos['tanteo'];
+            }
+
+            // Si el motor es el mismo de antes, el evento no pasó por el motor y sus hechos ya se contaron.
+            if ($motor === $anterior) {
+                continue;
+            }
+
+            $anterior = $motor;
+            $final = $motor->tanteo();
+            $hechos = [...$hechos, ...$motor->hechos()];
+        }
+
+        $paso = $partida->estado === Partida::TERMINADA && $partida->ganador === Mesa::JUGADOR;
+
+        return FosforosDeGira::cuantos(Gira::nivel($barrio, $numero), $paso, $hechos, $inicio, $final ?? $inicio);
     }
 
     /**
@@ -87,6 +133,7 @@ final class Progresos
     {
         return match (true) {
             $partida->escalon !== null => self::claveDeEscalon($partida->escalon),
+            $partida->gira !== null => "gira:{$partida->gira}",
             $partida->desafio !== null => self::claveDeDesafio($partida->desafio),
             default => null,
         };

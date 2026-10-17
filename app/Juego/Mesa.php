@@ -170,10 +170,11 @@ final class Mesa
      *
      * @param  array<string, mixed>  $desafio  La ficha del catálogo (App\Juego\Desafios).
      * @param  int|null  $escalon  Si esa mano es un escalón de la escalera del club, cuál.
+     * @param  string|null  $gira  Si esa mano es un nivel de la gira de los clubes, cuál ("barrio:nivel").
      */
-    public function abrirDesafio(Jugador $jugador, array $desafio, ?int $escalon = null): Partida
+    public function abrirDesafio(Jugador $jugador, array $desafio, ?int $escalon = null, ?string $gira = null): Partida
     {
-        return DB::transaction(function () use ($jugador, $desafio, $escalon) {
+        return DB::transaction(function () use ($jugador, $desafio, $escalon, $gira) {
             Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
 
             $abierta = $this->abiertaDe($jugador);
@@ -192,6 +193,7 @@ final class Mesa
             // Ni el desafío ni el escalón se asignan en masa: solo los decide el código de la mesa.
             $partida->desafio = $desafio['clave'];
             $partida->escalon = $escalon;
+            $partida->gira = $gira;
             $partida->save();
 
             // El tanteo de arranque queda guardado con el reparto: la partida se puede volver a contar
@@ -238,6 +240,56 @@ final class Mesa
             $partida->save();
 
             $this->repartirEn($partida, $this->reconstruir($partida));
+
+            return $partida;
+        });
+    }
+
+    /**
+     * Un nivel de la gira de los clubes. Los de Boedo son los escalones de la escalera; los de los otros barrios,
+     * una partida corta contra el rival del nivel (o contra el jefe), que puede arrancar con un tanteo dado, o
+     * una mano con objetivo. Si el nivel está abierto lo decide quien llama: esto solo la crea.
+     *
+     * Con una partida sin terminar devuelve esa, sea la que sea.
+     */
+    public function abrirEnGira(Jugador $jugador, string $barrio, int $numero): Partida
+    {
+        $nivel = Gira::nivel($barrio, $numero) ?? throw new InvalidArgumentException("No existe el nivel {$numero} de {$barrio}.");
+
+        if (isset($nivel['escalon'])) {
+            return $nivel['tipo'] === 'mano'
+                ? $this->abrirDesafio($jugador, Desafios::de($nivel['desafio']), $nivel['escalon'])
+                : $this->abrirEnEscalera($jugador, Nivel::from($nivel['nivel']), $nivel['escalon']);
+        }
+
+        if ($nivel['tipo'] === 'mano') {
+            return $this->abrirDesafio($jugador, Desafios::de($nivel['desafio']), null, "{$barrio}:{$numero}");
+        }
+
+        if (! in_array($nivel['tipo'], ['partida', 'abajo', 'jefe'], true)) {
+            throw new LogicException("Los niveles «{$nivel['tipo']}» de la gira todavía no se juegan.");
+        }
+
+        return DB::transaction(function () use ($jugador, $nivel, $barrio, $numero) {
+            Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
+
+            $abierta = $this->abiertaDe($jugador);
+
+            if ($abierta !== null) {
+                return $abierta;
+            }
+
+            $partida = new Partida([
+                'jugador_id' => $jugador->getKey(),
+                'primer_mano' => Azar::seguro()->entero(self::JUGADOR, self::BOT),
+                'puntos' => $nivel['puntos'],
+                'nivel_bot' => Nivel::from($nivel['nivel']),
+            ]);
+
+            $partida->gira = "{$barrio}:{$numero}";
+            $partida->save();
+
+            $this->repartirEn($partida, $this->reconstruir($partida), tanteo: $nivel['tanteo'] ?? null);
 
             return $partida;
         });
@@ -1064,11 +1116,16 @@ final class Mesa
     /**
      * @return list<array<string, mixed>>
      */
-    private function repartirEn(Partida $partida, Motor $motor, int $asiento = self::JUGADOR): array
+    private function repartirEn(Partida $partida, Motor $motor, int $asiento = self::JUGADOR, ?array $tanteo = null): array
     {
+        // Un nivel de la gira puede arrancar con un tanteo dado: queda guardado con el primer reparto, como el de un desafío.
+        if ($tanteo !== null) {
+            $motor = $motor->conTanteo($tanteo);
+        }
+
         // El mazo se mezcla con el azar seguro y las cartas repartidas quedan en el evento.
         $motor = $motor->repartir(Mazo::mezcladoCon(Azar::seguro()));
-        $evento = $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => $motor->aArray()['cartas']]);
+        $evento = $this->guardar($partida, EventoDePartida::REPARTO, null, ['manos' => $motor->aArray()['cartas'], ...($tanteo === null ? [] : ['tanteo' => $tanteo])]);
         $this->despuesDeJugar($partida, $motor, $evento);
 
         return [$this->paso($partida, $motor, $evento, $asiento)];
@@ -1531,7 +1588,7 @@ final class Mesa
         }
 
         // Si era un desafío o un escalón de la escalera, queda anotado en lo que el jugador lleva pasado.
-        (new Progresos)->anotar($partida);
+        (new Progresos)->anotar($partida, $this);
 
         // Lo que no se suma partida por partida (la escalera, los desafíos, la mejor racha) se pone al día, y
         // cada persona recibe los sellos de la libreta que alcanzó, cada uno con su fósforo.
