@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int $lugares
  * @property int $puntos
  * @property int $semilla
+ * @property string|null $gira
  * @property list<array{apodo: string|null, nivel: int|null, carta: string}> $inscriptos
  * @property string $estado
  * @property int|null $campeon

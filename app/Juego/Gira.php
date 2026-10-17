@@ -33,8 +33,8 @@ final class Gira
         'arranca_con_ventaja' => 'Arranca con ventaja: la partida va a 30 y él empieza con 8.',
     ];
 
-    /** Los tipos de nivel que ya se juegan; los demás llegan con la tercera parte de la gira. */
-    public const SE_JUEGAN = ['partida', 'abajo', 'jefe', 'mano'];
+    /** Los tipos de nivel que se juegan (todos: la constante queda por si se suma un tipo nuevo que todavía no). */
+    public const SE_JUEGAN = ['partida', 'abajo', 'jefe', 'mano', 'cuatro', 'serie', 'copa'];
 
     /** @var list<array<string, mixed>>|null */
     private static ?array $barrios = null;
@@ -205,6 +205,24 @@ final class Gira
         }
 
         return $barrios;
+    }
+
+    /**
+     * La manía con que juega la máquina en esa partida: la del jefe, si la partida es contra el jefe de un barrio
+     * y su manía cambia cómo juega (App\Juego\BotConMania). Null en cualquier otra.
+     */
+    public static function maniaDe(Partida $partida): ?string
+    {
+        [$clave, $numero] = self::deLaPartida($partida) ?? [null, null];
+        $nivel = $clave === null ? null : self::nivel($clave, $numero);
+
+        if ($nivel === null || $nivel['tipo'] !== 'jefe') {
+            return null;
+        }
+
+        $mania = self::barrio($clave)['jefe']['mania'] ?? null;
+
+        return in_array($mania, BotConMania::MANIAS, true) ? $mania : null;
     }
 
     /**

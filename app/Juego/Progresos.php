@@ -6,6 +6,9 @@ use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
 use App\Models\Progreso;
+use App\Models\Serie;
+use App\Models\Torneo;
+use Closure;
 
 /**
  * Lo que cada jugador lleva pasado de los desafíos, de la escalera del club y de la gira de los clubes.
@@ -70,19 +73,70 @@ final class Progresos
             return;
         }
 
-        $progreso = Progreso::query()->firstOrCreate(['jugador_id' => $partida->jugador_id, 'clave' => $clave]);
-        $progreso->intentos++;
-
         // Pasarlo es terminarlo habiéndolo ganado: una partida abandonada cuenta como un intento y nada más.
         $paso = $partida->estado === Partida::TERMINADA && $partida->ganador === Mesa::JUGADOR;
+        $extra = [];
+
+        // Un nivel al mejor de tres se anota una sola vez, cuando la serie termina: lo pasa quien la gana.
+        if ($partida->serie_id !== null && $partida->gira !== null) {
+            $serie = Serie::query()->find($partida->serie_id);
+
+            if ($serie === null || ! $serie->cerrada()) {
+                return;
+            }
+
+            $paso = $serie->ganador === Mesa::JUGADOR;
+            $extra['perdidas_en_la_serie'] = $serie->marcador()[Mesa::BOT];
+        }
+
+        $esDeLaGira = Gira::deLaPartida($partida) !== null;
+        $this->anotarIntento($partida->jugador_id, $clave, $paso, $esDeLaGira, fn () => $mesa === null ? (int) $paso : self::fosforosDe($partida, $mesa, $paso, $extra));
+    }
+
+    /**
+     * Anota cómo terminó la copa de un barrio de la gira: un torneo de cuatro que se pasa saliendo campeón. Los
+     * fósforos salen de la final, que es la última partida que jugó la persona. Lo llama Torneos cuando hay campeón.
+     */
+    public function anotarCopa(Torneo $torneo, Mesa $mesa): void
+    {
+        if ($torneo->gira === null) {
+            return;
+        }
+
+        [$barrio, $numero] = explode(':', $torneo->gira);
+        $paso = $torneo->campeon === $torneo->lugarDeLaPersona();
+        $final = $torneo->cruces()->where('ronda', $torneo->rondas())->first()?->partida;
+
+        $this->anotarIntento($torneo->jugador_id, "gira:{$torneo->gira}", $paso, true, function () use ($final, $mesa, $paso, $barrio, $numero) {
+            if (! $paso || $final === null) {
+                return (int) $paso;
+            }
+
+            [$hechos, $inicio, $tanteo] = self::recorrer($final, $mesa);
+
+            return FosforosDeGira::cuantos(Gira::nivel($barrio, (int) $numero), $paso, $hechos, $inicio, $tanteo, 0, [
+                'final' => $tanteo,
+                'envidos_perdidos_en_la_final' => FosforosDeGira::contar($hechos)['envidos_perdidos'],
+            ]);
+        });
+    }
+
+    /**
+     * Un intento más de algo y, si se pasó, desde cuándo. De la gira, también los fósforos: queda el mejor intento.
+     *
+     * @param  Closure(): int  $fosforos
+     */
+    private function anotarIntento(int $jugadorId, string $clave, bool $paso, bool $conFosforos, Closure $fosforos): void
+    {
+        $progreso = Progreso::query()->firstOrCreate(['jugador_id' => $jugadorId, 'clave' => $clave]);
+        $progreso->intentos++;
 
         if ($paso) {
             $progreso->superado_en ??= now();
         }
 
-        if (Gira::deLaPartida($partida) !== null) {
-            $fosforos = $mesa === null ? (int) $paso : self::fosforosDe($partida, $mesa);
-            $progreso->fosforos = max($progreso->fosforos, $fosforos);
+        if ($conFosforos) {
+            $progreso->fosforos = max($progreso->fosforos, $fosforos());
         }
 
         $progreso->save();
@@ -91,7 +145,7 @@ final class Progresos
     /**
      * Cuántos fósforos dio una partida de la gira (o de la escalera, que es Boedo), contados desde sus eventos.
      */
-    public static function fosforosDe(Partida $partida, Mesa $mesa): int
+    public static function fosforosDe(Partida $partida, Mesa $mesa, ?bool $paso = null, array $extra = []): int
     {
         [$barrio, $numero] = Gira::deLaPartida($partida) ?? [null, null];
 
@@ -99,6 +153,19 @@ final class Progresos
             return 0;
         }
 
+        [$hechos, $inicio, $final] = self::recorrer($partida, $mesa);
+        $paso ??= $partida->estado === Partida::TERMINADA && $partida->ganador === Mesa::JUGADOR;
+
+        return FosforosDeGira::cuantos(Gira::nivel($barrio, $numero), $paso, $hechos, $inicio, $final, 0, $extra);
+    }
+
+    /**
+     * Todos los hechos de una partida en orden, con el tanteo con que arrancó y con el que terminó.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: array{0: int, 1: int}, 2: array{0: int, 1: int}}
+     */
+    private static function recorrer(Partida $partida, Mesa $mesa): array
+    {
         $hechos = [];
         $anterior = null;
         $final = null;
@@ -120,9 +187,7 @@ final class Progresos
             $hechos = [...$hechos, ...$motor->hechos()];
         }
 
-        $paso = $partida->estado === Partida::TERMINADA && $partida->ganador === Mesa::JUGADOR;
-
-        return FosforosDeGira::cuantos(Gira::nivel($barrio, $numero), $paso, $hechos, $inicio, $final ?? $inicio);
+        return [$hechos, $inicio, $final ?? $inicio];
     }
 
     /**

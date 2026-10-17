@@ -43,15 +43,18 @@ final class Torneos
      * Arma un torneo para ese jugador: sortea los bots y las llaves. Si ya tiene uno sin terminar,
      * devuelve ese: una persona juega un torneo a la vez.
      *
+     * La copa de un barrio de la gira es un torneo así, con tres cambios: dice de qué nivel es ($gira), todos
+     * los bots juegan con el nivel de la copa y las partidas van a los puntos del nivel.
+     *
      * @param  int|null  $semilla  Para los tests. Sin ella se sortea una con el azar seguro.
      */
-    public function crear(Jugador $jugador, int $lugares, ?int $semilla = null): Torneo
+    public function crear(Jugador $jugador, int $lugares, ?int $semilla = null, ?string $gira = null, ?Nivel $nivel = null, int $puntos = self::PUNTOS): Torneo
     {
         if (! in_array($lugares, self::LUGARES, true)) {
             throw new InvalidArgumentException('Un torneo es de '.implode(' o de ', self::LUGARES).' jugadores.');
         }
 
-        return DB::transaction(function () use ($jugador, $lugares, $semilla) {
+        return DB::transaction(function () use ($jugador, $lugares, $semilla, $gira, $nivel, $puntos) {
             // Se bloquea al jugador: dos toques seguidos no pueden armar dos torneos.
             Jugador::query()->whereKey($jugador->getKey())->lockForUpdate()->first();
 
@@ -63,13 +66,16 @@ final class Torneos
 
             $semilla ??= Azar::seguro()->entero(1, 0x7FFFFFFF);
 
-            $torneo = Torneo::create([
+            $torneo = new Torneo([
                 'jugador_id' => $jugador->getKey(),
                 'lugares' => $lugares,
-                'puntos' => self::PUNTOS,
+                'puntos' => $puntos,
                 'semilla' => $semilla,
-                'inscriptos' => $this->sortear($jugador, $lugares, $semilla),
+                'inscriptos' => $this->sortear($jugador, $lugares, $semilla, $nivel),
             ]);
+            // De qué nivel de la gira es no se asigna en masa: lo decide quien abre la copa.
+            $torneo->gira = $gira;
+            $torneo->save();
 
             // Todas las llaves de entrada. La primera ronda sale del sorteo: el lugar 0 contra el 1, el 2
             // contra el 3. Las demás esperan vacías a los ganadores.
@@ -214,6 +220,9 @@ final class Torneos
                     $torneo->terminado_en = now();
                     $torneo->save();
 
+                    // Si era la copa de un barrio, queda anotada en la gira: se pasa saliendo campeón.
+                    (new Progresos)->anotarCopa($torneo, $this->mesa);
+
                     // Ganarlo cuenta para el título de campeón.
                     $persona = Jugador::find($torneo->jugador_id);
                     (new Titulos)->ponerAlDia($persona);
@@ -270,7 +279,7 @@ final class Torneos
      *
      * @return list<array{apodo: string|null, nivel: int|null, carta: string}>
      */
-    private function sortear(Jugador $jugador, int $lugares, int $semilla): array
+    private function sortear(Jugador $jugador, int $lugares, int $semilla, ?Nivel $nivel = null): array
     {
         $azar = Azar::deSemilla($semilla);
         $cartas = JugadoresDeEjemplo::cartas();
@@ -278,11 +287,13 @@ final class Torneos
         $suya = (new Premios)->cartaDe($jugador);
         $bots = [];
 
-        foreach (JugadoresDeEjemplo::lista() as $apodo => $nivel) {
+        $nivelFijo = $nivel;
+
+        foreach (JugadoresDeEjemplo::lista() as $apodo => $suyo) {
             // Si la persona eligió el apodo de uno de ellos, ese no entra: no puede haber dos con el mismo nombre.
             // Tampoco el que tiene su misma carta: en las llaves cada carta es de uno solo.
             if ($apodo !== $jugador->apodo && $cartas[$apodo] !== $suya) {
-                $bots[] = ['apodo' => $apodo, 'nivel' => $nivel->value, 'carta' => $cartas[$apodo]];
+                $bots[] = ['apodo' => $apodo, 'nivel' => ($nivelFijo ?? $suyo)->value, 'carta' => $cartas[$apodo]];
             }
         }
 

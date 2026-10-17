@@ -83,7 +83,7 @@
                 --}}
                 @if ($serie)
                     <p class="whitespace-nowrap text-sm font-semibold leading-none">
-                        <span class="sr-only">Serie al mejor de tres: vos {{ $serie['vos'] }}, {{ $rival ?? 'la máquina' }} {{ $serie['rival'] }}.</span>
+                        <span class="sr-only">Serie al mejor de tres: vos {{ $serie['vos'] }}, {{ $enfrente ?? 'la máquina' }} {{ $serie['rival'] }}.</span>
                         <span aria-hidden="true">Serie <span class="font-black tabular-nums text-oro">{{ $serie['vos'] }}</span> a <span class="font-black tabular-nums text-oro">{{ $serie['rival'] }}</span></span>
                     </p>
                 @elseif ($torneo)
@@ -383,9 +383,10 @@
 
                 {{-- En la escalera, si con esta partida se pasó el escalón, y lo que sigue: subir, reintentar o volver a mirarla. --}}
                 @if ($practica && ! $esDesafio)
-                    <p class="mt-6 text-lg font-bold leading-snug" x-text="fraseDeLaEscalera"></p>
+                    <p class="mt-6 text-lg font-bold leading-snug" x-text="fraseDeLaEscalera" x-show="! sigueLaSerie"></p>
 
-                    <div class="mt-6 flex flex-col gap-2.5 sm:flex-row">
+                    {{-- En una serie de la gira, mientras la serie sigue, lo que sigue es la partida siguiente (más abajo). --}}
+                    <div class="mt-6 flex flex-col gap-2.5 sm:flex-row" x-show="! sigueLaSerie">
                         @if ($practica['siguiente'])
                             <form method="POST" action="{{ $practica['siguiente'] }}" class="flex flex-col" x-show="fin === 'vos'" x-cloak>
                                 @csrf

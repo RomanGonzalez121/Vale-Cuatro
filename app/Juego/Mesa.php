@@ -247,8 +247,10 @@ final class Mesa
 
     /**
      * Un nivel de la gira de los clubes. Los de Boedo son los escalones de la escalera; los de los otros barrios,
-     * una partida corta contra el rival del nivel (o contra el jefe), que puede arrancar con un tanteo dado, o
-     * una mano con objetivo. Si el nivel está abierto lo decide quien llama: esto solo la crea.
+     * una partida corta contra el rival del nivel (o contra el jefe), que puede arrancar con un tanteo dado, una
+     * de a cuatro con compañero máquina, la primera de una serie al mejor de tres, o una mano con objetivo. La
+     * copa del barrio es un torneo y la arma Torneos. Si el nivel está abierto lo decide quien llama: esto solo
+     * la crea.
      *
      * Con una partida sin terminar devuelve esa, sea la que sea.
      */
@@ -266,8 +268,8 @@ final class Mesa
             return $this->abrirDesafio($jugador, Desafios::de($nivel['desafio']), null, "{$barrio}:{$numero}");
         }
 
-        if (! in_array($nivel['tipo'], ['partida', 'abajo', 'jefe'], true)) {
-            throw new LogicException("Los niveles «{$nivel['tipo']}» de la gira todavía no se juegan.");
+        if (! in_array($nivel['tipo'], ['partida', 'abajo', 'jefe', 'cuatro', 'serie'], true)) {
+            throw new LogicException("Los niveles «{$nivel['tipo']}» de la gira no se abren en la mesa.");
         }
 
         return DB::transaction(function () use ($jugador, $nivel, $barrio, $numero) {
@@ -279,14 +281,18 @@ final class Mesa
                 return $abierta;
             }
 
+            $asientos = $nivel['tipo'] === 'cuatro' ? 4 : 2;
             $partida = new Partida([
                 'jugador_id' => $jugador->getKey(),
-                'primer_mano' => Azar::seguro()->entero(self::JUGADOR, self::BOT),
+                'primer_mano' => Azar::seguro()->entero(0, $asientos - 1),
                 'puntos' => $nivel['puntos'],
+                'asientos' => $asientos,
                 'nivel_bot' => Nivel::from($nivel['nivel']),
             ]);
 
             $partida->gira = "{$barrio}:{$numero}";
+            // Al mejor de tres: las partidas que siguen las reparte la serie, y cada una lleva el mismo nivel de la gira.
+            $partida->serie_id = $nivel['tipo'] === 'serie' ? Serie::create()->getKey() : null;
             $partida->save();
 
             $this->repartirEn($partida, $this->reconstruir($partida), tanteo: $nivel['tanteo'] ?? null);
@@ -858,6 +864,8 @@ final class Mesa
 
         $partida->serie_id = $serie?->getKey();
         $partida->anterior_id = $anterior->getKey();
+        // La que sigue en una serie de la gira es del mismo nivel. Una revancha no: de la gira no hay revancha.
+        $partida->gira = $serie === null ? null : $anterior->gira;
         $partida->save();
 
         $this->repartirEn($partida, $this->reconstruir($partida));
@@ -1403,6 +1411,13 @@ final class Mesa
                 ? $partida->nivel_bot->botDePareja($azar)
                 : $partida->nivel_bot->bot($azar));
 
+            // El jefe de un barrio de la gira juega con su manía encima.
+            $mania = $this->botFijo === null ? Gira::maniaDe($partida) : null;
+
+            if ($mania !== null) {
+                $bot = new BotConMania($bot, $mania);
+            }
+
             if ($bot instanceof Recuerda) {
                 $bot->recordar($this->manosCerradas($partida, $asiento));
             }
@@ -1587,7 +1602,12 @@ final class Mesa
             report($falla);
         }
 
-        // Si era un desafío o un escalón de la escalera, queda anotado en lo que el jugador lleva pasado.
+        // Si era de una serie, se cierra o se reparte la siguiente: antes de anotar el progreso, que en una
+        // serie de la gira se anota recién cuando la serie termina.
+        $this->seguirLaSerie($partida);
+
+        // Si era un desafío, un escalón de la escalera o una parada de la gira, queda anotado en lo que el
+        // jugador lleva pasado.
         (new Progresos)->anotar($partida, $this);
 
         // Lo que no se suma partida por partida (la escalera, los desafíos, la mejor racha) se pone al día, y
@@ -1601,8 +1621,6 @@ final class Mesa
                 report($falla);
             }
         }
-
-        $this->seguirLaSerie($partida);
 
         // Si era de un torneo, las llaves se ponen al día aparte, cuando esto ya quedó guardado: hay que
         // anotar el resultado y jugar las partidas entre bots de la ronda, y eso no puede demorar la jugada.

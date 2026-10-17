@@ -83,6 +83,8 @@ class MesaController extends Controller
                 'nivel' => $partida->nivel_bot,
                 // Todas las señas, para que la mesa sepa decir y dibujar cualquiera. Cuáles tiene cada uno lo dice la vista.
                 'senas' => Senas::todas(),
+                // Si es una parada de la gira: cuál es y adónde se vuelve.
+                'practica' => $this->practicaDe($partida),
             ]);
         }
 

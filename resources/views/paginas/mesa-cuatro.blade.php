@@ -2,7 +2,9 @@
     /*
      | La mesa de a cuatro contra bots: vos y un bot de compañero contra dos bots. Le pide al servidor
      | lo mismo que la mesa del mano a mano, más las señas. No hay plazos, series ni torneo.
+     | Puede ser una parada de la gira ($practica): entonces no hay revancha y se vuelve al plano.
      */
+    $practica ??= null;
     $pedidos = [
         'accion' => route('mesa.accion'),
         'repartir' => route('mesa.repartir'),
@@ -14,6 +16,7 @@
         'rival' => null,
         'torneo' => null,
         'serie' => null,
+        'practica' => $practica === null ? null : ['esMano' => false, 'escalon' => null, 'esElUltimo' => $practica['esElUltimo'], 'frases' => $practica['frases']],
         'presente' => null,
         'turno' => \App\Juego\Mesa::SEGUNDOS_DE_TURNO,
         'reparto' => \App\Juego\Mesa::SEGUNDOS_PARA_REPARTIR,
@@ -45,10 +48,14 @@
             <div class="flex min-w-0 items-center gap-3 justify-self-start [grid-area:logo] lg:gap-5">
                 <a href="{{ route('portada') }}" class="rounded text-lg no-underline max-sm:text-2xl max-sm:[&_.logo-nombre]:hidden lg:text-2xl" aria-label="Vale Cuatro, ir al inicio"><x-logo /></a>
 
-                {{-- El nivel de los tres bots, una sola vez y junto al logo: ahí no agrega una fila. --}}
+                {{-- El nivel de los tres bots, una sola vez y junto al logo: ahí no agrega una fila. En la gira, qué parada es. --}}
                 <p class="flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold leading-none">
                     <x-nivel-fosforos :nivel="$nivel" class="text-[0.8rem]" />
-                    <span class="sr-only">Bots de nivel</span> {{ $nivel->corto() }}
+                    @if ($practica)
+                        <span class="sr-only">Bots de nivel {{ $nivel->corto() }},</span> {{ $practica['lugar'] }}
+                    @else
+                        <span class="sr-only">Bots de nivel</span> {{ $nivel->corto() }}
+                    @endif
                 </p>
             </div>
 
@@ -277,15 +284,34 @@
 
                 <x-mesa.experiencia />
 
-                <div class="mt-8 flex flex-col gap-2.5 sm:flex-row">
-                    <form method="POST" action="{{ route('revancha.pedir') }}" class="flex flex-col">
-                        @csrf
-                        {{-- La revancha es con los mismos bots y el mismo nivel, y el mano pasa al asiento que sigue. --}}
-                        <input type="hidden" name="partida" value="{{ $vista['partida'] }}">
-                        <button type="submit" class="boton boton-naipe"><x-icono nombre="repetir" /> Jugar la revancha</button>
-                    </form>
-                    <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
-                </div>
+                @if ($practica)
+                    {{-- Una parada de la gira: si se pasó, y lo que sigue: seguir, reintentar o volver al plano. --}}
+                    <p class="mt-6 text-lg font-bold leading-snug" x-text="fraseDeLaEscalera"></p>
+
+                    <div class="mt-6 flex flex-col gap-2.5 sm:flex-row">
+                        @if ($practica['siguiente'])
+                            <form method="POST" action="{{ $practica['siguiente'] }}" class="flex flex-col" x-show="fin === 'vos'" x-cloak>
+                                @csrf
+                                <button type="submit" class="boton boton-naipe"><x-icono nombre="escalera" /> {{ $practica['subir'] }}</button>
+                            </form>
+                        @endif
+                        <form method="POST" action="{{ $practica['reintentar'] }}" class="flex flex-col" x-show="fin !== 'vos'" x-cloak>
+                            @csrf
+                            <button type="submit" class="boton boton-naipe"><x-icono nombre="repetir" /> Probar de nuevo</button>
+                        </form>
+                        <a href="{{ $practica['volver'] }}" class="boton boton-linea">{{ $practica['volverDice'] }}</a>
+                    </div>
+                @else
+                    <div class="mt-8 flex flex-col gap-2.5 sm:flex-row">
+                        <form method="POST" action="{{ route('revancha.pedir') }}" class="flex flex-col">
+                            @csrf
+                            {{-- La revancha es con los mismos bots y el mismo nivel, y el mano pasa al asiento que sigue. --}}
+                            <input type="hidden" name="partida" value="{{ $vista['partida'] }}">
+                            <button type="submit" class="boton boton-naipe"><x-icono nombre="repetir" /> Jugar la revancha</button>
+                        </form>
+                        <a href="{{ route('historial') }}" class="boton boton-linea">Ver el historial</a>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -296,7 +322,7 @@
             <div x-show="saliendo" x-transition:enter="aparece" x-transition:enter-start="desde-chico" x-transition:leave="se-va" x-transition:leave-end="opacity-0"
                 class="superficie-naipe w-full max-w-sm rounded-xl p-7 text-center">
                 <h2 id="titulo-salir" class="text-3xl font-black tracking-tight">¿Salir de la mesa?</h2>
-                <p class="mt-2 leading-relaxed">La partida queda guardada: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la pierden vos y tu compañero.</p>
+                <p class="mt-2 leading-relaxed">{{ $practica ? $practica['quedaGuardado'] : 'La partida queda guardada' }}: cuando vuelvas a jugar, sigue donde la dejaste. Si la abandonás, la pierden vos y tu compañero.</p>
                 <div class="mt-6 flex flex-col gap-2.5">
                     <button type="button" class="boton boton-tinta" @click="saliendo = false">Seguir jugando</button>
                     <a href="{{ route('portada') }}" class="boton boton-linea">Salir y seguir después</a>
@@ -304,7 +330,7 @@
                         @csrf
                         {{-- Se abandona la partida que esta mesa muestra, y ninguna otra. --}}
                         <input type="hidden" name="partida" value="{{ $vista['partida'] }}">
-                        <button type="submit" class="boton boton-linea">Abandonar la partida</button>
+                        <button type="submit" class="boton boton-linea">{{ $practica ? $practica['abandonarDice'] : 'Abandonar la partida' }}</button>
                     </form>
                 </div>
             </div>

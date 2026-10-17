@@ -74,7 +74,7 @@ class TorneoController extends Controller
 
         $this->torneos->abandonar($torneo);
 
-        return redirect()->route('torneo', $torneo)->with('aviso', $seJugaba ? 'Dejaste el torneo.' : null);
+        return redirect()->route('torneo', $torneo)->with('aviso', $seJugaba ? ($torneo->gira === null ? 'Dejaste el torneo.' : 'Dejaste la copa.') : null);
     }
 
     /**

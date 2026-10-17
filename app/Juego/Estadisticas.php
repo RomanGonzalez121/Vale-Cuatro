@@ -37,6 +37,11 @@ final class Estadisticas
             return false;
         }
 
+        // Tampoco la copa de un barrio de la gira: la gira no cuenta para el ranking.
+        if ($partida->torneo_id !== null && $partida->torneo?->gira !== null) {
+            return false;
+        }
+
         return $partida->entre_personas || ($partida->nivel_bot?->value ?? 0) >= self::DESDE_EL_NIVEL->value;
     }
 

@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\EntraComoInvitado;
 use App\Juego\Gira;
 use App\Juego\Mesa;
+use App\Juego\Nivel;
 use App\Juego\Premios;
+use App\Juego\Torneos;
+use App\Models\Jugador;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -66,9 +69,37 @@ class GiraController extends Controller
             return redirect()->route('gira.barrio', $clave)->with('aviso', 'Ese nivel todavía no se juega: llega muy pronto.');
         }
 
-        $mesa->abrirEnGira($this->jugadorOInvitado($request), $clave, $numero);
+        $jugador = $this->jugadorOInvitado($request);
+
+        // La copa del barrio es un torneo de cuatro: se arma y se va a sus llaves.
+        if ($nivel['tipo'] === 'copa') {
+            return $this->abrirLaCopa($jugador, $clave, $nivel, $mesa);
+        }
+
+        $mesa->abrirEnGira($jugador, $clave, $numero);
 
         return redirect()->route('mesa');
+    }
+
+    /**
+     * @param  array<string, mixed>  $nivel
+     */
+    private function abrirLaCopa(Jugador $jugador, string $clave, array $nivel, Mesa $mesa): RedirectResponse
+    {
+        // Una persona juega una cosa a la vez: con una partida sin terminar, primero esa.
+        if ($mesa->abiertaDe($jugador) !== null) {
+            return redirect()->route('mesa');
+        }
+
+        $torneos = app(Torneos::class);
+        $gira = "{$clave}:{$nivel['numero']}";
+        $enCurso = $torneos->enCursoDe($jugador);
+
+        if ($enCurso !== null && $enCurso->gira !== $gira) {
+            return redirect()->route('torneo', $enCurso)->with('aviso', 'Tenés un torneo sin terminar: terminalo o dejalo antes de jugar la copa.');
+        }
+
+        return redirect()->route('torneo', $torneos->crear($jugador, 4, null, $gira, Nivel::from($nivel['nivel']), $nivel['puntos']));
     }
 
     /**

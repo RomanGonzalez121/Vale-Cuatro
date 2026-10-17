@@ -18,13 +18,16 @@
     // la de quien perdió queda boca abajo.
     $perdio = $vos['estado'] === 'afuera';
     $gano = $vos['estado'] === 'campeon';
+    // La copa de un barrio de la gira es un torneo como este: cambia cómo se nombra y adónde se vuelve.
+    [$barrioDeLaCopa, $paradaDeLaCopa] = $torneo->gira === null ? [null, null] : explode(':', $torneo->gira);
+    $copa = $barrioDeLaCopa === null ? null : \App\Juego\Gira::barrio($barrioDeLaCopa);
     $duelo = [
         'arriba' => $rival ? ['carta' => $rival['carta'], 'bocaAbajo' => $gano, 'gana' => $perdio] : null,
         'abajo' => ['carta' => $vos['carta'], 'bocaAbajo' => $perdio, 'gana' => $gano],
     ];
 @endphp
 
-<x-layouts.base titulo="Torneo relámpago" descripcion="Las llaves de tu torneo relámpago de truco contra la máquina." superficie="pano">
+<x-layouts.base :titulo="$copa ? 'Copa de '.$copa['nombre'] : 'Torneo relámpago'" descripcion="Las llaves de tu torneo relámpago de truco contra la máquina." superficie="pano">
     <div class="mx-auto max-w-6xl px-5 pb-16 pt-6 sm:px-8 lg:pb-24 lg:pt-10">
         {{--
             Lo primero es la partida que toca: dicha en una frase y puesta sobre la mesa, carta contra carta.
@@ -32,6 +35,9 @@
         --}}
         <header class="torneo-inicio grid items-start gap-x-14 gap-y-6 [grid-template-areas:'titulo'_'duelo'_'resto'] lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_1fr] lg:[grid-template-areas:'titulo_duelo'_'resto_duelo']">
             <h1 class="pagina-titulo max-w-[16ch] [grid-area:titulo]">
+                @if ($copa)
+                    <span class="mb-2 block text-base font-semibold tracking-normal">Copa de {{ $copa['nombre'] }}, parada {{ $paradaDeLaCopa }} de la gira</span>
+                @endif
                 @switch ($vos['estado'])
                     @case (Llaves::POR_JUGAR)
                         Jugás {{ $vos['partido'] }} contra {{ $rival['apodo'] }}
@@ -40,10 +46,10 @@
                         Estás jugando {{ $vos['partido'] }}
                         @break
                     @case ('campeon')
-                        Sos el campeón del torneo
+                        {{ $copa ? 'Ganaste la copa' : 'Sos el campeón del torneo' }}
                         @break
                     @default
-                        {{ $vos['partido'] ? "Quedaste afuera en {$vos['partido']}" : 'Quedaste afuera del torneo' }}
+                        {{ $vos['partido'] ? "Quedaste afuera en {$vos['partido']}" : ($copa ? 'Quedaste afuera de la copa' : 'Quedaste afuera del torneo') }}
                 @endswitch
             </h1>
 
@@ -75,7 +81,7 @@
                     @elseif ($gano)
                         Ganaste {{ $torneo->rondas() === 2 ? 'las dos partidas' : 'las tres partidas' }}, cada una a {{ $torneo->puntos }} puntos.
                     @elseif ($rival && $campeon && $rival['lugar'] === $campeon['lugar'])
-                        {{ $vos['partido'] === 'la final' ? "El campeón es {$campeon['apodo']}." : "Pasó {$campeon['apodo']}, que terminó ganando el torneo." }}
+                        {{ $vos['partido'] === 'la final' ? "El campeón es {$campeon['apodo']}." : "Pasó {$campeon['apodo']}, que terminó ganando ".($copa ? 'la copa.' : 'el torneo.') }}
                     @else
                         @if ($rival)
                             Pasó {{ $rival['apodo'] }}.
@@ -101,12 +107,21 @@
                             x-data="{ seguro: false }" @keydown.escape="seguro = false; $nextTick(() => $refs.abrir.focus())">
                             @csrf
                             <button type="button" x-ref="abrir" class="boton boton-linea min-h-14 px-6 text-lg" x-show="! seguro"
-                                @click="seguro = true; $nextTick(() => $refs.confirmar.focus())">Dejar el torneo</button>
+                                @click="seguro = true; $nextTick(() => $refs.confirmar.focus())">{{ $copa ? 'Dejar la copa' : 'Dejar el torneo' }}</button>
                             <button type="submit" x-ref="confirmar" class="boton boton-copa min-h-14 px-6 text-lg" x-show="seguro" x-cloak
-                                x-transition:enter="aparece" x-transition:enter-start="desde-chico">Sí, dejarlo y quedar afuera</button>
+                                x-transition:enter="aparece" x-transition:enter-start="desde-chico">{{ $copa ? 'Sí, dejarla y quedar afuera' : 'Sí, dejarlo y quedar afuera' }}</button>
                             <button type="button" class="boton boton-linea min-h-14 px-6 text-lg" x-show="seguro" x-cloak
                                 x-transition:enter="aparece" x-transition:enter-start="desde-chico" @click="seguro = false; $nextTick(() => $refs.abrir.focus())">No</button>
                         </form>
+                    @elseif ($copa)
+                        {{-- La copa se vuelve a jugar desde la gira, que es la que sabe si está abierta. --}}
+                        @unless ($gano)
+                            <form method="POST" action="{{ route('gira.jugar', [$barrioDeLaCopa, $paradaDeLaCopa]) }}">
+                                @csrf
+                                <button type="submit" class="boton boton-naipe min-h-14 px-6 text-lg"><x-icono nombre="repetir" /> Jugar la copa de nuevo</button>
+                            </form>
+                        @endunless
+                        <a href="{{ route('gira.barrio', $barrioDeLaCopa) }}" @class(['boton min-h-14 px-6 text-lg', 'boton-naipe' => $gano, 'boton-linea' => ! $gano])>Ver el plano</a>
                     @else
                         <form method="POST" action="{{ route('torneo.crear') }}">
                             @csrf

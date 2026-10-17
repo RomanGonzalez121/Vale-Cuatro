@@ -311,7 +311,7 @@ export default (inicial, pedidos) => ({
     get fraseDeLaEscalera() {
         const frases = this.pedidos.practica?.frases;
 
-        if (! frases || this.pedidos.practica.esMano || ! this.fin) {
+        if (! frases || this.pedidos.practica.esMano || ! this.fin || this.sigueLaSerie) {
             return '';
         }
 
