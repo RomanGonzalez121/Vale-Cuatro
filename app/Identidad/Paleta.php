@@ -294,6 +294,19 @@ class Paleta
             'noche' => ['mesa' => '#1f2122', 'barras' => '#131516', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
         'fileteado' => ['mesa' => '#15191a', 'barras' => '#0b0d0e', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#8a1f17', '#9a6c1a', '#1a5434', '#1b3d73'],
             'noche' => ['mesa' => '#0f1212', 'barras' => '#070909', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        // Las mesas de la gira (16 de octubre de 2026): tres oscuras y tres claras.
+        'chapa' => ['mesa' => '#2f5244', 'barras' => '#1f382e', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#8a3d2e', '#a8823c', '#3c5d7a', '#4e7a55', '#7a5a3a', '#1b1a17', '#e6d7b5', '#26322d'],
+            'noche' => ['mesa' => '#213a30', 'barras' => '#15271f', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'adoquines' => ['mesa' => '#4b4943', 'barras' => '#312f2b', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#6b6860', '#77736a', '#5e5b54', '#827d72', '#706b62', '#65615a', '#2c2a26', '#8f8a7e'],
+            'noche' => ['mesa' => '#353330', 'barras' => '#22211e', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'tarot' => ['mesa' => '#1e2b40', 'barras' => '#131c2b', 'texto' => '#fbfaf5', 'canto' => '#f0b429', 'fosforo' => '#e8c98a', 'adornos' => ['#9c8754'],
+            'noche' => ['mesa' => '#151e2d', 'barras' => '#0d131e', 'canto' => '#f0b429', 'fosforo' => '#e8c98a']],
+        'cajon' => ['mesa' => '#e6d0a8', 'barras' => '#4a3a28', 'texto' => '#161a18', 'canto' => '#7d5209', 'fosforo' => '#8f7034', 'adornos' => ['#c9ae80', '#a6875a', '#4a3a28', '#f1e4c3', '#9a3a2c', '#b8903f', '#2f4f6e'],
+            'noche' => ['mesa' => '#bba988', 'barras' => '#3a2d1f', 'canto' => '#553506', 'fosforo' => '#6b5228']],
+        'bordado' => ['mesa' => '#ece3cf', 'barras' => '#2f3a4a', 'texto' => '#161a18', 'canto' => '#7d5209', 'fosforo' => '#8f7034', 'adornos' => ['#9a3a2c', '#34507a', '#4e7a55'],
+            'noche' => ['mesa' => '#b8b1a1', 'barras' => '#252e3a', 'canto' => '#553506', 'fosforo' => '#6b5228']],
+        'guia' => ['mesa' => '#f2e8cf', 'barras' => '#3d3426', 'texto' => '#161a18', 'canto' => '#7d5209', 'fosforo' => '#8f7034', 'adornos' => ['#e7d3a1', '#c4a96f', '#7a2e26', '#3f6b47', '#34507a', '#e8c98a', '#161a18'],
+            'noche' => ['mesa' => '#bdb5a1', 'barras' => '#2f281d', 'canto' => '#553506', 'fosforo' => '#6b5228']],
     ];
 
     /**
@@ -305,6 +318,8 @@ class Paleta
         'palotes' => ['trazo' => '#3f4447', 'fondo' => '#fbfaf5', 'tanteo' => '#161a18'],
         'tiza' => ['trazo' => '#ecebe4', 'fondo' => '#28302d', 'tanteo' => '#f0b429'],
         'porotos' => ['trazo' => '#6b2c22', 'fondo' => '#efe6d2', 'tanteo' => '#161a18'],
+        'punto-cruz' => ['trazo' => '#9a3a2c', 'fondo' => '#ece3cf', 'tanteo' => '#161a18'],
+        'constelacion' => ['trazo' => '#e8c98a', 'fondo' => '#1e2b40', 'tanteo' => '#f0b429'],
     ];
 
     /**

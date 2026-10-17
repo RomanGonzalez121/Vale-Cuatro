@@ -91,7 +91,11 @@ final class Premios
     public const POR_NIVEL = [
         'mesa' => [
             'fabrica' => ['nombre' => 'Paño', 'nivel' => 1],
+            'chapa' => ['nombre' => 'Chapa de conventillo', 'nivel' => 2],
+            'adoquines' => ['nombre' => 'Adoquines', 'nivel' => 3],
+            'cajon' => ['nombre' => 'Cajón del mercado', 'nivel' => 4],
             'pano-petroleo' => ['nombre' => 'Paño petróleo', 'nivel' => 5],
+            'bordado' => ['nombre' => 'Bordado', 'nivel' => 9],
             'marmol' => ['nombre' => 'Mármol de café', 'nivel' => 10],
             'pizarron' => ['nombre' => 'Pizarrón', 'nivel' => 14],
             'madera' => ['nombre' => 'Madera del club', 'nivel' => 17],
@@ -105,6 +109,7 @@ final class Premios
             'pulperia' => ['nombre' => 'Pulpería', 'nivel' => 34],
             'cobre' => ['nombre' => 'Cobre de la pava', 'nivel' => 36],
             'art-deco' => ['nombre' => 'Art Déco', 'nivel' => 38],
+            'tarot' => ['nombre' => 'Tarot', 'nivel' => 38],
             'grafito' => ['nombre' => 'Grafito y latón', 'nivel' => 39],
             'fileteado' => ['nombre' => 'Fileteado porteño', 'nivel' => 40],
         ],
@@ -136,6 +141,7 @@ final class Premios
         'anotar' => [
             'fabrica' => ['nombre' => 'Fósforos', 'nivel' => 1],
             'palotes' => ['nombre' => 'Palotes con lápiz', 'nivel' => 7],
+            'punto-cruz' => ['nombre' => 'Punto cruz', 'nivel' => 9],
             'tiza' => ['nombre' => 'Tiza', 'nivel' => 13],
             'porotos' => ['nombre' => 'Porotos y garbanzos', 'nivel' => 27],
         ],

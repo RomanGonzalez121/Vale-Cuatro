@@ -23,8 +23,11 @@ return [
 
     // El camino.
     ['tipo' => 'distintivo', 'clave' => 'un-fosforo', 'nombre' => 'Un fósforo', 'nivel' => 2, 'listo' => true],
+    ['tipo' => 'mesa', 'clave' => 'chapa', 'nombre' => 'Chapa de conventillo', 'nivel' => 2, 'listo' => true],
     ['tipo' => 'dorso', 'clave' => 'rombos', 'nombre' => 'Rombos', 'nivel' => 3, 'listo' => true],
+    ['tipo' => 'mesa', 'clave' => 'adoquines', 'nombre' => 'Adoquines', 'nivel' => 3, 'listo' => true],
     ['tipo' => 'carta', 'clave' => '5-espada', 'nombre' => 'El 5 de espada', 'nivel' => 4, 'listo' => true],
+    ['tipo' => 'mesa', 'clave' => 'cajon', 'nombre' => 'Cajón del mercado', 'nivel' => 4, 'listo' => true],
     ['tipo' => 'mesa', 'clave' => 'pano-petroleo', 'nombre' => 'Paño petróleo', 'nivel' => 5, 'listo' => true],
     ['tipo' => 'mazo', 'clave' => 'clasico', 'nombre' => 'Clásico', 'nivel' => 5, 'listo' => true],
     ['tipo' => 'distintivo', 'clave' => 'cuadrado', 'nombre' => 'El cuadrado', 'nivel' => 6, 'listo' => true],
@@ -34,6 +37,8 @@ return [
     ['tipo' => 'dorso', 'clave' => 'damero', 'nombre' => 'Damero', 'nivel' => 8, 'listo' => true],
     ['tipo' => 'mazo', 'clave' => 'azulejo', 'nombre' => 'Azulejo de subte', 'nivel' => 8, 'listo' => true],
     ['tipo' => 'mazo', 'clave' => 'tango', 'nombre' => 'Tango', 'nivel' => 9, 'listo' => true],
+    ['tipo' => 'mesa', 'clave' => 'bordado', 'nombre' => 'Bordado', 'nivel' => 9, 'listo' => true],
+    ['tipo' => 'anotar', 'clave' => 'punto-cruz', 'nombre' => 'Punto cruz', 'nivel' => 9, 'listo' => true],
     ['tipo' => 'carta', 'clave' => '7-copa', 'nombre' => 'El 7 de copa', 'nivel' => 10, 'listo' => true],
     ['tipo' => 'mesa', 'clave' => 'marmol', 'nombre' => 'Mármol de café', 'nivel' => 10, 'listo' => true],
     ['tipo' => 'distintivo', 'clave' => 'grupo-de-cinco', 'nombre' => 'Grupo de cinco', 'nivel' => 11, 'listo' => true],
@@ -92,6 +97,7 @@ return [
     ['tipo' => 'mazo', 'clave' => 'fileteado', 'nombre' => 'Fileteado', 'nivel' => 37, 'listo' => true],
     ['tipo' => 'mesa', 'clave' => 'art-deco', 'nombre' => 'Art Déco', 'nivel' => 38, 'listo' => true],
     ['tipo' => 'distintivo', 'clave' => 'cuatro-palos', 'nombre' => 'Los cuatro palos', 'nivel' => 38, 'listo' => true],
+    ['tipo' => 'mesa', 'clave' => 'tarot', 'nombre' => 'Tarot', 'nivel' => 38, 'listo' => true],
     ['tipo' => 'mazo', 'clave' => 'criollo', 'nombre' => 'Criollo', 'nivel' => 39, 'listo' => true],
     ['tipo' => 'mesa', 'clave' => 'grafito', 'nombre' => 'Grafito y latón', 'nivel' => 39, 'listo' => true],
     ['tipo' => 'dorso', 'clave' => 'grabado', 'nombre' => 'Grabado', 'nivel' => 39, 'listo' => true],

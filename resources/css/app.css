@@ -328,7 +328,7 @@ body:has(.mesa-de-marmol-negro) {
  | En las mesas claras el envido no va en ocre (se veía marrón): la palabra y los tantos van en tinta sobre una
  | franja plana del oro de verdad, con la forma de las fichas del truco y del quiero (Román, 16 de octubre de 2026).
  */
-:is(.mesa-de-marmol, .mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo .canto-oro {
+:is(.mesa-de-marmol, .mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario, .mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo .canto-oro {
     width: fit-content;
     margin-inline: auto;
     padding: 0.06em 0.3em 0.16em;
@@ -338,7 +338,7 @@ body:has(.mesa-de-marmol-negro) {
 }
 
 /* Lo mismo con los puntos del cierre de la mano: una fichita de oro con el número en tinta. */
-:is(.mesa-de-marmol, .mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario) .mesa-campo .puntos-del-cierre {
+:is(.mesa-de-marmol, .mesa-de-baldosa, .mesa-de-mantel, .mesa-de-diario, .mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo .puntos-del-cierre {
     display: inline-block;
     padding: 0.08em 0.24em 0.04em;
     border-radius: 0.16em;
@@ -738,6 +738,374 @@ body:has(.mesa-de-fileteado) {
 
 :root[data-modo='noche'] .leyenda-filete {
     filter: brightness(0.8);
+}
+
+/*
+ | Las mesas de la gira (16 de octubre de 2026). Cada una cuenta un lugar de la gira de los clubes: la chapa de
+ | los conventillos de La Boca, los adoquines de San Telmo, el cajón de fruta del Abasto, el mantel bordado de la
+ | abuela, el paño de lectura de la tarotista de Pompeya y la guía de calles, que es de quien terminó la gira.
+ | Tres oscuras y tres claras; las claras pasan el texto a tinta, como el mármol.
+ */
+body:has(.mesa-de-chapa) {
+    --color-pano: #2f5244;
+    --color-pano-hondo: #1f382e;
+    --color-sombra: #0f1c17;
+}
+
+body:has(.mesa-de-adoquines) {
+    --color-pano: #4b4943;
+    --color-pano-hondo: #312f2b;
+    --color-sombra: #181715;
+}
+
+body:has(.mesa-de-tarot) {
+    --color-pano: #1e2b40;
+    --color-pano-hondo: #131c2b;
+    --color-sombra: #090d14;
+}
+
+body:has(.mesa-de-cajon) {
+    --color-pano: #e6d0a8;
+    --color-pano-hondo: #4a3a28;
+    --color-sombra: #9a8460;
+}
+
+body:has(.mesa-de-bordado) {
+    --color-pano: #ece3cf;
+    --color-pano-hondo: #2f3a4a;
+    --color-sombra: #a99f8c;
+}
+
+body:has(.mesa-de-guia) {
+    --color-pano: #f2e8cf;
+    --color-pano-hondo: #3d3426;
+    --color-sombra: #ab9f84;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-chapa) {
+    --color-pano: #213a30;
+    --color-pano-hondo: #15271f;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-adoquines) {
+    --color-pano: #353330;
+    --color-pano-hondo: #22211e;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-tarot) {
+    --color-pano: #151e2d;
+    --color-pano-hondo: #0d131e;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-cajon) {
+    --color-pano: #bba988;
+    --color-pano-hondo: #3a2d1f;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-bordado) {
+    --color-pano: #b8b1a1;
+    --color-pano-hondo: #252e3a;
+}
+
+:root[data-modo='noche'] body:has(.mesa-de-guia) {
+    --color-pano: #bdb5a1;
+    --color-pano-hondo: #2f281d;
+}
+
+:is(.mesa-de-chapa, .mesa-de-adoquines, .mesa-de-tarot, .mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo::before,
+:is(.mesa-de-chapa, .mesa-de-adoquines, .mesa-de-tarot, .mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo::after {
+    z-index: -1;
+}
+
+:root[data-modo='noche'] :is(.mesa-de-chapa, .mesa-de-adoquines, .mesa-de-tarot) .mesa-campo::before,
+:root[data-modo='noche'] :is(.mesa-de-chapa, .mesa-de-adoquines, .mesa-de-tarot) .mesa-campo::after {
+    filter: brightness(0.62);
+}
+
+:root[data-modo='noche'] :is(.mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo::before,
+:root[data-modo='noche'] :is(.mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo::after,
+:root[data-modo='noche'] .etiqueta-cajon {
+    filter: brightness(0.78);
+}
+
+/* La chapa: paneles de chapa acanalada, cada uno de un color, todo alrededor; la ventana del conventillo en una esquina. */
+.mesa-de-chapa .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #1b1a17;
+    border-radius: 0.3rem;
+    background:
+        url('../mesas/chapa-ventana.svg') bottom 2.3rem left 2.3rem / var(--ventana, min(9%, 3.4rem)) auto no-repeat,
+        url('../mesas/chapa-paneles.svg') top left / auto var(--banda, 1.7rem) repeat-x,
+        url('../mesas/chapa-paneles.svg') bottom left / auto var(--banda, 1.7rem) repeat-x,
+        url('../mesas/chapa-paneles-v.svg') left top / var(--banda, 1.7rem) auto repeat-y,
+        url('../mesas/chapa-paneles-v.svg') right top / var(--banda, 1.7rem) auto repeat-y,
+        url('../mesas/chapa-ondas.svg') left top / 0.95rem 0.95rem repeat;
+}
+
+/* Los adoquines: dos hileras de granito trabadas en el borde, el cordón de la vereda y una laja lisa en el medio. */
+.mesa-de-adoquines .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #2c2a26;
+    border-radius: 0.3rem;
+    background:
+        url('../mesas/adoquines-borde.svg') top left / auto var(--banda, 2rem) repeat-x,
+        url('../mesas/adoquines-borde.svg') bottom left / auto var(--banda, 2rem) repeat-x,
+        url('../mesas/adoquines-borde-v.svg') left top / var(--banda, 2rem) auto repeat-y,
+        url('../mesas/adoquines-borde-v.svg') right top / var(--banda, 2rem) auto repeat-y,
+        url('../mesas/adoquines-grano.svg') center / 4rem 4rem repeat;
+}
+
+.mesa-de-adoquines .mesa-campo::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--banda, 2rem) + 0.35rem);
+    border: 3px solid #8f8a7e;
+    border-radius: 0.2rem;
+    pointer-events: none;
+}
+
+/* El cajón: tablas de pino con su veta y una rendija entre tabla y tabla; la etiqueta va aparte (x-mesa.etiqueta). */
+.mesa-de-cajon .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #4a3a28;
+    border-radius: 0.25rem;
+    background: url('../mesas/cajon-tablas.svg') center / 30rem 8.25rem repeat;
+}
+
+/* El bordado: lino crema, la guarda de punto cruz todo alrededor, un ramito en cada esquina y el dobladillo cosido. */
+.mesa-de-bordado .mesa-campo::before {
+    inset: 0.35rem;
+    border-radius: 0.6rem;
+    background:
+        url('../mesas/bordado-ramito.svg') top 2.5rem left 2.5rem / 2.7rem auto no-repeat,
+        url('../mesas/bordado-ramito.svg') top 2.5rem right 2.5rem / 2.7rem auto no-repeat,
+        url('../mesas/bordado-ramito.svg') bottom 2.5rem right 2.5rem / 2.7rem auto no-repeat,
+        url('../mesas/bordado-ramito.svg') bottom 2.5rem left 2.5rem / 2.7rem auto no-repeat,
+        url('../mesas/bordado-guarda.svg') top 0.85rem left / 2.25rem 1.69rem repeat-x,
+        url('../mesas/bordado-guarda.svg') bottom 0.85rem left / 2.25rem 1.69rem repeat-x,
+        url('../mesas/bordado-guarda-v.svg') left 0.85rem top / 1.69rem 2.25rem repeat-y,
+        url('../mesas/bordado-guarda-v.svg') right 0.85rem top / 1.69rem 2.25rem repeat-y,
+        url('../mesas/bordado-lino.svg') center / 0.5rem 0.5rem repeat;
+}
+
+.mesa-de-bordado .mesa-campo::after {
+    content: '';
+    position: absolute;
+    inset: 0.5rem;
+    border: 2px dashed color-mix(in srgb, #9a3a2c 45%, transparent);
+    border-radius: 0.5rem;
+    pointer-events: none;
+}
+
+/* El tarot: el enrejado con soles todo alrededor, el sol y la luna en dos esquinas y el círculo de la tirada, tenue. */
+.mesa-de-tarot .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.5px solid #9c8754;
+    border-radius: 0.4rem;
+    background:
+        url('../mesas/tarot-sol.svg') top var(--esquina, 2.6rem) left var(--esquina, 2.6rem) / var(--sol, min(10%, 4.4rem)) auto no-repeat,
+        url('../mesas/tarot-luna.svg') bottom var(--esquina, 2.6rem) right var(--esquina, 2.6rem) / var(--adorno, min(10%, 4.4rem)) auto no-repeat,
+        url('../mesas/tarot-circulo.svg') center / min(46%, 22rem) auto no-repeat,
+        url('../mesas/tarot-enrejado.svg') top left / var(--banda, 2rem) var(--banda, 2rem) repeat-x,
+        url('../mesas/tarot-enrejado.svg') bottom left / var(--banda, 2rem) var(--banda, 2rem) repeat-x,
+        url('../mesas/tarot-enrejado.svg') left top / var(--banda, 2rem) var(--banda, 2rem) repeat-y,
+        url('../mesas/tarot-enrejado.svg') right top / var(--banda, 2rem) var(--banda, 2rem) repeat-y;
+}
+
+.mesa-de-tarot .mesa-campo::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--banda, 2rem) + 0.35rem);
+    border: 1px solid #9c8754;
+    border-radius: 0.25rem;
+    pointer-events: none;
+}
+
+/* La guía: las manzanas de la guía, muy suaves, y el recorrido de la gira en fósforo uniendo los bares de las esquinas. */
+.mesa-de-guia .mesa-campo::before {
+    inset: 0.35rem;
+    border: 1.6px solid #161a18;
+    border-radius: 0.2rem;
+    background:
+        url('../mesas/guia-bar-bordo.svg') top 0.8rem left 0.8rem / min(9%, 4.8rem) auto no-repeat,
+        url('../mesas/guia-bar-verde.svg') top 0.8rem right 0.8rem / min(9%, 4.8rem) auto no-repeat,
+        url('../mesas/guia-bar-azul.svg') bottom 0.8rem left 0.8rem / min(9%, 4.8rem) auto no-repeat,
+        url('../mesas/guia-bar-bordo.svg') bottom 0.8rem right 0.8rem / min(9%, 4.8rem) auto no-repeat,
+        url('../mesas/guia-recorrido.svg') top 2.9rem left / 2.5rem 0.62rem repeat-x,
+        url('../mesas/guia-recorrido.svg') bottom 2.9rem left / 2.5rem 0.62rem repeat-x,
+        url('../mesas/guia-recorrido-v.svg') left 2.9rem top / 0.62rem 2.5rem repeat-y,
+        url('../mesas/guia-recorrido-v.svg') right 2.9rem top / 0.62rem 2.5rem repeat-y,
+        url('../mesas/guia-manzanas.svg') center / 6rem 5rem repeat;
+}
+
+.mesa-de-guia .mesa-campo::after {
+    content: '';
+    position: absolute;
+    inset: 0.7rem;
+    border: 1px solid #161a18;
+    border-radius: 0.15rem;
+    pointer-events: none;
+}
+
+/* En el celular las tiras del borde son más finas y los adornos de las esquinas más chicos: la mesa es angosta. */
+@media (width < 40rem) {
+    :is(.mesa-de-chapa, .mesa-de-adoquines, .mesa-de-tarot) .mesa-campo {
+        --banda: 1.05rem;
+        --esquina: 1.6rem;
+        --adorno: 2.2rem;
+        --ventana: 0rem;
+        /* Arriba a la izquierda va el nombre del rival: en el celular el tarot queda con la luna sola. */
+        --sol: 0rem;
+    }
+}
+
+/* La etiqueta del cajón: papel crema con marco rojo y doble filete, una naranja y la marca, apenas torcida. */
+.etiqueta-cajon {
+    position: absolute;
+    z-index: -1;
+    top: 1.3rem;
+    left: 1.5rem;
+    /* En la mesa ancha, los párrafos van a la columna del medio: la etiqueta se mide contra la mesa entera. */
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 0.55rem;
+    align-items: center;
+    padding: 0.45rem 0.8rem 0.5rem 0.6rem;
+    border: 2px solid #9a3a2c;
+    outline: 3px double #9a3a2c;
+    outline-offset: 2px;
+    background-color: #f1e4c3;
+    color: #2f4f6e;
+    transform: rotate(-2deg);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.etiqueta-fruta {
+    grid-row: span 2;
+    width: 1.7rem;
+    height: 1.7rem;
+    border: 1.5px solid #161a18;
+    border-radius: 50%;
+    background-color: #b8903f;
+    box-shadow: inset -0.3rem -0.25rem 0 #9c7a33;
+}
+
+.etiqueta-marca {
+    font-size: 1.15rem;
+    font-style: italic;
+    font-weight: 900;
+    color: #9a3a2c;
+}
+
+.etiqueta-bajada {
+    margin-top: 0.15rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+}
+
+@media (width < 40rem) {
+    .etiqueta-cajon {
+        top: 51%;
+        bottom: auto;
+        left: 1.9rem;
+        transform: rotate(-2deg) scale(0.85);
+        transform-origin: left center;
+    }
+}
+
+/* Las claras de la gira, como el mármol: texto en tinta y el oro en un ocre que se lee sobre lo claro. */
+:is(.mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo,
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa):is([data-mesa='cajon'], [data-mesa='bordado'], [data-mesa='guia']) {
+    --color-naipe: #161a18;
+    --color-oro: #7d5209;
+    --color-fosforo: #8f7034;
+    color: var(--color-naipe);
+}
+
+:root[data-modo='noche'] :is(:is(.mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo, :is(.perfil-mesa, .probador-mesa, .pieza-mesa):is([data-mesa='cajon'], [data-mesa='bordado'], [data-mesa='guia'])) {
+    --color-oro: #553506;
+    --color-fosforo: #6b5228;
+}
+
+:is(:is(.mesa-de-cajon, .mesa-de-bordado, .mesa-de-guia) .mesa-campo, [data-mesa='cajon'], [data-mesa='bordado'], [data-mesa='guia']) :is(.carta, .mini-naipe, .costado-hoja, .tanto-ficha, .bg-pano-hondo, .ficha-de-mano, .boton, .canto-copa, .canto-basto, .canto-naipe) {
+    --color-naipe: #fbfaf5;
+    --color-oro: #f0b429;
+}
+
+/* Sus muestras del perfil: el color y el elemento propio de cada mesa, en chico. */
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='chapa'] {
+    background: url('../mesas/chapa-paneles.svg') top left / auto 1.1rem repeat-x, url('../mesas/chapa-paneles.svg') bottom left / auto 1.1rem repeat-x, url('../mesas/chapa-ondas.svg') left top / 0.7rem 0.7rem repeat, #2f5244;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='adoquines'] {
+    background: url('../mesas/adoquines-borde.svg') top left / auto 1.2rem repeat-x, url('../mesas/adoquines-borde.svg') bottom left / auto 1.2rem repeat-x, url('../mesas/adoquines-grano.svg') center / 3rem 3rem repeat, #4b4943;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='cajon'] {
+    background: url('../mesas/cajon-tablas.svg') center / 18rem 4.95rem repeat, #e6d0a8;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='bordado'] {
+    background: url('../mesas/bordado-ramito.svg') top 14% left 8% / min(22%, 2.2rem) auto no-repeat, url('../mesas/bordado-guarda.svg') top 0.35rem left / 1.5rem 1.13rem repeat-x, url('../mesas/bordado-guarda.svg') bottom 0.35rem left / 1.5rem 1.13rem repeat-x, #ece3cf;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='tarot'] {
+    background: url('../mesas/tarot-sol.svg') top 8% left 6% / min(26%, 2.8rem) auto no-repeat, url('../mesas/tarot-luna.svg') bottom 8% right 6% / min(26%, 2.8rem) auto no-repeat, url('../mesas/tarot-enrejado.svg') top left / 1.3rem 1.3rem repeat-x, url('../mesas/tarot-enrejado.svg') bottom left / 1.3rem 1.3rem repeat-x, #1e2b40;
+}
+
+:is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='guia'] {
+    background: url('../mesas/guia-bar-bordo.svg') top 8% left 6% / min(30%, 2.6rem) auto no-repeat, url('../mesas/guia-bar-verde.svg') bottom 8% right 6% / min(30%, 2.6rem) auto no-repeat, url('../mesas/guia-manzanas.svg') center / 4rem 3.3rem repeat, #f2e8cf;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='chapa'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/chapa-paneles.svg') top left / auto 1.1rem repeat-x, url('../mesas/chapa-paneles.svg') bottom left / auto 1.1rem repeat-x, url('../mesas/chapa-ondas.svg') left top / 0.7rem 0.7rem repeat, #2f5244;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='adoquines'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/adoquines-borde.svg') top left / auto 1.2rem repeat-x, url('../mesas/adoquines-borde.svg') bottom left / auto 1.2rem repeat-x, url('../mesas/adoquines-grano.svg') center / 3rem 3rem repeat, #4b4943;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='cajon'] {
+    background: linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)), url('../mesas/cajon-tablas.svg') center / 18rem 4.95rem repeat, #e6d0a8;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='bordado'] {
+    background: linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)), url('../mesas/bordado-ramito.svg') top 14% left 8% / min(22%, 2.2rem) auto no-repeat, url('../mesas/bordado-guarda.svg') top 0.35rem left / 1.5rem 1.13rem repeat-x, url('../mesas/bordado-guarda.svg') bottom 0.35rem left / 1.5rem 1.13rem repeat-x, #ece3cf;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='tarot'] {
+    background: linear-gradient(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.3)), url('../mesas/tarot-sol.svg') top 8% left 6% / min(26%, 2.8rem) auto no-repeat, url('../mesas/tarot-luna.svg') bottom 8% right 6% / min(26%, 2.8rem) auto no-repeat, url('../mesas/tarot-enrejado.svg') top left / 1.3rem 1.3rem repeat-x, url('../mesas/tarot-enrejado.svg') bottom left / 1.3rem 1.3rem repeat-x, #1e2b40;
+}
+
+:root[data-modo='noche'] :is(.perfil-mesa, .probador-mesa, .pieza-mesa)[data-mesa='guia'] {
+    background: linear-gradient(rgb(0 0 0 / 0.22), rgb(0 0 0 / 0.22)), url('../mesas/guia-bar-bordo.svg') top 8% left 6% / min(30%, 2.6rem) auto no-repeat, url('../mesas/guia-bar-verde.svg') bottom 8% right 6% / min(30%, 2.6rem) auto no-repeat, url('../mesas/guia-manzanas.svg') center / 4rem 3.3rem repeat, #f2e8cf;
+}
+
+.pieza-mesa[data-mesa='chapa'] {
+    border-color: #8a3d2e;
+}
+
+.pieza-mesa[data-mesa='adoquines'] {
+    border-color: #8f8a7e;
+}
+
+.pieza-mesa[data-mesa='cajon'] {
+    border-color: #4a3a28;
+}
+
+.pieza-mesa[data-mesa='bordado'] {
+    border-color: #9a3a2c;
+}
+
+.pieza-mesa[data-mesa='tarot'] {
+    border-color: #9c8754;
+}
+
+.pieza-mesa[data-mesa='guia'] {
+    border-color: #161a18;
 }
 
 /* Sus muestras del perfil: el mismo color y su dibujo principal; de noche, las claras con la luz baja. */
@@ -3877,6 +4245,21 @@ html:has(body.superficie-pano) {
         background-color: #efe6d2;
     }
 
+    /* El punto cruz va sobre un retazo de lino con su dobladillo; la constelación, sobre el paño azul de la tarotista. */
+    .anotador-punto-cruz {
+        --color-naipe: #161a18;
+    }
+
+    .anotador-punto-cruz::before {
+        border: 0.12rem dashed #9a3a2c;
+        background-color: #ece3cf;
+    }
+
+    .anotador-constelacion::before {
+        border: 0.12rem solid #9c8754;
+        background-color: #1e2b40;
+    }
+
     .anotador-tiza::before {
         inset: -0.3rem -0.32rem;
         border: 0.16rem solid #7a5a3c;
@@ -4787,6 +5170,17 @@ html:has(body.superficie-pano) {
     .pieza-anotar[data-anotar='tiza'] {
         border: 0.2rem solid #7a5a3c;
         background-color: #28302d;
+    }
+
+    .pieza-anotar[data-anotar='punto-cruz'] {
+        --color-naipe: #161a18;
+        border: 0.15rem dashed #9a3a2c;
+        background-color: #ece3cf;
+    }
+
+    .pieza-anotar[data-anotar='constelacion'] {
+        border: 0.15rem solid #9c8754;
+        background-color: #1e2b40;
     }
 
     /* Un distintivo en chico: el sello solo, en Naipe, sobre el paño hondo. Sin distintivo, el cuadro vacío. */

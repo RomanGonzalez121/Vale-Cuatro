@@ -185,7 +185,8 @@ class PaletaTest extends TestCase
         // tienen que volver a su texto claro, como las cartas y los botones. Pasó una vez: Truco salía en tinta.
         $estilos = file_get_contents(__DIR__.'/../../resources/css/app.css');
 
-        $this->assertSame(2, substr_count($estilos, '.boton, .canto-copa, .canto-basto, .canto-naipe) {'));
+        // Una regla por cada grupo de claras: el mármol, las de la tanda 4 y las de la gira.
+        $this->assertSame(3, substr_count($estilos, '.boton, .canto-copa, .canto-basto, .canto-naipe) {'));
     }
 
     public function test_las_tintas_de_los_sellos_se_leen_de_dia_y_de_noche(): void

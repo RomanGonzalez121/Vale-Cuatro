@@ -31,6 +31,27 @@
      */
     $porotos = [[5, 14, 92], [14, 5, 4], [23, 14, 86], [14, 23, 178]];
 
+    /*
+     | Con punto cruz, cada lado del cuadrado es una hilera de dos cruces bordadas en rojo y la diagonal, en azul.
+     | Con la constelación, cada punto es una estrella en una esquina unida a la anterior por una línea fina, y el
+     | quinto cruza el cuadrado con la estrella del medio: se lee igual que el grupo de fósforos.
+     */
+    $cruces = function (array $lado, string $color): string {
+        [[$x1, $y1], [$x2, $y2]] = $lado;
+        $trazos = '';
+        foreach ([0.3, 0.7] as $t) {
+            $x = $x1 + ($x2 - $x1) * $t;
+            $y = $y1 + ($y2 - $y1) * $t;
+            $trazos .= sprintf('M%.1f %.1fL%.1f %.1fM%.1f %.1fL%.1f %.1f', $x - 2.4, $y - 2.4, $x + 2.4, $y + 2.4, $x + 2.4, $y - 2.4, $x - 2.4, $y + 2.4);
+        }
+
+        return sprintf('<path d="%s" fill="none" stroke="%s" stroke-width="1.3" stroke-linecap="round" />', $trazos, $color);
+    };
+    $estrella = fn (float $x, float $y, float $r) => sprintf(
+        '<path d="M%1$.1f %2$.1fL%3$.1f %4$.1fL%5$.1f %6$.1fL%3$.1f %7$.1fL%1$.1f %8$.1fL%9$.1f %7$.1fL%10$.1f %6$.1fL%9$.1f %4$.1fZ" fill="#e8c98a" />',
+        $x, $y - $r, $x + $r * 0.3, $y - $r * 0.3, $x + $r, $y, $y + $r * 0.3, $y + $r, $x - $r * 0.3, $x - $r,
+    );
+
     if ($aMano && $forma !== 'porotos') {
         $lados = [[[5, 23], [5, 5]], [[5, 5], [23, 5]], [[23, 5], [23, 23]], [[23, 23], [5, 23]], [[6.5, 21.5], [21.5, 6.5]]];
         $temblor = $forma === 'tiza' ? 1.1 : 0.9;
@@ -70,7 +91,13 @@
     @foreach ($fosforos as $i => [$palito, $cx, $cy])
         @php($numero = $grupo * 5 + $i + 1)
         <g @class(['fosforo', 'a-mano' => $aMano, 'puesto' => $puntos >= $numero]) @if ($modelo) :class="{ puesto: {{ $modelo }} >= {{ $numero }} }" @endif>
-            @if ($forma === 'porotos' && $i < 4)
+            @if ($forma === 'punto-cruz')
+                {!! $cruces($lados[$i], $i < 4 ? '#9a3a2c' : '#34507a') !!}
+            @elseif ($forma === 'constelacion')
+                @php([[$x1, $y1], [$x2, $y2]] = $lados[$i])
+                <path d="M{{ $x1 }} {{ $y1 }}L{{ $x2 }} {{ $y2 }}" fill="none" stroke="#9c8754" stroke-width="0.9" />
+                {!! $i < 4 ? $estrella($x2, $y2, 3.4) : $estrella(14, 14, 3) !!}
+            @elseif ($forma === 'porotos' && $i < 4)
                 @php([$px, $py, $giro] = $porotos[$i])
                 <g transform="rotate({{ $giro }} {{ $px }} {{ $py }})">
                     <ellipse cx="{{ $px }}" cy="{{ $py }}" rx="4.2" ry="2.7" fill="#6b2c22" />

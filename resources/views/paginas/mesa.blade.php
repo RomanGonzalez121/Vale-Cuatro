@@ -138,6 +138,9 @@
             @if ($mesaPropia === 'fileteado')
                 <x-mesa.leyenda />
             @endif
+            @if ($mesaPropia === 'cajon')
+                <x-mesa.etiqueta />
+            @endif
             {{--
                 La cuenta regresiva entre personas: un fósforo acostado en el borde del campo, arriba cuando
                 le toca al rival y abajo cuando te toca a vos. No ocupa lugar: la mesa mide lo mismo que sin él.

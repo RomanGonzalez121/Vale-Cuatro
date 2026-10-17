@@ -2078,3 +2078,19 @@ Román marcó que el texto que aparecía arriba de su mano no se entendía y que
 - **el relato entero va solo al lector de pantalla** (el aviso pasó a `sr-only`); el renglón de arriba de la mano queda para lo que no tiene otro lugar: una jugada que no entró o esperar que el otro llegue a la mesa (`notaALaVista`).
 
 Se descartó una ficha "Te toca" con un punto rojo (la probó y no le gustó), un renglón más corto y pasar el relato a la planilla.
+
+## Las mesas de la gira
+
+Román pidió cinco mesas más, una de tarot y otra de bordado, y que las otras tres se pensaran para los barrios de la gira de los clubes (M26). Con referencias (los tapetes de lectura de tarot, el dorso de Isnard de 1746, los manteles bordados de ajuar, los adoquines de granito de San Telmo, los conventillos de La Boca pintados con lo que sobraba en los barcos y las etiquetas de los cajones de fruta impresas a cuatro colores) quedaron así, cada una con un elemento propio:
+
+- **Chapa de conventillo** (nivel 2): paneles de chapa acanalada de colores todo alrededor y la ventana del conventillo.
+- **Adoquines** (nivel 3): dos hileras de granito trabadas, el cordón de la vereda y una laja lisa en el medio.
+- **Cajón del mercado** (nivel 4): tablas de pino con su rendija y la etiqueta "La Porteña" (`<x-mesa.etiqueta>`, en HTML como la leyenda del fileteado). El pino quedó más claro de lo pensado (`#e6d0a8`): con el primero el ocre del envido no llegaba a 4,5.
+- **Bordado** (nivel 9): lino crema, guarda de punto cruz en rojo y azul, un ramito en cada esquina y el dobladillo.
+- **Tarot** (nivel 38): azul noche (sin violeta, que está fuera de la familia), enrejado con soles, un sol y una luna de latón apagado y el círculo de la tirada, tenue.
+- **La guía**: la guía de calles con un bar en cada esquina y el recorrido en fósforo. Es el premio por terminar la gira entera (elegido por Román, con la referencia de Hearthstone, donde cada aventura deja un dorso exclusivo); se dibuja ahora y se gana cuando exista M26.
+
+Tres son oscuras y tres claras; las claras pasan el texto a tinta y llevan el envido en una fichita de oro, como el mármol. En el celular las tiras del borde son más finas, la ventana de la chapa no aparece y el tarot queda con la luna sola, para no tapar el nombre del rival. Los dibujos están en `resources/mesas/`.
+
+Con ellas van **anotar con punto cruz** (nivel 9, con la mesa Bordado) y tres cosas que se ganan en la gira, ya dibujadas: **anotar con la constelación** y el **dorso Tarot** (venciendo a Madama Ferrante), y los **dorsos Marmolado** (Don Ceferino) y **Señales** (El Grúa Bianchi). Descartados por Román: anotar con muescas y con monedas, y mazos nuevos.
+

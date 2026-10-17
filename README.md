@@ -3,7 +3,7 @@
 Truco argentino online, mano a mano: contra un bot o contra otra persona por un link de invitación.
 La idea es que cualquiera que entre pueda jugar una mano contra el bot en menos de 30 segundos, sin registrarse.
 
-**Se puede jugar en [vale-cuatro.onrender.com](https://vale-cuatro.onrender.com).** Está en un plan gratuito que se duerme cuando pasa un rato sin visitas: si la primera carga tarda cerca de un minuto, es que se está despertando.
+**Se puede jugar en [vale-cuatro.onrender.com](https://vale-cuatro.onrender.com).** Está en un plan gratuito que se duerme cuando pasa un rato sin visitas; una visita programada cada diez minutos lo mantiene despierto. Si alguna vez la primera carga tarda cerca de un minuto, es que se estaba despertando.
 
 Proyecto de portfolio de Román Gonzalez.
 

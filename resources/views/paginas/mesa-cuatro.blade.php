@@ -69,6 +69,9 @@
             @if ($mesaPropia === 'fileteado')
                 <x-mesa.leyenda />
             @endif
+            @if ($mesaPropia === 'cajon')
+                <x-mesa.etiqueta />
+            @endif
             {{--
                 Tu compañero, enfrente. A su izquierda, lo que te dice con sus señas, dibujado, y el botón
                 para hacerle las tuyas; a su derecha, el mazo, de donde sale el reparto.
