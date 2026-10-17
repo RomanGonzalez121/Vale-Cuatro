@@ -2068,3 +2068,13 @@ Eligió la recomendada:
 Se descartó un ocre más claro (`#9c6e1a`), porque seguía viéndose marrón.
 
 Después Román marcó lo mismo en el cierre de la mano: el número de puntos ("1 Envido no querido") salía en ocre. En las mesas claras ese número va en tinta sobre una fichita del oro de verdad (`.puntos-del-cierre`), en las dos mesas. El marcador de la serie y el nivel del final quedan en oro, porque van sobre fondo oscuro.
+
+## Lo que pasa se ve donde pasa
+
+Román marcó que el texto que aparecía arriba de su mano no se entendía y que, al irse al mazo, salía de golpe una tira de frases ("Perdiste la mano. Te fuiste al mazo. 1 por la mano…"). Se buscó cómo lo hacen otros juegos: Hearthstone avisa el turno encendiendo un botón, no con un texto; el póker online pone lo que hizo cada uno junto a su asiento; Marvel Snap no tiene registro de jugadas para no recargar la mesa. Eligió la recomendada:
+
+- **que te toca no se escribe:** tu mano sube un poco y la barra de cantos se enciende con un filete de naipe que se dibuja por su borde de arriba (`teToca`, `.mesa-mano[data-turno]`, `.barra-de-cantos::before`);
+- **lo que dijo otro va en una fichita sobre sus cartas** (`<x-mesa.dicho>`, `.dicho`), en la letra de los cantos y con el color de su función: la última palabra ("Truco", "Quiero", "No quiero"), hasta que esa persona tira una carta, vos jugás o se reparte; también en la mesa de a cuatro;
+- **el relato entero va solo al lector de pantalla** (el aviso pasó a `sr-only`); el renglón de arriba de la mano queda para lo que no tiene otro lugar: una jugada que no entró o esperar que el otro llegue a la mesa (`notaALaVista`).
+
+Se descartó una ficha "Te toca" con un punto rojo (la probó y no le gustó), un renglón más corto y pasar el relato a la planilla.

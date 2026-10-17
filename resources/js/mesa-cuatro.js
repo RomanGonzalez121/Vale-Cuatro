@@ -289,6 +289,7 @@ export default (inicial, pedidos) => {
 
                 case 'carta':
                     this.aviso = vos ? `Jugaste el ${nombreDe(hecho.carta)}.` : `${nombre} jugó el ${nombreDe(hecho.carta)}.`;
+                    this.callarDicho(this.lugarDe(asiento));
 
                     if (vos && this.adelantada === hecho.carta) {
                         // Esta carta ya se movió al tocarla: no se vuelve a animar.
@@ -312,12 +313,14 @@ export default (inicial, pedidos) => {
                 case 'canto':
                     this.decir(CANTOS[hecho.canto], TRUCOS.includes(hecho.canto) ? 'copa' : 'oro', asiento);
                     this.aviso = `${vos ? 'Cantaste' : `${nombre} cantó`} ${CANTOS[hecho.canto].toLowerCase()}.`;
+                    this.anotarDicho(this.lugarDe(asiento), CANTOS[hecho.canto], TRUCOS.includes(hecho.canto) ? 'copa' : '');
                     await this.leer(1250);
                     break;
 
                 case 'respuesta':
                     this.decir(hecho.quiere ? 'Quiero' : 'No quiero', hecho.quiere ? 'basto' : 'copa', asiento);
                     this.aviso = `${vos ? (hecho.quiere ? 'Quisiste' : 'No quisiste') : `${nombre} ${hecho.quiere ? 'quiso' : 'no quiso'}`}.`;
+                    this.anotarDicho(this.lugarDe(asiento), hecho.quiere ? 'Quiero' : 'No quiero', hecho.quiere ? 'basto' : 'copa');
                     await this.leer(1100);
                     break;
 
@@ -673,6 +676,7 @@ export default (inicial, pedidos) => {
 
             this.cierre = null;
             this.muestran = [];
+            this.callarDicho();
             this.aviso = 'Repartiendo.';
             cartas.forEach((carta, i) => this.guardar(carta, i));
 

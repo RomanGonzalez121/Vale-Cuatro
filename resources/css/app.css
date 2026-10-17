@@ -2976,6 +2976,70 @@ html:has(body.superficie-pano) {
     }
 
     /*
+     | Que te toca no se escribe: tu mano sube un poco, como quien levanta las cartas para jugar, y la
+     | barra de cantos se enciende con un filete de naipe que se dibuja por su borde de arriba.
+     */
+    .mesa-mano {
+        transition: transform 200ms var(--ease-llegada);
+    }
+
+    .mesa-mano[data-turno='true'] {
+        transform: translateY(-0.4rem);
+        transition-duration: 260ms;
+    }
+
+    .barra-de-cantos::before {
+        content: '';
+        position: absolute;
+        inset-inline: 0;
+        top: 0;
+        height: 2px;
+        background-color: var(--color-naipe);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 160ms var(--ease-llegada);
+    }
+
+    .barra-de-cantos[data-turno='true']::before {
+        transform: scaleX(1);
+        transition-duration: 280ms;
+    }
+
+    /*
+     | Lo último que dijo otro (un canto, "Quiero", "No quiero"): una fichita de naipe sobre el borde de abajo
+     | de sus cartas, en la letra de los cantos. Colores fijos: va igual sobre toda mesa, clara u oscura.
+     | Truco y "No quiero" en Copa, "Quiero" en Basto, el envido y la flor en tinta (medidos sobre naipe).
+     */
+    .dicho {
+        position: absolute;
+        bottom: -0.45rem;
+        left: 50%;
+        z-index: 6;
+        margin: 0;
+        padding: 0.04em 0.55em 0.14em;
+        border: 1.5px solid rgb(22 26 24 / 0.2);
+        border-radius: 999px;
+        background-color: #fbfaf5;
+        color: #161a18;
+        font-family: var(--font-canto);
+        font-size: clamp(0.95rem, 4.2cqw, 1.3rem);
+        font-style: italic;
+        font-weight: 900;
+        line-height: 1.15;
+        white-space: nowrap;
+        pointer-events: none;
+        translate: -50% 0;
+    }
+
+    .dicho[data-tono='copa'] {
+        color: #c93327;
+    }
+
+    .dicho[data-tono='basto'] {
+        color: #2a7d4f;
+    }
+
+    /*
      | La mesa ancha (desde lg): el campo pasa a tres columnas. En el medio, la mesa de siempre; a los
      | costados, lo cantado en esta mano y el mazo con el número de mano. En pantallas angostas los
      | costados no se ven y el mazo vuelve a estar junto al rival.
@@ -6419,8 +6483,15 @@ html:has(body.superficie-pano) {
     .experiencia[aria-pressed='true'],
     .naipe-jugable,
     .naipe-jugable:not([disabled]):hover,
-    .naipe-jugable.del-tanto {
+    .naipe-jugable.del-tanto,
+    .mesa-mano,
+    .mesa-mano[data-turno='true'] {
         transform: none;
+        transition: none;
+    }
+
+    /* La barra se enciende igual, sin dibujarse. */
+    .barra-de-cantos::before {
         transition: none;
     }
 

@@ -178,7 +178,10 @@
                         <span class="whitespace-nowrap text-xs font-semibold sm:text-sm"><span class="sr-only">Categoría</span> {{ $socio['categoria'] }} <span class="sr-only">, título</span> <em>{{ $socio['titulo'] }}</em></span>
                     @endif
                 </p>
-                <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
+                <div class="relative">
+                    <div x-ref="rival" class="mesa-rival flex justify-center gap-1.5 sm:gap-2"></div>
+                    <x-mesa.dicho lugar="rival" />
+                </div>
                 {{-- El mazo, contra el borde del campo para que no parezca una carta más del rival. De acá sale el reparto. --}}
                 <div x-ref="origen" class="mesa-mazo mr-1 justify-self-end sm:mr-5" aria-hidden="true">
                     <x-dorso />
@@ -226,12 +229,16 @@
             </section>
 
             {{--
-                Al cerrar la mano el aviso sigue anunciándose, pero lo que se ve es el cierre de abajo.
-                Mide siempre un renglón: si el texto ocupa dos (un apodo largo), el de más crece hacia
-                arriba, sobre el paño libre, y las bazas no se mueven.
+                Lo que pasa se ve donde pasa (la carta en la baza, el canto en el centro, lo que dijo el rival
+                sobre sus cartas, los puntos en el tanteador) y que te toca lo dicen tu mano y la barra de cantos.
+                El relato entero va solo al lector de pantalla. Arriba de tu mano queda un renglón para lo que no
+                tiene otro lugar: una jugada que no entró, o esperar a que el rival llegue a la mesa. Mide siempre
+                un renglón: si el texto ocupa dos, el de más crece hacia arriba y las bazas no se mueven.
             --}}
-            <p aria-live="polite" class="flex h-6 items-end justify-center text-center text-[0.95rem] font-semibold leading-snug sm:h-[1.55rem] sm:text-lg" :class="{ 'opacity-0': cierre }">
-                <span x-text="aviso">Repartiendo.</span>
+            <p aria-live="polite" class="sr-only" x-text="aviso">Repartiendo.</p>
+            <p class="flex h-6 items-end justify-center text-center text-[0.95rem] font-semibold leading-snug sm:h-[1.55rem] sm:text-lg" aria-hidden="true">
+                <span x-show="notaALaVista && ! cierre" x-cloak x-transition:enter="aparece" x-transition:enter-start="opacity-0"
+                    x-transition:leave="se-va" x-transition:leave-end="opacity-0" x-text="notaALaVista"></span>
             </p>
 
             {{-- En el celular, la marca de mano y el estado del truco van arriba de las cartas; en pantallas anchas, a los costados. --}}
@@ -244,7 +251,7 @@
                     </p>
                     <p class="font-semibold sm:order-3 sm:justify-self-start sm:text-base" :class="{ 'opacity-0': cierre }" x-text="estadoDelTruco"></p>
                 </div>
-                <div x-ref="mano" class="abanico mesa-mano sm:order-2">
+                <div x-ref="mano" class="abanico mesa-mano sm:order-2" :data-turno="teToca">
                     <div></div>
                     <div></div>
                     <div></div>

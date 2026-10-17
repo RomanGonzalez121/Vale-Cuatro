@@ -26,7 +26,8 @@
     ];
 @endphp
 
-<section aria-label="Cantos disponibles" :inert="fin !== null" class="relative z-10 bg-pano-hondo px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+{{-- Cuando te toca, la barra se enciende: un filete de oro se dibuja por su borde de arriba. --}}
+<section aria-label="Cantos disponibles" :inert="fin !== null" :data-turno="teToca" class="barra-de-cantos relative z-10 bg-pano-hondo px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
     {{--
         Solo se muestran los cantos que el motor declara válidos en este momento, en una fila.
         Los botones están todos acá; la mesa decide cuáles se ven y en qué orden. Las dos cosas

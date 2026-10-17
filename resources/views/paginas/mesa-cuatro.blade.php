@@ -186,11 +186,13 @@
             </ol>
 
             {{--
-                Al cerrar la mano el aviso sigue anunciándose, pero lo que se ve es el cierre de abajo.
-                Mide siempre un renglón: si el texto ocupa dos, el de más crece hacia arriba.
+                Como en el mano a mano: lo que pasa se ve donde pasa, el relato entero va solo al lector de pantalla
+                y este renglón queda para lo que no tiene otro lugar. Mide siempre un renglón.
             --}}
-            <p aria-live="polite" class="mt-1 flex h-6 items-end justify-center text-center text-[0.95rem] font-semibold leading-snug sm:h-[1.55rem] sm:text-lg" :class="{ 'opacity-0': cierre }">
-                <span x-text="aviso">Repartiendo.</span>
+            <p aria-live="polite" class="sr-only" x-text="aviso">Repartiendo.</p>
+            <p class="mt-1 flex h-6 items-end justify-center text-center text-[0.95rem] font-semibold leading-snug sm:h-[1.55rem] sm:text-lg" aria-hidden="true">
+                <span x-show="notaALaVista && ! cierre" x-cloak x-transition:enter="aparece" x-transition:enter-start="opacity-0"
+                    x-transition:leave="se-va" x-transition:leave-end="opacity-0" x-text="notaALaVista"></span>
             </p>
 
             {{-- En el celular, la marca de mano y el estado del truco van arriba de las cartas; en pantallas anchas, a los costados. --}}
@@ -203,7 +205,7 @@
                     </p>
                     <p class="font-semibold sm:order-3 sm:justify-self-start sm:text-base" :class="{ 'opacity-0': cierre }" x-text="estadoDelTruco"></p>
                 </div>
-                <div x-ref="mano" class="abanico mesa-mano sm:order-2">
+                <div x-ref="mano" class="abanico mesa-mano sm:order-2" :data-turno="teToca">
                     <div></div>
                     <div></div>
                     <div></div>

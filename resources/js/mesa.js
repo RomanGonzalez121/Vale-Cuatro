@@ -146,6 +146,10 @@ export default (inicial, pedidos) => ({
     puntos: { vos: inicial.tanteo[inicial.asiento], rival: inicial.tanteo[1 - inicial.asiento] },
     // Mientras se cuenta lo que pasó o se espera al servidor, no se puede hacer nada.
     ocupada: true,
+    // Lo último que dijo otro en la mesa (un canto, "quiero"), en una fichita sobre sus cartas.
+    dicho: { lugar: null, texto: '', tono: '' },
+    // Lo que no tiene otro lugar en la mesa (una jugada que no entró): se ve arriba de tu mano.
+    nota: '',
     // Le toca al bot y todavía no jugó: la mesa lo marca junto a su nombre.
     pensando: false,
     // Entre personas: si el WebSocket está conectado, el último evento del que avisó y el reloj de la próxima pregunta.
@@ -651,6 +655,8 @@ export default (inicial, pedidos) => ({
 
         this.ocupada = true;
         this.menu = null;
+        this.nota = '';
+        this.callarDicho();
         this.apagar();
 
         await this.pedir(this.pedidos.accion, accion);
@@ -677,6 +683,7 @@ export default (inicial, pedidos) => ({
         const conTeclado = document.activeElement === this.$refs.repartir;
 
         this.ocupada = true;
+        this.nota = '';
         this.apagar();
         await this.juntar();
         await this.pedir(this.pedidos.repartir, {});
@@ -1345,6 +1352,7 @@ export default (inicial, pedidos) => ({
         }
 
         this.adelantada = null;
+        this.nota = motivo;
         this.pintar(vista, false, motivo);
     },
 
@@ -1370,6 +1378,57 @@ export default (inicial, pedidos) => ({
         }
 
         return 'Jugá una carta o cantá.';
+    },
+
+    /**
+     * Te toca: la mano está en juego, la mesa terminó de contar lo que pasó y tenés algo para hacer.
+     * No se escribe: tu mano sube un poco y la barra de cantos se enciende.
+     */
+    get teToca() {
+        return ! this.fin && ! this.ocupada && ! this.cierre && this.enJuego && this.vista.acciones.length > 0;
+    },
+
+    /**
+     * Lo que se ve arriba de tu mano. Casi siempre nada: lo que pasa se ve donde pasa, y el relato entero
+     * va solo al lector de pantalla. Queda para lo que no tiene otro lugar.
+     */
+    get notaALaVista() {
+        if (this.nota) {
+            return this.nota;
+        }
+
+        return this.pedidos.entrePersonas && this.vista.llegando && this.juegaElOtro ? this.indicacion() : '';
+    },
+
+    /**
+     * Lo que dijo otro, en una fichita sobre sus cartas: la última palabra, como se oye en la mesa.
+     * Entra con un golpe chico y reemplaza a la de antes. Lo tuyo no lleva ficha: lo dijiste vos.
+     */
+    anotarDicho(lugar, texto, tono = '') {
+        if (lugar === 'vos') {
+            this.callarDicho();
+
+            return;
+        }
+
+        this.dicho = { lugar, texto, tono };
+
+        this.$nextTick(() => {
+            const ficha = this.$root.querySelector(`[data-dicho="${lugar}"]`);
+
+            ficha?.animate(
+                this.reducido
+                    ? [{ opacity: 0 }, { opacity: 1 }]
+                    : [{ opacity: 0, transform: 'translateY(35%) scale(0.9)' }, { opacity: 1, transform: 'none' }],
+                { duration: this.reducido ? 150 : 220, easing: LLEGADA },
+            );
+        });
+    },
+
+    callarDicho(lugar = null) {
+        if (lugar === null || this.dicho.lugar === lugar) {
+            this.dicho = { lugar: null, texto: '', tono: '' };
+        }
     },
 
     cantoPendiente() {
@@ -1560,6 +1619,7 @@ export default (inicial, pedidos) => ({
 
             case 'carta':
                 this.aviso = quien === 'vos' ? `Jugaste el ${nombreDe(hecho.carta)}.` : `${rival} jugó el ${nombreDe(hecho.carta)}.`;
+                this.callarDicho(quien);
 
                 if (quien === 'vos' && this.adelantada === hecho.carta) {
                     // Esta carta ya se movió al tocarla: no se vuelve a animar.
@@ -1578,12 +1638,14 @@ export default (inicial, pedidos) => ({
             case 'canto':
                 this.cantar(CANTOS[hecho.canto], TRUCOS.includes(hecho.canto) ? 'copa' : 'oro', quien);
                 this.aviso = `${quien === 'vos' ? 'Cantaste' : `${rival} cantó`} ${CANTOS[hecho.canto].toLowerCase()}.`;
+                this.anotarDicho(quien, CANTOS[hecho.canto], TRUCOS.includes(hecho.canto) ? 'copa' : '');
                 await this.leer(1250);
                 break;
 
             case 'respuesta':
                 this.cantar(hecho.quiere ? 'Quiero' : 'No quiero', hecho.quiere ? 'basto' : 'copa', quien);
                 this.aviso = `${quien === 'vos' ? (hecho.quiere ? 'Quisiste' : 'No quisiste') : `${rival} ${hecho.quiere ? 'quiso' : 'no quiso'}`}.`;
+                this.anotarDicho(quien, hecho.quiere ? 'Quiero' : 'No quiero', hecho.quiere ? 'basto' : 'copa');
                 await this.leer(1100);
                 break;
 
@@ -2338,6 +2400,7 @@ export default (inicial, pedidos) => ({
         const cartas = [...this.$refs.bazas.querySelectorAll('[data-hueco] > *'), ...this.$refs.rival.querySelectorAll('.giro')];
 
         this.cierre = null;
+        this.callarDicho();
         this.aviso = 'Repartiendo.';
         cartas.forEach((carta, i) => this.guardar(carta, i));
 

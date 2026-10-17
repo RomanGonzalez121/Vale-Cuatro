@@ -12,6 +12,7 @@
     <div class="relative">
         <div data-dorsos="{{ $lugar }}" @class(['mano-de-otro', 'mano-acostada' => $acostada]) aria-hidden="true"></div>
         <span class="ficha-de-mano" x-show="vista.mano === {{ $asiento }} && ! cierre" x-cloak aria-hidden="true"><x-icono nombre="mano" class="size-3.5" /></span>
+        <x-mesa.dicho :lugar="$lugar" />
     </div>
     <p class="otro-nombre" :data-habla="(voz.visible && habla === {{ $asiento }}).toString()">
         <span class="relative size-4" aria-hidden="true">
