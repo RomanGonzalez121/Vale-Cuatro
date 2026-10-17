@@ -18,6 +18,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +30,9 @@ use Illuminate\Validation\ValidationException;
  */
 class PerfilController extends Controller
 {
+    /** Cada tipo de pieza y su pestaña de la Colección, en el orden en que están. */
+    private const PESTANAS = ['carta' => 'cartas', 'dorso' => 'dorsos', 'mesa' => 'mesas', 'mazo' => 'mazos', 'anotar' => 'anotar', 'titulo' => 'titulos', 'distintivo' => 'distintivos'];
+
     public function __construct(private readonly Premios $premios, private readonly Historial $historial) {}
 
     public function ver(Request $request): View
@@ -39,8 +43,19 @@ class PerfilController extends Controller
         // Lo de todos los perfiles, armado antes de marcar lo visto: así la libreta sabe qué sellos son nuevos.
         $comun = $this->comun($jugador);
 
-        // Mirar el perfil es ver lo destrabado y los sellos nuevos: el puntito del apodo en el menú se apaga desde acá.
-        $this->premios->marcarVisto($jugador);
+        // Lo que ganó y todavía no vio lleva "Nuevo" en esta visita. La Colección abre en la pieza que pidió el final de
+        // la partida ("Probalo"); si no, en lo que se acaba de elegir; si no, en la primera pestaña con algo nuevo.
+        $nuevas = $this->premios->nuevas($jugador);
+        $abrir = $this->piezaPedida($request);
+        $tipoInicial = match (true) {
+            $abrir !== null => explode(':', $abrir)[0],
+            session('muestra') !== null => session('muestra'),
+            default => collect(self::PESTANAS)->keys()->first(fn (string $tipo) => $this->hayNuevasDe($nuevas, $tipo)) ?? 'carta',
+        };
+
+        // Abrir una pestaña es ver lo nuevo de ella; los sellos de la libreta se ven al entrar. La marca del menú se
+        // apaga cuando no queda nada sin ver.
+        $this->premios->marcarVistas($jugador, $tipoInicial);
         (new Logros)->marcarVistos($jugador);
 
         return view('paginas.perfil', [
@@ -73,7 +88,44 @@ class PerfilController extends Controller
             'loTieneTodo' => Premios::loTieneTodo($jugador),
             // Por qué escalón va: los dorsos de la escalera se ganan ahí.
             'escalon' => (new Progresos)->escalonActual($jugador),
+            'nuevas' => $nuevas,
+            'abrir' => $abrir,
+            'pestanaInicial' => self::PESTANAS[$tipoInicial] ?? 'cartas',
+            // Las pestañas con algo nuevo, salvo la que abre: esa ya se vio.
+            'conNovedad' => array_values(array_map(
+                fn (string $tipo) => self::PESTANAS[$tipo],
+                array_filter(array_keys(self::PESTANAS), fn (string $tipo) => $tipo !== $tipoInicial && $this->hayNuevasDe($nuevas, $tipo)),
+            )),
         ]);
+    }
+
+    /**
+     * Abrió una pestaña de la Colección: lo nuevo de ese tipo ya lo vio.
+     */
+    public function visto(Request $request): Response
+    {
+        $request->validate(['tipo' => ['required', Rule::in(Premios::TIPOS)]]);
+        $this->premios->marcarVistas($request->user(), $request->string('tipo')->toString());
+
+        return response()->noContent();
+    }
+
+    /**
+     * La pieza que pide abrir el link de un premio ("mesa:pano-petroleo"), si es de un tipo que existe.
+     */
+    private function piezaPedida(Request $request): ?string
+    {
+        $pieza = $request->query('pieza');
+
+        return is_string($pieza) && preg_match('/^([a-z]+):[a-z0-9-]{1,40}$/', $pieza, $partes) === 1 && in_array($partes[1], Premios::TIPOS, true) ? $pieza : null;
+    }
+
+    /**
+     * @param  list<string>  $nuevas
+     */
+    private function hayNuevasDe(array $nuevas, string $tipo): bool
+    {
+        return collect($nuevas)->contains(fn (string $pieza) => str_starts_with($pieza, "{$tipo}:"));
     }
 
     /**

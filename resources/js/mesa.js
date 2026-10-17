@@ -111,7 +111,14 @@ const ENTRE_FOSFOROS_DEL_NIVEL = 220;
 const AL_LLENAR_LA_TIRA = 420;
 const POR_NIVEL = 10;
 const ULTIMO_NIVEL = 40;
-const TIPO_DE_PREMIO = { carta: 'Carta', dorso: 'Dorso', mesa: 'Mesa', mazo: 'Mazo', anotar: 'Anotar', distintivo: 'Distintivo' };
+const TIPO_DE_PREMIO = { carta: 'Carta', dorso: 'Dorso', mesa: 'Mesa', mazo: 'Mazo', anotar: 'Anotar', distintivo: 'Distintivo', titulo: 'Título' };
+// Los premios del final: cada carta entra boca abajo y se da vuelta al asentarse (la vuelta es la de .giro, 300 ms).
+// Entre una carta y la siguiente, la entrada entera más un respiro: se ven de a una.
+const ENTRA_EL_PREMIO = 220;
+const ENTRE_PREMIOS = 80;
+// Las animaciones y relojes de los premios que se están mostrando, para apurarlos. Fuera del estado de Alpine: una
+// animación envuelta en su proxy no se deja terminar.
+const premiosEnCurso = { relojes: [], animaciones: [] };
 
 // En la mesa ancha el mazo se pasa a quien reparte antes de repartir: un movimiento sobre la mesa, de 260 ms.
 const PASE_DEL_MAZO = 260;
@@ -182,6 +189,8 @@ export default (inicial, pedidos) => ({
     // Si ya se muestran los sellos nuevos de la libreta, después de contar la tira.
     sellando: false,
     tira: { nivel: 1, lleva: 0, subio: false, contada: false },
+    // Lo que dio la partida, después de los sellos: si ya se ve, si va con palabras (las cartas no llegaron) y adónde lleva el link.
+    premios: { aLaVista: false, enPalabras: false, enlace: null },
     tipoDePremio: TIPO_DE_PREMIO,
     voz: { texto: '', tono: 'copa', quien: 'vos', visible: false },
     tantos: { vos: { ...CALLADO }, rival: { ...CALLADO }, gana: null, resuelto: false },
@@ -1969,7 +1978,12 @@ export default (inicial, pedidos) => ({
      * seco. No traban nada: los botones del final siguen andando. Con movimiento reducido aparecen con un fundido.
      */
     sellarLaLibreta() {
-        if (! this.experiencia?.sellos?.length) {
+        const sellos = this.experiencia?.sellos?.length ?? 0;
+
+        // Lo que dio la partida llega cuando el último sello ya golpeó (se ven hasta tres).
+        setTimeout(() => this.mostrarLosPremios(), sellos === 0 || this.reducido ? 0 : (Math.min(sellos, 3) - 1) * ENTRE_SELLOS + SELLA.duration);
+
+        if (sellos === 0) {
             return;
         }
 
@@ -1998,6 +2012,93 @@ export default (inicial, pedidos) => ({
     },
 
     /**
+     * Después de los sellos, lo que dio la partida: el nivel nuevo y cada pieza ganada como una carta chica que llega boca
+     * abajo con tu dorso y se da vuelta. Las cartas se piden aparte (traen su propio sprite); si no llegan, se dice
+     * con palabras. No traban nada: los botones del final siguen andando.
+     */
+    async mostrarLosPremios() {
+        const experiencia = this.experiencia;
+        const lugar = this.$refs.premios;
+
+        if (! experiencia || ! lugar || (! experiencia.premiosEn && experiencia.nivelAhora === experiencia.nivelAntes)) {
+            return;
+        }
+
+        if (experiencia.premiosEn) {
+            try {
+                const respuesta = await fetch(experiencia.premiosEn, { headers: { Accept: 'text/html' } });
+
+                if (! respuesta.ok) {
+                    throw new Error(`Las cartas de los premios no llegaron (${respuesta.status}).`);
+                }
+
+                lugar.innerHTML = await respuesta.text();
+            } catch (falla) {
+                console.error(falla);
+                this.premios.enPalabras = true;
+            }
+        }
+
+        const cartas = [...lugar.querySelectorAll('[data-premio]')];
+        this.premios.enlace = cartas[0]?.getAttribute('href') ?? null;
+        this.premios.aLaVista = true;
+        this.$nextTick(() => this.darVueltaLosPremios(cartas));
+    },
+
+    /**
+     * Cada carta entra un poco más chica, con un fundido, y se da vuelta al asentarse; la siguiente, cuando la anterior
+     * ya está. Con movimiento reducido aparecen con un fundido y ya dadas vuelta (.giro no gira).
+     */
+    darVueltaLosPremios(cartas) {
+        cartas.forEach((carta, numero) => {
+            const demora = numero * (ENTRA_EL_PREMIO + ENTRE_PREMIOS);
+            const giro = carta.querySelector('.giro');
+
+            premiosEnCurso.animaciones.push(carta.animate(
+                this.reducido ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(0.4rem) scale(0.95)' }, { opacity: 1, transform: 'none' }],
+                { duration: this.reducido ? 200 : ENTRA_EL_PREMIO, delay: demora, easing: this.reducido ? 'ease' : LLEGADA, fill: 'backwards' },
+            ));
+            // La vuelta y su sonido, en el mismo reloj: apurar los corta juntos.
+            premiosEnCurso.relojes.push(setTimeout(() => {
+                giro.dataset.vuelta = 'true';
+                this.sonar('carta');
+            }, this.reducido ? demora : demora + ENTRA_EL_PREMIO - 40));
+        });
+    },
+
+    /**
+     * Tocar los premios mientras llegan: quedan todos a la vista y dados vuelta, ya.
+     */
+    apurarLosPremios() {
+        premiosEnCurso.relojes.forEach(clearTimeout);
+        premiosEnCurso.animaciones.forEach((animacion) => animacion.finish());
+        premiosEnCurso.relojes = [];
+        premiosEnCurso.animaciones = [];
+        this.$refs.premios?.querySelectorAll('.giro').forEach((giro) => {
+            giro.dataset.vuelta = 'true';
+        });
+    },
+
+    /**
+     * El link debajo de los premios: lleva a la Colección, en el primero (o a crear la cuenta). Si no entraron todos,
+     * dice cuántos son.
+     */
+    get textoDeLaColeccion() {
+        const cuantos = this.experiencia?.premios?.length ?? 0;
+
+        // Sin cuenta no hay Colección: el link lleva a crearla, que se queda con lo ganado.
+        if (this.experiencia?.sinCuenta) {
+            return cuantos === 1 ? 'Creá tu cuenta para usarlo' : 'Creá tu cuenta para usarlos';
+        }
+
+        if (cuantos > 3) {
+            return `Ver los ${cuantos} en tu colección`;
+        }
+
+        return cuantos === 1 ? 'Probalo en tu colección' : 'Probalos en tu colección';
+    },
+
+    /**
      * Cuántos fósforos anotó la partida, dicho al lado del nivel.
      */
     get fraseDeFosforos() {
@@ -2018,7 +2119,10 @@ export default (inicial, pedidos) => ({
 
         const anoto = experiencia.ganados === 0 ? 'Esta partida no anotó fósforos.' : `Anotaste ${experiencia.ganados} ${experiencia.ganados === 1 ? 'fósforo' : 'fósforos'}.`;
 
-        return experiencia.nivelAhora > experiencia.nivelAntes ? `${anoto} Subiste al nivel ${experiencia.nivelAhora}.` : `${anoto} Nivel ${experiencia.nivelAhora}.`;
+        const nivel = experiencia.nivelAhora > experiencia.nivelAntes ? `Subiste al nivel ${experiencia.nivelAhora}.` : `Nivel ${experiencia.nivelAhora}.`;
+        const premios = (experiencia.premios ?? []).map((premio) => `${TIPO_DE_PREMIO[premio.tipo].toLowerCase()} ${premio.nombre}`);
+
+        return `${anoto} ${nivel}${premios.length ? ` Ganaste: ${premios.join(', ')}.` : ''}`;
     },
 
     conceptoDe(concepto, vista) {

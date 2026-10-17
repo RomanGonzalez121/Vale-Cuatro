@@ -23,10 +23,19 @@
         <p class="shrink-0 text-sm font-semibold" x-show="(experiencia?.sellos?.length ?? 0) > 3" x-text="`y ${experiencia?.sellos?.length - 3} más en tu libreta`"></p>
     </div>
 
-    <p class="mt-3 leading-snug" x-show="tira.subio && tira.contada" x-cloak x-transition:enter="aparece" x-transition:enter-start="opacity-0">
-        <strong class="font-bold" x-text="`Subiste al nivel ${experiencia?.nivelAhora}:`"></strong>
-        <template x-for="(premio, numero) in experiencia?.premios ?? []" :key="premio.nombre">
-            <span><span x-text="numero > 0 ? ', ' : ' '"></span><span x-text="`${tipoDePremio[premio.tipo].toLowerCase()} ${premio.nombre}${premio.listo ? '' : ' (próximamente)'}`"></span></span>
-        </template>
-    </p>
+    {{--
+        Lo que dio la partida (del nivel, la gira o un logro), después de los sellos: cartas que llegan boca abajo y se
+        dan vuelta de a una (mesa.js, mostrarLosPremios). Entran tres; si hay más, el link las cuenta. Tocar lo apura.
+        Si las cartas no llegan, se dice con palabras.
+    --}}
+    <div class="mt-4" x-show="premios.aLaVista" x-cloak @click="$event.target.closest('a') || apurarLosPremios()">
+        <p class="font-bold leading-snug">
+            <span x-text="experiencia?.nivelAhora > experiencia?.nivelAntes ? `Subiste al nivel ${experiencia?.nivelAhora}` : 'Nuevo en tu colección'"></span><span x-show="premios.enPalabras && experiencia?.premios?.length">:</span>
+            <template x-if="premios.enPalabras">
+                <span class="font-normal" x-text="' ' + (experiencia?.premios ?? []).map((premio) => `${tipoDePremio[premio.tipo].toLowerCase()} ${premio.nombre}`).join(', ')"></span>
+            </template>
+        </p>
+        <div x-ref="premios"></div>
+        <a :href="premios.enlace" class="enlace-nav mt-4 inline-block font-semibold" x-show="premios.enlace" x-text="textoDeLaColeccion"></a>
+    </div>
 </div>

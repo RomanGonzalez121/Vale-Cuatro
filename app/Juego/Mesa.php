@@ -1579,6 +1579,9 @@ final class Mesa
         $partida->plazo_vence_en = null;
         $partida->save();
 
+        // Lo que cada persona tenía antes de esta partida: al final se compara y queda anotado qué piezas le dio.
+        $antes = $this->piezasDe($partida);
+
         // Lo que esta partida le cuenta al ranking se anota acá, con todos sus eventos ya guardados.
         // Si eso fallara, la partida se cierra igual: el ranking se puede rehacer desde los eventos
         // (ranking:recalcular) y una partida no puede quedar abierta por un error de la tabla.
@@ -1622,10 +1625,56 @@ final class Mesa
             }
         }
 
+        $this->anotarPiezasNuevas($partida, $antes);
+
         // Si era de un torneo, las llaves se ponen al día aparte, cuando esto ya quedó guardado: hay que
         // anotar el resultado y jugar las partidas entre bots de la ronda, y eso no puede demorar la jugada.
         if ($partida->torneo_id !== null) {
             AvanzarTorneo::dispatch($partida->torneo_id)->afterCommit();
+        }
+    }
+
+    /**
+     * Las piezas que tiene cada persona de la partida (jugador => "tipo:clave"), para comparar al cerrarla.
+     *
+     * @return array<int, list<string>>
+     */
+    private function piezasDe(Partida $partida): array
+    {
+        $piezas = [];
+
+        foreach (Camino::personas($partida) as $jugador) {
+            try {
+                $piezas[$jugador] = (new Premios)->propias(Jugador::findOrFail($jugador));
+            } catch (Throwable $falla) {
+                report($falla);
+            }
+        }
+
+        return $piezas;
+    }
+
+    /**
+     * Lo que la partida le dio a cada persona (del nivel, la gira o un logro): queda en la partida, para su final, y
+     * en cada jugador como nuevo hasta que lo vea en la Colección.
+     *
+     * @param  array<int, list<string>>  $antes
+     */
+    private function anotarPiezasNuevas(Partida $partida, array $antes): void
+    {
+        $nuevas = [];
+
+        foreach ($antes as $jugador => $piezas) {
+            try {
+                $ganadas = (new Premios)->anotarNuevas(Jugador::findOrFail($jugador), $piezas);
+                $ganadas !== [] && $nuevas[$jugador] = $ganadas;
+            } catch (Throwable $falla) {
+                report($falla);
+            }
+        }
+
+        if ($nuevas !== []) {
+            $partida->forceFill(['premios_nuevos' => $nuevas])->save();
         }
     }
 }

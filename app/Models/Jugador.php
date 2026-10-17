@@ -150,6 +150,7 @@ class Jugador extends Authenticatable
             'experiencia' => Experiencia::class,
             'fosforos' => 'integer',
             'nivel_visto' => 'integer',
+            'piezas_nuevas' => 'array',
             'titulo_femenino' => 'boolean',
             'envidos_cantados' => 'integer',
             'envidos_ganados' => 'integer',

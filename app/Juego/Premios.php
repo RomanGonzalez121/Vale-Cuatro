@@ -4,6 +4,8 @@ namespace App\Juego;
 
 use App\Models\Jugador;
 use App\Models\Resultado;
+use Closure;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Lo que se gana jugando y se ve: "tu carta" de perfil, el dorso de las cartas, la mesa, la forma de anotar,
@@ -28,6 +30,9 @@ final class Premios
     public const CARTA_DE_FABRICA = '4-copa';
 
     public const DORSO_DE_FABRICA = 'fabrica';
+
+    /** Los tipos de pieza, en el orden en que se muestran en el final de la partida: primero lo que se ganó haciendo algo. */
+    public const TIPOS = ['titulo', 'carta', 'dorso', 'mesa', 'mazo', 'anotar', 'distintivo'];
 
     /**
      * Las cartas y en qué nivel se destraba cada una. Va de menor a mayor en el orden del truco.
@@ -475,32 +480,174 @@ final class Premios
     }
 
     /**
-     * Si subió de nivel desde la última vez que miró su perfil y en el medio se destrabó algo ya dibujado:
-     * el menú le marca su apodo con un puntito hasta que lo vea.
+     * Todo lo que ese jugador tiene abierto, como "tipo:clave": lo del nivel, la escalera, la gira y los logros.
+     * Comparar esta lista antes y después de una partida dice qué piezas le dio (Mesa::cerrar), venga de donde venga.
+     *
+     * @return list<string>
      */
-    public function hayNovedad(?Jugador $jugador): bool
+    public function propias(Jugador $jugador): array
     {
-        if ($jugador === null || $jugador->esInvitado()) {
-            return false;
+        $propias = [];
+
+        foreach ($this->camino($jugador) as $paso) {
+            $paso['abierta'] && $propias[] = "carta:{$paso['carta']}";
         }
 
-        $nivel = $this->nivel($jugador);
+        foreach ($this->dorsos($jugador) as $dorso) {
+            $dorso['abierto'] && $propias[] = "dorso:{$dorso['clave']}";
+        }
 
-        $visto = (int) ($jugador->nivel_visto ?? 1);
+        foreach (array_keys(self::POR_NIVEL) as $tipo) {
+            foreach ($this->piezas($tipo, $jugador) as $pieza) {
+                $pieza['abierto'] && $propias[] = "{$tipo}:{$pieza['clave']}";
+            }
+        }
 
-        return $nivel > $visto && array_filter(Camino::entre($visto, $nivel), fn (array $ficha) => $ficha['listo']) !== [];
+        foreach ($this->titulos($jugador) as $titulo) {
+            $titulo['abierto'] && $propias[] = "titulo:{$titulo['clave']}";
+        }
+
+        return $propias;
     }
 
     /**
-     * Ya vio sus premios hasta el nivel en que está.
+     * Anota como nuevas las piezas que ese jugador tiene ahora y no tenía en "antes" (lo que dio propias() antes de
+     * la partida). Devuelve cuáles son, para el final de la partida.
+     *
+     * @param  list<string>  $antes
+     * @return list<string>
      */
-    public function marcarVisto(Jugador $jugador): void
+    public function anotarNuevas(Jugador $jugador, array $antes): array
     {
-        $nivel = $this->nivel($jugador);
+        $ganadas = array_values(array_diff($this->propias($jugador), $antes));
 
-        if ($jugador->nivel_visto !== $nivel) {
-            $jugador->forceFill(['nivel_visto' => $nivel])->save();
+        if ($ganadas !== []) {
+            $this->cambiarLasNuevas($jugador, fn (array $nuevas) => array_values(array_unique([...$nuevas, ...$ganadas])));
         }
+
+        return $ganadas;
+    }
+
+    /**
+     * Las piezas que ganó y todavía no vio en la Colección: llevan "Nuevo" y encienden la marca del menú. Quien juega
+     * sin cuenta también las junta (al crearla se queda con lo ganado), pero sin Colección no se le marcan.
+     *
+     * @return list<string>
+     */
+    public function nuevas(?Jugador $jugador): array
+    {
+        return $jugador === null || $jugador->esInvitado() || self::loTieneTodo($jugador) ? [] : $this->sinVer($jugador);
+    }
+
+    /**
+     * Si ganó algo que todavía no vio: el menú le marca su apodo con un puntito hasta que lo vea.
+     */
+    public function hayNovedad(?Jugador $jugador): bool
+    {
+        return $this->nuevas($jugador) !== [];
+    }
+
+    /**
+     * Ya vio las piezas nuevas de ese tipo: abrió su pestaña de la Colección.
+     */
+    public function marcarVistas(Jugador $jugador, string $tipo): void
+    {
+        $this->cambiarLasNuevas($jugador, fn (array $nuevas) => array_values(array_filter($nuevas, fn (string $pieza) => ! str_starts_with($pieza, "{$tipo}:"))));
+    }
+
+    /**
+     * Lo que tiene anotado como sin ver. Las cuentas de antes de los premios a la vista (M20c) arrancan con lo que les
+     * faltaba ver del camino ya dibujado, como se contaba antes.
+     *
+     * @return list<string>
+     */
+    private function sinVer(Jugador $jugador): array
+    {
+        if ($jugador->piezas_nuevas !== null) {
+            return $jugador->piezas_nuevas;
+        }
+
+        $sinVer = [];
+
+        foreach (Camino::entre((int) ($jugador->nivel_visto ?? 1), $this->nivel($jugador)) as $ficha) {
+            $ficha['listo'] && array_push($sinVer, ...self::clavesDe($ficha['tipo'], $ficha['clave']));
+        }
+
+        return $sinVer;
+    }
+
+    /**
+     * Cambia la lista de lo sin ver con la fila del jugador trabada: cerrar una partida y abrir una pestaña de la
+     * Colección pueden pasar a la vez (dos pestañas del navegador) y ninguno puede pisar lo que anotó el otro.
+     *
+     * @param  Closure(list<string>): list<string>  $cambio
+     */
+    private function cambiarLasNuevas(Jugador $jugador, Closure $cambio): void
+    {
+        DB::transaction(function () use ($jugador, $cambio) {
+            $fila = Jugador::query()->lockForUpdate()->findOrFail($jugador->getKey());
+            $antes = $this->sinVer($fila);
+            $despues = $cambio($antes);
+
+            if ($fila->piezas_nuevas === null || $despues !== $antes) {
+                $fila->forceFill(['piezas_nuevas' => $despues])->save();
+            }
+
+            // El modelo de quien llamó queda al día, sin otra consulta.
+            $jugador->forceFill(['piezas_nuevas' => $despues])->syncOriginalAttribute('piezas_nuevas');
+        });
+    }
+
+    /**
+     * Las piezas que abre una ficha del camino. Los cuatro palos son una sola ficha y abren cuatro distintivos.
+     *
+     * @return list<string>
+     */
+    private static function clavesDe(string $tipo, string $clave): array
+    {
+        if ($tipo === 'distintivo' && $clave === 'cuatro-palos') {
+            return array_map(fn (string $palo) => "distintivo:{$palo}", array_keys(array_filter(self::POR_NIVEL['distintivo'], fn (array $pieza) => ($pieza['ficha'] ?? null) === 'cuatro-palos')));
+        }
+
+        return ["{$tipo}:{$clave}"];
+    }
+
+    /**
+     * Cómo se muestra una pieza ganada en el final de la partida: qué es y cómo se llama. Los cuatro palos, que se
+     * ganan juntos, van como una sola. Una clave que ya no existe (un premio que se sacó del camino) no se muestra.
+     *
+     * @param  list<string>  $piezas  "tipo:clave"
+     * @return list<array{tipo: string, clave: string, nombre: string}>
+     */
+    public static function fichasDe(array $piezas, bool $femenino = false): array
+    {
+        $fichas = [];
+
+        foreach ($piezas as $pieza) {
+            [$tipo, $clave] = explode(':', $pieza, 2);
+            $datos = match ($tipo) {
+                'carta' => collect(Camino::fichas())->first(fn (array $ficha) => $ficha['tipo'] === 'carta' && $ficha['clave'] === $clave),
+                'dorso' => self::DORSOS[$clave] ?? null,
+                'titulo' => isset(Titulos::TODOS[$clave]) ? ['nombre' => Titulos::nombre($clave, $femenino)] : null,
+                default => self::POR_NIVEL[$tipo][$clave] ?? null,
+            };
+
+            if ($datos === null) {
+                continue;
+            }
+
+            // Los cuatro palos: una sola carta, con el primero de ellos y el nombre de la ficha del camino.
+            if (isset($datos['ficha'])) {
+                $datos['nombre'] = collect(Camino::fichas())->firstWhere('clave', $datos['ficha'])['nombre'] ?? $datos['nombre'];
+            }
+
+            $fichas["{$tipo}:".($datos['ficha'] ?? $clave)] ??= ['tipo' => $tipo, 'clave' => $clave, 'nombre' => $datos['nombre']];
+        }
+
+        $orden = array_flip(self::TIPOS);
+        uasort($fichas, fn (array $a, array $b) => $orden[$a['tipo']] <=> $orden[$b['tipo']]);
+
+        return array_values($fichas);
     }
 
     /**

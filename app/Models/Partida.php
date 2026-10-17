@@ -214,6 +214,7 @@ class Partida extends Model
             'anterior_id' => 'integer',
             'torneo_id' => 'integer',
             'fosforos_de_gira' => 'integer',
+            'premios_nuevos' => 'array',
             'escalon' => 'integer',
             'primer_mano' => 'integer',
             'puntos' => 'integer',

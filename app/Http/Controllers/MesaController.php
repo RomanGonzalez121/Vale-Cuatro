@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Avisos\Avisos;
 use App\Juego\Ambiente;
+use App\Juego\Camino;
 use App\Juego\Desafios;
 use App\Juego\Escalera;
 use App\Juego\Gira;
@@ -313,6 +314,22 @@ class MesaController extends Controller
         $this->mesa->llegar($partida, $asiento);
 
         return response()->json(['pasos' => $this->mesa->pasosDesde($partida, (int) $datos['desde'], $asiento)]);
+    }
+
+    /**
+     * Las cartas de los premios que le dio esa partida, para su final. Van aparte y con su propio sprite: traen piezas
+     * (un mazo, un dorso) que la mesa no cargó, y cargarlas en cada mesa por si acaso pesaría siete veces más.
+     * Solo de una partida terminada y de quien la jugó.
+     */
+    public function premios(Request $request, Partida $partida): View
+    {
+        abort_if($partida->estaAbierta() || $partida->asientoDe($request->user()) === null, 404);
+
+        return view('paginas.mesa-premios', [
+            'premios' => Camino::premiosDe($partida, $request->user()),
+            // Sin cuenta no hay Colección: la carta lleva a crearla, que se queda con lo ganado.
+            'sinCuenta' => $request->user()->esInvitado(),
+        ]);
     }
 
     /**

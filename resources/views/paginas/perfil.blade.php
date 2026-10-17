@@ -24,11 +24,12 @@
 
     if ($propio) {
         $dorsoElegido = collect($dorsos)->firstWhere('elegido', true);
-        // Si se acaba de elegir algo con el formulario común, la Colección vuelve abierta en esa pestaña, y si
-        // fue un dorso, la carta del probador arranca dada vuelta: es lo que cambió.
+        // Si se acaba de elegir un dorso con el formulario común, la carta del probador arranca dada vuelta: es lo que
+        // cambió. En qué pestaña abre la Colección lo decide PerfilController::ver.
         $muestra = session('muestra');
         $muestraElDorso = $muestra === 'dorso';
-        $pestanaInicial = ['dorso' => 'dorsos', 'mesa' => 'mesas', 'mazo' => 'mazos', 'anotar' => 'anotar', 'distintivo' => 'distintivos', 'titulo' => 'titulos'][$muestra] ?? 'cartas';
+        // Lo nuevo sin ver (PerfilController::ver): lleva "Nuevo" en esta visita.
+        $esNueva = fn (string $tipo, string $clave) => in_array("{$tipo}:{$clave}", $nuevas ?? [], true);
         $pestanas = ['cartas' => 'Cartas', 'dorsos' => 'Dorsos', 'mesas' => 'Mesas', 'mazos' => 'Mazos', 'anotar' => 'Anotar', 'titulos' => 'Títulos', 'distintivos' => 'Distintivos'];
         $rutas = [
             'carta' => route('perfil.carta'),
@@ -83,7 +84,7 @@
 @endphp
 
 <x-layouts.base :titulo="$propio ? 'Tu perfil' : $jugador->apodo" :descripcion="$propio ? 'Tu mesa, tu nivel, tus números y tu colección en Vale Cuatro.' : 'El perfil de '.$jugador->apodo.' en Vale Cuatro: su carta, su nivel y sus números.'">
-    <div class="pb-16 lg:pb-24" x-data="perfil({ jugador: {{ $jugador->id }}, fosforos: {{ (int) $jugador->fosforos }}, propio: {{ $propio ? 'true' : 'false' }}, prueba: {{ Js::from($prueba ?? null) }}, enUso: {{ Js::from($enUso ?? null) }}, rutas: {{ Js::from($rutas ?? null) }}, pestana: {{ Js::from($pestanaInicial ?? 'cartas') }}, titulos: {{ Js::from(collect($titulos ?? [])->map(fn ($t) => ['clave' => $t['clave'], 'nombre' => $t['nombre'], 'femenino' => $t['femenino']])->values()) }} })">
+    <div class="pb-16 lg:pb-24" x-data="perfil({ jugador: {{ $jugador->id }}, fosforos: {{ (int) $jugador->fosforos }}, propio: {{ $propio ? 'true' : 'false' }}, prueba: {{ Js::from($prueba ?? null) }}, enUso: {{ Js::from($enUso ?? null) }}, rutas: {{ Js::from($rutas ?? null) }}, pestana: {{ Js::from($pestanaInicial ?? 'cartas') }}, novedades: {{ Js::from($conNovedad ?? []) }}, rutaVisto: {{ Js::from($propio ? route('perfil.visto') : null) }}, abrir: {{ Js::from($abrir ?? null) }}, titulos: {{ Js::from(collect($titulos ?? [])->map(fn ($t) => ['clave' => $t['clave'], 'nombre' => $t['nombre'], 'femenino' => $t['femenino']])->values()) }} })">
         {{-- Tu mesa. --}}
         <section aria-labelledby="titulo-perfil" class="perfil-mesa superficie-pano" data-mesa="{{ $propio ? $enUso['mesa'] : 'fabrica' }}" @if ($propio) :data-mesa="enUso.mesa" @endif>
             <div class="pagina perfil-mesa-grilla">
@@ -334,9 +335,9 @@
                                 @foreach ($pestanas as $clave => $nombre)
                                     <button type="button" role="tab" id="pestana-{{ $clave }}" class="separador" aria-controls="piezas-{{ $clave }}"
                                         :aria-selected="(pestana === '{{ $clave }}').toString()" aria-selected="{{ $clave === $pestanaInicial ? 'true' : 'false' }}"
-                                        @click="pestana = '{{ $clave }}'">
+                                        :class="{ 'con-novedad': conNovedad('{{ $clave }}') }" @click="abrirPestana('{{ $clave }}')">
                                         <x-icono :nombre="['cartas' => 'carta', 'dorsos' => 'dorso', 'mesas' => 'mesa', 'mazos' => 'mazo', 'anotar' => 'anotar', 'titulos' => 'titulo', 'distintivos' => 'distintivo'][$clave]" />
-                                        {{ $nombre }}
+                                        {{ $nombre }}<span class="sr-only" x-show="conNovedad('{{ $clave }}')">, con algo nuevo</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -347,13 +348,16 @@
                                     @foreach ($camino as $paso)
                                         @php($nombre = ucfirst($nombreDe($paso['carta'])))
                                         <li>
-                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'carta' && prueba.clave === '{{ $paso['carta'] }}').toString()"
+                                            <button type="button" class="naipe-boton" data-pieza="carta:{{ $paso['carta'] }}" :aria-pressed="(prueba.tipo === 'carta' && prueba.clave === '{{ $paso['carta'] }}').toString()"
                                                 aria-label="{{ $nombre }}{{ $paso['elegida'] ? ', en uso' : ($paso['abierta'] ? ', probar' : ', llega en el nivel '.$paso['nivel']) }}"
                                                 :aria-label="'{{ $nombre }}' + (enUso.carta === '{{ $paso['carta'] }}' ? ', en uso' : '{{ $paso['abierta'] ? ', probar' : ', llega en el nivel '.$paso['nivel'] }}')"
                                                 @click="probar($el, {{ Js::from(['tipo' => 'carta', 'clave' => $paso['carta'], 'nombre' => $nombre, 'abierta' => $paso['abierta'], 'elegida' => $paso['elegida'], 'pide' => 'Llega en el nivel '.$paso['nivel'].'.']) }})">
                                                 <span @class(['block', 'pieza-cerrada' => ! $paso['abierta']])><x-carta :palo="$partes($paso['carta'])['palo']" :numero="$partes($paso['carta'])['numero']" /></span>
                                             </button>
                                             <p class="pieza-rotulo" x-text="enUso.carta === '{{ $paso['carta'] }}' ? 'En uso' : '{{ $paso['abierta'] ? '' : 'Nivel '.$paso['nivel'] }}'"></p>
+                                            @if ($esNueva('carta', $paso['carta']))
+                                                <p class="text-center"><span class="pieza-nuevo">Nuevo</span></p>
+                                            @endif
                                         </li>
                                     @endforeach
                                 </ol>
@@ -363,7 +367,7 @@
                                 <ol id="piezas-dorsos" role="tabpanel" aria-labelledby="pestana-dorsos" class="coleccion-piezas">
                                     @foreach ($dorsos as $opcion)
                                         <li>
-                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'dorso' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                            <button type="button" class="naipe-boton" data-pieza="dorso:{{ $opcion['clave'] }}" :aria-pressed="(prueba.tipo === 'dorso' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
                                                 aria-label="Dorso {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : '') }}"
                                                 :aria-label="'Dorso {{ $opcion['nombre'] }}' + (enUso.dorso === '{{ $opcion['clave'] }}' ? ', en uso' : '{{ $opcion['abierto'] ? ', probar' : '' }}')"
                                                 @click="probar($el, {{ Js::from(['tipo' => 'dorso', 'clave' => $opcion['clave'], 'nombre' => 'Dorso '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'elegida' => $opcion['elegido'], 'pide' => $opcion['pide']]) }})">
@@ -373,6 +377,9 @@
                                                 {{ $opcion['nombre'] }}
                                                 <span class="block font-semibold" x-text="enUso.dorso === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : $opcion['rotulo'] }}'"></span>
                                             </p>
+                                            @if ($esNueva('dorso', $opcion['clave']))
+                                                <p class="text-center"><span class="pieza-nuevo">Nuevo</span></p>
+                                            @endif
                                         </li>
                                     @endforeach
                                     @foreach ($deTipo('dorso') as $ficha)
@@ -389,7 +396,7 @@
                                 <ol id="piezas-mesas" role="tabpanel" aria-labelledby="pestana-mesas" class="coleccion-piezas">
                                     @foreach ($mesas as $opcion)
                                         <li>
-                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'mesa' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                            <button type="button" class="naipe-boton" data-pieza="mesa:{{ $opcion['clave'] }}" :aria-pressed="(prueba.tipo === 'mesa' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
                                                 aria-label="Mesa {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', '.mb_strtolower(rtrim($opcion['pide'], '.'))) }}"
                                                 @click="probar($el, {{ Js::from(['tipo' => 'mesa', 'clave' => $opcion['clave'], 'nombre' => 'Mesa '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => $opcion['pide']]) }})">
                                                 <span @class(['block', 'pieza-cerrada' => ! $opcion['abierto']])><span class="pieza-mesa" data-mesa="{{ $opcion['clave'] }}" aria-hidden="true"></span></span>
@@ -398,6 +405,9 @@
                                                 {{ $opcion['nombre'] }}
                                                 <span class="block font-semibold" x-text="enUso.mesa === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : $opcion['rotulo'] }}'"></span>
                                             </p>
+                                            @if ($esNueva('mesa', $opcion['clave']))
+                                                <p class="text-center"><span class="pieza-nuevo">Nuevo</span></p>
+                                            @endif
                                         </li>
                                     @endforeach
                                     @foreach ($deTipo('mesa') as $ficha)
@@ -413,7 +423,7 @@
                                 <ol id="piezas-mazos" role="tabpanel" aria-labelledby="pestana-mazos" class="coleccion-piezas coleccion-mazos">
                                     @foreach ($mazos as $opcion)
                                         <li>
-                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'mazo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                            <button type="button" class="naipe-boton" data-pieza="mazo:{{ $opcion['clave'] }}" :aria-pressed="(prueba.tipo === 'mazo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
                                                 aria-label="Mazo {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
                                                 @click="probar($el, {{ Js::from(['tipo' => 'mazo', 'clave' => $opcion['clave'], 'nombre' => 'Mazo '.$opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
                                                 <span @class(['pieza-mazo', 'pieza-cerrada' => ! $opcion['abierto']]) aria-hidden="true">
@@ -426,6 +436,9 @@
                                                 {{ $opcion['nombre'] }}
                                                 <span class="block font-semibold" x-text="enUso.mazo === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
                                             </p>
+                                            @if ($esNueva('mazo', $opcion['clave']))
+                                                <p class="text-center"><span class="pieza-nuevo">Nuevo</span></p>
+                                            @endif
                                         </li>
                                     @endforeach
                                     @foreach ($deTipo('mazo') as $ficha)
@@ -442,7 +455,7 @@
                                 <ol id="piezas-anotar" role="tabpanel" aria-labelledby="pestana-anotar" class="coleccion-piezas">
                                     @foreach ($formas as $opcion)
                                         <li>
-                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'anotar' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                            <button type="button" class="naipe-boton" data-pieza="anotar:{{ $opcion['clave'] }}" :aria-pressed="(prueba.tipo === 'anotar' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
                                                 aria-label="Anotar con {{ mb_strtolower($opcion['nombre']) }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', '.mb_strtolower(rtrim($opcion['pide'], '.'))) }}"
                                                 @click="probar($el, {{ Js::from(['tipo' => 'anotar', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => $opcion['pide']]) }})">
                                                 <span @class(['pieza-anotar', 'pieza-cerrada' => ! $opcion['abierto']]) data-anotar="{{ $opcion['clave'] }}"><x-fosforos :grupo="0" :puntos="5" :forma="$opcion['clave']" /></span>
@@ -451,6 +464,9 @@
                                                 {{ $opcion['nombre'] }}
                                                 <span class="block font-semibold" x-text="enUso.anotar === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : $opcion['rotulo'] }}'"></span>
                                             </p>
+                                            @if ($esNueva('anotar', $opcion['clave']))
+                                                <p class="text-center"><span class="pieza-nuevo">Nuevo</span></p>
+                                            @endif
                                         </li>
                                     @endforeach
                                     @foreach ($deTipo('anotar') as $ficha)
@@ -467,9 +483,9 @@
                                 <ol id="piezas-titulos" role="tabpanel" aria-labelledby="pestana-titulos" class="coleccion-titulos">
                                     @foreach ($titulos as $opcion)
                                         <li>
-                                            <button type="button" class="titulo-boton" :aria-pressed="(prueba.tipo === 'titulo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                            <button type="button" class="titulo-boton" data-pieza="titulo:{{ $opcion['clave'] }}" :aria-pressed="(prueba.tipo === 'titulo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
                                                 @click="probar($el, {{ Js::from(['tipo' => 'titulo', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Pide '.$opcion['pide'].'.']) }})">
-                                                <span class="titulo-nombre">{{ $opcion['nombre'] === $opcion['femenino'] ? $opcion['nombre'] : $opcion['nombre'].' o '.mb_strtolower($opcion['femenino']) }}</span>
+                                                <span class="titulo-nombre">{{ $opcion['nombre'] === $opcion['femenino'] ? $opcion['nombre'] : $opcion['nombre'].' o '.mb_strtolower($opcion['femenino']) }}@if ($esNueva('titulo', $opcion['clave'])) <span class="pieza-nuevo">Nuevo</span>@endif</span>
                                                 <span class="titulo-pide">{{ $opcion['pide'] }}</span>
                                                 <span class="titulo-estado" x-text="enUso.titulo === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? 'Ganado' : 'Llevás '.min($opcion['lleva'], $opcion['hace']).' de '.$opcion['hace'] }}'"></span>
                                             </button>
@@ -490,7 +506,7 @@
                                     </li>
                                     @foreach ($distintivos as $opcion)
                                         <li>
-                                            <button type="button" class="naipe-boton" :aria-pressed="(prueba.tipo === 'distintivo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
+                                            <button type="button" class="naipe-boton" data-pieza="distintivo:{{ $opcion['clave'] }}" :aria-pressed="(prueba.tipo === 'distintivo' && prueba.clave === '{{ $opcion['clave'] }}').toString()"
                                                 aria-label="Distintivo {{ $opcion['nombre'] }}{{ $opcion['elegido'] ? ', en uso' : ($opcion['abierto'] ? ', probar' : ', llega en el nivel '.$opcion['nivel']) }}"
                                                 @click="probar($el, {{ Js::from(['tipo' => 'distintivo', 'clave' => $opcion['clave'], 'nombre' => $opcion['nombre'], 'abierta' => $opcion['abierto'], 'pide' => 'Llega en el nivel '.$opcion['nivel'].'.']) }})">
                                                 <span @class(['pieza-distintivo', 'pieza-cerrada' => ! $opcion['abierto']])><x-distintivo :de="$opcion['clave']" class="size-[2.2rem]" /></span>
@@ -499,6 +515,9 @@
                                                 {{ $opcion['nombre'] }}
                                                 <span class="block font-semibold" x-text="enUso.distintivo === '{{ $opcion['clave'] }}' ? 'En uso' : '{{ $opcion['abierto'] ? '' : 'Nivel '.$opcion['nivel'] }}'"></span>
                                             </p>
+                                            @if ($esNueva('distintivo', $opcion['clave']))
+                                                <p class="text-center"><span class="pieza-nuevo">Nuevo</span></p>
+                                            @endif
                                         </li>
                                     @endforeach
                                     @foreach ($deTipo('distintivo') as $ficha)

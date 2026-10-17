@@ -22,6 +22,9 @@ const ANTES_DE_CONTAR = 420;
 const movimientoReducido = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 // Lo que dice el botón de usar, según lo que se está probando.
+// Qué tipo de pieza muestra cada pestaña de la Colección.
+const TIPO_DE_PESTANA = { cartas: 'carta', dorsos: 'dorso', mesas: 'mesa', mazos: 'mazo', anotar: 'anotar', titulos: 'titulo', distintivos: 'distintivo' };
+
 const USAR = {
     carta: 'Usar esta carta',
     dorso: 'Usar este dorso',
@@ -31,9 +34,12 @@ const USAR = {
     distintivo: 'Usar este distintivo',
 };
 
-export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titulos }) => ({
-    // Si se acaba de elegir algo con el formulario común, la Colección vuelve abierta en esa pestaña.
+export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titulos, novedades, rutaVisto, abrir }) => ({
+    // La pestaña abierta: la de la pieza que pidió el final de la partida, la de lo que se acaba de elegir o la primera
+    // con algo nuevo (lo decide el servidor).
     pestana: pestana ?? 'cartas',
+    // Las pestañas con algo nuevo que todavía no se abrieron: llevan la cabeza del fósforo hasta abrirlas.
+    novedades: novedades ?? [],
     prueba,
     rutas: rutas ?? {},
     // Cómo se lee el título que se está probando: Cantor o Cantora. Arranca como lo usa hoy.
@@ -81,6 +87,11 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titu
         if (propio) {
             this.contarLoNuevo();
             this.sellarLoNuevo();
+        }
+
+        // Se llegó desde un premio del final de la partida ("Probalo"): esa pieza se abre en el probador.
+        if (abrir) {
+            this.$nextTick(() => this.$root.querySelector(`[data-pieza="${CSS.escape(abrir)}"]`)?.click());
         }
 
         this.seguirLasSecciones();
@@ -176,6 +187,29 @@ export default ({ jugador, fosforos, propio, prueba, enUso, rutas, pestana, titu
         };
 
         setTimeout(caer, ANTES_DE_CONTAR);
+    },
+
+    conNovedad(pestana) {
+        return this.novedades.includes(pestana);
+    },
+
+    /**
+     * Abre una pestaña de la Colección. Si tenía algo nuevo, ya se vio: se le avisa al servidor (la marca del menú se
+     * apaga cuando no queda nada sin ver). Las piezas siguen diciendo "Nuevo" hasta salir de la página.
+     */
+    abrirPestana(pestana) {
+        this.pestana = pestana;
+
+        if (! this.conNovedad(pestana) || ! rutaVisto) {
+            return;
+        }
+
+        this.novedades = this.novedades.filter((una) => una !== pestana);
+        fetch(rutaVisto, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+            body: JSON.stringify({ tipo: TIPO_DE_PESTANA[pestana] }),
+        }).catch(() => {});
     },
 
     /**

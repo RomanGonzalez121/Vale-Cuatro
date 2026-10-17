@@ -195,11 +195,11 @@ final class Camino
 
     /**
      * Lo que la mesa muestra al final de la partida: los fósforos que anotó, desde dónde y hasta dónde
-     * llegó, y lo que destrabó si subió de nivel. Null si en ese asiento no juega una persona.
+     * llegó, y las piezas que le dio (del nivel, la gira o un logro). Null si en ese asiento no juega una persona.
      *
      * Vale justo al cerrar: el total del jugador ya incluye esta partida y nada más.
      *
-     * @return array{ganados: int, sellos: list<array{logro: string, escalon: int, nombre: string, dibujo: string}>, antes: int, ahora: int, nivelAntes: int, nivelAhora: int, premios: list<array{tipo: string, nombre: string, listo: bool}>}|null
+     * @return array{ganados: int, sellos: list<array{logro: string, escalon: int, nombre: string, dibujo: string}>, antes: int, ahora: int, nivelAntes: int, nivelAhora: int, premios: list<array{tipo: string, clave: string, nombre: string}>, premiosEn: string|null, sinCuenta: bool}|null
      */
     public function resumen(Partida $partida, int $asiento, Mesa $mesa): ?array
     {
@@ -213,7 +213,8 @@ final class Camino
         $sellos = (new Logros)->deLaPartida($partida, $jugador);
         $deLaGira = $asiento === Mesa::JUGADOR ? (int) $partida->fosforos_de_gira : 0;
         $ganados = $this->fosforosEn($partida, $asiento, $mesa) + count($sellos) * Logros::FOSFOROS_POR_SELLO + $deLaGira;
-        $ahora = (int) Jugador::query()->whereKey($jugador)->value('fosforos');
+        $persona = Jugador::query()->findOrFail($jugador);
+        $ahora = (int) $persona->fosforos;
         $antes = max(0, $ahora - $ganados);
 
         return [
@@ -231,11 +232,22 @@ final class Camino
             'ahora' => $ahora,
             'nivelAntes' => self::nivelCon($antes),
             'nivelAhora' => self::nivelCon($ahora),
-            'premios' => array_map(
-                fn (array $ficha) => ['tipo' => $ficha['tipo'], 'nombre' => $ficha['nombre'], 'listo' => $ficha['listo']],
-                self::entre(self::nivelCon($antes), self::nivelCon($ahora)),
-            ),
+            'premios' => $premios = self::premiosDe($partida, $persona),
+            // Las cartas de los premios se dibujan con piezas que la mesa no trajo: se piden aparte, solo si hay.
+            'premiosEn' => $premios === [] ? null : route('mesa.premios', $partida),
+            // Quien juega sin cuenta también gana: para usarlo tiene que crearla (se queda con lo que ganó).
+            'sinCuenta' => $persona->esInvitado(),
         ];
+    }
+
+    /**
+     * Las piezas que le dio esta partida, de donde vengan (el nivel, la gira, un logro), como se muestran en el final.
+     *
+     * @return list<array{tipo: string, clave: string, nombre: string}>
+     */
+    public static function premiosDe(Partida $partida, Jugador $jugador): array
+    {
+        return Premios::fichasDe($partida->premios_nuevos[$jugador->getKey()] ?? [], (bool) $jugador->titulo_femenino);
     }
 
     /**

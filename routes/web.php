@@ -53,6 +53,7 @@ Route::middleware(['auth', 'throttle:240,1,sala'])->where(['codigo' => '[a-z0-9]
 // Lo que se hace desde la mesa: siempre sobre la partida en curso de quien hace el pedido.
 Route::middleware(['auth', 'throttle:240,1,mesa'])->group(function () {
     Route::get('/mesa/estado', [MesaController::class, 'estado'])->name('mesa.estado');
+    Route::get('/mesa/premios/{partida}', [MesaController::class, 'premios'])->whereNumber('partida')->name('mesa.premios');
     Route::post('/mesa/accion', [MesaController::class, 'accion'])->name('mesa.accion');
     Route::post('/mesa/repartir', [MesaController::class, 'repartir'])->name('mesa.repartir');
     Route::post('/mesa/sena', [MesaController::class, 'sena'])->name('mesa.sena');
@@ -139,4 +140,5 @@ Route::middleware('con-cuenta')->group(function () {
     Route::put('/perfil/distintivo', [PerfilController::class, 'elegirDistintivo'])->name('perfil.distintivo');
     Route::put('/perfil/titulo', [PerfilController::class, 'elegirTitulo'])->name('perfil.titulo');
     Route::put('/perfil/experiencia', [PerfilController::class, 'declarar'])->name('perfil.experiencia');
+    Route::post('/perfil/visto', [PerfilController::class, 'visto'])->name('perfil.visto');
 });

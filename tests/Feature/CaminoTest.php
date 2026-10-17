@@ -131,20 +131,27 @@ class CaminoTest extends TestCase
         }
     }
 
-    public function test_el_apodo_se_marca_con_un_premio_nuevo_hasta_que_se_mira_el_perfil(): void
+    public function test_el_apodo_se_marca_con_un_premio_nuevo_hasta_que_se_ve_cada_pestana_con_algo_nuevo(): void
     {
         $jugador = Jugador::factory()->create(['apodo' => 'El Tano']);
         $premios = new Premios;
 
         $this->assertFalse($premios->hayNovedad($jugador->fresh()));
 
-        // Sube al nivel 4, donde está el 5 de espada.
+        // Sube al nivel 4: el 5 de espada, un dorso, tres mesas y un distintivo.
         $jugador->forceFill(['fosforos' => 30])->save();
         $this->assertTrue($premios->hayNovedad($jugador->fresh()));
         $this->actingAs($jugador->fresh())->get('/ranking')->assertSee('Tenés un premio nuevo');
 
-        // Mirar el perfil la apaga.
-        $this->actingAs($jugador->fresh())->get('/perfil')->assertOk();
+        // Mirar el perfil abre la primera pestaña con algo nuevo (las cartas) y apaga solo esa.
+        $this->actingAs($jugador->fresh())->get('/perfil')->assertOk()->assertSee('Nuevo');
+        $this->assertTrue($premios->hayNovedad($jugador->fresh()));
+
+        // Abrir las demás apaga la marca del menú.
+        foreach (['dorso', 'mesa', 'distintivo'] as $tipo) {
+            $this->actingAs($jugador->fresh())->post('/perfil/visto', ['tipo' => $tipo])->assertNoContent();
+        }
+
         $this->assertFalse($premios->hayNovedad($jugador->fresh()));
         $this->actingAs($jugador->fresh())->get('/ranking')->assertDontSee('Tenés un premio nuevo');
     }

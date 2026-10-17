@@ -5452,6 +5452,113 @@ html:has(body.superficie-pano) {
     }
 
     /* En el final de la partida el sello se apoya en un disco de papel: sobre el paño su tinta no se leería. */
+    /*
+     | Los premios del final (M20c): cartas chicas que llegan boca abajo con tu dorso y se dan vuelta de a una
+     | (mesa.js). Debajo, qué es y cómo se llama. Cada una es un link a esa pieza en la Colección.
+     */
+    .premios-nuevos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 0.9rem;
+        margin-top: 0.9rem;
+    }
+
+    .premio {
+        display: block;
+        width: 4.75rem;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .premio-naipe {
+        display: block;
+        width: 3.6rem;
+        transition: transform 200ms var(--ease-llegada);
+    }
+
+    .premio .giro > *,
+    .premio .giro-cara > * {
+        display: block;
+        width: 100%;
+        border-radius: 8% / 5.13%;
+    }
+
+    .premio .giro > svg,
+    .premio .giro-cara > * {
+        box-shadow: 2px 3px 0 var(--color-sombra);
+    }
+
+    /* La cara de lo que no es una carta (una forma de anotar, un distintivo, un título): un naipe del paño hondo. */
+    .premio-cara {
+        display: grid;
+        aspect-ratio: 100 / 156;
+        place-items: center;
+        border: 2px solid var(--color-naipe);
+        background-color: var(--color-pano-hondo);
+        color: var(--color-naipe);
+    }
+
+    .premio-cara .pieza-anotar {
+        padding: 12%;
+    }
+
+    /* Un título no tiene dibujo propio: su cara es un naipe con el nombre, cortado en sílabas si no entra. */
+    .premio-cara-titulo {
+        padding: 0.25rem;
+        border-color: var(--color-tinta);
+        background-color: var(--color-naipe);
+        color: var(--color-tinta);
+        font-size: 0.68rem;
+        font-weight: 900;
+        line-height: 1.1;
+        text-align: center;
+        hyphens: auto;
+    }
+
+    .premio-tipo {
+        display: block;
+        margin-top: 0.55rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .premio-nombre {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    /* Como todo botón del sitio: la carta se levanta e inclina. En el celular, al apretarla. */
+    .premio:active .premio-naipe {
+        transform: translateY(-6%) rotate(-3deg);
+    }
+
+    /* La pestaña de la Colección con algo que todavía no viste lleva la cabeza del fósforo, como el menú. */
+    .separador.con-novedad::after {
+        width: 0.4375rem;
+        height: 0.4375rem;
+        border-radius: 50%;
+        background-color: var(--color-oro);
+        content: '';
+    }
+
+    .separador.con-novedad[aria-selected='true']::after {
+        background-color: var(--color-copa);
+    }
+
+    .pieza-nuevo {
+        display: inline-block;
+        margin-top: 0.15rem;
+        padding: 0.05rem 0.45rem 0.1rem;
+        border-radius: 999px;
+        background-color: #c93327;
+        color: #fbfaf5;
+        font-size: 0.72rem;
+        font-weight: 800;
+    }
+
     .final-sello {
         display: block;
         width: 3rem;
@@ -6730,6 +6837,10 @@ html:has(body.superficie-pano) {
         transform: translateY(-2px);
     }
 
+    .premio:hover .premio-naipe {
+        transform: translateY(-6%) rotate(-3deg);
+    }
+
     /* La pestaña no se despega de la raya: se aclara apenas y el ícono se levanta. */
     .separador:not([aria-selected='true']):hover {
         background-color: color-mix(in srgb, var(--color-naipe) 12%, var(--color-pano-hondo));
@@ -7014,6 +7125,14 @@ html:has(body.superficie-pano) {
     /* La carta no gira: la cara aparece sobre el dorso con un fundido. */
     .giro,
     .giro[data-vuelta='true'] {
+        transform: none;
+        transition: none;
+    }
+
+    /* La carta de un premio no se levanta al pasar el mouse ni al apretarla. */
+    .premio-naipe,
+    .premio:hover .premio-naipe,
+    .premio:active .premio-naipe {
         transform: none;
         transition: none;
     }

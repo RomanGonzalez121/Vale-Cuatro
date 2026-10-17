@@ -2141,3 +2141,15 @@ Es la lámina que aprobó Román, con los datos reales. En escritorio, una guía
 - **Logros nuevos de la gira:** Porteño (12, 24 y 38 paradas; el último escalón da el título), Tres de tres (paradas con los tres fósforos: 5, 15 y 38) y A la primera (jefes vencidos en el primer intento: 1, 3 y 6). Tinta de la hoja: petróleo (`#2f6264`, de noche `#79b3ad`), con el contraste medido en `PaletaTest`.
 - **Los fósforos de la gira al nivel:** cuando un intento mejora el mejor de esa parada, lo que mejora suma al nivel (`Progresos::anotarIntento`) y queda en `partidas.fosforos_de_gira` para que el final de la partida lo cuente con los demás. Así cada fósforo de la gira cuenta una sola vez, y `Camino::recalcular` suma el mejor intento de cada parada sobre lo de las partidas. Se suman a los de ganar o perder la partida, no los reemplazan.
 - Test: `PremiosDeLaGiraTest`.
+
+## M20c: premios a la vista
+
+**Problema.** Al subir de nivel, el final de la partida decía lo ganado en un renglón de texto que se perdía, y el puntito del menú se apagaba con solo entrar al perfil. Los premios de la gira y los títulos que destraba un logro no se anunciaban en ningún lado.
+
+**Elegido.**
+- Al cerrar la partida (`Mesa::cerrar`) se compara lo que cada persona tenía antes y después (`Premios::propias`). La diferencia queda en la partida (`premios_nuevos`, para su final) y en el jugador (`piezas_nuevas`, lo que todavía no vio). Así entran solas todas las fuentes: el nivel, Boedo, la gira y los logros, sin código por cada una.
+- El final muestra cada premio como una carta chica que llega boca abajo y se da vuelta (`<x-premio>`, `.giro`), después de los sellos. Las cartas se piden aparte (`mesa.premios`) con su propio sprite: un mazo o un dorso de premio son piezas que la mesa no cargó, y cargarlas en cada mesa por si acaso pesaba unos 70 KB más (siete veces el sprite de hoy).
+- La Colección marca "Nuevo" en la pieza y la cabeza del fósforo en su pestaña. Abrir la pestaña la da por vista (`perfil.visto`); el menú se apaga cuando no queda nada. La lista se cambia con la fila del jugador trabada, para que cerrar una partida y abrir una pestaña a la vez no se pisen.
+- Quien juega sin cuenta ve sus cartas, y el link lo lleva a crearla (se queda con lo ganado).
+
+**Descartado.** Guardar "lo visto" y compararlo con lo que tiene en cada página: el menú lo pregunta en todas, y armar todo lo que tiene cuesta varias consultas. Un cartel aparte sobre el final: tapa el resultado.
