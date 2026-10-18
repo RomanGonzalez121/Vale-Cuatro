@@ -248,6 +248,49 @@ class GallitoTest extends TestCase
         $this->assertSame(1, $partida->ganador());
     }
 
+    /**
+     * Fijado por Román: con los dos de la pareja iguales y pasados de 30, gana el único que quede más
+     * arriba con 30 o más, aunque sea el tercero que los pasó a los dos.
+     */
+    public function test_si_el_gallo_pasa_a_los_dos_empatados_gana_el(): void
+    {
+        $partida = $this->armada([
+            ['7-oro', '6-oro', '4-basto'],      // 33
+            ['1-espada', '1-basto', '4-copa'],  // el gallo: 4
+            ['5-copa', '6-copa', '12-basto'],   // 31
+        ], mano: 1, tanteo: [28, 29, 28]);
+
+        $partida = $this->jugar($partida, '1 envido', '2 quiero');
+        $this->assertSame([30, 29, 30], $partida->tanteo());
+        $this->assertNull($partida->ganador());
+
+        // El gallo gana el truco con dos bazas y queda solo arriba.
+        $partida = $this->jugar($partida, '1 truco', '0 quiero', '1 1-espada', '2 5-copa', '0 4-basto', '1 1-basto', '2 6-copa', '0 6-oro');
+
+        $this->assertSame([30, 31, 30], $partida->tanteo());
+        $this->assertSame(1, $partida->ganador());
+    }
+
+    /**
+     * Fijado por Román: en ese empate al puntero ya no le falta nada para 30, y la falta vale 1.
+     */
+    public function test_con_dos_empatados_pasados_de_30_la_falta_vale_uno(): void
+    {
+        $partida = $this->jugar($this->armada(self::PARA_EL_ENVIDO, tanteo: [5, 28, 28]), '0 envido', '1 quiero', '0 mazo');
+        $this->assertSame([5, 31, 31], $partida->tanteo());
+
+        // La mano siguiente: el gallo es el asiento 1 y canta falta envido. Lo gana el asiento 0, de la pareja.
+        $partida = $this->jugar($partida->conManos(array_map($this->cartas(...), [
+            ['7-espada', '6-espada', '3-oro'],   // 33
+            ['4-copa', '5-oro', '6-basto'],      // el gallo: 6
+            ['12-oro', '11-basto', '10-copa'],   // 0
+        ])), '1 falta_envido', '0 quiero');
+
+        $this->assertSame(1, $partida->cierre()['anotado'][0]['puntos']);
+        $this->assertSame([6, 31, 32], $partida->tanteo());
+        $this->assertSame(2, $partida->ganador());
+    }
+
     public function test_si_los_dos_de_la_pareja_pasan_iguales_se_sigue_jugando(): void
     {
         $partida = $this->armada(self::PARA_EL_ENVIDO, tanteo: [5, 28, 28]);
