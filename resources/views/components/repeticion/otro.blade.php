@@ -1,4 +1,4 @@
-@props(['lugar', 'nombre'])
+@props(['lugar', 'nombre', 'nombreVivo' => null])
 
 {{--
     Uno de los otros tres en la repetición de una partida de a cuatro: las cartas que le quedan, dibujadas
@@ -13,6 +13,7 @@
     </div>
     <p class="otro-nombre">
         <x-icono nombre="bot" class="size-4" />
-        <span x-text="seFue('{{ $lugar }}') ? 'Al mazo' : @js($nombre)">{{ $nombre }}</span>
+        {{-- "nombreVivo" (una expresión) cambia el nombre según la partida: en el gallito, por su lado. --}}
+        <span x-text="seFue('{{ $lugar }}') ? 'Al mazo' : {{ $nombreVivo ?? \Illuminate\Support\Js::from($nombre) }}">{{ $nombre }}</span>
     </p>
 </div>

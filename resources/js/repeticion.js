@@ -50,9 +50,16 @@ export default ({ resumen, rival, cuadros, manos }) => ({
         return this.cuadros[this.indice];
     },
 
-    /** Si la partida fue de a cuatro: se ve con la mesa en cruz, y el tanteo es de las parejas. */
+    /**
+     * Si la partida fue de a cuatro o un gallito: se ve con la mesa en cruz. De a cuatro el tanteo es de las
+     * parejas; en el gallito cada uno suma aparte, y el lugar del compañero queda vacío.
+     */
     get deACuatro() {
-        return this.resumen.asientos === 4;
+        return this.resumen.asientos > 2;
+    },
+
+    get gallito() {
+        return this.resumen.asientos === 3;
     },
 
     get reproduciendo() {
@@ -94,6 +101,10 @@ export default ({ resumen, rival, cuadros, manos }) => ({
 
     /** Qué cartas del rival se ven: las del bot, todas; las de otra persona, solo las que se vieron en la mesa. */
     get nota() {
+        if (this.gallito) {
+            return 'Jugaste contra dos máquinas. Acá se ven las cartas de los tres.';
+        }
+
         if (this.deACuatro) {
             return 'Jugaste con la máquina de compañero. Acá se ven las cartas de los cuatro.';
         }
@@ -102,9 +113,9 @@ export default ({ resumen, rival, cuadros, manos }) => ({
     },
 
     rotuloDeBaza(numero) {
-        // De a cuatro las bazas son de las parejas, y de cada una se guarda solo de quién fue.
+        // De a cuatro (y en el gallito) las bazas son de los equipos, y de cada una se guarda solo de quién fue.
         if (this.deACuatro) {
-            return { vos: ' nuestra', rival: ' de ellos', parda: ' parda' }[this.estado.bazas[numero]] ?? '';
+            return { vos: this.gallito ? ' de tu lado' : ' nuestra', rival: ' de ellos', parda: ' parda' }[this.estado.bazas[numero]] ?? '';
         }
 
         return { vos: ', tuya', rival: this.resumen.bot ? ', de la máquina' : ', del rival', parda: ', parda' }[this.estado.bazas[numero].ganador] ?? '';

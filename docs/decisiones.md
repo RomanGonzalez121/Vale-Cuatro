@@ -2153,3 +2153,48 @@ Es la lámina que aprobó Román, con los datos reales. En escritorio, una guía
 - Quien juega sin cuenta ve sus cartas, y el link lo lleva a crearla (se queda con lo ganado).
 
 **Descartado.** Guardar "lo visto" y compararlo con lo que tiene en cada página: el menú lo pregunta en todas, y armar todo lo que tiene cuesta varias consultas. Un cartel aparte sobre el final: tapa el resultado.
+
+## M25a. El gallito contra la máquina
+
+Uno contra dos: en cada mano uno es el gallo y juega solo contra los otros dos. Esta parte es contra la máquina; entre personas (M25b) viene después.
+
+### Lo que decidió Román
+
+- **El reglamento** (sección 4 de la memoria del proyecto): tres cartas cada uno; el gallo es siempre el mano y pasa al asiento siguiente en cada mano; la baza la gana la carta más alta y, si es de la pareja, la pareja; envido, flor, contestar y mazo como de a cuatro; cada uno suma aparte y, cuando gana la pareja, los dos suman todo; la falta es lo que le falta al puntero de los tres; gana el primero a 30 y, si los dos de la pareja pasan juntos, el que quedó más arriba.
+- **Dos casos que el reglamento no cubría**, preguntados al armar el motor: con dos empatados pasados de 30 gana el único que quede más arriba, aunque sea el tercero; y en ese empate la falta vale 1.
+- **No cuenta para el ranking** y suma fósforos de nivel como cualquier partida. Un sello en la libreta: "Gallito", ganar uno.
+- **La mesa en T** (elegida mirando una lámina): una máquina a cada costado con las cartas acostadas, el mazo en la esquina, tres tanteadores (en el celular, malas arriba y buenas abajo). Cada máquina se nombra en la mesa por lo que es en la mano ("Gallo", "Con vos", "Pareja") y en el tanteador por su lado.
+- **Sin señas**: la pareja dura una mano y cada uno juega para su propio tanteo.
+- **El Ultra queda como está** (ver abajo).
+
+### El motor
+
+- **Problema:** los equipos estaban fijos (pares contra impares) y el tanteo era de dos. En el gallito los lados cambian en cada mano.
+- **Elegido:** la mesa del motor sabe quién es el gallo de la mano y de ahí saca el equipo de cada asiento (0 el gallo, 1 la pareja). Como el gallo es el mano, rota solo cuando rota el mano. Todo lo de a cuatro (contesta cualquiera, el quiero de la pareja, el compañero que sigue solo, los tantos en ronda, la contraflor) se reusa sin tocarlo.
+- **El tanteo es por jugador** y no tiene tope en 30: hace falta para comparar a los dos de la pareja. La partida la gana el único que queda más arriba con 30 o más.
+- El cierre de cada mano guarda quién fue su gallo: la máquina lo usa para acordarse de las manos anteriores y la mesa para decir quién ganó.
+- **Probado:** un test por regla y gallitos enteros al azar (nunca se traba, gana uno solo, ninguna vista trae cartas ajenas).
+
+### Las máquinas
+
+- Son las de a cuatro, que ahora leen los equipos del motor en vez de contar pares e impares. Con las mismas semillas, el de a cuatro dio exactamente lo mismo que antes.
+- Cuando le cantan a la pareja de la persona, contesta la persona (como de a cuatro).
+- **Medido**, una máquina contra dos del nivel de abajo (por azar ganaría un tercio): Difícil contra dos Intermedio 154 de 300; Ultra contra dos Intermedio 166 de 300. **Entre el Ultra y el Difícil no hay escalón**: 147 y 143 de 450, lo que da el azar.
+- **Se probó** darle al Ultra lo que sabe un buen jugador de a tres: si no querer le da la partida a otro, quiere; si ganar la mano se la da a su compañero (que también es rival), la pierde a propósito. Lo movió poco (150 y 139 de 450). **Román decidió dejarlo así.** La medición (`MedicionDelGallitoTest`) pide solo que Difícil y Ultra le ganen a Intermedio.
+
+### La partida guardada
+
+- Es una partida más, de tres asientos: el historial, la repetición y la administración la encuentran sin código aparte. El ganador es un asiento: la persona gana si es el 0, igual que en los otros modos.
+- La revancha es otro gallito con el primer gallo en el asiento siguiente. Sin series ni torneo.
+- El historial dice los tres tanteos ("30 a 22 y 18"); la repetición usa la mesa en cruz de a cuatro con el lugar del compañero vacío y tres tanteadores.
+
+### La pantalla de modos
+
+- La carta "Gallito" (ícono en T, como la mesa) entra tercera en la mano. Con seis cartas, el ancho de cada carta sale de cuántas hay, así la mano deja siempre aire hasta el panel.
+- Las pestañas se partían en dos renglones en De a cuatro y Torneo (y en el gallito): "Con otras personas" pasó a "Entre personas", que es como el sitio llama a esos modos. En pantallas anchas la letra de las pestañas se ajusta a la ventana.
+
+### Qué se probó y qué no
+
+- **Con tests:** el reglamento, las máquinas en gallitos enteros de los cuatro niveles, la mesa del servidor (cartas ajenas, quién contesta, nivel, sello, ranking), el historial y la repetición.
+- **En un navegador real:** la mesa a 360 x 740, 360 x 640 y 1355 x 638 sin scroll ni errores; Modos en cuatro tamaños; el historial y la repetición.
+- **No se corrió Dusk** antes de subir, por decisión de Román. La prueba de navegador del gallito quedó escrita y sin subir hasta correrla.

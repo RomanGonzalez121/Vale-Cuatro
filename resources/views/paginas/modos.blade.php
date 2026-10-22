@@ -74,7 +74,7 @@
                 <div @class(['modos-mano mt-7 grid items-start gap-y-5 lg:mt-10', $unaSola ? 'grid-cols-[auto_minmax(0,1fr)] gap-x-5 sm:gap-x-9' : 'grid-cols-1 max-sm:gap-y-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-x-9'])>
                     {{-- La mano: una carta por juego que ya se juega. El reparto es el único movimiento que no responde a una acción. --}}
                     <div @class(['mano-juegos', $unaSola ? 'mano-de-una sm:row-span-2' : 'mano-de-varias lg:row-span-2', 'mano-abierta' => $abierta])
-                        style="--ancho-carta: clamp(6.25rem, 27vw, 13rem); --medio: {{ (count($enLaMano) - 1) / 2 }}; --columnas: {{ $columnas }}; --ancho-de-varias: {{ $anchoDeVarias }}">
+                        style="--ancho-carta: clamp(6.25rem, 27vw, 13rem); --medio: {{ (count($enLaMano) - 1) / 2 }}; --cartas: {{ count($enLaMano) }}; --columnas: {{ $columnas }}; --ancho-de-varias: {{ $anchoDeVarias }}">
                         @foreach ($enLaMano as $i => $juego)
                             @if ($unaSola)
                                 <div style="--i: {{ $i }}">
@@ -119,10 +119,10 @@
 
                             <div @class(['modo-opciones', 'col-span-2 sm:col-span-1 sm:col-start-2' => $unaSola, 'lg:col-start-2' => ! $unaSola]) :class="{ 'detalle-entra': eligio }" style="animation-delay: 50ms">
                                 @if (count($juego['rivales']) > 1)
-                                    {{-- En el celular, un punto más chicos: "Contra la máquina" y "Con otra persona" tienen que entrar en un renglón. --}}
-                                    <div class="flex flex-wrap gap-x-7 gap-y-1 max-sm:gap-x-5" role="group" aria-label="Contra quién">
+                                    {{-- En el celular, un punto más chicos: "Contra la máquina" y "Con otra persona" (o "Entre personas") tienen que entrar en un renglón. --}}
+                                    <div class="flex flex-wrap gap-x-7 gap-y-1 max-sm:gap-x-5 lg:gap-x-5" role="group" aria-label="Contra quién">
                                         @foreach ($juego['rivales'] as $rival)
-                                            <button type="button" class="enlace-nav cursor-pointer text-lg font-bold max-sm:text-base"
+                                            <button type="button" class="enlace-nav cursor-pointer text-lg font-bold max-sm:text-base lg:text-[clamp(1rem,1.3vw,1.125rem)]"
                                                 aria-pressed="{{ $rival['clave'] === $rivalElegido[$juego['clave']] ? 'true' : 'false' }}"
                                                 :aria-pressed="(rival['{{ $juego['clave'] }}'] === '{{ $rival['clave'] }}').toString()"
                                                 @click="rival['{{ $juego['clave'] }}'] = '{{ $rival['clave'] }}'">{{ $rival['nombre'] }}</button>
@@ -145,8 +145,9 @@
                                             @php
                                                 $niveles = $rival['niveles'] ?? [];
                                                 $lugares = $rival['lugares'] ?? [];
-                                                // De a cuatro: los bots son tres y no hay series.
-                                                $deACuatro = ($rival['campos']['asientos'] ?? 2) === 4;
+                                                // De a cuatro las máquinas son tres, y en el gallito dos: se dicen en plural. En los dos no hay series.
+                                                $asientos = $rival['campos']['asientos'] ?? 2;
+                                                $deACuatro = $asientos > 2;
                                                 $conSerie = $rival['serie'] ?? true;
                                                 // Con una partida sin terminar, cualquiera de los botones la sigue: es una sola a la vez.
                                                 $sigue = $enCurso !== null;
@@ -169,6 +170,8 @@
                                                         Tenés {{ $enCurso->escalon ? 'un escalón' : 'un desafío' }} sin terminar.
                                                     @elseif ($enCurso->deACuatro())
                                                         Tenés una partida de a cuatro sin terminar.
+                                                    @elseif ($enCurso->esGallito())
+                                                        Tenés un gallito sin terminar.
                                                     @else
                                                         Tenés una partida sin terminar contra {{ $enCurso->nivel_bot->nombre() }}.
                                                     @endif
@@ -203,7 +206,7 @@
                                                 <div class="relative mt-1 max-w-[36ch]">
                                                     @foreach ($niveles as $opcion)
                                                         @if ($deACuatro)
-                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Máquina {{ $opcion->deLaMaquina() }}, en los tres lugares</span>{{ $opcion->detalleDeACuatro() }}</p>
+                                                            <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Máquina {{ $opcion->deLaMaquina() }}, en los {{ $asientos === 4 ? 'tres' : 'dos' }} lugares</span>{{ $opcion->detalleDeACuatro() }}</p>
                                                         @else
                                                             <p class="leading-relaxed" x-show="nivel === {{ $opcion->value }}" @if ($opcion !== $nivelElegido) x-cloak @endif><span class="block font-bold">Máquina {{ $opcion->deLaMaquina() }}</span>{{ $opcion->detalle() }}</p>
                                                         @endif

@@ -86,6 +86,14 @@ class MesaController extends Controller
 
         $conAmbiente = $ambiente === null ? null : ['conMisCosas' => ! Ambiente::seImpone($request->user())];
 
+        // El gallito tiene su mesa: en T, con una máquina a cada costado.
+        if ($partida->esGallito()) {
+            return view('paginas.mesa-gallito', [
+                'vista' => $this->mesa->vista($partida, $asiento),
+                'nivel' => $partida->nivel_bot,
+            ]);
+        }
+
         // De a cuatro la mesa es otra: en cruz, con el compañero enfrente y un rival a cada lado.
         if ($partida->deACuatro()) {
             return view('paginas.mesa-cuatro', [

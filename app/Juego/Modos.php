@@ -44,7 +44,18 @@ final class Modos
                 'resumen' => 'Dos contra dos, con señas entre compañeros.',
                 'rivales' => [
                     ['clave' => 'bots', 'nombre' => 'Con la máquina', 'detalle' => 'La máquina juega de compañero y de rivales.', 'boton' => 'Jugar de a cuatro', 'ruta' => 'jugar', 'icono' => 'de-a-cuatro', 'niveles' => Nivel::cases(), 'campos' => ['asientos' => 4], 'serie' => false],
-                    ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Armás la pareja por link y juegan en vivo.', 'boton' => null],
+                    ['clave' => 'personas', 'nombre' => 'Entre personas', 'detalle' => 'Armás la pareja por link y juegan en vivo.', 'boton' => null],
+                ],
+            ],
+            [
+                'clave' => 'gallito',
+                'nombre' => 'Gallito',
+                'renglones' => ['Gallito'],
+                'icono' => 'gallito',
+                'resumen' => 'Uno contra dos. En cada mano uno juega solo, y cada uno suma aparte.',
+                'rivales' => [
+                    ['clave' => 'bots', 'nombre' => 'Con la máquina', 'detalle' => 'Vos y dos máquinas. El gallo pasa al de al lado en cada mano.', 'boton' => 'Jugar al gallito', 'ruta' => 'jugar', 'icono' => 'gallito', 'niveles' => Nivel::cases(), 'campos' => ['asientos' => 3], 'serie' => false],
+                    ['clave' => 'personas', 'nombre' => 'Entre personas', 'detalle' => 'Se juntan tres por link y juegan en vivo.', 'boton' => null],
                 ],
             ],
             [
@@ -55,7 +66,7 @@ final class Modos
                 'resumen' => 'Cuatro u ocho jugadores, eliminación directa y las llaves a la vista.',
                 'rivales' => [
                     ['clave' => 'bots', 'nombre' => 'Contra la máquina', 'detalle' => 'Jugás tus partidas y las demás se resuelven solas.', 'boton' => 'Armar el torneo', 'ruta' => 'torneo.crear', 'icono' => 'torneo', 'lugares' => Torneos::LUGARES],
-                    ['clave' => 'personas', 'nombre' => 'Con otras personas', 'detalle' => 'Se inscriben por link y se juega en vivo.', 'boton' => null],
+                    ['clave' => 'personas', 'nombre' => 'Entre personas', 'detalle' => 'Se inscriben por link y se juega en vivo.', 'boton' => null],
                 ],
             ],
             [

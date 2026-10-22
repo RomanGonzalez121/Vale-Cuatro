@@ -7,6 +7,7 @@ import { prepararInstalacion } from './instalar';
 import { prepararLogos } from './logo';
 import mesa from './mesa';
 import mesaDeCuatro from './mesa-cuatro';
+import mesaDelGallito from './mesa-gallito';
 import { prepararModo } from './modo';
 import perfil from './perfil';
 import { duelo, tantoDeEnvido } from './reglas';
@@ -45,6 +46,7 @@ Alpine.directive('carta', (elemento, { expression }, { evaluateLater, effect }) 
 
 Alpine.data('mesa', mesa);
 Alpine.data('mesaDeCuatro', mesaDeCuatro);
+Alpine.data('mesaDelGallito', mesaDelGallito);
 Alpine.data('perfil', perfil);
 Alpine.data('avisoFlotante', avisoFlotante);
 Alpine.data('duelo', duelo);

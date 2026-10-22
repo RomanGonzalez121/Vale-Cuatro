@@ -8,6 +8,7 @@ use App\Juego\Estadisticas;
 use App\Juego\Historial;
 use App\Juego\Mesa;
 use App\Juego\Nivel;
+use App\Juego\Repeticion;
 use App\Models\EventoDePartida;
 use App\Models\Jugador;
 use App\Models\Partida;
@@ -91,7 +92,8 @@ class MesaGallitoTest extends TestCase
     {
         $revisados = 0;
 
-        foreach ([3, 4] as $semilla) {
+        // Un gallito al azar puede terminarse en pocas manos: se juegan los que hagan falta para revisar bastante.
+        for ($semilla = 3; $revisados <= 100 && $semilla < 12; $semilla++) {
             $partida = $this->mesa()->abrir(Jugador::factory()->create(), Nivel::Intermedio, asientos: 3);
             $azar = Azar::deSemilla($semilla);
 
@@ -157,6 +159,31 @@ class MesaGallitoTest extends TestCase
         $this->assertFalse($fila['gano'], 'Abandonar es perder.');
         $this->assertSame(['izquierda', 'derecha'], array_keys($fila['otros']));
         $this->assertSame('la máquina, nivel intermedio', $fila['rival']);
+    }
+
+    public function test_la_repeticion_cuenta_el_gallito_con_los_tres_tanteos_y_el_mismo_final(): void
+    {
+        Exceptions::fake();
+        $partida = $this->mesa()->abrir(Jugador::factory()->create(), Nivel::Intermedio, asientos: 3);
+        $azar = Azar::deSemilla(7);
+
+        for ($pedidos = 0; $partida->fresh()->enCurso(); $pedidos++) {
+            $this->assertLessThan(4000, $pedidos);
+            $this->unPedidoAlAzar($partida, $azar);
+        }
+
+        $partida->refresh();
+        $tanteo = $this->mesa()->reconstruir($partida)->tanteo();
+        $relato = $this->app->make(Repeticion::class)->de($partida, Mesa::JUGADOR);
+        $ultimo = end($relato['cuadros']);
+
+        $this->assertSame(['vos' => $tanteo[0], 'rival' => max($tanteo[1], $tanteo[2]), 'izquierda' => $tanteo[2], 'derecha' => $tanteo[1]], $ultimo['tanteo']);
+        $this->assertSame($partida->ganador === 0 ? 'vos' : 'rival', $ultimo['fin']);
+        $this->assertStringContainsString('el gallito', $ultimo['texto']);
+        // El lugar del compañero queda vacío en toda la partida.
+        $this->assertSame([[null, null, null]], array_values(array_unique(array_map(fn (array $cuadro) => $cuadro['otros']['companero'], $relato['cuadros']), SORT_REGULAR)));
+        $this->assertStringStartsWith('Mano 1. ', $relato['cuadros'][$relato['manos'][0]]['texto']);
+        Exceptions::assertNothingReported();
     }
 
     private function mesa(): Mesa

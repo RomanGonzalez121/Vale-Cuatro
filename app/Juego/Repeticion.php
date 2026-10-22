@@ -45,6 +45,11 @@ final class Repeticion
     /** Cómo se nombra a cada uno de los otros tres al empezar una frase, igual que en la mesa. */
     private const NOMBRES = [1 => 'El de la derecha', 2 => 'Tu compañero', 3 => 'El de la izquierda'];
 
+    /** En el gallito: tres asientos, una máquina a cada lado. Se las nombra por su lado, que no cambia. */
+    private const LUGARES_DEL_GALLITO = ['vos', 'derecha', 'izquierda'];
+
+    private const NOMBRES_DEL_GALLITO = [1 => 'La de la derecha', 2 => 'La de la izquierda'];
+
     private const CONCEPTOS = [
         'envido' => 'envido',
         'envido_no_querido' => 'envido no querido',
@@ -64,7 +69,7 @@ final class Repeticion
      */
     public function de(Partida $partida, int $asiento): array
     {
-        if ($partida->deACuatro()) {
+        if ($partida->enEquipos()) {
             return $this->deACuatro($partida);
         }
 
@@ -193,12 +198,37 @@ final class Repeticion
      * En cada cuadro: las cartas que le quedan a cada uno, la baza que se está jugando en cruz (cada carta
      * delante de quien la tiró), de quién fue cada baza ya cerrada y quién se fue al mazo.
      *
+     * El gallito se cuenta con la misma mesa: una máquina a cada lado y el lugar del compañero vacío. Ahí los
+     * equipos cambian en cada mano (el gallo, que es el mano, contra los otros dos) y cada uno suma aparte: el
+     * tanteo trae también "izquierda" y "derecha", y "rival" es el que va más arriba de las dos.
+     *
      * @return array{cuadros: list<array<string, mixed>>, manos: list<int>}
      */
     private function deACuatro(Partida $partida): array
     {
-        $pareja = fn (int $equipo): string => $equipo % 2 === 0 ? 'vos' : 'rival';
-        $sujeto = fn (int $asiento): ?string => self::NOMBRES[$asiento] ?? null;
+        $gallito = $partida->esGallito();
+        $lugares = $gallito ? self::LUGARES_DEL_GALLITO : self::LUGARES;
+        // El gallo de la mano que se está contando: se anota en cada reparto.
+        $gallo = 0;
+        $equipoDe = function (int $asiento) use ($gallito, &$gallo): int {
+            return $gallito ? ($asiento === $gallo ? 0 : 1) : $asiento % 2;
+        };
+        // De qué lado queda un equipo visto desde la persona: el suyo es "vos".
+        $pareja = fn (int $equipo): string => $equipo === $equipoDe(0) ? 'vos' : 'rival';
+        $sujeto = fn (int $asiento): ?string => ($gallito ? self::NOMBRES_DEL_GALLITO : self::NOMBRES)[$asiento] ?? null;
+        $tanteo = fn (array $puntos): array => $gallito
+            ? ['vos' => $puntos[0], 'rival' => max($puntos[1], $puntos[2]), 'izquierda' => $puntos[2], 'derecha' => $puntos[1]]
+            : ['vos' => $puntos[0], 'rival' => $puntos[1]];
+        // En el gallito, quiénes forman un equipo en esta mano, dichos como sujeto: "Vos", "Vos y la de la izquierda", "La de la derecha".
+        $quienes = function (int $equipo) use ($equipoDe, $sujeto): string {
+            $asientos = array_values(array_filter([0, 1, 2], fn (int $asiento) => $equipoDe($asiento) === $equipo));
+
+            return implode(' y ', array_map(
+                fn (int $asiento, int $orden) => $asiento === 0 ? 'Vos' : ($orden === 0 ? $sujeto($asiento) : mb_strtolower($sujeto($asiento))),
+                $asientos,
+                array_keys($asientos),
+            ));
+        };
         $cruzVacia = [...array_fill_keys(self::LUGARES, null), 'ganador' => null];
 
         $cuadro = [
@@ -253,17 +283,23 @@ final class Repeticion
                         $manos[] = count($cuadros);
                         $repartidas = $evento->datos['manos'];
                         $enLaCruz = 0;
+                        $gallo = $hecho['mano'];
                         $cuadro = [
                             ...$cuadro,
                             'mano' => $hecho['numero'],
-                            'tanteo' => ['vos' => $motor->tanteo()[0], 'rival' => $motor->tanteo()[1]],
+                            'tanteo' => $tanteo($motor->tanteo()),
                             'propias' => array_values($repartidas[0]),
-                            // Los otros tres son bots: en la repetición se ven las cartas de todos.
-                            'otros' => ['derecha' => array_values($repartidas[1]), 'companero' => array_values($repartidas[2]), 'izquierda' => array_values($repartidas[3])],
+                            // Los otros son máquinas: en la repetición se ven las cartas de todos.
+                            'otros' => $gallito
+                                ? ['derecha' => array_values($repartidas[1]), 'companero' => [null, null, null], 'izquierda' => array_values($repartidas[2])]
+                                : ['derecha' => array_values($repartidas[1]), 'companero' => array_values($repartidas[2]), 'izquierda' => array_values($repartidas[3])],
                             'cruz' => $cruzVacia,
                             'bazas' => [null, null, null],
                             'enMazo' => [],
-                            'texto' => "Mano {$hecho['numero']}. ".($hecho['mano'] === 0 ? 'Sos mano.' : 'Es mano '.mb_strtolower($sujeto($hecho['mano'])).'.'),
+                            'texto' => "Mano {$hecho['numero']}. ".match (true) {
+                                $gallito => $hecho['mano'] === 0 ? 'Sos el gallo.' : 'El gallo es '.mb_strtolower($sujeto($hecho['mano'])).'.',
+                                default => $hecho['mano'] === 0 ? 'Sos mano.' : 'Es mano '.mb_strtolower($sujeto($hecho['mano'])).'.',
+                            },
                         ];
                         break;
 
@@ -275,14 +311,14 @@ final class Repeticion
                             $enLaCruz = $numero;
                         }
 
-                        $cuadro['cruz'][self::LUGARES[$asiento]] = $hecho['carta'];
-                        $cuadro = $this->sinLaCartaDe($cuadro, $asiento, $hecho['carta']);
+                        $cuadro['cruz'][$lugares[$asiento]] = $hecho['carta'];
+                        $cuadro = $this->sinLaCartaDe($cuadro, $lugares[$asiento], $hecho['carta']);
                         $cuadro['texto'] = ($quien === null ? 'Jugaste' : "{$quien} jugó").' el '.self::nombreDe($hecho['carta']).'.';
                         break;
 
                     case 'baza':
-                        $cuadro['bazas'][$hecho['numero'] - 1] = $hecho['ganador'] === null ? 'parda' : $pareja($hecho['ganador']);
-                        $cuadro['cruz']['ganador'] = $hecho['ganador'] === null ? 'parda' : self::LUGARES[$hecho['ganador']];
+                        $cuadro['bazas'][$hecho['numero'] - 1] = $hecho['ganador'] === null ? 'parda' : $pareja($equipoDe($hecho['ganador']));
+                        $cuadro['cruz']['ganador'] = $hecho['ganador'] === null ? 'parda' : $lugares[$hecho['ganador']];
                         $cuadro['texto'] = match (true) {
                             $hecho['ganador'] === null => 'Parda.',
                             $hecho['ganador'] === 0 => 'Ganaste la baza.',
@@ -292,12 +328,12 @@ final class Repeticion
 
                     case 'canto':
                         $canto = self::CANTOS[$hecho['canto']];
-                        $cuadro['canto'] = ['quien' => $pareja($asiento), 'texto' => $canto, 'tono' => in_array($hecho['canto'], self::DEL_TRUCO, true) ? 'copa' : 'oro'];
+                        $cuadro['canto'] = ['quien' => $pareja($equipoDe($asiento)), 'texto' => $canto, 'tono' => in_array($hecho['canto'], self::DEL_TRUCO, true) ? 'copa' : 'oro'];
                         $cuadro['texto'] = ($quien === null ? 'Cantaste' : "{$quien} cantó").' '.mb_strtolower($canto).'.';
                         break;
 
                     case 'respuesta':
-                        $cuadro['canto'] = ['quien' => $pareja($asiento), 'texto' => $hecho['quiere'] ? 'Quiero' : 'No quiero', 'tono' => $hecho['quiere'] ? 'basto' : 'copa'];
+                        $cuadro['canto'] = ['quien' => $pareja($equipoDe($asiento)), 'texto' => $hecho['quiere'] ? 'Quiero' : 'No quiero', 'tono' => $hecho['quiere'] ? 'basto' : 'copa'];
                         $cuadro['texto'] = match (true) {
                             $quien === null => $hecho['quiere'] ? 'Quisiste.' : 'No quisiste.',
                             default => $quien.($hecho['quiere'] ? ' quiso.' : ' no quiso.'),
@@ -316,28 +352,46 @@ final class Repeticion
                         break;
 
                     case 'puntos':
-                        $cuadro['tanteo'] = ['vos' => $hecho['tanteo'][0], 'rival' => $hecho['tanteo'][1]];
-                        $cuadro['texto'] = ($pareja($hecho['equipo']) === 'vos' ? 'Sumamos' : 'Ellos sumaron')." {$hecho['puntos']}: ".$this->conceptoDe($hecho['concepto'], $motor).'.';
+                        $cuadro['tanteo'] = $tanteo($hecho['tanteo']);
+                        $suman = match (true) {
+                            ! $gallito => $pareja($hecho['equipo']) === 'vos' ? 'Sumamos' : 'Ellos sumaron',
+                            $quienes($hecho['equipo']) === 'Vos' => 'Sumaste',
+                            default => $quienes($hecho['equipo']).($hecho['equipo'] === 1 ? ' sumaron' : ' sumó'),
+                        };
+                        $cuadro['texto'] = "{$suman} {$hecho['puntos']}: ".$this->conceptoDe($hecho['concepto'], $motor).'.';
                         break;
 
                     case 'mazo':
                         // Sus cartas quedan muertas: vuelven al mazo y no se juegan.
-                        $cuadro['enMazo'][] = self::LUGARES[$asiento];
+                        $cuadro['enMazo'][] = $lugares[$asiento];
 
                         if ($asiento === 0) {
                             $cuadro['propias'] = [null, null, null];
                         } else {
-                            $cuadro['otros'][self::LUGARES[$asiento]] = [null, null, null];
+                            $cuadro['otros'][$lugares[$asiento]] = [null, null, null];
                         }
 
                         $cuadro['texto'] = $quien === null ? 'Te fuiste al mazo.' : "{$quien} se fue al mazo.";
                         break;
 
                     case 'mano_cerrada':
-                        $cuadro['texto'] = $pareja($hecho['ganador']) === 'vos' ? 'Ganamos la mano.' : 'Ellos ganaron la mano.';
+                        $cuadro['texto'] = match (true) {
+                            ! $gallito => $pareja($hecho['ganador']) === 'vos' ? 'Ganamos la mano.' : 'Ellos ganaron la mano.',
+                            $quienes($hecho['ganador']) === 'Vos' => 'Ganaste la mano.',
+                            default => $quienes($hecho['ganador']).($hecho['ganador'] === 1 ? ' ganaron' : ' ganó').' la mano.',
+                        };
                         break;
 
                     case 'partida_terminada':
+                        // En el gallito gana una persona: el asiento.
+                        if ($gallito) {
+                            $cuadro['fin'] = $hecho['ganador'] === 0 ? 'vos' : 'rival';
+                            $puntos = $cuadro['tanteo'];
+                            $cuadro['texto'] = ($hecho['ganador'] === 0 ? 'Ganaste el gallito' : $sujeto($hecho['ganador']).' ganó el gallito').", {$puntos['vos']} a {$puntos['izquierda']} y {$puntos['derecha']}.";
+
+                            break;
+                        }
+
                         $cuadro['fin'] = $pareja($hecho['ganador']);
                         $cuadro['texto'] = ($cuadro['fin'] === 'vos' ? 'Ganamos la partida' : 'Ellos ganaron la partida').", {$cuadro['tanteo']['vos']} a {$cuadro['tanteo']['rival']}.";
                         break;
@@ -356,12 +410,11 @@ final class Repeticion
      * @param  array<string, mixed>  $cuadro
      * @return array<string, mixed>
      */
-    private function sinLaCartaDe(array $cuadro, int $asiento, string $carta): array
+    private function sinLaCartaDe(array $cuadro, string $lugar, string $carta): array
     {
-        if ($asiento === 0) {
+        if ($lugar === 'vos') {
             $cuadro['propias'] = array_map(fn (?string $otra) => $otra === $carta ? null : $otra, $cuadro['propias']);
         } else {
-            $lugar = self::LUGARES[$asiento];
             $cuadro['otros'][$lugar] = array_map(fn (?string $otra) => $otra === $carta ? null : $otra, $cuadro['otros'][$lugar]);
         }
 

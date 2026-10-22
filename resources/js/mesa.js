@@ -426,6 +426,14 @@ export default (inicial, pedidos) => ({
     },
 
     /**
+     * Los tanteadores de la mesa con los puntos de una vista: el tuyo y el del rival. El gallito
+     * (mesa-gallito.js) lo cambia, porque ahí cada uno de los tres suma aparte.
+     */
+    puntosDe(vista) {
+        return { vos: vista.tanteo[this.yo], rival: vista.tanteo[this.ellos] };
+    },
+
+    /**
      * De qué lado de la mesa está un asiento.
      */
     quien(asiento) {
@@ -1902,10 +1910,13 @@ export default (inicial, pedidos) => ({
             return;
         }
 
-        this.cuenta = { vos: 0, rival: 0 };
+        // Los tanteadores que haya: dos, o los tres del gallito.
+        const lados = Object.keys(hasta);
+
+        this.cuenta = Object.fromEntries(lados.map((lado) => [lado, 0]));
 
         const caer = () => {
-            const faltan = LADOS.filter((lado) => this.cuenta[lado] < hasta[lado]);
+            const faltan = lados.filter((lado) => this.cuenta[lado] < hasta[lado]);
 
             faltan.forEach((lado) => this.cuenta[lado]++);
 
@@ -2258,7 +2269,7 @@ export default (inicial, pedidos) => ({
     pintar(vista, animar = true, aviso = null) {
         const enJuego = vista.fase === 'jugando';
 
-        this.puntos = { vos: vista.tanteo[this.yo], rival: vista.tanteo[this.ellos] };
+        this.puntos = this.puntosDe(vista);
         this.repartir(vista, animar && enJuego);
 
         if (enJuego) {

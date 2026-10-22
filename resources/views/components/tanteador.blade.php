@@ -1,4 +1,4 @@
-@props(['nombre', 'puntos' => 0, 'modelo' => null, 'rotulos' => false, 'nombreVivo' => null, 'claseNombre' => 'text-sm font-semibold', 'hasta' => 30, 'forma' => 'fabrica'])
+@props(['nombre', 'puntos' => 0, 'modelo' => null, 'rotulos' => false, 'nombreVivo' => null, 'claseNombre' => 'text-sm font-semibold', 'hasta' => 30, 'forma' => 'fabrica', 'partido' => false])
 
 {{--
     Tres grupos de malas y tres de buenas; cada grupo de cinco lo dibuja <x-fosforos>.
@@ -23,10 +23,11 @@
         <span class="sr-only">puntos</span>
     </p>
 
-    <div @class(['mt-2 flex items-center gap-[0.2em]', 'anotador anotador-'.$forma => $forma !== 'fabrica']) aria-hidden="true">
+    {{-- "partido": en el celular, las malas en un renglón y las buenas en otro (el tanteador de tres del gallito). --}}
+    <div @class(['mt-2 flex items-center gap-[0.2em]', 'anotador anotador-'.$forma => $forma !== 'fabrica', 'max-lg:grid max-lg:grid-cols-[repeat(3,auto)] max-lg:justify-start max-lg:gap-y-[0.25em]' => $partido]) aria-hidden="true">
         @for ($g = 0; $g < $grupos; $g++)
             @if ($g === $raya)
-                <span class="mx-[0.25em] h-[1.3em] w-px bg-naipe/45"></span>
+                <span @class(['mx-[0.25em] h-[1.3em] w-px bg-naipe/45', 'max-lg:hidden' => $partido])></span>
             @endif
             <x-fosforos :grupo="$g" :puntos="$puntos" :modelo="$modelo" :forma="$forma" class="size-[1.45em]" />
         @endfor

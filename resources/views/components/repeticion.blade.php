@@ -24,8 +24,9 @@
         {{ $slot }}
 
         <{{ $encabezado }} id="titulo-repeticion" class="text-[2rem] font-black leading-[0.98] tracking-tight sm:text-5xl">
-            <span x-text="resumen.esDesafio ? (resumen.gano ? 'Superado' : 'No salió') : (deACuatro ? (resumen.gano ? 'Ganaron' : 'Perdieron') : (resumen.gano ? 'Ganaste' : 'Perdiste'))"></span>
-            <span class="whitespace-nowrap tabular-nums" x-text="`${resumen.vos} a ${resumen.ellos}`"></span>
+            <span x-text="resumen.esDesafio ? (resumen.gano ? 'Superado' : 'No salió') : (deACuatro && ! gallito ? (resumen.gano ? 'Ganaron' : 'Perdieron') : (resumen.gano ? 'Ganaste' : 'Perdiste'))"></span>
+            {{-- En el gallito, los tres tanteos: el tuyo, el de la izquierda y el de la derecha. --}}
+            <span class="whitespace-nowrap tabular-nums" x-text="resumen.otros ? `${resumen.vos} a ${resumen.otros.izquierda} y ${resumen.otros.derecha}` : `${resumen.vos} a ${resumen.ellos}`"></span>
         </{{ $encabezado }}>
     </header>
 
@@ -40,11 +41,20 @@
     </div>
 
     <div class="repeticion-escena">
-        <div class="mesa repeticion-mesa superficie-pano relative overflow-hidden rounded-xl" :class="{ 'repeticion-de-cuatro': deACuatro }">
-            <div class="relative z-10 grid grid-cols-2 gap-x-4 bg-pano-hondo px-4 py-3 text-[clamp(0.75rem,3.9cqw,1.05rem)]">
+        <div class="mesa repeticion-mesa superficie-pano relative overflow-hidden rounded-xl" :class="{ 'repeticion-de-cuatro': deACuatro, 'repeticion-gallito': gallito }">
+            <div class="relative z-10 grid grid-cols-2 gap-x-4 bg-pano-hondo px-4 py-3 text-[clamp(0.75rem,3.9cqw,1.05rem)]" x-show="! gallito">
                 <x-tanteador nombre="Vos" nombre-vivo="deACuatro ? 'Nosotros' : 'Vos'" :puntos="0" modelo="estado.tanteo.vos" class="min-w-0" />
                 <x-tanteador nombre="Rival" nombre-vivo="deACuatro ? 'Ellos' : (resumen.bot ? 'Máquina' : resumen.rival)" :puntos="0" modelo="estado.tanteo.rival" class="min-w-0" clase-nombre="min-w-0 truncate text-sm font-semibold" />
             </div>
+
+            {{-- En el gallito cada uno suma aparte: tres tanteadores, el tuyo primero. --}}
+            <template x-if="gallito">
+                <div class="tanteo-tres relative z-10 bg-pano-hondo px-4 py-3 text-[clamp(0.6rem,2.7cqw,0.9rem)]">
+                    <x-tanteador nombre="Vos" :puntos="0" modelo="estado.tanteo.vos" class="min-w-0" clase-nombre="text-[0.8rem] font-semibold" partido />
+                    <x-tanteador nombre="Izquierda" :puntos="0" modelo="estado.tanteo.izquierda" class="min-w-0" clase-nombre="text-[0.8rem] font-semibold" partido />
+                    <x-tanteador nombre="Derecha" :puntos="0" modelo="estado.tanteo.derecha" class="min-w-0" clase-nombre="text-[0.8rem] font-semibold" partido />
+                </div>
+            </template>
 
             <template x-if="! deACuatro">
                 <div>
@@ -80,10 +90,10 @@
             --}}
             <template x-if="deACuatro">
                 <div x-ref="bazas" class="repeticion-cruz relative px-3 pb-1 pt-2">
-                    <x-repeticion.otro lugar="companero" nombre="Compañero" />
+                    <div x-show="! gallito"><x-repeticion.otro lugar="companero" nombre="Compañero" /></div>
 
                     <div class="mx-auto mt-1 grid w-full grid-cols-[1fr_auto_1fr] items-center gap-1.5" style="max-width: calc(var(--b) * 6.6)">
-                        <x-repeticion.otro lugar="izquierda" nombre="Rival" />
+                        <x-repeticion.otro lugar="izquierda" nombre="Rival" nombre-vivo="gallito ? 'Izquierda' : 'Rival'" />
 
                         <div class="cruz" aria-hidden="true">
                             @foreach (['izquierda' => 3, 'derecha' => 1, 'companero' => 2, 'vos' => 0] as $lugar => $orden)
@@ -92,7 +102,7 @@
                             @endforeach
                         </div>
 
-                        <x-repeticion.otro lugar="derecha" nombre="Rival" />
+                        <x-repeticion.otro lugar="derecha" nombre="Rival" nombre-vivo="gallito ? 'Derecha' : 'Rival'" />
                     </div>
 
                     <ol class="mt-1 flex justify-center gap-x-5 text-xs font-semibold sm:text-sm">

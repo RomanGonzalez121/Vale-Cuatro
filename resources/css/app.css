@@ -2712,8 +2712,9 @@ html:has(body.superficie-pano) {
     @media (min-width: 64rem) {
         .mano-abierta {
             /* El ancho de una carta sale del ancho de la zona de la mano (el 63,6 % de la sección) y no del de la
-               ventana: la mano entera mide unas 4,6 cartas, y así le queda siempre aire hasta el panel. */
-            --ancho-abierta: min(9.25rem, calc((63.6cqw - 3.5rem) / 4.62));
+               ventana. Cada carta suma tres cuartos de ancho (se pisan) y las puntas, giradas, casi uno más: con
+               cinco cartas la mano mide unas 4,6 y con seis unas 5,4. Así le queda siempre aire hasta el panel. */
+            --ancho-abierta: min(9.25rem, calc((63.6cqw - 3.5rem) / (var(--cartas, 5) * 0.73 + 0.97)));
             display: flex;
             align-items: flex-end;
             gap: 0;
@@ -4014,6 +4015,66 @@ html:has(body.superficie-pano) {
         left: calc(100% - var(--b) * 0.45);
     }
 
+    /*
+     | El gallito, en T: sale de la mesa de a cuatro sin la fila del compañero, así que todo crece. Lo que
+     | queda después de las barras y los renglones fijos se reparte entre la T (2,2 veces --b) y tu mano.
+     | El mazo va en la esquina de arriba, contra el borde del campo, y no ocupa una fila.
+     | Si se agrega una fila a esta mesa hay que ajustar la cuenta.
+     */
+    .mesa-gallito {
+        --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 22.5rem) / 4.75), 19cqw, 7.5rem));
+        --ancho-acostada: calc(var(--b) * 0.6);
+    }
+
+    @media (min-width: 64rem) {
+        .mesa-gallito {
+            --b: max(2.5rem, min(calc((var(--alto, 100dvh) - 17.5rem) / 4.75), 19cqw, 7.5rem));
+            --ancho-acostada: calc(var(--b) * 0.86);
+        }
+    }
+
+    .mesa-gallito .mesa-mazo {
+        position: absolute;
+        top: 0.9rem;
+        right: 1.4rem;
+        width: calc(var(--b) * 0.42);
+    }
+
+    /* La baza del gallito: una carta a cada lado, arriba, y la tuya abajo, en el medio. */
+    .cruz-t {
+        position: relative;
+        flex: none;
+        width: calc(var(--b) * 2.25);
+        height: calc(var(--b) * 2.2);
+        /* Tu carta va inclinada: un respiro abajo para que no pise el renglón de las bazas. */
+        margin-bottom: calc(var(--b) * 0.12);
+    }
+
+    .cruz-t > .cruz-izquierda,
+    .cruz-t > .cruz-derecha {
+        top: 0;
+        margin-top: 0;
+    }
+
+    .cruz-t > .cruz-tanto-izquierda,
+    .cruz-t > .cruz-tanto-derecha {
+        top: calc(var(--b) * 0.78);
+    }
+
+    /* El gallo lleva su nombre en una ficha con borde, como "Sos mano": se ve de un vistazo quién juega solo. */
+    .otro-gallo {
+        outline: 1.5px solid color-mix(in srgb, var(--color-naipe) 45%, transparent);
+        outline-offset: -1.5px;
+        font-weight: 800;
+    }
+
+    /* El tanteador de tres: una columna por jugador. */
+    .tanteo-tres {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0 0.6rem;
+    }
+
     .tanto-ficha {
         padding: 0.06em 0.16em 0.12em;
         border-radius: 0.12em;
@@ -4683,6 +4744,15 @@ html:has(body.superficie-pano) {
         display: flex;
         gap: 0.2rem;
         font-size: clamp(0.72rem, 3.6cqw, 0.95rem);
+    }
+
+    /* En el gallito las máquinas se nombran por su lado: sin el ícono y un punto más chico, "Derecha" entra a 360 px. */
+    .repeticion-gallito .repeticion-otro .otro-nombre {
+        font-size: 0.8rem;
+    }
+
+    .repeticion-gallito .repeticion-otro .otro-nombre > .icono {
+        display: none;
     }
 
     /*

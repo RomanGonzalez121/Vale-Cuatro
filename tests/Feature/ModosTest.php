@@ -143,7 +143,7 @@ class ModosTest extends TestCase
 
     public function test_lo_que_falta_esta_dicho_y_no_se_puede_jugar(): void
     {
-        // Hoy los cinco juegos se juegan con al menos un rival: no queda ninguno en el mazo, y el mazo no se dibuja.
+        // Hoy los seis juegos se juegan con al menos un rival: no queda ninguno en el mazo, y el mazo no se dibuja.
         $this->assertSame([], array_filter(Modos::juegos(), fn (array $juego) => ! Modos::seJuega($juego)));
         $this->get('/modos')->assertOk()->assertDontSee('Todavía en el mazo');
 
@@ -193,12 +193,12 @@ class ModosTest extends TestCase
     {
         $html = (string) $this->view('paginas.modos', ['juegos' => Modos::juegos()]);
 
-        // Los cinco juegos: mano a mano, de a cuatro, torneo, desafíos y escalera.
-        $this->assertSame(5, substr_count($html, 'aria-label="Carta del modo '));
+        // Los seis juegos: mano a mano, de a cuatro, gallito, torneo, desafíos y la gira.
+        $this->assertSame(6, substr_count($html, 'aria-label="Carta del modo '));
         $this->assertSame(1, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="true"/s', $html));
-        $this->assertSame(4, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="false"/s', $html));
-        // Mano a mano contra el bot y el de a cuatro van a /jugar; el torneo, a /torneo.
-        $this->assertSame(2, preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
+        $this->assertSame(5, preg_match_all('/class="naipe-juego"[^>]*aria-pressed="false"/s', $html));
+        // Mano a mano contra el bot, el de a cuatro y el gallito van a /jugar; el torneo, a /torneo.
+        $this->assertSame(3, preg_match_all('/<form[^>]*action="[^"]*\/jugar"/', $html));
         $this->assertSame(1, preg_match_all('/<form[^>]*action="[^"]*\/torneo"/', $html));
     }
 
