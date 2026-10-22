@@ -6,9 +6,11 @@ use App\Motor\Azar;
 use App\Motor\Bazas;
 use App\Motor\Carta;
 use App\Motor\Mazo;
+use App\Motor\Mesa;
 
 /**
- * Las cuentas que saca el bot Difícil en el truco de a cuatro: con qué probabilidad gana la mano su pareja.
+ * Las cuentas que saca el bot Difícil en el truco de a cuatro y en el gallito: con qué probabilidad gana
+ * la mano su equipo (en el gallito, el gallo solo o la pareja).
  *
  * No ve las cartas de nadie, así que las imagina: reparte muchas veces, al azar, las cartas que todavía
  * no vio entre los otros tres (respetando lo que su compañero le dijo con las señas), juega cada reparto
@@ -59,6 +61,7 @@ final class CuentasDePareja
     private function contar(LecturaDePareja $lectura, array $opciones, bool $leeAlRival): array
     {
         $vista = $lectura->vista;
+        $mesa = $lectura->mesa;
         $porCarta = self::jerarquias();
         $propias = array_map(fn (string $carta) => $porCarta[$carta], $vista['misCartas']);
         sort($propias);
@@ -78,7 +81,7 @@ final class CuentasDePareja
             }
 
             if ($baza['cerrada']) {
-                $resultados[] = $baza['ganador'] === null ? null : $baza['ganador'] % 2;
+                $resultados[] = $baza['ganador'] === null ? null : $mesa->equipoDe($baza['ganador']);
             }
         }
 
@@ -99,7 +102,7 @@ final class CuentasDePareja
             $total += $peso;
 
             foreach ($opciones as $cual => $tira) {
-                if ($this->jugarHastaElFinal($vista, $manos, $resultados, $enJuego, $abre, $lectura->asiento, $tira) === $lectura->equipo) {
+                if ($this->jugarHastaElFinal($vista, $mesa, $manos, $resultados, $enJuego, $abre, $lectura->asiento, $tira) === $lectura->equipo) {
                     $ganadas[$cual] += $peso;
                 }
             }
@@ -207,7 +210,7 @@ final class CuentasDePareja
         $altas = 0;
 
         foreach ($manos as $asiento => $mano) {
-            if ($asiento % 2 !== $lectura->equipo) {
+            if ($lectura->mesa->equipoDe($asiento) !== $lectura->equipo) {
                 foreach ($mano as $carta) {
                     $altas += (int) ($carta >= 10);
                 }
@@ -228,10 +231,10 @@ final class CuentasDePareja
      * @param  list<int|null>  $resultados  El equipo que ganó cada baza cerrada.
      * @param  list<array{0: int, 1: int}>  $enJuego  Lo que ya cayó en la baza abierta.
      */
-    private function jugarHastaElFinal(array $vista, array $manos, array $resultados, array $enJuego, int $abre, int $yo, ?int $tira): int
+    private function jugarHastaElFinal(array $vista, Mesa $mesa, array $manos, array $resultados, array $enJuego, int $abre, int $yo, ?int $tira): int
     {
         $asientos = $vista['asientos'];
-        $equipoMano = $vista['mano'] % 2;
+        $equipoMano = $mesa->equipoDe($vista['mano']);
 
         // Tres bazas como mucho; el tope es por si algo estuviera mal y no cerrara nunca.
         for ($vueltas = 0; $vueltas < 4; $vueltas++) {
@@ -252,7 +255,7 @@ final class CuentasDePareja
 
                 $carta = $asiento === $yo && $tira !== null && in_array($tira, $manos[$asiento], true)
                     ? $tira
-                    : $this->laQueTiraria($asiento, $manos[$asiento], $enJuego);
+                    : $this->laQueTiraria($mesa, $asiento, $manos[$asiento], $enJuego);
 
                 // Lo que se pidió probar se prueba una sola vez: después juega como cualquiera.
                 if ($asiento === $yo) {
@@ -269,8 +272,8 @@ final class CuentasDePareja
                 return Bazas::ganadorDeMano([...$resultados, null, null, null], $equipoMano) ?? $equipoMano;
             }
 
-            $gana = $this->quienGana($enJuego);
-            $resultados[] = $gana === null ? null : $gana % 2;
+            $gana = $this->quienGana($mesa, $enJuego);
+            $resultados[] = $gana === null ? null : $mesa->equipoDe($gana);
             // Abre la siguiente quien ganó; después de una parda, el mano.
             $abre = $gana ?? $vista['mano'];
             $enJuego = [];
@@ -283,15 +286,15 @@ final class CuentasDePareja
      * @param  list<int>  $mano  De la más baja a la más alta.
      * @param  list<array{0: int, 1: int}>  $enJuego
      */
-    private function laQueTiraria(int $asiento, array $mano, array $enJuego): int
+    private function laQueTiraria(Mesa $mesa, int $asiento, array $mano, array $enJuego): int
     {
         if ($enJuego === []) {
             return $mano[count($mano) - 1];
         }
 
-        $gana = $this->quienGana($enJuego);
+        $gana = $this->quienGana($mesa, $enJuego);
 
-        if ($gana !== null && $gana % 2 === $asiento % 2) {
+        if ($gana !== null && $mesa->equipoDe($gana) === $mesa->equipoDe($asiento)) {
             return $mano[0];
         }
 
@@ -311,7 +314,7 @@ final class CuentasDePareja
      *
      * @param  list<array{0: int, 1: int}>  $enJuego
      */
-    private function quienGana(array $enJuego): ?int
+    private function quienGana(Mesa $mesa, array $enJuego): ?int
     {
         $masAlta = -1;
         $puntero = null;
@@ -320,7 +323,7 @@ final class CuentasDePareja
         foreach ($enJuego as [$asiento, $carta]) {
             if ($carta > $masAlta) {
                 [$masAlta, $puntero, $empatan] = [$carta, $asiento, false];
-            } elseif ($carta === $masAlta && $asiento % 2 !== $puntero % 2) {
+            } elseif ($carta === $masAlta && $mesa->equipoDe($asiento) !== $mesa->equipoDe($puntero)) {
                 $empatan = true;
             }
         }

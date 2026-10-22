@@ -82,21 +82,25 @@ final class Historial
     /**
      * Lo que la lista dice de una partida, visto desde un asiento.
      *
-     * @return array{id: int, asientos: int, gano: bool, vos: int, ellos: int, hasta: int, rival: string, bot: bool, torneo: ?string, practica: ?string, esDesafio: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
+     * @return array{id: int, asientos: int, gano: bool, vos: int, ellos: int, otros: ?array{izquierda: int, derecha: int}, hasta: int, rival: string, bot: bool, torneo: ?string, practica: ?string, esDesafio: bool, cierre: ?string, cuando: Carbon, dia: string, hora: string, manos: int, minutos: int, serie: ?array{id: int, numero: int, vos: int, ellos: int, sigue: bool, gano: ?bool, completa: bool}, revancha: bool}
      */
     public function resumen(Partida $partida, int $asiento): array
     {
         $estado = $this->mesa->reconstruir($partida)->aArray();
         $empezo = $partida->eventos()->min('creado_en');
         $cuando = $partida->terminada_en ?? $partida->updated_at;
+        $tanteo = $estado['tanteo'];
 
         return [
             'id' => $partida->getKey(),
             // De a cuatro, "vos" y "ellos" son las parejas: la de la persona y la de los dos rivales.
             'asientos' => $partida->asientos,
             'gano' => $partida->ganador === $asiento,
-            'vos' => $estado['tanteo'][$asiento],
-            'ellos' => $estado['tanteo'][1 - $asiento],
+            'vos' => $tanteo[$asiento],
+            // En el gallito cada uno suma aparte: "ellos" es el que quedó más arriba de las dos máquinas, y
+            // "otros" los puntos de cada una por su lado (la de tu derecha juega después de vos).
+            'ellos' => $partida->esGallito() ? max($tanteo[1], $tanteo[2]) : $tanteo[1 - $asiento],
+            'otros' => $partida->esGallito() ? ['izquierda' => $tanteo[2], 'derecha' => $tanteo[1]] : null,
             // A cuántos puntos se jugó: 30, o los 15 de una partida de torneo.
             'hasta' => $partida->puntos,
             'rival' => $this->rival($partida, $asiento),
@@ -161,7 +165,7 @@ final class Historial
      */
     private function rival(Partida $partida, int $asiento): string
     {
-        if ($partida->deACuatro()) {
+        if ($partida->enEquipos()) {
             return 'la máquina, nivel '.mb_strtolower($partida->nivel_bot->nombre());
         }
 

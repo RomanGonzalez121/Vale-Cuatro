@@ -187,7 +187,8 @@ final class Panel
     {
         try {
             $motor = $this->mesa->reconstruir($partida);
-            $tanteo = [$motor->tanteo()[Mesa::JUGADOR], $motor->tanteo()[Mesa::BOT]];
+            // En el gallito cada uno suma aparte: contra la persona va la máquina que va más arriba.
+            $tanteo = [$motor->tanteo()[Mesa::JUGADOR], max(array_slice($motor->tanteo(), 1))];
             $mano = (int) $motor->aArray()['numeroDeMano'];
         } catch (Throwable $falla) {
             report($falla);
@@ -200,7 +201,11 @@ final class Panel
             'otro' => $partida->entre_personas
                 ? ($partida->invitado?->apodo ?? 'Alguien que ya no está')
                 // De a cuatro, la persona juega con un bot contra otros dos: el tanteo es de las parejas.
-                : ($partida->deACuatro() ? 'La máquina de a cuatro, nivel '.mb_strtolower($partida->nivel_bot->nombre()) : 'Máquina '.$partida->nivel_bot->deLaMaquina()),
+                : match (true) {
+                    $partida->deACuatro() => 'La máquina de a cuatro, nivel '.mb_strtolower($partida->nivel_bot->nombre()),
+                    $partida->esGallito() => 'La máquina del gallito, nivel '.mb_strtolower($partida->nivel_bot->nombre()),
+                    default => 'Máquina '.$partida->nivel_bot->deLaMaquina(),
+                },
             'contraElBot' => ! $partida->entre_personas,
             'enSerie' => $partida->serie_id !== null,
             'tanteo' => $tanteo,

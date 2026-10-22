@@ -1407,7 +1407,7 @@ final class Mesa
                 ? Desafios::azar((string) $partida->desafio, (int) $partida->eventos()->max('numero') + 1)
                 : Azar::seguro();
 
-            $bot = $this->botFijo ?? ($partida->deACuatro()
+            $bot = $this->botFijo ?? ($partida->enEquipos()
                 ? $partida->nivel_bot->botDePareja($azar)
                 : $partida->nivel_bot->bot($azar));
 

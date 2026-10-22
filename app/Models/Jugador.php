@@ -176,6 +176,7 @@ class Jugador extends Authenticatable
             'dificil_ganadas' => 'integer',
             'ultra_ganadas' => 'integer',
             'de_a_cuatro_ganadas' => 'integer',
+            'gallitos_ganados' => 'integer',
             'senas_hechas' => 'integer',
             'revanchas_ganadas' => 'integer',
             'tres_pardas' => 'integer',

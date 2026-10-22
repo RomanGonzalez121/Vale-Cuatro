@@ -6,10 +6,12 @@ use App\Motor\Accion;
 use App\Motor\Azar;
 use App\Motor\Carta;
 use App\Motor\Envido;
+use App\Motor\Mesa;
 use App\Motor\TipoDeAccion;
 
 /**
- * El bot del truco de a cuatro, de Intermedio para arriba (el Fácil tira cualquier cosa, también de a cuatro).
+ * El bot del truco de a cuatro y del gallito, de Intermedio para arriba (el Fácil tira cualquier cosa, también acá).
+ * En el gallito juega igual: cuando es el gallo no tiene compañero, y en la pareja juega para los dos.
  *
  * Juega en pareja: no le pisa la carta al compañero, sale bajo si el compañero le señaló una brava,
  * y para cantar o querer cuenta con lo que le dijeron las señas. Decide con la vista de su asiento y
@@ -73,7 +75,8 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
         $this->trucosNoQueridos = 0;
 
         foreach ($manos as $mano) {
-            $equipo = $mano['asiento'] % 2;
+            // En el gallito su equipo dependió de quién fue el gallo en esa mano.
+            $equipo = (new Mesa($mano['asientos'], $mano['cierre']['gallo'] ?? 0))->equipoDe($mano['asiento']);
 
             if (($mano['truco']['nivel'] ?? 0) > 0 && ($mano['truco']['canto'] ?? null) === $equipo) {
                 $this->trucosCantados++;

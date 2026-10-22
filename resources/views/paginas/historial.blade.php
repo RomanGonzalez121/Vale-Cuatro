@@ -88,7 +88,8 @@
                                 {{-- De a cuatro se gana y se pierde de a dos: vos y tu compañero. --}}
                                 @php($deACuatro = $partida['asientos'] === 4)
                                 <span @class(['block text-sm font-bold', 'text-gana' => $partida['gano'], 'text-pierde' => ! $partida['gano']])>{{ $partida['esDesafio'] ? ($partida['gano'] ? 'Superado' : 'No salió') : ($deACuatro ? ($partida['gano'] ? 'Ganaron' : 'Perdieron') : ($partida['gano'] ? 'Ganaste' : 'Perdiste')) }}</span>
-                                <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['ellos'] }}</span>
+                                {{-- En el gallito cada uno suma aparte: los tres tanteos, el tuyo primero. --}}
+                                <span class="mt-1.5 block text-3xl font-black tabular-nums tracking-tight">{{ $partida['vos'] }} a {{ $partida['otros'] ? $partida['otros']['izquierda'].' y '.$partida['otros']['derecha'] : $partida['ellos'] }}</span>
                             </p>
                             <p class="min-w-0 leading-snug max-sm:order-3 max-sm:col-span-2">
                                 <span class="block text-lg font-bold [overflow-wrap:anywhere] max-sm:text-base">Contra {{ $partida['rival'] }}</span>
@@ -102,6 +103,8 @@
                                         {{ $partida['practica'] }}.
                                     @elseif ($deACuatro)
                                         De a cuatro, con la máquina de compañero{{ $partida['revancha'] ? ', revancha' : '' }}.
+                                    @elseif ($partida['otros'])
+                                        Gallito, uno contra dos{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @else
                                         Mano a mano{{ $partida['revancha'] ? ', revancha' : '' }}.
                                     @endif
@@ -113,7 +116,12 @@
                             </p>
                             <div class="flex w-fit gap-5 rounded-lg bg-pano-hondo px-3.5 py-2.5 text-[0.66rem] max-sm:hidden sm:col-span-2 lg:col-span-1">
                                 <x-tanteador :nombre="$deACuatro ? 'Nosotros' : 'Vos'" :puntos="$partida['vos']" :hasta="$partida['hasta']" />
-                                <x-tanteador :nombre="$deACuatro ? 'Ellos' : 'Rival'" :puntos="$partida['ellos']" :hasta="$partida['hasta']" />
+                                @if ($partida['otros'])
+                                    <x-tanteador nombre="Izquierda" :puntos="$partida['otros']['izquierda']" :hasta="$partida['hasta']" />
+                                    <x-tanteador nombre="Derecha" :puntos="$partida['otros']['derecha']" :hasta="$partida['hasta']" />
+                                @else
+                                    <x-tanteador :nombre="$deACuatro ? 'Ellos' : 'Rival'" :puntos="$partida['ellos']" :hasta="$partida['hasta']" />
+                                @endif
                             </div>
                             {{-- Un link a la página de la repetición. Con JavaScript se abre en un cartel acá mismo (historial.js). --}}
                             <a href="{{ route('historial.ver', $partida['id']) }}" data-cuadros="{{ route('historial.cuadros', $partida['id']) }}"

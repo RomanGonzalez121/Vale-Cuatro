@@ -151,6 +151,22 @@ class Partida extends Model
         return $this->asientos === 4;
     }
 
+    /**
+     * Si es un gallito: tres jugadores, el gallo contra los otros dos, y el gallo cambia en cada mano.
+     */
+    public function esGallito(): bool
+    {
+        return $this->asientos === 3;
+    }
+
+    /**
+     * Si se juega por equipos de más de uno: de a cuatro o el gallito. Ahí las máquinas juegan en pareja.
+     */
+    public function enEquipos(): bool
+    {
+        return $this->deACuatro() || $this->esGallito();
+    }
+
     public function esperando(): bool
     {
         return $this->estado === self::ESPERANDO;

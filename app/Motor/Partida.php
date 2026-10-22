@@ -940,6 +940,11 @@ final class Partida
             'anotado' => $this->anotado,
             'mostradas' => $this->cartasQueSeMuestran(),
         ];
+
+        // En el gallito los equipos cambian en cada mano: el cierre dice quién fue el gallo de la que se cerró.
+        if ($this->mesa->esGallito()) {
+            $this->cierre['gallo'] = $this->mano;
+        }
         $this->turno = null;
         $this->hechos[] = ['tipo' => 'mano_cerrada', 'ganador' => $equipo, 'motivo' => $motivo];
 

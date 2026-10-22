@@ -42,6 +42,11 @@ final class Estadisticas
             return false;
         }
 
+        // Ni el gallito: uno contra dos no se compara con un mano a mano (decidido por Román).
+        if ($partida->esGallito()) {
+            return false;
+        }
+
         return $partida->entre_personas || ($partida->nivel_bot?->value ?? 0) >= self::DESDE_EL_NIVEL->value;
     }
 

@@ -49,6 +49,8 @@ final class Iconos
         // Los juegos: dos fósforos (uno por jugador), cuatro en la mesa, las llaves del torneo, un fósforo de bandera y los escalones.
         'mano-a-mano' => ['M8 20.5V8.4M16 20.5V8.4', [[8, 5.9, 2.4], [16, 5.9, 2.4]]],
         'de-a-cuatro' => ['M12 6.6V17.4M6.6 12H17.4', [[12, 4.3, 2.2], [12, 19.7, 2.2], [4.3, 12, 2.2], [19.7, 12, 2.2]]],
+        // El gallito: la mesa en T, un asiento a cada lado y uno abajo.
+        'gallito' => ['M6.6 9H17.4M12 9V17.4', [[4.3, 9, 2.2], [19.7, 9, 2.2], [12, 19.7, 2.2]]],
         'torneo' => ['M3.5 5H10.5V19H3.5M10.5 12H16.2', [[18.6, 12, 2.4]]],
         'desafio' => ['M6.5 21V5.8M6.5 7.5H18.5L15.5 11L18.5 14.5H6.5', [[6.5, 3.6, 2.2]]],
         'escalera' => ['M3.5 19.5H8.5V14.5H13.5V9.5H18.5V7', [[18.5, 4.7, 2.2]]],

@@ -3,23 +3,29 @@
 namespace App\Juego;
 
 use App\Motor\Carta;
+use App\Motor\Mesa;
 use App\Motor\Tanto;
 use App\Motor\TipoDeAccion;
 
 /**
- * Lo que un bot lee de su vista en el truco de a cuatro, dicho en palabras del juego.
+ * Lo que un bot lee de su vista en el truco de a cuatro y en el gallito, dicho en palabras del juego.
  *
  * Es la misma vista que recibe un jugador en ese asiento, más las señas que le hizo su compañero:
- * acá no hay ninguna carta ajena que no esté jugada. Los compañeros se sientan enfrentados, así que
- * el compañero es el asiento de enfrente y los rivales, los de los costados.
+ * acá no hay ninguna carta ajena que no esté jugada. De a cuatro los compañeros se sientan enfrentados.
+ * En el gallito los equipos cambian en cada mano: el gallo (que es el mano) no tiene compañero, y los
+ * otros dos son pareja.
  */
 final class LecturaDePareja
 {
     public readonly int $asiento;
 
+    /** Los equipos de esta mano, como los arma el motor. */
+    public readonly Mesa $mesa;
+
     public readonly int $equipo;
 
-    public readonly int $companero;
+    /** Su compañero en esta mano, o null si es el gallo. */
+    public readonly ?int $companero;
 
     /**
      * @param  array<string, mixed>  $vista  Lo que entrega Partida::vistaPara() para el asiento del bot.
@@ -28,8 +34,9 @@ final class LecturaDePareja
     public function __construct(public readonly array $vista, public readonly array $senas = [])
     {
         $this->asiento = $vista['asiento'];
-        $this->equipo = $this->asiento % 2;
-        $this->companero = ($this->asiento + 2) % $vista['asientos'];
+        $this->mesa = (new Mesa($vista['asientos']))->conGallo($vista['mano']);
+        $this->equipo = $this->mesa->equipoDe($this->asiento);
+        $this->companero = array_values(array_diff($this->mesa->asientosDe($this->equipo), [$this->asiento]))[0] ?? null;
     }
 
     public function puede(TipoDeAccion $tipo): bool
@@ -47,7 +54,7 @@ final class LecturaDePareja
 
     public function esDeMiEquipo(int $asiento): bool
     {
-        return $asiento % 2 === $this->equipo;
+        return $this->mesa->equipoDe($asiento) === $this->equipo;
     }
 
     /**
@@ -167,7 +174,7 @@ final class LecturaDePareja
 
     public function elCompaneroSigueEnLaMano(): bool
     {
-        return ! in_array($this->companero, $this->vista['enMazo'], true);
+        return $this->companero !== null && ! in_array($this->companero, $this->vista['enMazo'], true);
     }
 
     /**
@@ -267,18 +274,31 @@ final class LecturaDePareja
         return $vistas;
     }
 
+    /**
+     * Sus puntos. En el gallito cada uno suma aparte: los suyos.
+     */
     public function misPuntos(): int
     {
-        return $this->vista['tanteo'][$this->equipo];
+        return $this->mesa->esGallito() ? $this->vista['tanteo'][$this->asiento] : $this->vista['tanteo'][$this->equipo];
     }
 
+    /**
+     * Los del rival. En el gallito, los del que va más arriba de los otros dos.
+     */
     public function susPuntos(): int
     {
+        if ($this->mesa->esGallito()) {
+            $otros = $this->vista['tanteo'];
+            unset($otros[$this->asiento]);
+
+            return max($otros);
+        }
+
         return $this->vista['tanteo'][1 - $this->equipo];
     }
 
     private function sonCompaneros(int $uno, int $otro): bool
     {
-        return $uno % 2 === $otro % 2;
+        return $this->mesa->equipoDe($uno) === $this->mesa->equipoDe($otro);
     }
 }

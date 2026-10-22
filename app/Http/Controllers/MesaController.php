@@ -531,6 +531,15 @@ class MesaController extends Controller
             return "Tu última partida de a cuatro terminó {$tanteo[0]} a {$tanteo[1]}: ".($partida->ganador === 0 ? 'ganaron ustedes.' : 'ganaron los rivales.');
         }
 
+        // En el gallito cada uno suma aparte: el tuyo, el de la izquierda y el de la derecha.
+        if ($partida->esGallito()) {
+            return "Tu último gallito terminó {$tanteo[0]} a {$tanteo[2]} y {$tanteo[1]}: ".match ($partida->ganador) {
+                0 => 'ganaste.',
+                2 => 'ganó la máquina de la izquierda.',
+                default => 'ganó la máquina de la derecha.',
+            };
+        }
+
         return "Tu última partida terminó {$tanteo[$asiento]} a {$tanteo[1 - $asiento]}: ".($partida->ganador === $asiento ? 'ganaste.' : "ganó {$rival}.").$this->comoQuedoLaSerie($partida, $asiento);
     }
 

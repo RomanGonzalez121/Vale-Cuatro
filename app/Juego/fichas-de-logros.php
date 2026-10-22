@@ -45,6 +45,7 @@ return [
     ['clave' => 'campeon', 'tema' => 'juegos', 'nombre' => 'Campeón', 'pide' => 'Torneos ganados', 'icono' => 'torneo', 'cuenta' => 'torneos_ganados', 'escalones' => [1, 5, 20], 'titulo' => 'campeon', 'titulo_en' => 1],
     ['clave' => 'desafiante', 'tema' => 'juegos', 'nombre' => 'Desafiante', 'pide' => 'Desafíos superados', 'icono' => 'desafio', 'cuenta' => 'desafios_pasados', 'escalones' => [8], 'titulo' => 'desafiante', 'titulo_en' => 1],
     ['clave' => 'de-a-cuatro', 'tema' => 'juegos', 'nombre' => 'Pareja', 'pide' => 'Partidas de a cuatro ganadas', 'icono' => 'de-a-cuatro', 'cuenta' => 'de_a_cuatro_ganadas', 'escalones' => [1, 10, 50]],
+    ['clave' => 'gallito', 'tema' => 'juegos', 'nombre' => 'Gallito', 'pide' => 'Ganar un gallito', 'icono' => 'gallito', 'cuenta' => 'gallitos_ganados', 'escalones' => [1]],
     ['clave' => 'senas', 'tema' => 'juegos', 'nombre' => 'Señero', 'pide' => 'Señas hechas al compañero', 'icono' => 'sena', 'cuenta' => 'senas_hechas', 'escalones' => [10, 50, 200]],
     ['clave' => 'revancha', 'tema' => 'juegos', 'nombre' => 'La revancha', 'pide' => 'Revanchas ganadas', 'icono' => 'repetir', 'cuenta' => 'revanchas_ganadas', 'escalones' => [1, 5, 20]],
 

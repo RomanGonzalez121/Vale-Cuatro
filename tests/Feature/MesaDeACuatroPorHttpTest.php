@@ -57,9 +57,9 @@ class MesaDeACuatroPorHttpTest extends TestCase
         $this->assertMatchesRegularExpression('/<form[^>]*action="[^"]*\/revancha\/pedir"[^>]*>.*?name="partida" value="'.$partida->id.'".*?Jugar la revancha/s', $html);
     }
 
-    public function test_solo_se_juega_de_a_dos_o_de_a_cuatro(): void
+    public function test_solo_se_juega_de_a_dos_de_a_tres_o_de_a_cuatro(): void
     {
-        foreach ([1, 3, 6, 'cuatro', ['4']] as $asientos) {
+        foreach ([1, 5, 6, 'cuatro', ['4']] as $asientos) {
             $this->post('/jugar', ['asientos' => $asientos])->assertSessionHasErrors('asientos');
         }
 

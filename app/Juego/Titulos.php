@@ -43,6 +43,8 @@ final class Titulos
         'partidas_ganadas', 'remontadas', 'sin_salir_de_malas', 'dificil_ganadas', 'ultra_ganadas',
         'de_a_cuatro_ganadas', 'senas_hechas', 'revanchas_ganadas', 'tres_pardas', 'treinta_a_cero',
         'ancho_contra_ancho', 'contraflor_al_resto',
+        // El sello del gallito (M25).
+        'gallitos_ganados',
     ];
 
     private const ENVIDOS = ['envido', 'real_envido', 'falta_envido'];
@@ -136,7 +138,16 @@ final class Titulos
 
         $cuentas = array_fill_keys(array_keys($personas), array_fill_keys(self::CUENTAS, 0));
         $deACuatro = $partida->deACuatro();
-        $equipoDe = fn (int $asiento) => $deACuatro ? $asiento % 2 : $asiento;
+        $gallito = $partida->esGallito();
+        // En el gallito el gallo es el mano de cada mano y juega solo (equipo 0) contra la pareja (equipo 1).
+        $gallo = 0;
+        $equipoDe = function (int $asiento) use ($deACuatro, $gallito, &$gallo) {
+            return match (true) {
+                $gallito => $asiento === $gallo ? 0 : 1,
+                $deACuatro => $asiento % 2,
+                default => $asiento,
+            };
+        };
         $anterior = null;
 
         // Lo que hace falta recordar de la mano en juego: las cartas de cada uno, quién cantó el último truco y
@@ -148,8 +159,8 @@ final class Titulos
         ];
         $m = $mano();
         // Y de la partida: el tanteo y lo más abajo que estuvo cada equipo.
-        $tanteo = [0, 0];
-        $abajo = [0, 0];
+        $tanteo = array_fill(0, $gallito ? 3 : 2, 0);
+        $abajo = $tanteo;
 
         foreach ($mesa->pasoAPaso($partida) as [$evento, $motor]) {
             // Una seña no pasa por el motor: se cuenta del evento.
@@ -167,6 +178,7 @@ final class Titulos
             if ($evento->tipo === EventoDePartida::REPARTO) {
                 $m = $mano();
                 $m['manos'] = $evento->datos['manos'];
+                $gallo = $motor->mano();
             }
 
             foreach ($motor->hechos() as $hecho) {
@@ -178,8 +190,11 @@ final class Titulos
 
                 if ($hecho['tipo'] === 'puntos') {
                     $tanteo = $hecho['tanteo'];
-                    $abajo[0] = max($abajo[0], $tanteo[1] - $tanteo[0]);
-                    $abajo[1] = max($abajo[1], $tanteo[0] - $tanteo[1]);
+
+                    // Lo más abajo que estuvo cada uno: contra el que iba más arriba de los demás.
+                    foreach (array_keys($tanteo) as $lado) {
+                        $abajo[$lado] = max($abajo[$lado] ?? 0, self::delRival($tanteo, $lado) - $tanteo[$lado]);
+                    }
                 }
             }
         }
@@ -188,12 +203,13 @@ final class Titulos
         $camino = new Camino;
 
         foreach (array_keys($personas) as $asiento) {
-            $equipo = $equipoDe($asiento);
+            // En el tanteo de la partida, su lugar: su equipo o, en el gallito, su asiento (cada uno suma aparte).
+            $equipo = $gallito ? $asiento : $equipoDe($asiento);
             $fosforos = $camino->fosforosEn($partida, $asiento, $mesa);
             $gano = $fosforos === Camino::POR_GANAR;
             $terminada = $partida->estado === Partida::TERMINADA;
             $suyo = $tanteo[$equipo];
-            $delRival = $tanteo[1 - $equipo];
+            $delRival = self::delRival($tanteo, $equipo);
 
             $cuentas[$asiento]['partidas_jugadas'] += (int) ($fosforos > 0);
 
@@ -202,16 +218,29 @@ final class Titulos
             }
 
             $cuentas[$asiento]['partidas_ganadas']++;
-            $cuentas[$asiento]['remontadas'] += (int) ($abajo[$equipo] >= self::REMONTADA);
+            $cuentas[$asiento]['remontadas'] += (int) (($abajo[$equipo] ?? 0) >= self::REMONTADA);
             $cuentas[$asiento]['sin_salir_de_malas'] += (int) ($terminada && $suyo >= $partida->puntos && $delRival < intdiv($partida->puntos, 2));
             $cuentas[$asiento]['treinta_a_cero'] += (int) ($terminada && $partida->puntos === 30 && $suyo >= 30 && $delRival === 0);
             $cuentas[$asiento]['dificil_ganadas'] += (int) ($partida->nivel_bot === Nivel::Dificil->value);
             $cuentas[$asiento]['ultra_ganadas'] += (int) ($partida->nivel_bot === Nivel::UltraDificil->value);
             $cuentas[$asiento]['de_a_cuatro_ganadas'] += (int) $deACuatro;
+            $cuentas[$asiento]['gallitos_ganados'] += (int) $gallito;
             $cuentas[$asiento]['revanchas_ganadas'] += (int) ($partida->anterior_id !== null);
         }
 
         return $cuentas;
+    }
+
+    /**
+     * Los puntos del rival de un lado del tanteo: el otro equipo o, en el gallito, el que va más arriba de los otros dos.
+     *
+     * @param  list<int>  $tanteo
+     */
+    private static function delRival(array $tanteo, int $lado): int
+    {
+        unset($tanteo[$lado]);
+
+        return max($tanteo);
     }
 
     /**
