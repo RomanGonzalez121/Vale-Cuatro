@@ -4,7 +4,7 @@
     "type": "project",
     "description": "Truco argentino online, mano a mano.",
     "keywords": ["truco", "laravel", "juego"],
-    "license": "MIT",
+    "license": "proprietary",
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",
