@@ -50,6 +50,37 @@ class GallitoDeBotsTest extends TestCase
         $this->assertSame([12, 10], [$deLaPareja->misPuntos(), $deLaPareja->susPuntos()], 'Cada uno cuenta sus puntos y los del que va más arriba.');
     }
 
+    public function test_el_ultra_quiere_el_truco_si_no_quererlo_le_da_la_partida_al_gallo(): void
+    {
+        // El gallo (asiento 0) tiene 29 y canta truco: no quererlo le da 1, y gana la partida.
+        $partida = Partida::armada(array_map(fn (array $ids) => array_map(Carta::de(...), $ids), [
+            ['1-espada', '1-basto', '7-espada'],
+            ['4-copa', '5-oro', '6-basto'],
+            ['4-oro', '5-copa', '6-copa'],
+        ]), mano: 0, tanteo: [29, 10, 10]);
+        $partida = $partida->aplicar(0, Accion::de(TipoDeAccion::Truco));
+
+        $accion = (new BotDePareja(Nivel::UltraDificil, Azar::deSemilla(1)))->decidir($partida->vistaPara(1));
+
+        $this->assertSame(TipoDeAccion::Quiero, $accion->tipo);
+    }
+
+    public function test_el_ultra_no_le_regala_la_partida_a_su_companero(): void
+    {
+        // El asiento 1 es del Ultra y va con el 2, que tiene 29: si la pareja gana la mano, gana el 2.
+        // El Ultra no quiere el truco del gallo, aunque tenga cartas para ganarlo.
+        $partida = Partida::armada(array_map(fn (array $ids) => array_map(Carta::de(...), $ids), [
+            ['4-copa', '5-oro', '6-basto'],
+            ['1-espada', '1-basto', '7-espada'],
+            ['4-oro', '5-copa', '6-copa'],
+        ]), mano: 0, tanteo: [10, 12, 29]);
+        $partida = $partida->aplicar(0, Accion::de(TipoDeAccion::Truco));
+
+        $accion = (new BotDePareja(Nivel::UltraDificil, Azar::deSemilla(1)))->decidir($partida->vistaPara(1));
+
+        $this->assertSame(TipoDeAccion::NoQuiero, $accion->tipo);
+    }
+
     public function test_en_la_pareja_no_le_pisa_la_carta_al_companero(): void
     {
         // El gallo (asiento 0) sale con un 4; el asiento 1 la gana con el ancho de espada. El 2, de la

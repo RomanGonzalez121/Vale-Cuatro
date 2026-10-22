@@ -7,6 +7,7 @@ use App\Motor\Azar;
 use App\Motor\Carta;
 use App\Motor\Envido;
 use App\Motor\Mesa;
+use App\Motor\Partida;
 use App\Motor\TipoDeAccion;
 
 /**
@@ -90,6 +91,13 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
         $lectura = new LecturaDePareja($vista, $this->senas);
         $this->laMejor = null;
 
+        // El Ultra, en el gallito, antes que la mano mira la partida.
+        $porLaPartida = $this->mirarLaPartida($lectura);
+
+        if ($porLaPartida !== null) {
+            return $porLaPartida;
+        }
+
         // La flor se canta siempre que se pueda: en su turno o contestando un envido o un truco.
         if ($lectura->puede(TipoDeAccion::Flor)) {
             return Accion::de(TipoDeAccion::Flor);
@@ -102,6 +110,71 @@ final class BotDePareja implements Bot, RecibeSenas, Recuerda
             'truco' => $this->cantarElEnvido($lectura) ?? $this->contestarElTruco($lectura),
             default => $this->enSuTurno($lectura),
         };
+    }
+
+    /**
+     * Lo que sabe del gallito un buen jugador, y solo lo usa el Ultra. Cuando gana la pareja suman los dos, y el
+     * compañero de esta mano también es rival en la partida: si ganar la mano le da la partida a él, conviene
+     * perderla (no querer, no cantar y tirar la más baja). Y si no querer le da la partida a otro, se quiere siempre.
+     * Devuelve null si la partida no cambia nada y decide la mano, como siempre.
+     */
+    private function mirarLaPartida(LecturaDePareja $lectura): ?Accion
+    {
+        if ($this->nivel !== Nivel::UltraDificil || ! $lectura->mesa->esGallito()) {
+            return null;
+        }
+
+        $vista = $lectura->vista;
+        $pendiente = $lectura->pendiente();
+        $alResto = $vista['flor']['contra'] === TipoDeAccion::ContraflorAlResto->value;
+
+        // Lo que suma el otro lado si no se quiere lo que cantaron.
+        $siNoQuiere = match ($pendiente) {
+            'truco' => $vista['truco']['nivel'],
+            'envido' => Envido::noQuerido($vista['envido']['cadena']),
+            'contraflor' => $alResto ? Partida::CONTRAFLOR_AL_RESTO_NO_QUERIDA : Partida::CONTRAFLOR_NO_QUERIDA,
+            default => null,
+        };
+
+        if ($siNoQuiere !== null && $this->laGanaOtro($lectura, 1 - $lectura->equipo, $siNoQuiere)) {
+            return Accion::de(TipoDeAccion::Quiero);
+        }
+
+        // Lo que suma su lado si gana lo que está en juego.
+        $siGana = match ($pendiente) {
+            'truco' => $vista['truco']['nivel'] + 1,
+            'envido' => Envido::querido($vista['envido']['cadena'], $vista['tanteo'], $vista['puntosParaGanar']),
+            'contraflor' => $alResto ? Envido::falta($vista['tanteo'], $vista['puntosParaGanar']) : Partida::CONTRAFLOR_QUERIDA,
+            default => $vista['truco']['querido'] === 0 ? 1 : $vista['truco']['querido'] + 1,
+        };
+
+        if (! $this->laGanaOtro($lectura, $lectura->equipo, $siGana)) {
+            return null;
+        }
+
+        if ($pendiente !== null) {
+            return Accion::de(TipoDeAccion::NoQuiero);
+        }
+
+        return $lectura->puede(TipoDeAccion::Jugar) ? Accion::jugar($lectura->enMano()[0]) : null;
+    }
+
+    /**
+     * Si sumando esos puntos ese equipo, la partida la gana alguien que no es él: el único que queda más
+     * arriba con los puntos de la partida o más, como lo cuenta el motor.
+     */
+    private function laGanaOtro(LecturaDePareja $lectura, int $equipo, int $puntos): bool
+    {
+        $tanteo = $lectura->vista['tanteo'];
+
+        foreach ($lectura->mesa->asientosDe($equipo) as $asiento) {
+            $tanteo[$asiento] += $puntos;
+        }
+
+        $arriba = max($tanteo);
+        $punteros = array_keys($tanteo, $arriba, true);
+
+        return $arriba >= $lectura->vista['puntosParaGanar'] && count($punteros) === 1 && $punteros[0] !== $lectura->asiento;
     }
 
     private function enSuTurno(LecturaDePareja $lectura): Accion
